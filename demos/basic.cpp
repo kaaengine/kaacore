@@ -7,7 +7,8 @@
 
 using namespace std;
 
-int main() {
+extern "C" int main(int argc, char *argv[])
+{
     Engine eng;
     bool running = true;
 
@@ -37,4 +38,6 @@ int main() {
         eng.renderer->render_vertices(vertices, indices, texture);
         bgfx::frame();
     }
+
+    return 0;
 }
