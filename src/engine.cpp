@@ -9,6 +9,7 @@
 #include "kaacore/log.h"
 #include "kaacore/engine.h"
 #include "kaacore/renderer.h"
+#include "kaacore/scene.h"
 
 
 Engine* engine;
@@ -55,6 +56,7 @@ Engine::Engine() {
     bgfx::init(init_data);
 
     this->renderer = std::make_unique<Renderer>();
+    this->input_manager = std::make_unique<InputManager>();
 
     ::engine = this;
 }
@@ -64,10 +66,50 @@ Engine::~Engine() {
 
     log<LogLevel::info>("Shutting down KAAcore engine");
 
+    this->input_manager.release();
     this->renderer.release();
     bgfx::shutdown();
     SDL_DestroyWindow(this->window);
     SDL_Quit();
 
     ::engine = nullptr;
+}
+
+void Engine::attach_scene(Scene* scene)
+{
+    this->running_scene = scene;
+}
+
+void Engine::scene_run()
+{
+    log("Engine scene runner started");
+    uint32_t ticks = SDL_GetTicks();
+    while(this->running_scene != nullptr) {
+        Scene* scene = this->running_scene;
+        uint32_t ticks_now = SDL_GetTicks();
+        uint32_t dt = ticks_now - ticks;
+        ticks = ticks_now;
+        this->time += dt;
+        this->_pump_events();
+
+        this->renderer->begin_frame();
+        scene->process_frame(dt);
+        this->renderer->end_frame();
+    }
+    log("Engine scene runner stopped");
+}
+
+void Engine::_pump_events()
+{
+    this->input_manager->clear_events();
+    SDL_Event sdl_event;
+    while (SDL_PollEvent(&sdl_event)) {
+        // TODO handle callbacks
+        if (sdl_event.type == SDL_WINDOWEVENT and
+            sdl_event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            // TODO reset renderer, update camera
+            continue;
+        }
+        this->input_manager->push_event(sdl_event);
+    }
 }

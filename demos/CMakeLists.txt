@@ -4,8 +4,12 @@ cmake_policy(SET CMP0077 NEW)
 add_executable(demo-basic basic.cpp)
 list(APPEND DEMO_TARGETS demo-basic)
 
+add_executable(demo-basic-scene basic_scene.cpp)
+list(APPEND DEMO_TARGETS demo-basic-scene)
 
-target_link_libraries(${DEMO_TARGETS} kaacore)
+
+target_link_libraries(demo-basic kaacore)
+target_link_libraries(demo-basic-scene kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES
