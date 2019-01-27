@@ -46,7 +46,7 @@ Engine::Engine() {
 
     bgfx::Init init_data;
     init_data.resolution.width = 800;
-    init_data.resolution.height = 800;
+    init_data.resolution.height = 600;
     init_data.debug = true;
 
 #if SDL_VIDEO_DRIVER_WINDOWS

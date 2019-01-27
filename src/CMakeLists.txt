@@ -9,6 +9,7 @@ set(SRC_CXX_FILES
     texture_loader.cpp
     input.cpp
     scene.cpp
+    shape.cpp
 )
 
 set(SRC_H_FILES
@@ -20,6 +21,7 @@ set(SRC_H_FILES
     ../include/kaacore/texture_loader.h
     ../include/kaacore/input.h
     ../include/kaacore/scene.h
+    ../include/kaacore/shape.h
 
     ../include/kaacore/embedded_data.h
 )

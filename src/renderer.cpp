@@ -55,7 +55,8 @@ bgfx::TextureHandle load_default_texture()
 Renderer::Renderer() 
 {
     log("Initializing renderer");
-    this->reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
+    this->reset_flags = (BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2 |
+                         BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH);
 
     this->vertex_decl.begin() \
         .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float) \
@@ -69,6 +70,7 @@ Renderer::Renderer()
     );
 
     bgfx::setViewClear(0, this->reset_flags);
+    bgfx::setViewRect(0, 0, 0, 800, 600);
 
     this->default_texture = load_default_texture();
 
@@ -117,7 +119,7 @@ void Renderer::end_frame()
 
 
 void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
-                               std::vector<uint16_t> indices,
+                               std::vector<VertexIndex> indices,
                                bgfx::TextureHandle texture)
 {
     bgfx::TransientVertexBuffer vertices_buffer;
@@ -136,7 +138,7 @@ void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
     std::memcpy(vertices_buffer.data, vertices.data(),
         sizeof(StandardVertexData) * vertices.size());
     std::memcpy(indices_buffer.data, indices.data(),
-        sizeof(uint16_t) * indices.size());
+        sizeof(VertexIndex) * indices.size());
 
     bgfx::setVertexBuffer(0, &vertices_buffer);
     bgfx::setIndexBuffer(&indices_buffer);
