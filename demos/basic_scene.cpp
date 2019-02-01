@@ -32,7 +32,7 @@ struct DemoScene : Scene {
         std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::kc_q) or event.is_quit()) {
+            if (event.is_pressing(Keycode::q) or event.is_quit()) {
                 get_engine()->attach_scene(nullptr);
                 break;
             }
