@@ -1,3 +1,4 @@
+#include <vector>
 #include <iostream>
 #include <memory>
 
@@ -15,13 +16,16 @@
 struct DemoScene : Scene {
     Node* node1;
     Node* node2;
+    Node* container_node;
 
     DemoScene() {
         this->node1 = new Node();
         this->node1->position = {3., 3.};
         this->node1->rotation = 1.;
         this->node1->scale = {1., 3.,};
+        this->node1->color = {1., 0., 0., 1};
         this->node1->shape = Shape::Box({2., 1.});
+        this->node1->z_index = 10;
         this->node1->recalculate_matrix();
         this->node1->recalculate_render_data();
 
@@ -31,11 +35,40 @@ struct DemoScene : Scene {
         this->node2->position = {-3., 3.};
         this->node2->rotation = 10.;
         this->node2->scale = {1., 1.,};
+        this->node2->color = {0., 1., 0., 1};
         this->node2->shape = Shape::Circle({0., 0.}, 1.5);
+        this->node2->z_index = 10;
         this->node2->recalculate_matrix();
         this->node2->recalculate_render_data();
 
         this->root_node.add_child(this->node2);
+
+        std::vector<glm::dvec2> positions = {
+            {-2., -2.}, {0., -2.}, {2., -2.},
+            {-2., 0.},  {0., 0.},  {2., 0.},
+            {-2., 2.},  {0., 2.},  {2., 2.}
+        };
+
+        this->container_node = new Node();
+        this->container_node->position = {0., 0.};
+        this->container_node->shape = Shape::Box({9., 9.});
+        this->container_node->recalculate_matrix();
+        this->container_node->recalculate_render_data();
+
+        for (const auto& p : positions) {
+            Node* inside_node = new Node();
+            inside_node->position = p;
+            inside_node->color = {0., 0., 1., 1};
+            inside_node->shape = Shape::Box({1., 1.});
+            if (p.x != 0. and p.y != 0.) {
+                inside_node->z_index = 10;
+            } else {
+                inside_node->z_index = -10;
+            }
+            this->container_node->add_child(inside_node);
+        }
+
+        this->root_node.add_child(this->container_node);
     }
 
     void update(uint32_t dt) override

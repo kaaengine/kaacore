@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/nodes.h"
+#include "kaacore/log.h"
 
 
 Node::Node(double _x, double _y) {
@@ -22,8 +23,8 @@ Node::~Node()
         }
     }
 
-    for (Node* child_node : this->children) {
-        delete child_node;
+    while (not this->children.empty()) {
+        delete this->children[0];
     }
 }
 
@@ -72,6 +73,7 @@ void Node::recalculate_render_data()
         vertex.xyz.x = pos.x;
         vertex.xyz.y = pos.y;
         vertex.xyz.z = pos.z;
+        vertex.rgba *= this->color;
     }
 }
 

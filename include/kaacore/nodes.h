@@ -34,6 +34,7 @@ struct Node {
     glm::dvec2 scale = {1., 1.};
     int16_t z_index = 0;
     Shape shape;
+    glm::dvec4 color = {1., 1., 1., 1.};
 
     Scene* scene = nullptr;
     Node* parent = nullptr;
