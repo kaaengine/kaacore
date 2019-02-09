@@ -1,15 +1,26 @@
 #include <iostream>
 #include <algorithm>
+#include <functional>
 
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/nodes.h"
+#include "kaacore/scene.h"
 #include "kaacore/log.h"
 
 
-Node::Node(double _x, double _y) {
-    this->position.x = _x;
-    this->position.y = _y;
+Node::Node(NodeType type) : type(type)
+{
+    if (type == NodeType::space) {
+        // this->space = SpaceNode();
+        this->space.initialize();
+    } else if (type == NodeType::body) {
+        this->body.initialize();
+    } else if (type == NodeType::hitbox) {
+        this->hitbox.initialize();
+        this->color = {1., 0., 1., 0.5};
+        this->z_index = 100;
+    }
 }
 
 Node::~Node()
@@ -26,10 +37,14 @@ Node::~Node()
     while (not this->children.empty()) {
         delete this->children[0];
     }
-}
 
-void Node::repr() const {
-    std::cout << "X: " << this->position.x << ", Y: " << this->position.y << std::endl;
+    if (this->type == NodeType::space) {
+        this->space.destroy();
+    } else if (this->type == NodeType::body) {
+        this->body.destroy();
+    } else if (this->type == NodeType::hitbox) {
+        this->hitbox.destroy();
+    }
 }
 
 void Node::add_child(Node* child_node)
@@ -37,7 +52,23 @@ void Node::add_child(Node* child_node)
     assert(child_node->parent == nullptr);
     child_node->parent = this;
     this->children.push_back(child_node);
-    child_node->scene = this->scene;
+
+    // TODO set root
+    // TODO optimize (replace with iterator?)
+    std::function<void(Node*)> initialize_node;
+    initialize_node = [&initialize_node, this](Node* n)
+    {
+        n->scene = this->scene;
+        if (n->type == NodeType::body) {
+            n->body.attach_to_simulation();
+        } else if (n->type == NodeType::hitbox) {
+            n->hitbox.attach_to_simulation();
+        }
+
+        std::for_each(n->children.begin(), n->children.end(),
+                      initialize_node);
+    };
+    initialize_node(child_node);
 }
 
 void Node::recalculate_matrix()
@@ -66,14 +97,27 @@ void Node::recalculate_render_data()
 {
     // TODO optimize
     this->render_data.computed_vertices = this->shape.vertices;
-    glm::dvec4 pos;
     for (auto& vertex : this->render_data.computed_vertices) {
-        pos = {vertex.xyz.x, vertex.xyz.y, vertex.xyz.z, 1.};
+        glm::dvec4 pos = {vertex.xyz.x, vertex.xyz.y, vertex.xyz.z, 1.};
         pos = this->matrix * pos;
-        vertex.xyz.x = pos.x;
-        vertex.xyz.y = pos.y;
-        vertex.xyz.z = pos.z;
+        vertex.xyz = {pos.x, pos.y, pos.z};
         vertex.rgba *= this->color;
+    }
+}
+
+void Node::set_position(const glm::dvec2& position)
+{
+    this->position = position;
+    if (this->type == NodeType::body) {
+        this->body.override_simulation_position();
+    }
+}
+
+void Node::set_shape(const Shape& shape)
+{
+    this->shape = shape;
+    if (this->type == NodeType::hitbox) {
+        this->hitbox.update_physics_shape();
     }
 }
 

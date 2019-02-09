@@ -37,6 +37,12 @@ void Scene::process_nodes(uint32_t dt)
             processing_queue.push_back(child_node);
         }
 
+        if (node->type == NodeType::space) {
+            node->space.simulate(dt);
+        } else if (node->type == NodeType::body) {
+            node->body.sync_simulation_position();
+        }
+
         node->recalculate_matrix();
         node->recalculate_render_data();
 
@@ -49,7 +55,8 @@ void Scene::process_nodes(uint32_t dt)
     std::sort(rendering_queue.begin(), rendering_queue.end());
 
     for (const auto& qn : rendering_queue) {
-        if (std::get<Node*>(qn)->render_data.computed_vertices.empty()) {
+        if (std::get<Node*>(qn)->render_data.computed_vertices.empty() or
+            not std::get<Node*>(qn)->visible) {
             continue;
         }
         get_engine()->renderer->render_vertices(

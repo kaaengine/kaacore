@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <glm/glm.hpp>
 
 #include "kaacore/renderer.h"
@@ -24,14 +26,17 @@ struct Shape {
 
     Shape()
     : type(ShapeType::none) {};
-    Shape(const ShapeType type, const std::vector<glm::dvec2> points,
+    Shape(const ShapeType type, const std::vector<glm::dvec2>& points,
           const double radius,
-          const std::vector<VertexIndex> indices,
-          const std::vector<StandardVertexData> vertices)
+          const std::vector<VertexIndex>& indices,
+          const std::vector<StandardVertexData>& vertices)
     : type(type), points(points), radius(radius),
       indices(indices), vertices(vertices) {};
 
     static Shape Segment(const glm::dvec2 a, const glm::dvec2 b);
     static Shape Circle(const glm::dvec2 center, const double radius);
     static Shape Box(const glm::dvec2 size);
+    static Shape Polygon(const std::vector<glm::dvec2>& points);
+    static Shape Freeform(const std::vector<VertexIndex>& indices,
+                          const std::vector<StandardVertexData>& vertices);
 };

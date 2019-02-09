@@ -2,8 +2,6 @@
 #include <iostream>
 #include <memory>
 
-#include <SDL.h>
-
 #include <glm/glm.hpp>
 
 #include "kaacore/engine.h"
@@ -17,8 +15,20 @@ struct DemoScene : Scene {
     Node* node1;
     Node* node2;
     Node* container_node;
+    Shape specific_shape;
 
     DemoScene() {
+        const std::vector<StandardVertexData> vertices = {
+            {-1., -1., 0.,       0., 1.,     -1., -1.,   0., 1., 1., 1.},
+            {1., -1., 0.,        1., 1.,      1., -1.,   1., 0., 1., 1.},
+            {1., 1., 0.,         1., 0.,      1.,  1.,   1., 1., 0., 1.},
+            {-1., 1., 0.,        0., 0.,     -1.,  1.,   1., 1., 1., 0.}
+        };
+
+        const std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
+
+        this->specific_shape = Shape::Freeform(indices, vertices);
+
         this->node1 = new Node();
         this->node1->position = {3., 3.};
         this->node1->rotation = 1.;
@@ -36,7 +46,8 @@ struct DemoScene : Scene {
         this->node2->rotation = 10.;
         this->node2->scale = {1., 1.,};
         this->node2->color = {0., 1., 0., 1};
-        this->node2->shape = Shape::Circle({0., 0.}, 1.5);
+        // this->node2->shape = Shape::Circle({0., 0.}, 1.5);
+        this->node2->shape = Shape::Segment({-5., -5.}, {2., 2.});
         this->node2->z_index = 10;
         this->node2->recalculate_matrix();
         this->node2->recalculate_render_data();
@@ -56,16 +67,17 @@ struct DemoScene : Scene {
         this->container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
-            Node* inside_node = new Node();
-            inside_node->position = p;
-            inside_node->color = {0., 0., 1., 1};
-            inside_node->shape = Shape::Box({1., 1.});
+            Node* inner_node = new Node();
+            inner_node->position = p;
+            inner_node->color = {0., 0., 1., 1};
+            inner_node->shape = this->specific_shape;
             if (p.x != 0. and p.y != 0.) {
-                inside_node->z_index = 10;
+                inner_node->z_index = 10;
             } else {
-                inside_node->z_index = -10;
+                inner_node->z_index = -10;
             }
-            this->container_node->add_child(inside_node);
+
+            this->container_node->add_child(inner_node);
         }
 
         this->root_node.add_child(this->container_node);
@@ -76,15 +88,6 @@ struct DemoScene : Scene {
         log<LogLevel::debug>("DemoScene update %lu/%llu", dt, this->time);
         auto texture = get_engine()->renderer->default_texture;
 
-
-        std::vector<StandardVertexData> vertices = {
-            {-1., -1., 0.,       0., 1.,     -1., -1.,   0., 1., 1., 1.},
-            {1., -1., 0.,        1., 1.,      1., -1.,   1., 0., 1., 1.},
-            {1., 1., 0.,         1., 0.,      1.,  1.,   1., 1., 0., 1.},
-            {-1., 1., 0.,        0., 0.,     -1.,  1.,   1., 1., 1., 0.}
-        };
-
-        std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
         for (auto const& event : this->get_events()) {
             if (event.is_pressing(Keycode::q) or event.is_quit()) {
@@ -124,7 +127,7 @@ struct DemoScene : Scene {
                 log("Camera position: %lf %lf", this->camera.position.x, this->camera.position.y);
             }
         }
-        get_engine()->renderer->render_vertices(vertices, indices, texture);
+        // get_engine()->renderer->render_vertices(vertices, indices, texture);
     }
 };
 
