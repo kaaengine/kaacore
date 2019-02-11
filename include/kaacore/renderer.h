@@ -25,6 +25,9 @@ struct Renderer {
     Renderer();
     ~Renderer();
 
+    void begin_frame();
+    void end_frame();
+
     void render_vertices(std::vector<StandardVertexData> vertices,
                          std::vector<uint16_t> indices,
                          bgfx::TextureHandle texture);

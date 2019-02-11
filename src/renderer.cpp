@@ -103,6 +103,19 @@ Renderer::~Renderer() {
 }
 
 
+void Renderer::begin_frame()
+{
+    // TODO prepare buffers, etc.
+}
+
+
+void Renderer::end_frame()
+{
+    bgfx::touch(0);
+    bgfx::frame();
+}
+
+
 void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
                                std::vector<uint16_t> indices,
                                bgfx::TextureHandle texture)
