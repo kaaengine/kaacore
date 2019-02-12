@@ -36,21 +36,21 @@ glm::dvec2 convert_vector(const cpVect vec)
 
 inline constexpr Node* container_node(const SpaceNode* space)
 {
-    static_assert(std::is_standard_layout<Node>::value, "");
+    // static_assert(std::is_standard_layout<Node>::value, "");
     return container_of(space, &Node::space);
 }
 
 
 inline constexpr Node* container_node(const BodyNode* body)
 {
-    static_assert(std::is_standard_layout<Node>::value, "");
+    // static_assert(std::is_standard_layout<Node>::value, "");
     return container_of(body, &Node::body);
 }
 
 
 inline constexpr Node* container_node(const HitboxNode* hitbox)
 {
-    static_assert(std::is_standard_layout<Node>::value, "");
+    // static_assert(std::is_standard_layout<Node>::value, "");
     return container_of(hitbox, &Node::hitbox);
 }
 

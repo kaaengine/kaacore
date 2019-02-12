@@ -43,6 +43,21 @@ if (WIN32)
     target_link_libraries(kaacore PUBLIC SDL2main)
 endif()
 
+if (WIN32)
+    # avoid including min max macros from Windows.h
+    target_compile_definitions(kaacore PUBLIC NOMINMAX)
+endif()
+
+if (MSVC)
+    # for some reason MSVC cannot find chipmunk headers by default
+    get_target_property(CHIPMUNK_SOURCE_DIR chipmunk_static SOURCE_DIR)
+    message(STATUS "Chipmunk source dir: ${CHIPMUNK_SOURCE_DIR}")
+    target_include_directories(kaacore PUBLIC
+        $<BUILD_INTERFACE:${CHIPMUNK_SOURCE_DIR}/../include>
+    )
+endif()
+
+
 get_target_property(SDL_BINARY_DIR SDL2 BINARY_DIR)
 target_include_directories(kaacore PUBLIC
     $<BUILD_INTERFACE:${SDL_BINARY_DIR}/include>
