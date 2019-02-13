@@ -3,10 +3,12 @@
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
+#include <bgfx/bgfx.h>
 
 #include "kaacore/renderer.h"
 #include "kaacore/shape.h"
 #include "kaacore/physics.h"
+#include "kaacore/sprites.h"
 
 
 enum struct NodeType {
@@ -19,6 +21,7 @@ enum struct NodeType {
 
 struct NodeRenderData {
     std::vector<StandardVertexData> computed_vertices;
+    bgfx::TextureHandle texture_handle;
 };
 
 
@@ -43,6 +46,7 @@ struct Node {
     glm::dvec2 scale = {1., 1.};
     int16_t z_index = 0;
     Shape shape;
+    Sprite sprite;
     glm::dvec4 color = {1., 1., 1., 1.};
     bool visible = true;
 
@@ -70,5 +74,6 @@ struct Node {
 
     void set_position(const glm::dvec2& position);
     void set_shape(const Shape& shape);
+    void set_sprite(const Sprite& sprite);
     glm::dvec2 get_absolute_position();
 };

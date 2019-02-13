@@ -43,6 +43,10 @@ void Scene::process_nodes(uint32_t dt)
             node->body.sync_simulation_position();
         }
 
+        if (node->sprite and node->sprite.auto_animate) {
+            node->sprite.animation_time_step(dt);
+        }
+
         node->recalculate_matrix();
         node->recalculate_render_data();
 
@@ -62,7 +66,7 @@ void Scene::process_nodes(uint32_t dt)
         get_engine()->renderer->render_vertices(
             std::get<Node*>(qn)->render_data.computed_vertices,
             std::get<Node*>(qn)->shape.indices,
-            get_engine()->renderer->default_texture
+            std::get<Node*>(qn)->render_data.texture_handle
         );
     }
 }

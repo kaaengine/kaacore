@@ -11,6 +11,8 @@ set(SRC_CXX_FILES
     scene.cpp
     shape.cpp
     physics.cpp
+    resources.cpp
+    sprites.cpp
 )
 
 set(SRC_H_FILES
@@ -24,6 +26,8 @@ set(SRC_H_FILES
     ../include/kaacore/scene.h
     ../include/kaacore/shape.h
     ../include/kaacore/physics.h
+    ../include/kaacore/resources.h
+    ../include/kaacore/sprites.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

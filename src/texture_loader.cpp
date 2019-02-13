@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <bx/bx.h>
 #include <bx/file.h>
 #include <bimg/decode.h>
@@ -12,14 +14,9 @@
 static bx::DefaultAllocator texture_image_allocator;
 
 
-static void destroy_image_container(void* ptr, void* user_data)
-{
-    bimg::ImageContainer* image_container = (bimg::ImageContainer*)user_data;
-    bimg::imageFree(image_container);
-}
-
-
-bgfx::TextureHandle load_texture(const uint8_t* data, size_t size, uint64_t flags)
+std::pair<bgfx::TextureHandle, bimg::ImageContainer*> load_texture(
+    const uint8_t* data, size_t size, uint64_t flags
+)
 {
     bgfx::TextureHandle handle = BGFX_INVALID_HANDLE;
 
@@ -28,7 +25,7 @@ bgfx::TextureHandle load_texture(const uint8_t* data, size_t size, uint64_t flag
 
     if (image_container == NULL) {
         log<LogLevel::error>("Failed to parse texture data");
-        return handle;
+        return std::make_pair(handle, image_container);
     }
     // if (NULL != _orientation)
     // {
@@ -36,17 +33,13 @@ bgfx::TextureHandle load_texture(const uint8_t* data, size_t size, uint64_t flag
     // }
 
     const bgfx::Memory* mem = bgfx::makeRef(
-        image_container->m_data,
-        image_container->m_size,
-        destroy_image_container,
-        image_container
+        image_container->m_data, image_container->m_size
     );
 
     if (!bgfx::isTextureValid(0, false, image_container->m_numLayers,
-            bgfx::TextureFormat::Enum(image_container->m_format), flags))
-    {
+            bgfx::TextureFormat::Enum(image_container->m_format), flags)) {
         log<LogLevel::error>("Texture is not valid");
-        return handle;
+        return std::make_pair(handle, image_container);
     }
     handle = bgfx::createTexture2D(
         uint16_t(image_container->m_width),
@@ -72,22 +65,62 @@ bgfx::TextureHandle load_texture(const uint8_t* data, size_t size, uint64_t flag
     //             );
     // }
 
+    return std::make_pair(handle, image_container);
+}
+
+
+std::pair<bgfx::TextureHandle, bimg::ImageContainer*> load_texture_from_file(
+    const char* path, uint64_t flags
+)
+{
+    log("Loading texture from file: %s", path);
+    RawFile file(path);
+    log("Loaded file size: %d", file.content.size());
+    auto handle = load_texture(
+        file.content.data(), file.content.size(), flags
+    );
+    auto texture = std::get<bgfx::TextureHandle>(handle);
+
+    if (bgfx::isValid(texture))
+    {
+        bgfx::setName(texture, path);
+    }
+
     return handle;
 }
 
 
-bgfx::TextureHandle load_texture_from_file(const char* path, uint64_t flags)
+Image::Image(const char* path, uint64_t flags)
 {
-    log("Loading texture from file: %s", path);
-    RawFile file(path);
-    bgfx::TextureHandle handle = load_texture(
-        file.content.data(), file.content.size(), flags
-    );
+    auto p = load_texture_from_file(path, flags);
+    this->texture_handle = std::get<bgfx::TextureHandle>(p);
+    this->image_container = std::get<bimg::ImageContainer*>(p);
+}
 
-    if (bgfx::isValid(handle))
-    {
-        bgfx::setName(handle, path);
+Image::Image(bgfx::TextureHandle texture_handle,
+             bimg::ImageContainer* image_container)
+{
+    this->texture_handle = texture_handle;
+    this->image_container = image_container;
+}
+
+Resource<Image> Image::load(const char* path, uint64_t flags)
+{
+    return std::make_shared<Image>(path, flags);
+}
+
+Image::~Image()
+{
+    if (bgfx::isValid(this->texture_handle)) {
+        bgfx::destroy(this->texture_handle);
     }
+    if (this->image_container != nullptr) {
+        bimg::imageFree(this->image_container);
+    }
+}
 
-    return handle;
+glm::uvec2 Image::get_dimensions()
+{
+    assert(this->image_container != nullptr);
+    return {this->image_container->m_width, this->image_container->m_height};
 }

@@ -4,6 +4,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "kaacore/engine.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scene.h"
 #include "kaacore/log.h"
@@ -12,7 +13,6 @@
 Node::Node(NodeType type) : type(type)
 {
     if (type == NodeType::space) {
-        // this->space = SpaceNode();
         this->space.initialize();
     } else if (type == NodeType::body) {
         this->body.initialize();
@@ -101,7 +101,21 @@ void Node::recalculate_render_data()
         glm::dvec4 pos = {vertex.xyz.x, vertex.xyz.y, vertex.xyz.z, 1.};
         pos = this->matrix * pos;
         vertex.xyz = {pos.x, pos.y, pos.z};
+
+        if (this->sprite.has_texture()) {
+            auto uv_rect = this->sprite.get_display_rect();
+            vertex.uv = glm::mix(
+                uv_rect.first, uv_rect.second, vertex.uv
+            );
+        }
+
         vertex.rgba *= this->color;
+    }
+
+    if (this->sprite.has_texture()) {
+        this->render_data.texture_handle = this->sprite.texture->texture_handle;
+    } else {
+        this->render_data.texture_handle = get_engine()->renderer->default_texture;
     }
 }
 
@@ -119,6 +133,11 @@ void Node::set_shape(const Shape& shape)
     if (this->type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
+}
+
+void Node::set_sprite(const Sprite& sprite)
+{
+    this->sprite = sprite;
 }
 
 glm::dvec2 Node::get_absolute_position()

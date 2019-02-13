@@ -1,0 +1,1 @@
+#include "kaacore/resources.h"
