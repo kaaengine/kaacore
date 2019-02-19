@@ -23,7 +23,10 @@ unset(BUILD_DEMOS)
 set(GLM_TEST_ENABLE OFF CACHE BOOL "")
 add_subdirectory(third_party/glm)
 
-set_target_properties(bgfx bimg bx PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(
+    bgfx bimg bx chipmunk_static
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+)
 
 add_subdirectory(src)
 
