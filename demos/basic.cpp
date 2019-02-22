@@ -25,7 +25,6 @@ extern "C" int main(int argc, char *argv[])
     } else {
         res = Image::load(argv[1]);
         texture = res->texture_handle;
-        // texture = std::get<bgfx::TextureHandle>(load_texture_from_file(argv[1]));
     }
 
     bgfx::setViewClear(0, BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH);

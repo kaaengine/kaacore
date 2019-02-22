@@ -20,6 +20,10 @@
     ASSERT_VALID_BODY_NODE(); \
     assert(this->get_body_type() == BodyNodeType::dynamic);
 
+#define ASSERT_VALID_HITBOX_NODE() \
+    assert(container_node(this)->type == NodeType::hitbox); \
+    assert(this->cp_shape != nullptr);
+
 
 // conversions
 
@@ -55,6 +59,39 @@ inline constexpr Node* container_node(const HitboxNode* hitbox)
 }
 
 
+Arbiter::Arbiter(cpArbiter* arbiter)
+    : cp_arbiter(arbiter)
+{
+}
+
+
+CollisionPair::CollisionPair(BodyNode* body, HitboxNode* hitbox)
+    : body(container_node(body)), hitbox(container_node(hitbox))
+{
+}
+
+
+uint8_t operator|(CollisionPhase phase, uint8_t other)
+{
+    return uint8_t(phase) | other;
+}
+
+uint8_t operator|(CollisionPhase phase, CollisionPhase other)
+{
+    return uint8_t(phase) | uint8_t(other);
+}
+
+uint8_t operator&(CollisionPhase phase, uint8_t other)
+{
+    return uint8_t(phase) & other;
+}
+
+uint8_t operator&(CollisionPhase phase, CollisionPhase other)
+{
+    return uint8_t(phase) & uint8_t(other);
+}
+
+
 void SpaceNode::initialize()
 {
     log("Creating simulation node: %p", container_node(this));
@@ -70,7 +107,114 @@ void SpaceNode::destroy()
 
 void SpaceNode::simulate(uint32_t dt)
 {
-    cpSpaceStep(this->cp_space, 1.);
+    cpSpaceStep(this->cp_space, 1.);  // TODO proper step calculation
+}
+
+template<typename R_type, CollisionPhase phase, bool non_null_nodes>
+R_type _chipmunk_collision_handler(cpArbiter* cp_arbiter, cpSpace* cp_space,
+                                 cpDataPointer data)
+{
+    auto func = static_cast<CollisionHandlerFunc*>(data);
+
+    cpBody* cp_body_a = nullptr;
+    cpBody* cp_body_b = nullptr;
+    cpShape* cp_shape_a = nullptr;
+    cpShape* cp_shape_b = nullptr;
+    cpArbiterGetBodies(cp_arbiter, &cp_body_a, &cp_body_b);
+    cpArbiterGetShapes(cp_arbiter, &cp_shape_a, &cp_shape_b);
+
+    assert(cp_body_a != nullptr);
+    assert(cp_body_b != nullptr);
+    assert(cp_shape_a != nullptr);
+    assert(cp_shape_b != nullptr);
+
+    auto body_a = static_cast<BodyNode*>(cpBodyGetUserData(cp_body_a));
+    auto body_b = static_cast<BodyNode*>(cpBodyGetUserData(cp_body_b));
+    auto hitbox_a = static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape_a));
+    auto hitbox_b = static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape_b));
+
+    if (non_null_nodes and (
+            body_a == nullptr or body_b == nullptr or
+            hitbox_a == nullptr or hitbox_b == nullptr
+    )) {
+        return R_type(0);
+    }
+
+    return (R_type)(*func)(
+        phase,
+        Arbiter(cp_arbiter),
+        CollisionPair(body_a, hitbox_a),
+        CollisionPair(body_b, hitbox_b)
+    );
+}
+
+template<typename R_type>
+R_type _chipmunk_collision_noop(cpArbiter* cp_arbiter, cpSpace* cp_space,
+                                cpDataPointer data)
+{
+    return R_type(1);
+}
+
+
+void SpaceNode::set_collision_handler(
+    CollisionTriggerId trigger_a, CollisionTriggerId trigger_b,
+    CollisionHandlerFunc handler, uint8_t phases_mask,
+    bool only_non_deleted_nodes
+)
+{
+    cpCollisionHandler* cp_handler = cpSpaceAddCollisionHandler(
+        this->cp_space, static_cast<cpCollisionType>(trigger_a),
+        static_cast<cpCollisionType>(trigger_b)
+    );
+
+
+    if (cp_handler->userData != nullptr) {
+        // TODO handle existing
+    }
+    CollisionHandlerFunc* func = new CollisionHandlerFunc();
+    *func = handler;
+    cp_handler->userData = func;
+
+    cp_handler->beginFunc = _chipmunk_collision_noop<uint8_t>;
+    cp_handler->preSolveFunc = _chipmunk_collision_noop<uint8_t>;
+    cp_handler->postSolveFunc = _chipmunk_collision_noop<void>;
+    cp_handler->separateFunc = _chipmunk_collision_noop<void>;
+
+    if (only_non_deleted_nodes) {
+        if (CollisionPhase::begin & phases_mask) {
+            cp_handler->beginFunc = \
+                &_chipmunk_collision_handler<uint8_t, CollisionPhase::begin, true>;
+        }
+        if (CollisionPhase::pre_solve & phases_mask) {
+            cp_handler->preSolveFunc = \
+                &_chipmunk_collision_handler<uint8_t, CollisionPhase::pre_solve, true>;
+        }
+        if (CollisionPhase::post_solve & phases_mask) {
+            cp_handler->postSolveFunc = \
+                &_chipmunk_collision_handler<void, CollisionPhase::post_solve, true>;
+        }
+        if (CollisionPhase::separate & phases_mask) {
+            cp_handler->separateFunc = \
+                &_chipmunk_collision_handler<void, CollisionPhase::separate, true>;
+        }
+    } else {
+        if (CollisionPhase::begin & phases_mask) {
+            cp_handler->beginFunc = \
+                &_chipmunk_collision_handler<uint8_t, CollisionPhase::begin, false>;
+        }
+        if (CollisionPhase::pre_solve & phases_mask) {
+            cp_handler->preSolveFunc = \
+                &_chipmunk_collision_handler<uint8_t, CollisionPhase::pre_solve, false>;
+        }
+        if (CollisionPhase::post_solve & phases_mask) {
+            cp_handler->postSolveFunc = \
+                &_chipmunk_collision_handler<void, CollisionPhase::post_solve, false>;
+        }
+        if (CollisionPhase::separate & phases_mask) {
+            cp_handler->separateFunc = \
+                &_chipmunk_collision_handler<void, CollisionPhase::separate, false>;
+        }
+    }
 }
 
 
@@ -240,4 +384,16 @@ void HitboxNode::attach_to_simulation()
         assert(node->parent->parent->space.cp_space != nullptr);
         cpSpaceAddShape(node->parent->parent->space.cp_space, this->cp_shape);
     }
+}
+
+void HitboxNode::set_trigger_id(CollisionTriggerId trigger_id)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    cpShapeSetCollisionType(this->cp_shape, static_cast<cpCollisionType>(trigger_id));
+}
+
+CollisionTriggerId HitboxNode::get_trigger_id()
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return static_cast<CollisionTriggerId>(cpShapeGetCollisionType(this->cp_shape));
 }

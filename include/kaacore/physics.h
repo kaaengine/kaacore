@@ -1,7 +1,50 @@
 #pragma once
 
+#include <functional>
+
 #include <glm/glm.hpp>
 #include <chipmunk/chipmunk.h>
+
+
+typedef size_t CollisionTriggerId;
+
+struct Node;
+struct BodyNode;
+struct HitboxNode;
+
+
+struct Arbiter {
+    cpArbiter* cp_arbiter;
+
+    Arbiter(cpArbiter* arbiter);
+};
+
+
+enum struct CollisionPhase {
+    begin = 1,
+    pre_solve = 2,
+    post_solve = 4,
+    separate = 8,
+    any_phase = 15
+};
+
+
+uint8_t operator|(CollisionPhase phase, uint8_t other);
+uint8_t operator|(CollisionPhase phase, CollisionPhase other);
+uint8_t operator&(CollisionPhase phase, uint8_t other);
+uint8_t operator&(CollisionPhase phase, CollisionPhase other);
+
+
+struct CollisionPair {
+    Node* body;
+    Node* hitbox;
+
+    CollisionPair(BodyNode* body, HitboxNode* hitbox);
+};
+
+
+typedef std::function<uint8_t(CollisionPhase, Arbiter, CollisionPair, CollisionPair)> \
+        CollisionHandlerFunc;
 
 
 struct SpaceNode {
@@ -12,6 +55,12 @@ struct SpaceNode {
     void destroy();
 
     void simulate(uint32_t dt);
+    void set_collision_handler(
+        CollisionTriggerId trigger_a, CollisionTriggerId trigger_b,
+        CollisionHandlerFunc handler,
+        uint8_t phases_mask=uint8_t(CollisionPhase::any_phase),
+        bool only_non_deleted_nodes=true
+    );
 };
 
 
@@ -53,4 +102,7 @@ struct HitboxNode {
     void destroy();
     void update_physics_shape();
     void attach_to_simulation();
+
+    void set_trigger_id(CollisionTriggerId trigger_id);
+    CollisionTriggerId get_trigger_id();
 };

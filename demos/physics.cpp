@@ -75,11 +75,21 @@ struct DemoScene : Scene {
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
             ball_hitbox->set_shape(Shape::Circle({0., 0.}, 0.3));
+            ball_hitbox->hitbox.set_trigger_id(120);
 
             this->balls.push_back(ball);
             container->add_child(ball);
             ball->add_child(ball_hitbox);
         }
+
+        this->container->space.set_collision_handler(120, 120,
+            [](CollisionPhase ph, Arbiter arb,
+               CollisionPair pair_a, CollisionPair pair_b) -> uint8_t
+            {
+                std::cout << "Collision! " << int(ph) << std::endl;
+                return 1;
+            }, CollisionPhase::begin | CollisionPhase::separate
+        );
     }
 
     void update(uint32_t dt) override
