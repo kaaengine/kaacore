@@ -279,8 +279,9 @@ enum class Mousecode {
 
 
 struct Event {
-    const SDL_Event sdl_event;
+    SDL_Event sdl_event;
 
+    Event();
     Event(SDL_Event sdl_event);
 
     bool is_quit() const;

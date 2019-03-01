@@ -3,6 +3,7 @@
 #include "kaacore/input.h"
 
 
+Event::Event() : sdl_event() {}
 
 Event::Event(SDL_Event sdl_event) : sdl_event(sdl_event) {}
 
