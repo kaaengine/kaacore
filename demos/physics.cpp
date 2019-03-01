@@ -34,7 +34,7 @@ struct DemoScene : Scene {
     {
         std::default_random_engine generator;
         std::normal_distribution<double> position_dist(0.0, 2.0);
-        std::normal_distribution<double> speed_dist(0.0, 0.003);
+        std::normal_distribution<double> speed_dist(0.0, 3.);
 
         this->container = new Node(NodeType::space);
         this->root_node.add_child(this->container);
@@ -90,6 +90,7 @@ struct DemoScene : Scene {
                 return 1;
             }, CollisionPhase::begin | CollisionPhase::separate
         );
+        this->container->space.set_gravity({0.0, 2.5});
     }
 
     void update(uint32_t dt) override

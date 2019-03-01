@@ -7,6 +7,10 @@
 
 
 typedef size_t CollisionTriggerId;
+typedef size_t CollisionGroup;
+typedef cpBitmask CollisionBitmask;
+
+constexpr uint32_t default_simulation_step_size = 10;
 
 struct Node;
 struct BodyNode;
@@ -61,6 +65,17 @@ struct SpaceNode {
         uint8_t phases_mask=uint8_t(CollisionPhase::any_phase),
         bool only_non_deleted_nodes=true
     );
+
+    void set_gravity(const glm::dvec2 gravity);
+    glm::dvec2 get_gravity() const;
+
+    void set_damping(const double damping);
+    double get_damping() const;
+
+    void set_sleeping_threshold(const double threshold);
+    double get_sleeping_threshold() const;
+
+    bool is_locked() const;
 };
 
 
@@ -87,11 +102,27 @@ struct BodyNode {
     void set_moment(const double i);
     double get_moment() const;
 
+    void override_simulation_position();
+    void sync_simulation_position() const;
+
+    void override_simulation_rotation();
+    void sync_simulation_rotation() const;
+
     void set_velocity(const glm::dvec2 velocity);
     glm::dvec2 get_velocity() const;
 
-    void override_simulation_position();
-    void sync_simulation_position();
+    void set_force(const glm::dvec2 force);
+    glm::dvec2 get_force() const;
+
+    void set_torque(const double torque);
+    double get_torque() const;
+
+    void set_angular_velocity(const double angular_velocity);
+    double get_angular_velocity() const;
+
+    bool is_sleeping() const;
+    void sleep();
+    void activate();
 };
 
 
@@ -103,6 +134,15 @@ struct HitboxNode {
     void update_physics_shape();
     void attach_to_simulation();
 
-    void set_trigger_id(CollisionTriggerId trigger_id);
-    CollisionTriggerId get_trigger_id();
+    void set_trigger_id(const CollisionTriggerId trigger_id);
+    CollisionTriggerId get_trigger_id() const;
+
+    void set_group(const CollisionGroup group);
+    CollisionGroup get_group() const;
+
+    void set_mask(const CollisionBitmask mask);
+    CollisionBitmask get_mask() const;
+
+    void set_collision_mask(const CollisionBitmask mask);
+    CollisionBitmask get_collision_mask() const;
 };

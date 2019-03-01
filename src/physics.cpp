@@ -12,6 +12,10 @@
 
 // assertion helpers
 
+#define ASSERT_VALID_SPACE_NODE() \
+    assert(container_node(this)->type == NodeType::space); \
+    assert(this->cp_space != nullptr);
+
 #define ASSERT_VALID_BODY_NODE() \
     assert(container_node(this)->type == NodeType::body); \
     assert(this->cp_body != nullptr);
@@ -97,6 +101,7 @@ void SpaceNode::initialize()
     log("Creating simulation node: %p", container_node(this));
     this->cp_space = cpSpaceNew();
     cpSpaceSetUserData(this->cp_space, container_node(this));
+    this->time_acc = 0;
 }
 
 void SpaceNode::destroy()
@@ -105,9 +110,15 @@ void SpaceNode::destroy()
     // TODO destroy collision handlers?
 }
 
-void SpaceNode::simulate(uint32_t dt)
+void SpaceNode::simulate(const uint32_t dt)
 {
-    cpSpaceStep(this->cp_space, 1.);  // TODO proper step calculation
+    ASSERT_VALID_SPACE_NODE();
+    uint32_t time_left = dt + this->time_acc;
+    while (time_left > default_simulation_step_size) {
+        cpSpaceStep(this->cp_space, 0.001 * default_simulation_step_size);
+        time_left -= default_simulation_step_size;
+    }
+    this->time_acc = time_left;
 }
 
 template<typename R_type, CollisionPhase phase, bool non_null_nodes>
@@ -217,6 +228,48 @@ void SpaceNode::set_collision_handler(
     }
 }
 
+void SpaceNode::set_gravity(const glm::dvec2 gravity)
+{
+    ASSERT_VALID_SPACE_NODE();
+    cpSpaceSetGravity(this->cp_space, convert_vector(gravity));
+}
+
+glm::dvec2 SpaceNode::get_gravity() const
+{
+    ASSERT_VALID_SPACE_NODE();
+    return convert_vector(cpSpaceGetGravity(this->cp_space));
+}
+
+void SpaceNode::set_damping(const double damping)
+{
+    ASSERT_VALID_SPACE_NODE();
+    cpSpaceSetDamping(this->cp_space, damping);
+}
+
+double SpaceNode::get_damping() const
+{
+    ASSERT_VALID_SPACE_NODE();
+    return cpSpaceGetDamping(this->cp_space);
+}
+
+void SpaceNode::set_sleeping_threshold(const double threshold)
+{
+    ASSERT_VALID_SPACE_NODE();
+    cpSpaceSetSleepTimeThreshold(this->cp_space, threshold);
+}
+
+double SpaceNode::get_sleeping_threshold() const
+{
+    ASSERT_VALID_SPACE_NODE();
+    return cpSpaceGetSleepTimeThreshold(this->cp_space);
+}
+
+bool SpaceNode::is_locked() const
+{
+    ASSERT_VALID_SPACE_NODE();
+    return cpSpaceIsLocked(this->cp_space);
+}
+
 
 void BodyNode::initialize()
 {
@@ -252,10 +305,10 @@ void BodyNode::set_body_type(const BodyNodeType type)
 
     if (type == BodyNodeType::dynamic) {
         if (this->get_mass() == 0.) {
-            this->set_mass(10.);
+            this->set_mass(20.);
         }
         if (this->get_moment() == 0.) {
-            this->set_moment(1000.);
+            this->set_moment(10000.);
         }
     }
 }
@@ -289,6 +342,33 @@ double BodyNode::get_moment() const
     return cpBodyGetMoment(this->cp_body);
 }
 
+void BodyNode::override_simulation_position()
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetPosition(this->cp_body,
+                      convert_vector(container_node(this)->position));
+}
+
+void BodyNode::sync_simulation_position() const
+{
+    ASSERT_VALID_BODY_NODE();
+    container_node(this)->position = \
+        convert_vector(cpBodyGetPosition(this->cp_body));
+}
+
+
+void BodyNode::override_simulation_rotation()
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetAngle(this->cp_body, container_node(this)->rotation);
+}
+
+void BodyNode::sync_simulation_rotation() const
+{
+    ASSERT_VALID_BODY_NODE();
+    container_node(this)->rotation = cpBodyGetAngle(this->cp_body);
+}
+
 void BodyNode::set_velocity(const glm::dvec2 velocity)
 {
     ASSERT_VALID_BODY_NODE();
@@ -301,20 +381,58 @@ glm::dvec2 BodyNode::get_velocity() const
     return convert_vector(cpBodyGetVelocity(this->cp_body));
 }
 
-void BodyNode::override_simulation_position()
+void BodyNode::set_force(const glm::dvec2 force)
 {
-    ASSERT_VALID_BODY_NODE();
-    cpBodySetPosition(this->cp_body,
-                      convert_vector(container_node(this)->position));
+    cpBodySetForce(this->cp_body, convert_vector(force));
 }
 
-void BodyNode::sync_simulation_position()
+glm::dvec2 BodyNode::get_force() const
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->position = \
-        convert_vector(cpBodyGetPosition(this->cp_body));
+    return convert_vector(cpBodyGetForce(this->cp_body));
 }
 
+void BodyNode::set_torque(const double torque)
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetTorque(this->cp_body, torque);
+}
+
+double BodyNode::get_torque() const
+{
+    ASSERT_VALID_BODY_NODE();
+    return cpBodyGetTorque(this->cp_body);
+}
+
+void BodyNode::set_angular_velocity(const double angular_velocity)
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetAngularVelocity(this->cp_body, angular_velocity);
+}
+
+double BodyNode::get_angular_velocity() const
+{
+    ASSERT_VALID_BODY_NODE();
+    return cpBodyGetAngularVelocity(this->cp_body);
+}
+
+bool BodyNode::is_sleeping() const
+{
+    ASSERT_VALID_BODY_NODE();
+    return cpBodyIsSleeping(this->cp_body);
+}
+
+void BodyNode::sleep()
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySleep(this->cp_body);
+}
+
+void BodyNode::activate()
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodyActivate(this->cp_body);
+}
 
 void HitboxNode::initialize()
 {
@@ -386,14 +504,58 @@ void HitboxNode::attach_to_simulation()
     }
 }
 
-void HitboxNode::set_trigger_id(CollisionTriggerId trigger_id)
+void HitboxNode::set_trigger_id(const CollisionTriggerId trigger_id)
 {
     ASSERT_VALID_HITBOX_NODE();
     cpShapeSetCollisionType(this->cp_shape, static_cast<cpCollisionType>(trigger_id));
 }
 
-CollisionTriggerId HitboxNode::get_trigger_id()
+CollisionTriggerId HitboxNode::get_trigger_id() const
 {
     ASSERT_VALID_HITBOX_NODE();
     return static_cast<CollisionTriggerId>(cpShapeGetCollisionType(this->cp_shape));
+}
+
+void HitboxNode::set_group(const CollisionGroup group)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    auto filter = cpShapeGetFilter(this->cp_shape);
+    filter.group = group;
+    cpShapeSetFilter(this->cp_shape, filter);
+}
+
+CollisionGroup HitboxNode::get_group() const
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return cpShapeGetFilter(this->cp_shape).group;
+}
+
+
+void HitboxNode::set_mask(const CollisionBitmask mask)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    auto filter = cpShapeGetFilter(this->cp_shape);
+    filter.categories = mask;
+    cpShapeSetFilter(this->cp_shape, filter);
+}
+
+CollisionBitmask HitboxNode::get_mask() const
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return cpShapeGetFilter(this->cp_shape).categories;
+}
+
+
+void HitboxNode::set_collision_mask(const CollisionBitmask mask)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    auto filter = cpShapeGetFilter(this->cp_shape);
+    filter.mask = mask;
+    cpShapeSetFilter(this->cp_shape, filter);
+}
+
+CollisionBitmask HitboxNode::get_collision_mask() const
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return cpShapeGetFilter(this->cp_shape).mask;
 }
