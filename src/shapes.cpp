@@ -1,6 +1,6 @@
 #include <glm/glm.hpp>
 
-#include "kaacore/shape.h"
+#include "kaacore/shapes.h"
 
 
 namespace kaacore {

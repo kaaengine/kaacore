@@ -9,7 +9,7 @@
 #include "kaacore/log.h"
 #include "kaacore/engine.h"
 #include "kaacore/renderer.h"
-#include "kaacore/scene.h"
+#include "kaacore/scenes.h"
 
 
 namespace kaacore {

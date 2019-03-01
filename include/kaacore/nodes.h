@@ -6,7 +6,7 @@
 #include <bgfx/bgfx.h>
 
 #include "kaacore/renderer.h"
-#include "kaacore/shape.h"
+#include "kaacore/shapes.h"
 #include "kaacore/physics.h"
 #include "kaacore/sprites.h"
 

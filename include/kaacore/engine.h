@@ -11,7 +11,7 @@
 #include <bgfx/platform.h>
 
 #include "kaacore/renderer.h"
-#include "kaacore/scene.h"
+#include "kaacore/scenes.h"
 #include "kaacore/input.h"
 
 

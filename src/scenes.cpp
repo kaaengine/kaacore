@@ -10,9 +10,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "kaacore/engine.h"
-
-#include "kaacore/scene.h"
 #include "kaacore/log.h"
+
+#include "kaacore/scenes.h"
 
 
 namespace kaacore {

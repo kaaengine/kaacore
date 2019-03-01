@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 #include "kaacore/engine.h"
-#include "kaacore/scene.h"
+#include "kaacore/scenes.h"
 #include "kaacore/resources.h"
 #include "kaacore/texture_loader.h"
 #include "kaacore/nodes.h"

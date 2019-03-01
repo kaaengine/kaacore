@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/engine.h"
-#include "kaacore/scene.h"
+#include "kaacore/scenes.h"
 #include "kaacore/log.h"
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"

@@ -8,8 +8,8 @@ set(SRC_CXX_FILES
     renderer.cpp
     texture_loader.cpp
     input.cpp
-    scene.cpp
-    shape.cpp
+    scenes.cpp
+    shapes.cpp
     physics.cpp
     resources.cpp
     sprites.cpp
@@ -23,8 +23,8 @@ set(SRC_H_FILES
     ../include/kaacore/renderer.h
     ../include/kaacore/texture_loader.h
     ../include/kaacore/input.h
-    ../include/kaacore/scene.h
-    ../include/kaacore/shape.h
+    ../include/kaacore/scenes.h
+    ../include/kaacore/shapes.h
     ../include/kaacore/physics.h
     ../include/kaacore/resources.h
     ../include/kaacore/sprites.h
