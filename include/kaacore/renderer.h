@@ -10,6 +10,8 @@
 #include "kaacore/texture_loader.h"
 
 
+namespace kaacore {
+
 typedef uint16_t VertexIndex;
 
 struct StandardVertexData {
@@ -58,3 +60,5 @@ struct Renderer {
                          std::vector<VertexIndex> indices,
                          bgfx::TextureHandle texture);
 };
+
+} // namespace kaacore

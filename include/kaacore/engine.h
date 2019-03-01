@@ -15,6 +15,8 @@
 #include "kaacore/input.h"
 
 
+namespace kaacore {
+
 struct Engine {
     SDL_Window* window;
     bgfx::PlatformData platform_data;
@@ -39,6 +41,8 @@ extern Engine* engine;
 
 
 inline Engine* get_engine() {
-    assert(::engine != nullptr);
-    return ::engine;
+    assert(engine != nullptr);
+    return engine;
 }
+
+} // namespace kaacore

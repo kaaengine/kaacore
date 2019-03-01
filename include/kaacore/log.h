@@ -5,6 +5,8 @@
 #include <SDL.h>
 
 
+namespace kaacore {
+
 enum class LogLevel {
     debug = SDL_LOG_PRIORITY_DEBUG,
     info = SDL_LOG_PRIORITY_INFO,
@@ -29,3 +31,5 @@ void log(const char* msg, ...) {
     log_sdl_va(log_level, msg, va);
     va_end(va);
 }
+
+} // namespace kaacore

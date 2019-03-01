@@ -12,11 +12,13 @@
 #include "kaacore/scene.h"
 
 
+namespace kaacore {
+
 Engine* engine;
 
 
 Engine::Engine() {
-    assert(::engine == nullptr);
+    assert(engine == nullptr);
 
     log<LogLevel::info>("Initializing KAAcore engine");
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -58,11 +60,11 @@ Engine::Engine() {
     this->renderer = std::make_unique<Renderer>();
     this->input_manager = std::make_unique<InputManager>();
 
-    ::engine = this;
+    engine = this;
 }
 
 Engine::~Engine() {
-    assert(::engine != nullptr);
+    assert(engine != nullptr);
 
     log<LogLevel::info>("Shutting down KAAcore engine");
 
@@ -72,7 +74,7 @@ Engine::~Engine() {
     SDL_DestroyWindow(this->window);
     SDL_Quit();
 
-    ::engine = nullptr;
+    engine = nullptr;
 }
 
 void Engine::attach_scene(Scene* scene)
@@ -113,3 +115,5 @@ void Engine::_pump_events()
         this->input_manager->push_event(sdl_event);
     }
 }
+
+} // namespace kaacore

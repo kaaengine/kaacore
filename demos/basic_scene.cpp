@@ -10,6 +10,8 @@
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"
 
+using namespace kaacore;
+
 
 struct DemoScene : Scene {
     Node* node1;

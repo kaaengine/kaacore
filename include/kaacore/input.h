@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 
 
+namespace kaacore {
+
 enum class Keycode {
     unknown = SDLK_UNKNOWN,
     return_ = SDLK_RETURN,
@@ -307,3 +309,5 @@ struct InputManager {
     bool is_released(Mousecode kc);
     glm::dvec2 get_mouse_position();
 };
+
+} // namespace kaacore

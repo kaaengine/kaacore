@@ -8,6 +8,8 @@
 #include "kaacore/input.h"
 
 
+namespace kaacore {
+
 struct Camera {
     glm::dvec2 position = {0., 0.,};
     double rotation = 0.;
@@ -38,3 +40,5 @@ struct Scene {
 
     const std::vector<Event>& get_events() const;
 };
+
+} // namespace kaacore

@@ -7,6 +7,8 @@
 #include "kaacore/renderer.h"
 
 
+namespace kaacore {
+
 enum struct ShapeType {
     none = 0,
     segment,
@@ -40,3 +42,5 @@ struct Shape {
     static Shape Freeform(const std::vector<VertexIndex>& indices,
                           const std::vector<StandardVertexData>& vertices);
 };
+
+} // namespace kaacore

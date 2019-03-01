@@ -11,6 +11,8 @@
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"
 
+using namespace kaacore;
+
 
 struct DemoScene : Scene {
     double box_size = 4.;

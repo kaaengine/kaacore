@@ -11,6 +11,7 @@
 #include "kaacore/texture_loader.h"
 
 using namespace std;
+using namespace kaacore;
 
 
 extern "C" int main(int argc, char *argv[])

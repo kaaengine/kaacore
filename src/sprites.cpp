@@ -4,6 +4,8 @@
 #include "kaacore/log.h"
 
 
+namespace kaacore {
+
 Sprite::Sprite()
     : texture(), origin(0, 0), dimensions(0, 0) {}
 
@@ -85,3 +87,5 @@ void Sprite::animation_step(uint16_t step_size)
         }
     }
 }
+
+} // namespace kaacore

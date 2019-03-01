@@ -8,6 +8,8 @@
 #include "kaacore/nodes.h"
 #include "kaacore/log.h"
 
+using namespace kaacore;
+
 using std::atoi;
 
 

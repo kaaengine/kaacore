@@ -11,6 +11,8 @@
 #include "kaacore/embedded_data.h"
 
 
+namespace kaacore {
+
 template<class T, size_t N>
 constexpr size_t array_size(T (&)[N]) { return N; }
 
@@ -149,3 +151,5 @@ void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
 
     bgfx::submit(0, this->default_program, false);
 }
+
+} // namespace kaacore

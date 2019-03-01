@@ -3,6 +3,8 @@
 #include "kaacore/shape.h"
 
 
+namespace kaacore {
+
 Shape Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 {
     const double radius = 0.01;
@@ -72,3 +74,5 @@ Shape Shape::Freeform(const std::vector<VertexIndex>& indices,
 {
     return Shape(ShapeType::freeform, {}, 0., indices, vertices);
 }
+
+} // namespace kaacore

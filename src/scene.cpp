@@ -15,6 +15,8 @@
 #include "kaacore/log.h"
 
 
+namespace kaacore {
+
 Scene::Scene()
 {
     this->root_node.scene = this;
@@ -116,3 +118,5 @@ void Camera::refresh()
         this->size.y / 2, -this->size.y / 2
     );
 }
+
+} // namespace kaacore

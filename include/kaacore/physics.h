@@ -6,6 +6,8 @@
 #include <chipmunk/chipmunk.h>
 
 
+namespace kaacore {
+
 typedef size_t CollisionTriggerId;
 typedef size_t CollisionGroup;
 typedef cpBitmask CollisionBitmask;
@@ -146,3 +148,5 @@ struct HitboxNode {
     void set_collision_mask(const CollisionBitmask mask);
     CollisionBitmask get_collision_mask() const;
 };
+
+} // namespace kaacore

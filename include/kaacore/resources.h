@@ -3,6 +3,8 @@
 #include <memory>
 
 
+namespace kaacore {
+
 template <typename T>
 struct Resource {
     std::shared_ptr<T> res_ptr;
@@ -20,3 +22,5 @@ struct Resource {
         return this->res_ptr.get();
     }
 };
+
+} // namespace kaacore

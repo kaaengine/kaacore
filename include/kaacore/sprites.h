@@ -6,6 +6,8 @@
 #include "kaacore/texture_loader.h"
 
 
+namespace kaacore {
+
 struct Sprite {
     Resource<Image> texture;
     // we assume that image contains it's width and height
@@ -38,3 +40,5 @@ struct Sprite {
     void animation_step(uint16_t step_size);
     void animation_time_step(uint16_t time_step_size);
 };
+
+} // namespace kaacore

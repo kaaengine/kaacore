@@ -11,6 +11,8 @@
 #include "kaacore/sprites.h"
 
 
+namespace kaacore {
+
 enum struct NodeType {
     basic = 1,
     space = 2,
@@ -77,3 +79,5 @@ struct Node {
     void set_sprite(const Sprite& sprite);
     glm::dvec2 get_absolute_position();
 };
+
+} // namespace kaacore

@@ -3,6 +3,8 @@
 #include "kaacore/input.h"
 
 
+namespace kaacore {
+
 Event::Event() : sdl_event() {}
 
 Event::Event(SDL_Event sdl_event) : sdl_event(sdl_event) {}
@@ -58,3 +60,5 @@ void InputManager::clear_events()
 {
     this->events_queue.clear();
 }
+
+} // namespace kaacore

@@ -11,6 +11,8 @@
 #include "kaacore/texture_loader.h"
 
 
+namespace kaacore {
+
 static bx::DefaultAllocator texture_image_allocator;
 
 
@@ -124,3 +126,5 @@ glm::uvec2 Image::get_dimensions()
     assert(this->image_container != nullptr);
     return {this->image_container->m_width, this->image_container->m_height};
 }
+
+} // namespace kaacore

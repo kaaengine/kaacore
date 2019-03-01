@@ -10,6 +10,8 @@
 #include "kaacore/physics.h"
 
 
+namespace kaacore {
+
 // assertion helpers
 
 #define ASSERT_VALID_SPACE_NODE() \
@@ -559,3 +561,5 @@ CollisionBitmask HitboxNode::get_collision_mask() const
     ASSERT_VALID_HITBOX_NODE();
     return cpShapeGetFilter(this->cp_shape).mask;
 }
+
+} // namespace kaacore

@@ -10,6 +10,8 @@
 #include "kaacore/log.h"
 
 
+namespace kaacore {
+
 Node::Node(NodeType type) : type(type)
 {
     if (type == NodeType::space) {
@@ -157,3 +159,5 @@ MyForeignWrapper::MyForeignWrapper() {
 MyForeignWrapper::~MyForeignWrapper() {
     std::cout << "MyForeignWrapper dtor!" << std::endl;
 }
+
+} // namespace kaacore
