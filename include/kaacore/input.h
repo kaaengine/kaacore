@@ -303,11 +303,11 @@ struct InputManager {
     void push_event(SDL_Event sdl_event);
     void clear_events();
 
-    bool is_pressed(Keycode kc);
-    bool is_pressed(Mousecode kc);
-    bool is_released(Keycode kc);
-    bool is_released(Mousecode kc);
-    glm::dvec2 get_mouse_position();
+    bool is_pressed(Keycode kc) const;
+    bool is_pressed(Mousecode mc) const;
+    bool is_released(Keycode kc) const;
+    bool is_released(Mousecode mc) const;
+    glm::dvec2 get_mouse_position() const;
 };
 
 } // namespace kaacore
