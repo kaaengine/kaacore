@@ -93,6 +93,7 @@ struct DemoScene : Scene {
             }, CollisionPhase::begin | CollisionPhase::separate
         );
         this->container->space.set_gravity({0.0, 2.5});
+        this->box->body.set_angular_velocity(0.05);
     }
 
     void update(uint32_t dt) override

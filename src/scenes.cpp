@@ -43,6 +43,7 @@ void Scene::process_nodes(uint32_t dt)
             node->space.simulate(dt);
         } else if (node->type == NodeType::body) {
             node->body.sync_simulation_position();
+            node->body.sync_simulation_rotation();
         }
 
         if (node->sprite and node->sprite.auto_animate) {
