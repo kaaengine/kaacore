@@ -65,14 +65,16 @@ inline constexpr Node* container_node(const HitboxNode* hitbox)
 }
 
 
-Arbiter::Arbiter(cpArbiter* arbiter)
-    : cp_arbiter(arbiter)
+Arbiter::Arbiter(CollisionPhase phase, SpaceNode* space_phys,
+                 cpArbiter* cp_arbiter)
+    : phase(phase), cp_arbiter(cp_arbiter),
+      space(container_node(space_phys))
 {
 }
 
 
 CollisionPair::CollisionPair(BodyNode* body, HitboxNode* hitbox)
-    : body(container_node(body)), hitbox(container_node(hitbox))
+    : body_node(container_node(body)), hitbox_node(container_node(hitbox))
 {
 }
 
@@ -102,7 +104,7 @@ void SpaceNode::initialize()
 {
     log("Creating simulation node: %p", container_node(this));
     this->cp_space = cpSpaceNew();
-    cpSpaceSetUserData(this->cp_space, container_node(this));
+    cpSpaceSetUserData(this->cp_space, this);
     this->time_acc = 0;
 }
 
@@ -146,6 +148,8 @@ R_type _chipmunk_collision_handler(cpArbiter* cp_arbiter, cpSpace* cp_space,
     auto hitbox_a = static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape_a));
     auto hitbox_b = static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape_b));
 
+    auto space_phys = static_cast<SpaceNode*>(cpSpaceGetUserData(cp_space));
+
     if (non_null_nodes and (
             body_a == nullptr or body_b == nullptr or
             hitbox_a == nullptr or hitbox_b == nullptr
@@ -154,8 +158,7 @@ R_type _chipmunk_collision_handler(cpArbiter* cp_arbiter, cpSpace* cp_space,
     }
 
     return (R_type)(*func)(
-        phase,
-        Arbiter(cp_arbiter),
+        Arbiter(phase, space_phys, cp_arbiter),
         CollisionPair(body_a, hitbox_a),
         CollisionPair(body_b, hitbox_b)
     );
@@ -276,13 +279,31 @@ bool SpaceNode::is_locked() const
 void BodyNode::initialize()
 {
     this->cp_body = cpBodyNewKinematic();
-    cpBodySetUserData(this->cp_body, container_node(this));
+    cpBodySetUserData(this->cp_body, this);
+}
+
+void _body_node_destroy(cpSpace* cp_space, void* cp_body_obj,
+                        void* data)
+{
+    auto cp_body = static_cast<cpBody*>(cp_body_obj);
+    if (cp_space != nullptr) {
+        cpSpaceRemoveBody(cp_space, cp_body);
+    }
+    cpBodyFree(cp_body);
 }
 
 void BodyNode::destroy()
 {
     if (this->cp_body != nullptr) {
-        // TODO destroy body or delegate after cpSpace step
+        cpBodySetUserData(this->cp_body, nullptr);
+        cpSpace* cp_space = cpBodyGetSpace(this->cp_body);
+        if (cp_space != nullptr and cpSpaceIsLocked(cp_space)) {
+            cpSpaceAddPostStepCallback(
+                cp_space, _body_node_destroy, this->cp_body, nullptr
+            );
+        } else {
+            _body_node_destroy(cp_space, this->cp_body, nullptr);
+        }
     }
 }
 
@@ -440,11 +461,28 @@ void HitboxNode::initialize()
 {
 }
 
+void _hitbox_node_destroy(cpSpace* cp_space, void* cp_shape_obj,
+                        void* data)
+{
+    auto cp_shape = static_cast<cpShape*>(cp_shape_obj);
+    if (cp_space != nullptr) {
+        cpSpaceRemoveShape(cp_space, cp_shape);
+    }
+    cpShapeFree(cp_shape);
+}
 
 void HitboxNode::destroy()
 {
     if (this->cp_shape != nullptr) {
-        // TODO destroy shape or delegate after cpSpace step
+        cpShapeSetUserData(this->cp_shape, nullptr);
+        cpSpace* cp_space = cpShapeGetSpace(this->cp_shape);
+        if (cp_space != nullptr and cpSpaceIsLocked(cp_space)) {
+            cpSpaceAddPostStepCallback(
+                cp_space, _hitbox_node_destroy, this->cp_shape, nullptr
+            );
+        } else {
+            _hitbox_node_destroy(cp_space, this->cp_shape, nullptr);
+        }
     }
 }
 
@@ -478,7 +516,7 @@ void HitboxNode::update_physics_shape()
         );
     }
 
-    cpShapeSetUserData(this->cp_shape, node);
+    cpShapeSetUserData(this->cp_shape, this);
 
     // XXX default elasticity?
     cpShapeSetElasticity(this->cp_shape, 0.95);
@@ -531,7 +569,6 @@ CollisionGroup HitboxNode::get_group() const
     ASSERT_VALID_HITBOX_NODE();
     return cpShapeGetFilter(this->cp_shape).group;
 }
-
 
 void HitboxNode::set_mask(const CollisionBitmask mask)
 {

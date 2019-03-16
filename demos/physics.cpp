@@ -85,10 +85,13 @@ struct DemoScene : Scene {
         }
 
         this->container->space.set_collision_handler(120, 120,
-            [](CollisionPhase ph, Arbiter arb,
-               CollisionPair pair_a, CollisionPair pair_b) -> uint8_t
+            [](const Arbiter arbiter,
+               const CollisionPair pair_a, const CollisionPair pair_b) -> uint8_t
             {
-                std::cout << "Collision! " << int(ph) << std::endl;
+                std::cout << "Collision! " << int(arbiter.phase) << std::endl;
+                pair_a.body_node->body.set_velocity({-0.8, -2.5});
+                // pair_b.body_node->body.set_velocity({0.8, -2.5});
+                delete pair_b.body_node;
                 return 1;
             }, CollisionPhase::begin | CollisionPhase::separate
         );

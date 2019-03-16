@@ -15,15 +15,9 @@ typedef cpBitmask CollisionBitmask;
 constexpr uint32_t default_simulation_step_size = 10;
 
 struct Node;
+struct SpaceNode;
 struct BodyNode;
 struct HitboxNode;
-
-
-struct Arbiter {
-    cpArbiter* cp_arbiter;
-
-    Arbiter(cpArbiter* arbiter);
-};
 
 
 enum struct CollisionPhase {
@@ -35,6 +29,16 @@ enum struct CollisionPhase {
 };
 
 
+struct Arbiter {
+    cpArbiter* cp_arbiter;
+    CollisionPhase phase;
+    Node* space;
+
+    Arbiter(CollisionPhase phase, SpaceNode* space_phys,
+            cpArbiter* cp_arbiter);
+};
+
+
 uint8_t operator|(CollisionPhase phase, uint8_t other);
 uint8_t operator|(CollisionPhase phase, CollisionPhase other);
 uint8_t operator&(CollisionPhase phase, uint8_t other);
@@ -42,14 +46,15 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other);
 
 
 struct CollisionPair {
-    Node* body;
-    Node* hitbox;
+    Node* body_node;
+    Node* hitbox_node;
 
     CollisionPair(BodyNode* body, HitboxNode* hitbox);
 };
 
 
-typedef std::function<uint8_t(CollisionPhase, Arbiter, CollisionPair, CollisionPair)> \
+typedef std::function<uint8_t(const Arbiter,
+                              const CollisionPair, const CollisionPair)> \
         CollisionHandlerFunc;
 
 
