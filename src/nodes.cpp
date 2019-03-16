@@ -6,6 +6,7 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/nodes.h"
+#include "kaacore/shapes.h"
 #include "kaacore/scenes.h"
 #include "kaacore/log.h"
 
@@ -140,6 +141,9 @@ void Node::set_shape(const Shape& shape)
 void Node::set_sprite(const Sprite& sprite)
 {
     this->sprite = sprite;
+    if (!this->shape) {
+        this->set_shape(Shape::Box(sprite.get_size()));
+    }
 }
 
 glm::dvec2 Node::get_absolute_position()

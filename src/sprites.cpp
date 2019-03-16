@@ -88,4 +88,13 @@ void Sprite::animation_step(uint16_t step_size)
     }
 }
 
+glm::dvec2 Sprite::get_size() const
+{
+    if (this->frame_dimensions != glm::dvec2(0., 0.)) {
+        return this->frame_dimensions;
+    } else {
+        return this->dimensions;
+    }
+}
+
 } // namespace kaacore

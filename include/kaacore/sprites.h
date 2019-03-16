@@ -39,6 +39,8 @@ struct Sprite {
     std::pair<glm::dvec2, glm::dvec2> get_display_rect() const;
     void animation_step(uint16_t step_size);
     void animation_time_step(uint16_t time_step_size);
+
+    glm::dvec2 get_size() const;
 };
 
 } // namespace kaacore

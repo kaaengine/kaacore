@@ -35,6 +35,8 @@ struct Shape {
     : type(type), points(points), radius(radius),
       indices(indices), vertices(vertices) {};
 
+    inline operator bool() const {return this->type != ShapeType::none;}
+
     static Shape Segment(const glm::dvec2 a, const glm::dvec2 b);
     static Shape Circle(const glm::dvec2 center, const double radius);
     static Shape Box(const glm::dvec2 size);
