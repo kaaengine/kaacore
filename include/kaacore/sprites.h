@@ -32,10 +32,13 @@ struct Sprite {
     Sprite();
     Sprite(Resource<Image> texture);
 
+    static Sprite load(const char* path, uint64_t flags=BGFX_SAMPLER_NONE);
+
     inline bool has_texture() const {return bool(this->texture);}
     inline operator bool() const {return this->has_texture();}
 
     Sprite crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const;
+    Sprite crop(glm::dvec2 new_origin) const;
     std::pair<glm::dvec2, glm::dvec2> get_display_rect() const;
     void animation_step(uint16_t step_size);
     void animation_time_step(uint16_t time_step_size);

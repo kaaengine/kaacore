@@ -12,12 +12,31 @@ Sprite::Sprite()
 Sprite::Sprite(Resource<Image> texture)
     : texture(texture), origin(0, 0), dimensions(texture->get_dimensions()) {}
 
+Sprite Sprite::load(const char* path, uint64_t flags)
+{
+    return Sprite(Image::load(path, flags));
+}
+
 Sprite Sprite::crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const
 {
+    assert(new_origin.x < this->dimensions.x and
+           new_origin.y < this->dimensions.y);
+    assert(new_dimensions.x < this->dimensions.x - new_origin.x and
+           new_dimensions.y < this->dimensions.y - new_origin.y);
     Sprite new_sprite(*this);
-    new_sprite.origin = new_origin;
+    new_sprite.origin = this->origin + new_origin;
+    if (new_dimensions == glm::dvec2(0., 0.)) {
+        new_sprite.dimensions = this->dimensions - new_origin;
+    } else {
+        new_sprite.dimensions = new_dimensions;
+    }
     new_sprite.dimensions = new_dimensions;
     return new_sprite;
+}
+
+Sprite Sprite::crop(glm::dvec2 new_origin) const
+{
+    return this->crop(new_origin, glm::dvec2(0., 0.));
 }
 
 std::pair<glm::dvec2, glm::dvec2> Sprite::get_display_rect() const
