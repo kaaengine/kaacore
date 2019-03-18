@@ -123,9 +123,9 @@ void Renderer::end_frame()
 }
 
 
-void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
-                               std::vector<VertexIndex> indices,
-                               bgfx::TextureHandle texture)
+void Renderer::render_vertices(const std::vector<StandardVertexData>& vertices,
+                               const std::vector<VertexIndex>& indices,
+                               const bgfx::TextureHandle texture) const
 {
     bgfx::TransientVertexBuffer vertices_buffer;
     bgfx::TransientIndexBuffer indices_buffer;

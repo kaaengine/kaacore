@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <set>
 
 #include <glm/glm.hpp>
 
 #include "kaacore/nodes.h"
+#include "kaacore/physics.h"
 #include "kaacore/input.h"
 
 
@@ -30,6 +32,8 @@ struct Scene {
 
     uint64_t time = 0;
 
+    std::set<Node*> simulations_registry;
+
     Scene();
     virtual ~Scene() = default;
 
@@ -37,6 +41,8 @@ struct Scene {
     virtual void update(uint32_t dt);
     virtual void process_nodes(uint32_t dt);
     // TODO on_enter, on_exit?
+
+    void register_simulation(Node* node);
 
     const std::vector<Event>& get_events() const;
 };

@@ -56,9 +56,9 @@ struct Renderer {
     void begin_frame();
     void end_frame();
 
-    void render_vertices(std::vector<StandardVertexData> vertices,
-                         std::vector<VertexIndex> indices,
-                         bgfx::TextureHandle texture);
+    void render_vertices(const std::vector<StandardVertexData>& vertices,
+                         const std::vector<VertexIndex>& indices,
+                         const bgfx::TextureHandle texture) const;
 };
 
 } // namespace kaacore

@@ -28,6 +28,12 @@ void Scene::process_nodes(uint32_t dt)
     static std::deque<Node*> processing_queue;
     static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
 
+    // process simulations before everything else, so collision callbacks
+    // won't break nodes tree during processing
+    for (Node* space_node : this->simulations_registry) {
+        space_node->space.simulate(dt);
+    }
+
     processing_queue.clear();
     rendering_queue.clear();
     processing_queue.push_back(&this->root_node);
@@ -39,9 +45,7 @@ void Scene::process_nodes(uint32_t dt)
             processing_queue.push_back(child_node);
         }
 
-        if (node->type == NodeType::space) {
-            node->space.simulate(dt);
-        } else if (node->type == NodeType::body) {
+        if (node->type == NodeType::body) {
             node->body.sync_simulation_position();
             node->body.sync_simulation_rotation();
         }
@@ -90,6 +94,14 @@ void Scene::update(uint32_t dt)
 {
 }
 
+void Scene::register_simulation(Node* node)
+{
+    assert(node->type == NodeType::space);
+    assert(node->space.cp_space != nullptr);
+    if (this->simulations_registry.find(node) == this->simulations_registry.end()) {
+        this->simulations_registry.insert(node);
+    }
+}
 
 const std::vector<Event>& Scene::get_events() const
 {

@@ -62,7 +62,9 @@ void Node::add_child(Node* child_node)
     initialize_node = [&initialize_node, this](Node* n)
     {
         n->scene = this->scene;
-        if (n->type == NodeType::body) {
+        if (n->type == NodeType::space) {
+            n->scene->register_simulation(n);
+        } else if (n->type == NodeType::body) {
             n->body.attach_to_simulation();
         } else if (n->type == NodeType::hitbox) {
             n->hitbox.attach_to_simulation();
