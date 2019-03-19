@@ -32,7 +32,7 @@ Shape Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
     return Shape(ShapeType::segment, points, radius, indices, vertices);
 }
 
-Shape Shape::Circle(const glm::dvec2 center, const double radius)
+Shape Shape::Circle(const double radius, const glm::dvec2 center)
 {
     const std::vector<glm::dvec2> points = {center};
 
@@ -46,6 +46,11 @@ Shape Shape::Circle(const glm::dvec2 center, const double radius)
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
     return Shape(ShapeType::circle, points, radius, indices, vertices);
+}
+
+Shape Shape::Circle(const double radius)
+{
+    return Shape::Circle(radius, glm::dvec2(0., 0.));
 }
 
 Shape Shape::Box(const glm::dvec2 size)

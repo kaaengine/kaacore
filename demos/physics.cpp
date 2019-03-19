@@ -67,7 +67,7 @@ struct DemoScene : Scene {
         for (int i = 0; i < 5; i++) {
             Node* ball = new Node(NodeType::body);
             ball->body.set_body_type(BodyNodeType::dynamic);
-            ball->set_shape(Shape::Circle({0., 0.}, 0.3));
+            ball->set_shape(Shape::Circle(0.3));
             ball->set_position(
                 {position_dist(generator), position_dist(generator)}
             );
@@ -76,7 +76,7 @@ struct DemoScene : Scene {
             );
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
-            ball_hitbox->set_shape(Shape::Circle({0., 0.}, 0.3));
+            ball_hitbox->set_shape(Shape::Circle(0.3));
             ball_hitbox->hitbox.set_trigger_id(120);
 
             this->balls.push_back(ball);

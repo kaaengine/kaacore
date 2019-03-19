@@ -38,7 +38,8 @@ struct Shape {
     inline operator bool() const {return this->type != ShapeType::none;}
 
     static Shape Segment(const glm::dvec2 a, const glm::dvec2 b);
-    static Shape Circle(const glm::dvec2 center, const double radius);
+    static Shape Circle(const double radius, const glm::dvec2 center);
+    static Shape Circle(const double radius);
     static Shape Box(const glm::dvec2 size);
     static Shape Polygon(const std::vector<glm::dvec2>& points);
     static Shape Freeform(const std::vector<VertexIndex>& indices,
