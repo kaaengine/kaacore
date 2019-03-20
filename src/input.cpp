@@ -68,7 +68,8 @@ void InputManager::clear_events()
 
 bool InputManager::is_pressed(Keycode kc) const
 {
-    return SDL_GetKeyboardState(NULL)[static_cast<SDL_Keycode>(kc)] == 1;
+    auto scancode = SDL_GetScancodeFromKey(static_cast<SDL_Keycode>(kc));
+    return SDL_GetKeyboardState(NULL)[scancode] == 1;
 }
 
 bool InputManager::is_pressed(Mousecode mc) const
@@ -79,7 +80,8 @@ bool InputManager::is_pressed(Mousecode mc) const
 
 bool InputManager::is_released(Keycode kc) const
 {
-    return SDL_GetKeyboardState(NULL)[static_cast<SDL_Keycode>(kc)] == 0;
+    auto scancode = SDL_GetScancodeFromKey(static_cast<SDL_Keycode>(kc));
+    return SDL_GetKeyboardState(NULL)[scancode] == 0;
 }
 
 bool InputManager::is_released(Mousecode mc) const
