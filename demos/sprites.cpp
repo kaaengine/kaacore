@@ -39,7 +39,7 @@ struct SpritesDemoScene : Scene {
 
         for (auto const& event : this->get_events()) {
             if (event.is_pressing(Keycode::q) or event.is_quit()) {
-                get_engine()->attach_scene(nullptr);
+                get_engine()->quit();
                 break;
             } else if (event.is_pressing(Keycode::w)) {
                 this->animating_node->set_position(this->animating_node->position + glm::dvec2(0., -0.1));
@@ -65,8 +65,7 @@ extern "C" int main(int argc, char *argv[])
     Engine eng;
     SpritesDemoScene scene{argv[1], atoi(argv[2]), atoi(argv[3]),
                                     atoi(argv[4]), atoi(argv[5])};
-    eng.attach_scene(&scene);
-    eng.scene_run();
+    eng.run(&scene);
 
     return 0;
 }

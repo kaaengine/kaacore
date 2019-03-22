@@ -93,7 +93,7 @@ struct DemoScene : Scene {
 
         for (auto const& event : this->get_events()) {
             if (event.is_pressing(Keycode::q) or event.is_quit()) {
-                get_engine()->attach_scene(nullptr);
+                get_engine()->quit();
                 break;
             } else if (event.is_pressing(Keycode::w)) {
                 this->camera.position += glm::dvec2(0., -0.05);
@@ -138,8 +138,7 @@ extern "C" int main(int argc, char *argv[])
 {
     Engine eng;
     DemoScene scene;
-    eng.attach_scene(&scene);
-    eng.scene_run();
+    eng.run(&scene);
 
     return 0;
 }

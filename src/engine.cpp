@@ -20,7 +20,7 @@ Engine* engine;
 Engine::Engine() {
     assert(engine == nullptr);
 
-    log<LogLevel::info>("Initializing KAAcore engine");
+    log<LogLevel::info>("Initializing Kaacore.");
     SDL_Init(SDL_INIT_EVERYTHING);
     this->window = SDL_CreateWindow(
         "KAA window demo", SDL_WINDOWPOS_UNDEFINED,
@@ -30,7 +30,7 @@ Engine::Engine() {
 
     SDL_VERSION(&this->wminfo.version);
     SDL_GetWindowWMInfo(this->window, &wminfo);
-    
+
 #if SDL_VIDEO_DRIVER_X11
     this->platform_data.ndt = this->wminfo.info.x11.display;
     this->platform_data.nwh = reinterpret_cast<void*>(this->wminfo.info.x11.window);
@@ -66,7 +66,7 @@ Engine::Engine() {
 Engine::~Engine() {
     assert(engine != nullptr);
 
-    log<LogLevel::info>("Shutting down KAAcore engine");
+    log<LogLevel::info>("Shutting down Kaacore");
 
     this->input_manager.release();
     this->renderer.release();
@@ -77,17 +77,15 @@ Engine::~Engine() {
     engine = nullptr;
 }
 
-void Engine::attach_scene(Scene* scene)
+void Engine::run(Scene* scene)
 {
-    this->running_scene = scene;
-}
+    this->is_running = true;
+    log("Engine is running.");
 
-void Engine::scene_run()
-{
-    log("Engine scene runner started");
+    this->scene = scene;
     uint32_t ticks = SDL_GetTicks();
-    while(this->running_scene != nullptr) {
-        Scene* scene = this->running_scene;
+
+    while(this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
@@ -95,10 +93,11 @@ void Engine::scene_run()
         this->_pump_events();
 
         this->renderer->begin_frame();
-        scene->process_frame(dt);
+        this->scene->process_frame(dt);
         this->renderer->end_frame();
     }
-    log("Engine scene runner stopped");
+
+    log("Engine stopped.");
 }
 
 void Engine::_pump_events()
@@ -116,4 +115,8 @@ void Engine::_pump_events()
     }
 }
 
+void Engine::quit() {
+    this->is_running = false;
+
+}
 } // namespace kaacore

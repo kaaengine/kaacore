@@ -18,23 +18,22 @@
 namespace kaacore {
 
 struct Engine {
+    uint64_t time = 0;
     SDL_Window* window;
-    bgfx::PlatformData platform_data;
     SDL_SysWMinfo wminfo;
+    Scene* scene = nullptr;
+    bool is_running = false;
+    bgfx::PlatformData platform_data;
 
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
 
-    Scene* running_scene = nullptr;
-
-    uint64_t time = 0;
-
     Engine();
     ~Engine();
 
-    void attach_scene(Scene* scene);
-    void scene_run();
+    void run(Scene* scene);
     void _pump_events();
+    void quit();
 };
 
 extern Engine* engine;
