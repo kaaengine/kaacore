@@ -280,6 +280,7 @@ void BodyNode::initialize()
 {
     this->cp_body = cpBodyNewKinematic();
     cpBodySetUserData(this->cp_body, this);
+    this->set_body_type(BodyNodeType::dynamic);
 }
 
 void _body_node_destroy(cpSpace* cp_space, void* cp_body_obj,
