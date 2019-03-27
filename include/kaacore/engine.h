@@ -30,7 +30,7 @@ public:
     ~Engine();
 
     SDL_Rect get_display_rect();
-    void create_window(std::string title, int32_t width, int32_t height,
+    void create_window(const std::string& title, int32_t width, int32_t height,
         int32_t x = SDL_WINDOWPOS_UNDEFINED,
         int32_t y = SDL_WINDOWPOS_UNDEFINED, bool fullscreen = false);
     void run(Scene* scene);

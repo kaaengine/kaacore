@@ -37,8 +37,8 @@ Engine::~Engine() {
     engine = nullptr;
 }
 
-void Engine::create_window(std::string title, int32_t width, int32_t height,
-    int32_t x, int32_t y, bool fullscreen)
+void Engine::create_window(const std::string& title, int32_t width,
+    int32_t height, int32_t x, int32_t y, bool fullscreen)
 {
     this->window = std::make_unique<Window>(
         title, width, height, x, y, fullscreen

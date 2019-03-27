@@ -11,7 +11,7 @@ class Window
 {
 friend class Engine;
 public:
-    Window(std::string title, int32_t width, int32_t height,
+    Window(const std::string& title, int32_t width, int32_t height,
         int32_t x, int32_t y, bool fullscreen);
     ~Window();
 

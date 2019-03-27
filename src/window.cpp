@@ -4,7 +4,7 @@
 
 namespace kaacore {
 
-Window::Window(std::string title, int32_t width, int32_t height,
+Window::Window(const std::string& title, int32_t width, int32_t height,
     int32_t x, int32_t y, bool fullscreen) : _fullscreen(fullscreen)
 {
     uint32_t flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
@@ -24,7 +24,7 @@ bool Window::fullscreen()
     return this->_fullscreen;
 }
 
-void Window::fullscreen(const bool fullscreen)
+void Window::fullscreen(bool fullscreen)
 {
     this->_fullscreen = fullscreen;
     if (fullscreen) {
