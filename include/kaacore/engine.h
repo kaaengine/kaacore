@@ -22,7 +22,7 @@ public:
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
-    std::unique_ptr<Window> window = nullptr;
+    std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
 
@@ -30,9 +30,9 @@ public:
     ~Engine();
 
     SDL_Rect get_display_rect();
-    void create_window(const std::string& title, int32_t width, int32_t height,
-        int32_t x = SDL_WINDOWPOS_UNDEFINED,
-        int32_t y = SDL_WINDOWPOS_UNDEFINED, bool fullscreen = false);
+    Window* create_window(const std::string& title, int32_t width,
+        int32_t height, int32_t x = SDL_WINDOWPOS_CENTERED,
+        int32_t y = SDL_WINDOWPOS_CENTERED);
     void run(Scene* scene);
     void quit();
 

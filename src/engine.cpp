@@ -37,13 +37,14 @@ Engine::~Engine() {
     engine = nullptr;
 }
 
-void Engine::create_window(const std::string& title, int32_t width,
-    int32_t height, int32_t x, int32_t y, bool fullscreen)
+Window* Engine::create_window(const std::string& title, int32_t width,
+    int32_t height, int32_t x, int32_t y)
 {
     this->window = std::make_unique<Window>(
-        title, width, height, x, y, fullscreen
+        title, width, height, x, y
     );
     this->_init();
+    return this->window.get();
 }
 
 SDL_Rect Engine::get_display_rect()
