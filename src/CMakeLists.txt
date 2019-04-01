@@ -13,6 +13,7 @@ set(SRC_CXX_FILES
     physics.cpp
     resources.cpp
     sprites.cpp
+    window.cpp
 )
 
 set(SRC_H_FILES
@@ -28,6 +29,7 @@ set(SRC_H_FILES
     ../include/kaacore/physics.h
     ../include/kaacore/resources.h
     ../include/kaacore/sprites.h
+    ../include/kaacore/window.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

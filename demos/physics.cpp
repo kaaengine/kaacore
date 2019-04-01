@@ -125,6 +125,7 @@ struct DemoScene : Scene {
 extern "C" int main(int argc, char *argv[])
 {
     Engine eng;
+    eng.create_window("title", 800, 600);
     DemoScene scene;
     eng.run(&scene);
 

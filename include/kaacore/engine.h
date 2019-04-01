@@ -1,39 +1,45 @@
 #pragma once
 
-#include <cassert>
-#include <memory>
+#include <string>
 
-#include <SDL_config.h>
-#include <SDL_syswm.h>
 #include <SDL.h>
 
-#include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 
+#include "kaacore/window.h"
 #include "kaacore/renderer.h"
-#include "kaacore/scenes.h"
-#include "kaacore/input.h"
 
 
 namespace kaacore {
 
-struct Engine {
+class Scene;
+class InputManager;
+
+class Engine {
+public:
     uint64_t time = 0;
-    SDL_Window* window;
-    SDL_SysWMinfo wminfo;
     Scene* scene = nullptr;
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
+    std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
 
     Engine();
     ~Engine();
 
+    SDL_Rect get_display_rect();
+    Window* create_window(const std::string& title, int32_t width,
+        int32_t height, int32_t x = SDL_WINDOWPOS_CENTERED,
+        int32_t y = SDL_WINDOWPOS_CENTERED);
     void run(Scene* scene);
-    void _pump_events();
     void quit();
+
+private:
+    void _init();
+    void _pump_events();
+
 };
 
 extern Engine* engine;
