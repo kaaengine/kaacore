@@ -1,18 +1,33 @@
 #include <iostream>
+#include <utility>
 #include <memory>
 
 #include <SDL.h>
 
 #include "kaacore/engine.h"
 
+#include "kaacore/utils.h"
+#include "kaacore/resources.h"
+#include "kaacore/texture_loader.h"
+
 using namespace std;
+using namespace kaacore;
+
 
 extern "C" int main(int argc, char *argv[])
 {
     Engine eng;
+    eng.create_window("title", 800, 600);
     bool running = true;
 
-    auto texture = eng.renderer->default_texture;
+    bgfx::TextureHandle texture;
+    Resource<Image> res;
+    if (argc < 2) {
+        texture = eng.renderer->default_texture;
+    } else {
+        res = Image::load(argv[1]);
+        texture = res->texture_handle;
+    }
 
     bgfx::setViewClear(0, BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH);
 

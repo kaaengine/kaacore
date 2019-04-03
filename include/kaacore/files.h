@@ -7,9 +7,13 @@
 #include <bgfx/bgfx.h>
 
 
+namespace kaacore {
+
 struct RawFile {
     std::string path;
     std::vector<uint8_t> content;
 
     RawFile(const std::string file_path);
 };
+
+} // namespace kaacore

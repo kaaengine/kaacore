@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 set(SRC_CXX_FILES
     nodes.cpp
@@ -8,7 +8,12 @@ set(SRC_CXX_FILES
     renderer.cpp
     texture_loader.cpp
     input.cpp
-    scene.cpp
+    scenes.cpp
+    shapes.cpp
+    physics.cpp
+    resources.cpp
+    sprites.cpp
+    window.cpp
 )
 
 set(SRC_H_FILES
@@ -19,8 +24,14 @@ set(SRC_H_FILES
     ../include/kaacore/renderer.h
     ../include/kaacore/texture_loader.h
     ../include/kaacore/input.h
-    ../include/kaacore/scene.h
+    ../include/kaacore/scenes.h
+    ../include/kaacore/shapes.h
+    ../include/kaacore/physics.h
+    ../include/kaacore/resources.h
+    ../include/kaacore/sprites.h
+    ../include/kaacore/window.h
 
+    ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
 )
 
@@ -37,6 +48,17 @@ endif()
 if (WIN32)
     target_link_libraries(kaacore PUBLIC SDL2main)
 endif()
+
+if (WIN32)
+    # avoid including min max macros from Windows.h
+    target_compile_definitions(kaacore PUBLIC NOMINMAX)
+endif()
+
+get_target_property(CHIPMUNK_SOURCE_DIR chipmunk_static SOURCE_DIR)
+message(STATUS "Chipmunk source dir: ${CHIPMUNK_SOURCE_DIR}")
+target_include_directories(kaacore PUBLIC
+    $<BUILD_INTERFACE:${CHIPMUNK_SOURCE_DIR}/../include>
+)
 
 get_target_property(SDL_BINARY_DIR SDL2 BINARY_DIR)
 target_include_directories(kaacore PUBLIC

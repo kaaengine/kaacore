@@ -5,6 +5,8 @@
 #include "kaacore/files.h"
 
 
+namespace kaacore {
+
 RawFile::RawFile(const std::string file_path) : path(file_path)
 {
     std::ifstream f(file_path, std::ifstream::binary);
@@ -14,3 +16,5 @@ RawFile::RawFile(const std::string file_path) : path(file_path)
     this->content.resize(len);
     f.read(reinterpret_cast<char*>(this->content.data()), len);
 }
+
+} // namespace kaacore

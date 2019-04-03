@@ -11,6 +11,8 @@
 #include "kaacore/embedded_data.h"
 
 
+namespace kaacore {
+
 template<class T, size_t N>
 constexpr size_t array_size(T (&)[N]) { return N; }
 
@@ -44,18 +46,21 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
 }
 
 
-bgfx::TextureHandle load_default_texture()
+std::unique_ptr<Image> load_default_image()
 {
-    auto texture = load_texture(default_texture, array_size(default_texture));
-    bgfx::setName(texture, "DEFAULT TEXTURE");
-    return texture;
+    auto p = load_texture(default_texture, array_size(default_texture));
+    auto image = std::make_unique<Image>(std::get<bgfx::TextureHandle>(p),
+                                         std::get<bimg::ImageContainer*>(p));
+    bgfx::setName(image->texture_handle, "DEFAULT TEXTURE");
+    return image;
 }
 
 
 Renderer::Renderer() 
 {
     log("Initializing renderer");
-    this->reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
+    this->reset_flags = (BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2 |
+                         BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH);
 
     this->vertex_decl.begin() \
         .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float) \
@@ -69,8 +74,10 @@ Renderer::Renderer()
     );
 
     bgfx::setViewClear(0, this->reset_flags);
+    bgfx::setViewRect(0, 0, 0, 800, 600);
 
-    this->default_texture = load_default_texture();
+    this->default_image = load_default_image();
+    this->default_texture = this->default_image->texture_handle;
 
     auto renderer_type = bgfx::getRendererType();
 
@@ -116,9 +123,9 @@ void Renderer::end_frame()
 }
 
 
-void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
-                               std::vector<uint16_t> indices,
-                               bgfx::TextureHandle texture)
+void Renderer::render_vertices(const std::vector<StandardVertexData>& vertices,
+                               const std::vector<VertexIndex>& indices,
+                               const bgfx::TextureHandle texture) const
 {
     bgfx::TransientVertexBuffer vertices_buffer;
     bgfx::TransientIndexBuffer indices_buffer;
@@ -136,7 +143,7 @@ void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
     std::memcpy(vertices_buffer.data, vertices.data(),
         sizeof(StandardVertexData) * vertices.size());
     std::memcpy(indices_buffer.data, indices.data(),
-        sizeof(uint16_t) * indices.size());
+        sizeof(VertexIndex) * indices.size());
 
     bgfx::setVertexBuffer(0, &vertices_buffer);
     bgfx::setIndexBuffer(&indices_buffer);
@@ -144,3 +151,5 @@ void Renderer::render_vertices(std::vector<StandardVertexData> vertices,
 
     bgfx::submit(0, this->default_program, false);
 }
+
+} // namespace kaacore

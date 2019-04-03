@@ -7,9 +7,17 @@ list(APPEND DEMO_TARGETS demo-basic)
 add_executable(demo-basic-scene basic_scene.cpp)
 list(APPEND DEMO_TARGETS demo-basic-scene)
 
+add_executable(demo-physics physics.cpp)
+list(APPEND DEMO_TARGETS demo-physics)
+
+add_executable(demo-sprites sprites.cpp)
+list(APPEND DEMO_TARGETS demo-sprites)
+
 
 target_link_libraries(demo-basic kaacore)
 target_link_libraries(demo-basic-scene kaacore)
+target_link_libraries(demo-physics kaacore)
+target_link_libraries(demo-sprites kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES

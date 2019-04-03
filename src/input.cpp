@@ -3,6 +3,9 @@
 #include "kaacore/input.h"
 
 
+namespace kaacore {
+
+Event::Event() : sdl_event() {}
 
 Event::Event(SDL_Event sdl_event) : sdl_event(sdl_event) {}
 
@@ -47,6 +50,11 @@ bool Event::is_releasing(Mousecode mc) const
             this->sdl_event.button.button == static_cast<uint8_t>(mc));
 }
 
+glm::dvec2 Event::get_mouse_position() const
+{
+    return glm::dvec2(this->sdl_event.button.x, this->sdl_event.button.y);
+}
+
 
 void InputManager::push_event(SDL_Event sdl_event)
 {
@@ -57,3 +65,36 @@ void InputManager::clear_events()
 {
     this->events_queue.clear();
 }
+
+bool InputManager::is_pressed(Keycode kc) const
+{
+    auto scancode = SDL_GetScancodeFromKey(static_cast<SDL_Keycode>(kc));
+    return SDL_GetKeyboardState(NULL)[scancode] == 1;
+}
+
+bool InputManager::is_pressed(Mousecode mc) const
+{
+    return (SDL_GetMouseState(NULL, NULL) &
+            SDL_BUTTON(static_cast<uint8_t>(mc)));
+}
+
+bool InputManager::is_released(Keycode kc) const
+{
+    auto scancode = SDL_GetScancodeFromKey(static_cast<SDL_Keycode>(kc));
+    return SDL_GetKeyboardState(NULL)[scancode] == 0;
+}
+
+bool InputManager::is_released(Mousecode mc) const
+{
+    return not (SDL_GetMouseState(NULL, NULL) &
+                SDL_BUTTON(static_cast<uint8_t>(mc)));
+}
+
+glm::dvec2 InputManager::get_mouse_position() const
+{
+    int pos_x, pos_y;
+    SDL_GetMouseState(&pos_x, &pos_y);
+    return glm::dvec2(pos_x, pos_y);
+}
+
+} // namespace kaacore
