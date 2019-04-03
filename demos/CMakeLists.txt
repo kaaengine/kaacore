@@ -13,11 +13,15 @@ list(APPEND DEMO_TARGETS demo-physics)
 add_executable(demo-sprites sprites.cpp)
 list(APPEND DEMO_TARGETS demo-sprites)
 
+add_executable(demo-polygon-tester polygon_tester.cpp)
+list(APPEND DEMO_TARGETS demo-polygon-tester)
+
 
 target_link_libraries(demo-basic kaacore)
 target_link_libraries(demo-basic-scene kaacore)
 target_link_libraries(demo-physics kaacore)
 target_link_libraries(demo-sprites kaacore)
+target_link_libraries(demo-polygon-tester kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES

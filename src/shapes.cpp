@@ -7,7 +7,7 @@ namespace kaacore {
 
 Shape Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 {
-    const double radius = 0.01;
+    const double radius = 1;
 
     const glm::dvec2 distance = b - a;
     // 90-degrees rotation (counter-clockwise)
