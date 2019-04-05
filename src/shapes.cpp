@@ -74,6 +74,47 @@ Shape Shape::Box(const glm::dvec2 size)
     return Shape(ShapeType::polygon, points, 0., indices, vertices);
 }
 
+Shape Shape::Polygon(const std::vector<glm::dvec2>& points)
+{
+    // FIXME We assume that polygon is convex, make a check for that
+    auto points_count = points.size();
+    glm::dvec2 points_sum = {0., 0.};
+    double min_x = points[0].x;
+    double max_x = points[0].x;
+    double min_y = points[0].y;
+    double max_y = points[0].y;
+    std::vector<StandardVertexData> vertices;
+    vertices.reserve(points_count + 1);
+    std::vector<VertexIndex> indices;
+    indices.reserve(points_count * 3);
+    VertexIndex center_point_index = points_count;
+
+    for (VertexIndex idx = 0 ; idx < points_count ; idx++) {
+        const auto& pt = points[idx];
+        points_sum += pt;
+        min_x = glm::min(min_x, pt.x);
+        max_x = glm::max(max_x, pt.x);
+        min_y = glm::min(min_y, pt.y);
+        max_y = glm::max(max_y, pt.y);
+        vertices.emplace_back(pt.x, pt.y);
+        indices.push_back(idx);
+        indices.push_back((idx + 1) % points_count);
+        indices.push_back(center_point_index);
+    }
+
+    glm::dvec2 center_point = {points_sum.x / points_count,
+                               points_sum.y / points_count};
+    vertices.emplace_back(center_point.x, center_point.y);
+
+    // unlerp vertices uv values to correspond to xy positions inside polygon
+    for (auto& vertex : vertices) {
+        vertex.uv.x = (vertex.xyz.x - min_x) / (max_x - min_x);
+        vertex.uv.y = (vertex.xyz.y - min_y) / (max_y - min_y);
+    }
+
+    return Shape(ShapeType::polygon, points, 0., indices, vertices);
+}
+
 Shape Shape::Freeform(const std::vector<VertexIndex>& indices,
                       const std::vector<StandardVertexData>& vertices)
 {

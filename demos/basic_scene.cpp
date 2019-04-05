@@ -18,6 +18,7 @@ struct DemoScene : Scene {
     Node* node2;
     Node* container_node;
     Shape specific_shape;
+    Shape polygon_shape;
 
     DemoScene() {
         const std::vector<StandardVertexData> vertices = {
@@ -30,6 +31,9 @@ struct DemoScene : Scene {
         const std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
         this->specific_shape = Shape::Freeform(indices, vertices);
+        this->polygon_shape = Shape::Polygon(
+            {{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}}
+        );
 
         this->node1 = new Node();
         this->node1->position = {3., 3.};
@@ -72,7 +76,8 @@ struct DemoScene : Scene {
             Node* inner_node = new Node();
             inner_node->position = p;
             inner_node->color = {0., 0., 1., 1};
-            inner_node->shape = this->specific_shape;
+            inner_node->scale = {0.5, 0.5};
+            inner_node->set_shape(this->polygon_shape);
             if (p.x != 0. and p.y != 0.) {
                 inner_node->z_index = 10;
             } else {
