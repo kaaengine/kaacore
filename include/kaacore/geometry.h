@@ -16,5 +16,6 @@ enum struct PolygonType {
 
 PolygonType classify_polygon(const std::vector<glm::dvec2>& points);
 glm::dvec2 find_points_center(const std::vector<glm::dvec2>& points);
+std::pair<glm::dvec2, glm::dvec2> find_points_minmax(const std::vector<glm::dvec2>& points);
 
 } // namespace kaacore

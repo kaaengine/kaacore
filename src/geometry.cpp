@@ -85,4 +85,20 @@ glm::dvec2 find_points_center(const std::vector<glm::dvec2>& points)
     return sum * (1. / points.size());
 }
 
+
+std::pair<glm::dvec2, glm::dvec2>
+find_points_minmax(const std::vector<glm::dvec2>& points)
+{
+    assert(points.size() > 0);
+    glm::dvec2 min_pt = points[0];
+    glm::dvec2 max_pt = points[0];
+    for (const auto& pt : points) {
+        min_pt.x = glm::min(min_pt.x, pt.x);
+        max_pt.x = glm::max(max_pt.x, pt.x);
+        min_pt.y = glm::min(min_pt.y, pt.y);
+        max_pt.y = glm::max(max_pt.y, pt.y);
+    }
+    return std::make_pair(min_pt, max_pt);
+}
+
 } // namespace kaacore

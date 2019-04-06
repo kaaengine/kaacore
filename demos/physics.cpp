@@ -34,9 +34,15 @@ struct DemoScene : Scene {
 
     DemoScene()
     {
-        std::default_random_engine generator;
-        std::normal_distribution<double> position_dist(0.0, 2.0);
+        std::random_device random_dev;
+        std::default_random_engine generator(random_dev());
+        std::normal_distribution<double> position_dist(0.0, 1.7);
         std::normal_distribution<double> speed_dist(0.0, 3.);
+        std::uniform_int_distribution<> shape_dist(0, 1);
+        Shape polygon_shape = Shape::Polygon({
+            {0.3, 0}, {0, 0.3}, {-0.3, 0}, {0, -0.7}
+        });
+        Shape circle_shape = Shape::Circle(0.3);
 
         this->container = new Node(NodeType::space);
         this->root_node.add_child(this->container);
@@ -67,16 +73,20 @@ struct DemoScene : Scene {
         for (int i = 0; i < 5; i++) {
             Node* ball = new Node(NodeType::body);
             ball->body.set_body_type(BodyNodeType::dynamic);
-            ball->set_shape(Shape::Circle(0.3));
+
+            Shape& chosen_shape = shape_dist(generator) ? polygon_shape : circle_shape;
+
+            ball->set_shape(chosen_shape);
             ball->set_position(
                 {position_dist(generator), position_dist(generator)}
             );
             ball->body.set_velocity(
                 {speed_dist(generator), speed_dist(generator)}
             );
+            ball->body.set_moment(10.);
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
-            ball_hitbox->set_shape(Shape::Circle(0.3));
+            ball_hitbox->set_shape(chosen_shape);
             ball_hitbox->hitbox.set_trigger_id(120);
 
             this->balls.push_back(ball);
@@ -89,9 +99,9 @@ struct DemoScene : Scene {
                const CollisionPair pair_a, const CollisionPair pair_b) -> uint8_t
             {
                 std::cout << "Collision! " << int(arbiter.phase) << std::endl;
-                pair_a.body_node->body.set_velocity({-0.8, -2.5});
+                // pair_a.body_node->body.set_velocity({-0.8, -2.5});
                 // pair_b.body_node->body.set_velocity({0.8, -2.5});
-                delete pair_b.body_node;
+                // delete pair_b.body_node;
                 return 1;
             }, CollisionPhase::begin | CollisionPhase::separate
         );
