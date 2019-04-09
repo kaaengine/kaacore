@@ -9,6 +9,7 @@
 #include "kaacore/shapes.h"
 #include "kaacore/scenes.h"
 #include "kaacore/log.h"
+#include "kaacore/exceptions.h"
 
 
 namespace kaacore {
@@ -52,7 +53,7 @@ Node::~Node()
 
 void Node::add_child(Node* child_node)
 {
-    assert(child_node->parent == nullptr);
+    KAACORE_CHECK(child_node->parent == nullptr);
     child_node->parent = this;
     this->children.push_back(child_node);
 
