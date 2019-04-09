@@ -10,7 +10,7 @@
 
 namespace kaacore {
 
-int8_t compare(const glm::dvec2 p, const glm::dvec2 q)
+int8_t compare_points(const glm::dvec2 p, const glm::dvec2 q)
 {
     if (p.x < q.x) {
         return -1;
@@ -51,7 +51,7 @@ PolygonType classify_polygon(const std::vector<glm::dvec2>& points) {
         const glm::dvec2& pt_2 = points[(idx + 1) % points_count];
         const glm::dvec2& pt_3 = points[(idx + 2) % points_count];
 
-        auto this_dir = compare(pt_2, pt_3);
+        auto this_dir = compare_points(pt_2, pt_3);
         if (this_dir == -cur_dir) {
             dir_changes++;
             if (dir_changes > 2) {
