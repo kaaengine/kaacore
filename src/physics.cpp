@@ -512,9 +512,8 @@ void HitboxNode::update_physics_shape()
             nullptr, node->shape.radius, cp_points[0]
         );
     } else if (node->shape.type == ShapeType::polygon) {
-        this->cp_shape = cpPolyShapeNew(
-            nullptr, node->shape.points.size(), cp_points,
-            cpTransformIdentity, 0.
+        this->cp_shape = cpPolyShapeNewRaw(
+            nullptr, node->shape.points.size(), cp_points, 0.
         );
     }
 
