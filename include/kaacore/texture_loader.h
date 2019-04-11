@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utility>
+#include <vector>
 
 #include <bx/bx.h>
 #include <bx/file.h>
@@ -13,12 +13,14 @@
 
 namespace kaacore {
 
-std::pair<bgfx::TextureHandle, bimg::ImageContainer*> load_texture(
-    const uint8_t* data, size_t size, uint64_t flags=BGFX_SAMPLER_NONE
-);
-std::pair<bgfx::TextureHandle, bimg::ImageContainer*> load_texture_from_file(
-    const char* path, uint64_t flags=BGFX_SAMPLER_NONE
-);
+bimg::ImageContainer* load_image(const uint8_t* data, size_t size);
+bimg::ImageContainer* load_image(const char* path);
+bimg::ImageContainer* load_raw_image(bimg::TextureFormat::Enum format,
+                                     uint16_t width, uint16_t height,
+                                     const std::vector<uint8_t>& data);
+
+bgfx::TextureHandle make_texture(const bimg::ImageContainer* const image_container,
+                                 const uint64_t flags=BGFX_SAMPLER_NONE);
 
 
 struct Image {
@@ -36,4 +38,4 @@ struct Image {
     static Resource<Image> load(const char* path, uint64_t flags=BGFX_SAMPLER_NONE);
 };
 
-} // namespace kaacore
+} //namespace kaacore

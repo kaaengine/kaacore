@@ -48,9 +48,9 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
 
 std::unique_ptr<Image> load_default_image()
 {
-    auto p = load_texture(default_texture, array_size(default_texture));
-    auto image = std::make_unique<Image>(std::get<bgfx::TextureHandle>(p),
-                                         std::get<bimg::ImageContainer*>(p));
+    auto image_container = load_image(default_texture, array_size(default_texture));
+    auto texture_handle = make_texture(image_container);
+    auto image = std::make_unique<Image>(texture_handle, image_container);
     bgfx::setName(image->texture_handle, "DEFAULT TEXTURE");
     return image;
 }
