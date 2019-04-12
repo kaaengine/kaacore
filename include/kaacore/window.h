@@ -12,21 +12,26 @@ class Window
 {
 friend class Engine;
 public:
-    Window(const std::string& title, int32_t width, int32_t height,
-        int32_t x, int32_t y);
+    Window(const glm::ivec2& size);
     ~Window();
 
+    void show();
+    void hide();
+    std::string title();
+    void title(const std::string& title);
     bool fullscreen();
     void fullscreen(bool fullscreen);
-    std::pair<int32_t, int32_t> size();
-    void size(const std::pair<int32_t, int32_t>& window_size);
-    glm::dvec2 position();
-    void position(const glm::dvec2& vec);
+    glm::ivec2 size();
+    void size(const glm::ivec2& size);
+    void maximize();
+    void minimize();
+    void restore();
+    glm::ivec2 position();
+    void position(const glm::ivec2& position);
+    void center();
 
 private:
-    bool _fullscreen = false;
     SDL_Window* _window = nullptr;
-
 };
 
 } // namespace kaacore

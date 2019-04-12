@@ -25,14 +25,14 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
     size_t vs_data_size;
     size_t fs_data_size;
     if (renderer_type == bgfx::RendererType::Enum::OpenGL) {
-        log("Loading default OpenGL GLSL shaders");
+        log("Loading default OpenGL GLSL shaders.");
         vs_data = default_glsl_vertex_shader;
         fs_data = default_glsl_fragment_shader;
         vs_data_size = array_size(default_glsl_vertex_shader);
         fs_data_size = array_size(default_glsl_fragment_shader);
     } else if (renderer_type == bgfx::RendererType::Enum::Direct3D9) {
-        log("Loading default Direct3D9 HLSL shaders");
         vs_data = default_hlsl_d3d9_vertex_shader;
+        log("Loading default Direct3D9 HLSL shaders.");
         fs_data = default_hlsl_d3d9_fragment_shader;
         vs_data_size = array_size(default_hlsl_d3d9_vertex_shader);
         fs_data_size = array_size(default_hlsl_d3d9_fragment_shader);
@@ -56,12 +56,9 @@ std::unique_ptr<Image> load_default_image()
 }
 
 
-Renderer::Renderer() 
+Renderer::Renderer(const glm::ivec2& window_size)
 {
-    log("Initializing renderer");
-    this->reset_flags = (BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2 |
-                         BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH);
-
+    log("Initializing renderer.");
     this->vertex_decl.begin() \
         .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float) \
         .add(bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float) \
@@ -73,8 +70,8 @@ Renderer::Renderer()
         "s_texture", bgfx::UniformType::Enum::Int1, 1
     );
 
-    bgfx::setViewClear(0, this->reset_flags);
-    bgfx::setViewRect(0, 0, 0, 800, 600);
+    bgfx::setViewClear(0, this->clear_flags);
+    this->reset(window_size.x, window_size.y);
 
     this->default_image = load_default_image();
     this->default_texture = this->default_image->texture_handle;
@@ -95,11 +92,11 @@ Renderer::Renderer()
     auto vs = bgfx::createShader(vs_mem);
     auto fs = bgfx::createShader(fs_mem);
 
-    log("Created shaders, VS: %d, FS: %d", vs, fs);
+    log("Created shaders, VS: %d, FS: %d.", vs, fs);
 
     this->default_program = bgfx::createProgram(vs, fs, true);
 
-    log("Created program: %d", this->default_program);
+    log("Created program: %d.", this->default_program);
 }
 
 

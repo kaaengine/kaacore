@@ -32,6 +32,7 @@ set(SRC_H_FILES
     ../include/kaacore/sprites.h
     ../include/kaacore/window.h
     ../include/kaacore/geometry.h
+    ../include/kaacore/display.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

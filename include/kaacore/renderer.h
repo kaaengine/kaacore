@@ -40,7 +40,9 @@ struct StandardVertexData {
 
 
 struct Renderer {
-    uint32_t reset_flags;
+    uint32_t clear_flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
+    uint32_t reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
+
     bgfx::VertexDecl vertex_decl;
 
     std::unique_ptr<Image> default_image;
@@ -50,11 +52,18 @@ struct Renderer {
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
-    Renderer();
+    Renderer(const glm::ivec2& window_size);
     ~Renderer();
 
     void begin_frame();
     void end_frame();
+
+    inline void reset(int32_t width, int32_t height)
+    {
+        bgfx::reset(width, height, this->reset_flags);
+        // TODO: add support for multiple views
+        bgfx::setViewRect(0, 0, 0, width, height);
+    }
 
     void render_vertices(const std::vector<StandardVertexData>& vertices,
                          const std::vector<VertexIndex>& indices,

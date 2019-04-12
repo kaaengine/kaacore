@@ -13,6 +13,7 @@
 namespace kaacore {
 
 class Scene;
+struct Display;
 class InputManager;
 
 class Engine {
@@ -29,15 +30,13 @@ public:
     Engine();
     ~Engine();
 
-    SDL_Rect get_display_rect();
-    Window* create_window(const std::string& title, int32_t width,
-        int32_t height, int32_t x = SDL_WINDOWPOS_CENTERED,
-        int32_t y = SDL_WINDOWPOS_CENTERED);
+    std::vector<Display> get_display_info();
     void run(Scene* scene);
     void quit();
 
 private:
-    void _init();
+    std::unique_ptr<Window> _create_window();
+    std::unique_ptr<Renderer> _create_renderer();
     void _pump_events();
 
 };
