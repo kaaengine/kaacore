@@ -11,6 +11,7 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/log.h"
+#include "kaacore/exceptions.h"
 
 #include "kaacore/scenes.h"
 
@@ -96,8 +97,8 @@ void Scene::update(uint32_t dt)
 
 void Scene::register_simulation(Node* node)
 {
-    assert(node->type == NodeType::space);
-    assert(node->space.cp_space != nullptr);
+    KAACORE_ASSERT(node->type == NodeType::space);
+    KAACORE_ASSERT(node->space.cp_space != nullptr);
     if (this->simulations_registry.find(node) == this->simulations_registry.end()) {
         this->simulations_registry.insert(node);
     }
