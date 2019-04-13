@@ -7,6 +7,7 @@
 
 #include "kaacore/log.h"
 #include "kaacore/files.h"
+#include "kaacore/exceptions.h"
 
 #include "kaacore/texture_loader.h"
 
@@ -123,7 +124,7 @@ Image::~Image()
 
 glm::uvec2 Image::get_dimensions()
 {
-    assert(this->image_container != nullptr);
+    KAACORE_CHECK(this->image_container != nullptr);
     return {this->image_container->m_width, this->image_container->m_height};
 }
 

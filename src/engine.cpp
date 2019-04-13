@@ -8,6 +8,9 @@
 #include "kaacore/engine.h"
 #include "kaacore/scenes.h"
 #include "kaacore/display.h"
+#include "kaacore/exceptions.h"
+
+#include "kaacore/engine.h"
 
 
 namespace kaacore {
@@ -15,7 +18,7 @@ namespace kaacore {
 Engine* engine;
 
 Engine::Engine() {
-    assert(engine == nullptr);
+    KAACORE_CHECK(engine == nullptr);
 
     log<LogLevel::info>("Initializing Kaacore.");
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -27,7 +30,7 @@ Engine::Engine() {
 }
 
 Engine::~Engine() {
-    assert(engine != nullptr);
+    KAACORE_CHECK(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
     this->input_manager.release();
