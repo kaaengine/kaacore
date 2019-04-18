@@ -16,6 +16,7 @@ set(SRC_CXX_FILES
     sprites.cpp
     window.cpp
     geometry.cpp
+    fonts.cpp
 )
 
 set(SRC_H_FILES
@@ -35,6 +36,7 @@ set(SRC_H_FILES
     ../include/kaacore/window.h
     ../include/kaacore/geometry.h
     ../include/kaacore/display.h
+    ../include/kaacore/fonts.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

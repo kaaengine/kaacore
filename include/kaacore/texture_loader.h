@@ -36,6 +36,7 @@ struct Image {
 
     // TODO hashmap with existing resources
     static Resource<Image> load(const char* path, uint64_t flags=BGFX_SAMPLER_NONE);
+    static Resource<Image> load(bgfx::TextureHandle texture_handle, bimg::ImageContainer* image_container);
 };
 
 } //namespace kaacore

@@ -97,6 +97,12 @@ Resource<Image> Image::load(const char* path, uint64_t flags)
     return std::make_shared<Image>(path, flags);
 }
 
+Resource<Image> Image::load(bgfx::TextureHandle texture_handle,
+                            bimg::ImageContainer* image_container)
+{
+    return std::make_shared<Image>(texture_handle, image_container);
+}
+
 Image::~Image()
 {
     if (bgfx::isValid(this->texture_handle)) {
