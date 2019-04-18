@@ -52,7 +52,7 @@ struct Renderer {
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
-    Renderer(const glm::ivec2& window_size);
+    Renderer(const glm::uvec2& window_size);
     ~Renderer();
 
     void begin_frame();

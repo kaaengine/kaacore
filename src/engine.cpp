@@ -41,7 +41,7 @@ Engine::~Engine() {
     engine = nullptr;
 }
 
-std::vector<Display> Engine::get_display_info()
+std::vector<Display> Engine::get_displays()
 {
     SDL_Rect rect;
     std::vector<Display> result;
@@ -87,8 +87,8 @@ void Engine::quit() {
 
 std::unique_ptr<Window> Engine::_create_window()
 {
-    Display display = this->get_display_info().at(0);
-    return std::make_unique<Window>(display.size * 2 / 3);
+    Display display = this->get_displays().at(0);
+    return std::make_unique<Window>(display.size * 2u / 3u);
 }
 
 std::unique_ptr<Renderer> Engine::_create_renderer()

@@ -3,7 +3,7 @@
 
 namespace kaacore {
 
-Window::Window(const glm::ivec2& size)
+Window::Window(const glm::uvec2& size)
 {
     uint32_t flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
     this->_window = SDL_CreateWindow(
@@ -48,14 +48,18 @@ void Window::fullscreen(bool fullscreen)
     SDL_SetWindowFullscreen(this->_window, value);
 }
 
-glm::ivec2 Window::size()
+glm::uvec2 Window::size()
 {
-    glm::ivec2 vec;
-    SDL_GetWindowSize(this->_window, &vec.x, &vec.y);
+    glm::uvec2 vec;
+    SDL_GetWindowSize(
+        this->_window,
+        reinterpret_cast<int32_t*>(&vec.x),
+        reinterpret_cast<int32_t*>(&vec.y)
+    );
     return vec;
 }
 
-void Window::size(const glm::ivec2& size)
+void Window::size(const glm::uvec2& size)
 {
     SDL_SetWindowSize(this->_window, size.x, size.y);
 }
@@ -75,14 +79,18 @@ void Window::restore()
     SDL_RestoreWindow(this->_window);
 }
 
-glm::ivec2 Window::position()
+glm::uvec2 Window::position()
 {
-    glm::ivec2 vec;
-    SDL_GetWindowPosition(this->_window, &vec.x, &vec.y);
+    glm::uvec2 vec;
+    SDL_GetWindowPosition(
+        this->_window,
+        reinterpret_cast<int32_t*>(&vec.x),
+        reinterpret_cast<int32_t*>(&vec.y)
+    );
     return vec;
 }
 
-void Window::position(const glm::ivec2& position)
+void Window::position(const glm::uvec2& position)
 {
     SDL_SetWindowPosition(this->_window, position.x, position.y);
 }

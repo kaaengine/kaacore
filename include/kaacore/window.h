@@ -12,7 +12,7 @@ class Window
 {
 friend class Engine;
 public:
-    Window(const glm::ivec2& size);
+    Window(const glm::uvec2& size);
     ~Window();
 
     void show();
@@ -21,13 +21,13 @@ public:
     void title(const std::string& title);
     bool fullscreen();
     void fullscreen(bool fullscreen);
-    glm::ivec2 size();
-    void size(const glm::ivec2& size);
+    glm::uvec2 size();
+    void size(const glm::uvec2& size);
     void maximize();
     void minimize();
     void restore();
-    glm::ivec2 position();
-    void position(const glm::ivec2& position);
+    glm::uvec2 position();
+    void position(const glm::uvec2& position);
     void center();
 
 private:

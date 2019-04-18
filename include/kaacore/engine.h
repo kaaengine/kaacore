@@ -8,6 +8,7 @@
 
 #include "kaacore/window.h"
 #include "kaacore/renderer.h"
+#include "kaacore/exceptions.h"
 
 
 namespace kaacore {
@@ -30,7 +31,7 @@ public:
     Engine();
     ~Engine();
 
-    std::vector<Display> get_display_info();
+    std::vector<Display> get_displays();
     void run(Scene* scene);
     void quit();
 
@@ -38,14 +39,13 @@ private:
     std::unique_ptr<Window> _create_window();
     std::unique_ptr<Renderer> _create_renderer();
     void _pump_events();
-
 };
 
 extern Engine* engine;
 
 
 inline Engine* get_engine() {
-    assert(engine != nullptr);
+    KAACORE_ASSERT(engine != nullptr);
     return engine;
 }
 

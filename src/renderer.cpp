@@ -56,7 +56,7 @@ std::unique_ptr<Image> load_default_image()
 }
 
 
-Renderer::Renderer(const glm::ivec2& window_size)
+Renderer::Renderer(const glm::uvec2& window_size)
 {
     log("Initializing renderer.");
     this->vertex_decl.begin() \

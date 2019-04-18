@@ -10,8 +10,8 @@ namespace kaacore {
 struct Display {
     uint32_t index;
     std::string name;
-    glm::ivec2 position;
-    glm::ivec2 size;
+    glm::uvec2 position;
+    glm::uvec2 size;
 };
 
 } // namespace kaacore
