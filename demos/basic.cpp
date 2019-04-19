@@ -17,7 +17,7 @@ using namespace kaacore;
 extern "C" int main(int argc, char *argv[])
 {
     Engine eng;
-    eng.create_window("title", 800, 600);
+    eng.window->show();
     bool running = true;
 
     bgfx::TextureHandle texture;
@@ -40,7 +40,6 @@ extern "C" int main(int argc, char *argv[])
 
     std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
-    bgfx::setViewRect(0, 0, 0, 800, 600);
     while (running) {
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
@@ -49,7 +48,6 @@ extern "C" int main(int argc, char *argv[])
                 break;
             }
         }
-        bgfx::touch(0);
         eng.renderer->render_vertices(vertices, indices, texture);
         bgfx::frame();
     }

@@ -28,7 +28,6 @@ struct SpritesDemoScene : Scene {
 
         this->animating_node = new Node();
         this->animating_node->set_shape(Shape::Box({3, 3}));
-        // this->animating_node->set_shape(Shape::Circle({0, 0}, 2.));
         this->animating_node->set_sprite(sprite);
         this->root_node.add_child(this->animating_node);
     }
@@ -54,7 +53,6 @@ struct SpritesDemoScene : Scene {
     }
 };
 
-
 extern "C" int main(int argc, char *argv[])
 {
     if (argc != 6) {
@@ -63,7 +61,7 @@ extern "C" int main(int argc, char *argv[])
     }
 
     Engine eng;
-    eng.create_window("title", 800, 600);
+    eng.window->show();
     SpritesDemoScene scene{argv[1], atoi(argv[2]), atoi(argv[3]),
                                     atoi(argv[4]), atoi(argv[5])};
     eng.run(&scene);

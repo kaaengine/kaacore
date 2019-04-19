@@ -16,10 +16,12 @@ using namespace kaacore;
 struct PolygonTesterDemoScene : Scene {
     std::vector<glm::dvec2> points;
     Node* shape_repr;
+    Engine* engine;
 
     PolygonTesterDemoScene()
     {
-        this->camera.size = {800, 600};
+        this->engine = get_engine();
+        this->camera.size = this->engine->window->size();
         this->camera.refresh();
 
         this->shape_repr = new Node();
@@ -77,7 +79,10 @@ struct PolygonTesterDemoScene : Scene {
             } else if (event.is_pressing(Mousecode::left)) {
                 auto pos = event.get_mouse_position();
                 log("Adding point: (%f, %f)", pos.x, pos.y);
-                this->add_point(pos - glm::dvec2(400, 300));
+                auto window_size = this->engine->window->size();
+                this->add_point(
+                    pos - glm::dvec2(window_size.x / 2, window_size.y / 2)
+                );
             } else if (event.is_pressing(Keycode::f)) {
                 log("Finalizing polygon");
                 this->finalize_polygon();
@@ -90,7 +95,7 @@ struct PolygonTesterDemoScene : Scene {
 extern "C" int main(int argc, char *argv[])
 {
     Engine eng;
-    eng.create_window("title", 800, 600);
+    eng.window->show();
     PolygonTesterDemoScene scene;
     eng.run(&scene);
 

@@ -7,6 +7,7 @@
 #include "kaacore/log.h"
 #include "kaacore/engine.h"
 #include "kaacore/scenes.h"
+#include "kaacore/display.h"
 #include "kaacore/exceptions.h"
 
 #include "kaacore/engine.h"
@@ -21,50 +22,44 @@ Engine::Engine() {
 
     log<LogLevel::info>("Initializing Kaacore.");
     SDL_Init(SDL_INIT_EVERYTHING);
-
     engine = this;
+
+    this->window = this->_create_window();
+    this->renderer = this->_create_renderer();
+    this->input_manager = std::make_unique<InputManager>();
 }
 
 Engine::~Engine() {
     KAACORE_CHECK(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
-
-    if (this->window) {
-        this->input_manager.release();
-        this->renderer.release();
-        this->window.release();
-        bgfx::shutdown();
-    }
+    this->input_manager.release();
+    this->renderer.release();
+    bgfx::shutdown();
+    this->window.release();
     SDL_Quit();
     engine = nullptr;
 }
 
-Window* Engine::create_window(const std::string& title, int32_t width,
-    int32_t height, int32_t x, int32_t y)
+std::vector<Display> Engine::get_displays()
 {
-    this->window = std::make_unique<Window>(
-        title, width, height, x, y
-    );
-    this->_init();
-    return this->window.get();
-}
-
-SDL_Rect Engine::get_display_rect()
-{
-    // TODO: add support for multiple displays
     SDL_Rect rect;
-    int32_t display_index = 0;
-    SDL_GetDisplayBounds(display_index, &rect);
-    return rect;
+    std::vector<Display> result;
+    int32_t displays_num = SDL_GetNumVideoDisplays();
+    result.resize(displays_num);
+    for (int32_t i = 0; i < displays_num; i++) {
+        SDL_GetDisplayUsableBounds(i, &rect);
+        Display& display = result[i];
+        display.index = i;
+        display.position = {rect.x, rect.y};
+        display.size = {rect.w, rect.h};
+        display.name = SDL_GetDisplayName(i);
+    }
+    return result;
 }
 
 void Engine::run(Scene* scene)
 {
-    if (!this->window) {
-        throw std::runtime_error("No window created. Aborting.");
-    }
-
     this->is_running = true;
     log("Engine is running.");
 
@@ -90,7 +85,13 @@ void Engine::quit() {
     this->is_running = false;
 }
 
-void Engine::_init()
+std::unique_ptr<Window> Engine::_create_window()
+{
+    Display display = this->get_displays().at(0);
+    return std::make_unique<Window>(display.size * 2u / 3u);
+}
+
+std::unique_ptr<Renderer> Engine::_create_renderer()
 {
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
@@ -112,28 +113,28 @@ void Engine::_init()
 
     bgfx::Init init_data;
     auto window_size = this->window->size();
-    init_data.resolution.width = window_size.first;
-    init_data.resolution.height = window_size.second;
+    init_data.resolution.width = window_size.x;
+    init_data.resolution.height = window_size.y;
     init_data.debug = true;
 
     bgfx::init(init_data);
 
-    this->renderer = std::make_unique<Renderer>();
-    this->input_manager = std::make_unique<InputManager>();
+    return std::make_unique<Renderer>(this->window->size());
 }
 
 void Engine::_pump_events()
 {
     this->input_manager->clear_events();
-    SDL_Event sdl_event;
-    while (SDL_PollEvent(&sdl_event)) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
         // TODO handle callbacks
-        if (sdl_event.type == SDL_WINDOWEVENT and
-            sdl_event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            // TODO reset renderer, update camera
+        if (event.type == SDL_WINDOWEVENT and
+            event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            this->renderer->reset(event.window.data1, event.window.data2);
+            // TODO update camera
             continue;
         }
-        this->input_manager->push_event(sdl_event);
+        this->input_manager->push_event(event);
     }
 }
 
