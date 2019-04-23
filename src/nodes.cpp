@@ -24,6 +24,8 @@ Node::Node(NodeType type) : type(type)
         new (&this->hitbox) HitboxNode();
         this->color = {1., 0., 1., 0.5};
         this->z_index = 100;
+    } else if (type == NodeType::text) {
+        new (&this->text) TextNode();
     }
 }
 
@@ -51,6 +53,8 @@ Node::~Node()
         this->body.~BodyNode();
     } else if (this->type == NodeType::hitbox) {
         this->hitbox.~HitboxNode();
+    } else if (this->type == NodeType::text) {
+        this->text.~TextNode();
     }
 }
 

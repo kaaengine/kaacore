@@ -8,6 +8,7 @@
 #include "kaacore/renderer.h"
 #include "kaacore/shapes.h"
 #include "kaacore/physics.h"
+#include "kaacore/fonts.h"
 #include "kaacore/sprites.h"
 
 
@@ -18,6 +19,7 @@ enum struct NodeType {
     space = 2,
     body = 3,
     hitbox = 4,
+    text = 5,
 };
 
 
@@ -65,6 +67,7 @@ struct Node {
         SpaceNode space;
         BodyNode body;
         HitboxNode hitbox;
+        TextNode text;
     };
 
     Node(NodeType type = NodeType::basic);
