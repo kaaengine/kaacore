@@ -45,13 +45,13 @@ struct DemoFontsScene : Scene {
         this->root_node.add_child(this->background);
 
         this->node_text_raw = new Node();
-        this->node_text_raw->position = {-250., 0.};
+        this->node_text_raw->position = {-125., 0.};
         this->node_text_raw->set_shape(text_shape);
         this->node_text_raw->set_sprite(font->baked_texture);
         this->root_node.add_child(this->node_text_raw);
 
         this->node_text = new Node(NodeType::text);
-        this->node_text->position = {0., -200.};
+        this->node_text->position = {200., 0.};
         this->node_text->text.font(font);
         this->node_text->text.content(txt_lorem_ipsum);
         this->node_text->text.font_size(24.);

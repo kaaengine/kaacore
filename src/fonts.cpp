@@ -169,6 +169,7 @@ Shape FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_gly
         indices.push_back(vertices_count + 3);
     }
 
+    StandardVertexData::align_position_center(vertices);
     return Shape::Freeform(indices, vertices);
 }
 
