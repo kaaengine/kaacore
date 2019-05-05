@@ -101,7 +101,7 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other)
 }
 
 
-void SpaceNode::initialize()
+SpaceNode::SpaceNode()
 {
     log("Creating simulation node: %p", container_node(this));
     this->cp_space = cpSpaceNew();
@@ -109,7 +109,7 @@ void SpaceNode::initialize()
     this->time_acc = 0;
 }
 
-void SpaceNode::destroy()
+SpaceNode::~SpaceNode()
 {
     cpSpaceDestroy(this->cp_space);
     // TODO destroy collision handlers?
@@ -277,7 +277,7 @@ bool SpaceNode::is_locked() const
 }
 
 
-void BodyNode::initialize()
+BodyNode::BodyNode()
 {
     this->cp_body = cpBodyNewKinematic();
     cpBodySetUserData(this->cp_body, this);
@@ -294,7 +294,7 @@ void _body_node_destroy(cpSpace* cp_space, void* cp_body_obj,
     cpBodyFree(cp_body);
 }
 
-void BodyNode::destroy()
+BodyNode::~BodyNode()
 {
     if (this->cp_body != nullptr) {
         cpBodySetUserData(this->cp_body, nullptr);
@@ -459,7 +459,7 @@ void BodyNode::activate()
     cpBodyActivate(this->cp_body);
 }
 
-void HitboxNode::initialize()
+HitboxNode::HitboxNode()
 {
 }
 
@@ -473,7 +473,7 @@ void _hitbox_node_destroy(cpSpace* cp_space, void* cp_shape_obj,
     cpShapeFree(cp_shape);
 }
 
-void HitboxNode::destroy()
+HitboxNode::~HitboxNode()
 {
     if (this->cp_shape != nullptr) {
         cpShapeSetUserData(this->cp_shape, nullptr);

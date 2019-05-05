@@ -62,8 +62,8 @@ struct SpaceNode {
     cpSpace* cp_space = nullptr;
     uint32_t time_acc = 0;
 
-    void initialize();
-    void destroy();
+    SpaceNode();
+    ~SpaceNode();
 
     void simulate(uint32_t dt);
     void set_collision_handler(
@@ -96,8 +96,9 @@ enum struct BodyNodeType {
 struct BodyNode {
     cpBody* cp_body = nullptr;
 
-    void initialize();
-    void destroy();
+    BodyNode();
+    ~BodyNode();
+
     void attach_to_simulation();
 
     void set_body_type(const BodyNodeType type);
@@ -136,8 +137,9 @@ struct BodyNode {
 struct HitboxNode {
     cpShape* cp_shape = nullptr;
 
-    void initialize();
-    void destroy();
+    HitboxNode();
+    ~HitboxNode();
+
     void update_physics_shape();
     void attach_to_simulation();
 

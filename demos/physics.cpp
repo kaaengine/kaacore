@@ -123,6 +123,10 @@ struct DemoScene : Scene {
                 this->container->set_position(this->container->position + glm::dvec2(0., 0.1));
             } else if (event.is_pressing(Keycode::d)) {
                 this->container->set_position(this->container->position + glm::dvec2(0.1, 0.));
+            } else if (event.is_pressing(Keycode::r)) {
+                delete this->box;
+            } else if (event.is_pressing(Keycode::t)) {
+                delete this->container;
             }
         }
     }

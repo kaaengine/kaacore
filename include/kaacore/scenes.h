@@ -35,7 +35,7 @@ struct Scene {
     std::set<Node*> simulations_registry;
 
     Scene();
-    virtual ~Scene() = default;
+    virtual ~Scene();
 
     virtual void process_frame(uint32_t dt);
     virtual void update(uint32_t dt);
@@ -43,6 +43,7 @@ struct Scene {
     // TODO on_enter, on_exit?
 
     void register_simulation(Node* node);
+    void unregister_simulation(Node* node);
 
     const std::vector<Event>& get_events() const;
 };
