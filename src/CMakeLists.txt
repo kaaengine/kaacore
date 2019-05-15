@@ -8,6 +8,7 @@ set(SRC_CXX_FILES
     renderer.cpp
     texture_loader.cpp
     input.cpp
+    audio.cpp
     scenes.cpp
     shapes.cpp
     physics.cpp
@@ -25,6 +26,7 @@ set(SRC_H_FILES
     ../include/kaacore/renderer.h
     ../include/kaacore/texture_loader.h
     ../include/kaacore/input.h
+    ../include/kaacore/audio.h
     ../include/kaacore/scenes.h
     ../include/kaacore/shapes.h
     ../include/kaacore/physics.h
@@ -81,7 +83,10 @@ target_include_directories(kaacore PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(kaacore PUBLIC SDL2 SDL_mixer bgfx chipmunk_static glm)
+target_link_libraries(
+    kaacore PUBLIC
+    SDL2 SDL_mixer bgfx chipmunk_static glm $<TARGET_OBJECTS:SDL_mixer>
+)
 
 if (KAACORE_SHARED)
     add_library(kaacore-shared SHARED $<TARGET_OBJECTS:kaacore>)

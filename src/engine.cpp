@@ -27,12 +27,14 @@ Engine::Engine() {
     this->window = this->_create_window();
     this->renderer = this->_create_renderer();
     this->input_manager = std::make_unique<InputManager>();
+    this->audio_manager = std::make_unique<AudioManager>();
 }
 
 Engine::~Engine() {
     KAACORE_CHECK(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
+    this->audio_manager.release();
     this->input_manager.release();
     this->renderer.release();
     bgfx::shutdown();
