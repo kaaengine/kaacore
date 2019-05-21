@@ -174,12 +174,12 @@ Shape FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_gly
 }
 
 
-Font::Font(const Resource<Image> baked_texture, const BakedFontData baked_font)
+FontData::FontData(const Resource<Image> baked_texture, const BakedFontData baked_font)
     : baked_texture(baked_texture), baked_font(baked_font)
 {
 }
 
-Resource<Font> Font::load(const std::string& font_filepath)
+Resource<FontData> FontData::load(const std::string& font_filepath)
 {
     RawFile file(font_filepath);
     bimg::ImageContainer* baked_font_image;
@@ -188,12 +188,12 @@ Resource<Font> Font::load(const std::string& font_filepath)
     std::tie(baked_font_image, baked_font_data) = bake_font_texture(file);
     bgfx::TextureHandle texture = make_texture(baked_font_image);
 
-    return std::make_shared<Font>(
+    return std::make_shared<FontData>(
         Image::load(texture, baked_font_image), baked_font_data
     );
 }
 
-std::vector<FontRenderGlyph> Font::generate_render_glyphs(
+std::vector<FontRenderGlyph> FontData::generate_render_glyphs(
     const std::string& text, const double pixel_height
 )
 {
@@ -224,6 +224,22 @@ std::vector<FontRenderGlyph> Font::generate_render_glyphs(
 }
 
 
+Font::Font()
+{
+}
+
+Font::Font(const Resource<FontData>& font_data)
+    : _font_data(font_data)
+{
+}
+
+
+Font Font::load(const std::string& font_filepath)
+{
+    return Font(FontData::load(font_filepath));
+}
+
+
 inline constexpr Node* container_node(const TextNode* text)
 {
     return container_of(text, &Node::text);
@@ -242,8 +258,8 @@ TextNode::~TextNode()
 
 void TextNode::_update_shape()
 {
-    KAACORE_ASSERT(this->_font);
-    this->_render_glyphs = this->_font->generate_render_glyphs(
+    KAACORE_ASSERT(this->_font._font_data);
+    this->_render_glyphs = this->_font._font_data->generate_render_glyphs(
         this->_content, this->_font_size
     );
     FontRenderGlyph::arrange_glyphs(
@@ -253,7 +269,7 @@ void TextNode::_update_shape()
     );
 
     Node* node = container_node(this);
-    node->set_sprite(this->_font->baked_texture);
+    node->set_sprite(this->_font._font_data->baked_texture);
     node->set_shape(
         FontRenderGlyph::make_shape(this->_render_glyphs)
     );
@@ -314,12 +330,12 @@ void TextNode::first_line_indent(const double first_line_indent)
     this->_update_shape();
 }
 
-Resource<Font> TextNode::font() const
+Font TextNode::font() const
 {
     return this->_font;
 }
 
-void TextNode::font(const Resource<Font>& font)
+void TextNode::font(const Font& font)
 {
     this->_font = font;
     this->_update_shape();

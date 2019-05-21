@@ -34,7 +34,7 @@ struct DemoFontsScene : Scene {
         this->camera.refresh();
 
         auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
-        auto render_glyphs = font->generate_render_glyphs("Hello World \n\n\nFooBar FooBar", 30.);
+        auto render_glyphs = font._font_data->generate_render_glyphs("Hello World \n\n\nFooBar FooBar", 30.);
         FontRenderGlyph::arrange_glyphs(render_glyphs, 15., 35., 120.);
         auto text_shape = FontRenderGlyph::make_shape(render_glyphs);
 
@@ -47,7 +47,7 @@ struct DemoFontsScene : Scene {
         this->node_text_raw = new Node();
         this->node_text_raw->position = {-125., 0.};
         this->node_text_raw->set_shape(text_shape);
-        this->node_text_raw->set_sprite(font->baked_texture);
+        this->node_text_raw->set_sprite(font._font_data->baked_texture);
         this->root_node.add_child(this->node_text_raw);
 
         this->node_text = new Node(NodeType::text);

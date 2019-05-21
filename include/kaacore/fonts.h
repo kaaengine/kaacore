@@ -45,13 +45,13 @@ struct FontRenderGlyph {
 };
 
 
-struct Font {
+struct FontData {
     Resource<Image> baked_texture;
     BakedFontData baked_font;
 
-    Font(const Resource<Image> baked_texture, const BakedFontData baked_font);
+    FontData(const Resource<Image> baked_texture, const BakedFontData baked_font);
 
-    static Resource<Font> load(const std::string& font_filepath);
+    static Resource<FontData> load(const std::string& font_filepath);
 
     Shape generate_text_shape(const std::string& text, double size,
                               double indent, double max_width);
@@ -62,13 +62,23 @@ struct Font {
 };
 
 
+struct Font {
+    Resource<FontData> _font_data;
+
+    Font();
+    Font(const Resource<FontData>& font_data);
+
+    static Font load(const std::string& font_filepath);
+};
+
+
 class TextNode {
     std::string _content;
     double _font_size;
     double _line_width;
     double _interline_spacing;
     double _first_line_indent;
-    Resource<Font> _font;
+    Font _font;
 
     std::vector<FontRenderGlyph> _render_glyphs;
 
@@ -93,8 +103,8 @@ class TextNode {
     double first_line_indent() const;
     void first_line_indent(const double first_line_indent);
 
-    Resource<Font> font() const;
-    void font(const Resource<Font>& font);
+    Font font() const;
+    void font(const Font& font);
 };
 
 
