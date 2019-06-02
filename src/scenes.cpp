@@ -24,8 +24,15 @@ Scene::Scene()
 }
 
 
-Scene::~Scene()
+Scene::~Scene() noexcept(false)
 {
+    auto engine = get_engine();
+    if (this == engine->scene || this == engine->next_scene) {
+        throw kaacore::exception(
+            "An attempt to delete current scene detected. Aborting."
+        );
+    }
+
     while (not this->root_node.children.empty()) {
         delete this->root_node.children[0];
     }
@@ -91,18 +98,28 @@ void Scene::process_nodes(uint32_t dt)
 
 void Scene::process_frame(uint32_t dt)
 {
-    bgfx::setViewTransform(0,
-                           glm::value_ptr(this->camera.calculated_view),
-                           glm::value_ptr(this->camera.calculated_proj));
+    bgfx::setViewTransform(
+        0,
+        glm::value_ptr(this->camera.calculated_view),
+        glm::value_ptr(this->camera.calculated_proj)
+    );
     this->time += dt;
     this->update(dt);
     this->process_nodes(dt);
 }
 
 
+void Scene::on_enter()
+{}
+
+
 void Scene::update(uint32_t dt)
-{
-}
+{}
+
+
+void Scene::on_exit()
+{}
+
 
 void Scene::register_simulation(Node* node)
 {
@@ -132,6 +149,7 @@ Camera::Camera()
 {
     this->refresh();
 }
+
 
 void Camera::refresh()
 {

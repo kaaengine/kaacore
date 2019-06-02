@@ -22,6 +22,7 @@ class Engine {
 public:
     uint64_t time = 0;
     Scene* scene = nullptr;
+    Scene* next_scene = nullptr;
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
@@ -30,16 +31,18 @@ public:
     std::unique_ptr<InputManager> input_manager;
     std::unique_ptr<AudioManager> audio_manager;
 
-    Engine();
-    ~Engine();
+    Engine() noexcept(false);
+    ~Engine() noexcept(false);
 
     std::vector<Display> get_displays();
     void run(Scene* scene);
+    void change_scene(Scene *scene);
     void quit();
 
 private:
     std::unique_ptr<Window> _create_window();
     std::unique_ptr<Renderer> _create_renderer();
+    void _swap_scenes();
     void _pump_events();
 };
 

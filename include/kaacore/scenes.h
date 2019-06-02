@@ -35,12 +35,13 @@ struct Scene {
     std::set<Node*> simulations_registry;
 
     Scene();
-    virtual ~Scene();
+    virtual ~Scene() noexcept(false);
 
     virtual void process_frame(uint32_t dt);
+    virtual void on_enter();
     virtual void update(uint32_t dt);
+    virtual void on_exit();
     virtual void process_nodes(uint32_t dt);
-    // TODO on_enter, on_exit?
 
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
