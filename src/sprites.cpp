@@ -31,7 +31,6 @@ Sprite Sprite::crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const
     } else {
         new_sprite.dimensions = new_dimensions;
     }
-    new_sprite.dimensions = new_dimensions;
     return new_sprite;
 }
 
