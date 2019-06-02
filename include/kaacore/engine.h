@@ -8,6 +8,7 @@
 
 #include "kaacore/window.h"
 #include "kaacore/renderer.h"
+#include "kaacore/audio.h"
 #include "kaacore/exceptions.h"
 
 
@@ -27,6 +28,7 @@ public:
     std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
+    std::unique_ptr<AudioManager> audio_manager;
 
     Engine();
     ~Engine();
