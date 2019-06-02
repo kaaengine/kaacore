@@ -24,6 +24,15 @@ Scene::Scene()
 }
 
 
+Scene::~Scene()
+{
+    while (not this->root_node.children.empty()) {
+        delete this->root_node.children[0];
+    }
+    KAACORE_ASSERT(this->simulations_registry.empty());
+}
+
+
 void Scene::process_nodes(uint32_t dt)
 {
     static std::deque<Node*> processing_queue;
@@ -102,6 +111,15 @@ void Scene::register_simulation(Node* node)
     if (this->simulations_registry.find(node) == this->simulations_registry.end()) {
         this->simulations_registry.insert(node);
     }
+}
+
+void Scene::unregister_simulation(Node* node)
+{
+    KAACORE_ASSERT(node->type == NodeType::space);
+    KAACORE_ASSERT(node->space.cp_space != nullptr);
+    auto pos = this->simulations_registry.find(node);
+    KAACORE_ASSERT(pos != this->simulations_registry.end());
+    this->simulations_registry.erase(pos);
 }
 
 const std::vector<Event>& Scene::get_events() const

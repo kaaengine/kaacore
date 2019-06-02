@@ -17,13 +17,15 @@ namespace kaacore {
 Node::Node(NodeType type) : type(type)
 {
     if (type == NodeType::space) {
-        this->space.initialize();
+        new (&this->space) SpaceNode();
     } else if (type == NodeType::body) {
-        this->body.initialize();
+        new (&this->body) BodyNode();
     } else if (type == NodeType::hitbox) {
-        this->hitbox.initialize();
+        new (&this->hitbox) HitboxNode();
         this->color = {1., 0., 1., 0.5};
         this->z_index = 100;
+    } else if (type == NodeType::text) {
+        new (&this->text) TextNode();
     }
 }
 
@@ -43,11 +45,16 @@ Node::~Node()
     }
 
     if (this->type == NodeType::space) {
-        this->space.destroy();
+        if (this->scene) {
+            this->scene->unregister_simulation(this);
+        }
+        this->space.~SpaceNode();
     } else if (this->type == NodeType::body) {
-        this->body.destroy();
+        this->body.~BodyNode();
     } else if (this->type == NodeType::hitbox) {
-        this->hitbox.destroy();
+        this->hitbox.~HitboxNode();
+    } else if (this->type == NodeType::text) {
+        this->text.~TextNode();
     }
 }
 

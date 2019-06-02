@@ -66,6 +66,23 @@ inline constexpr Node* container_node(const HitboxNode* hitbox)
 }
 
 
+void space_safe_call(SpaceNode* space_node_phys, const SpacePostStepFunc& func)
+{
+    if (space_node_phys and space_node_phys->is_locked()) {
+        space_node_phys->add_post_step_callback(func);
+    } else {
+        func(space_node_phys);
+    }
+}
+
+
+void space_safe_call(Node* space_node, const SpacePostStepFunc& func)
+{
+    KAACORE_ASSERT(space_node->type == NodeType::space);
+    space_safe_call(&space_node->space, func);
+}
+
+
 Arbiter::Arbiter(CollisionPhase phase, SpaceNode* space_phys,
                  cpArbiter* cp_arbiter)
     : phase(phase), cp_arbiter(cp_arbiter),
@@ -101,7 +118,7 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other)
 }
 
 
-void SpaceNode::initialize()
+SpaceNode::SpaceNode()
 {
     log("Creating simulation node: %p", container_node(this));
     this->cp_space = cpSpaceNew();
@@ -109,10 +126,31 @@ void SpaceNode::initialize()
     this->time_acc = 0;
 }
 
-void SpaceNode::destroy()
+SpaceNode::~SpaceNode()
 {
     cpSpaceDestroy(this->cp_space);
     // TODO destroy collision handlers?
+}
+
+void _cp_call_post_step_callbacks(cpSpace* cp_space, void* space_node_phys_ptr,
+                                  void* data)
+{
+    SpaceNode* space_node_phys = static_cast<SpaceNode*>(space_node_phys_ptr);
+    for (const auto& func : space_node_phys->post_step_callbacks) {
+        func(space_node_phys);
+    }
+    space_node_phys->post_step_callbacks.clear();
+}
+
+
+void SpaceNode::add_post_step_callback(const SpacePostStepFunc& func)
+{
+    if (this->post_step_callbacks.empty()) {
+        cpSpaceAddPostStepCallback(
+            this->cp_space, _cp_call_post_step_callbacks, this, nullptr
+        );
+    }
+    this->post_step_callbacks.push_back(func);
 }
 
 void SpaceNode::simulate(const uint32_t dt)
@@ -277,35 +315,25 @@ bool SpaceNode::is_locked() const
 }
 
 
-void BodyNode::initialize()
+BodyNode::BodyNode()
 {
     this->cp_body = cpBodyNewKinematic();
     cpBodySetUserData(this->cp_body, this);
     this->set_body_type(BodyNodeType::dynamic);
 }
 
-void _body_node_destroy(cpSpace* cp_space, void* cp_body_obj,
-                        void* data)
-{
-    auto cp_body = static_cast<cpBody*>(cp_body_obj);
-    if (cp_space != nullptr) {
-        cpSpaceRemoveBody(cp_space, cp_body);
-    }
-    cpBodyFree(cp_body);
-}
-
-void BodyNode::destroy()
+BodyNode::~BodyNode()
 {
     if (this->cp_body != nullptr) {
         cpBodySetUserData(this->cp_body, nullptr);
-        cpSpace* cp_space = cpBodyGetSpace(this->cp_body);
-        if (cp_space != nullptr and cpSpaceIsLocked(cp_space)) {
-            cpSpaceAddPostStepCallback(
-                cp_space, _body_node_destroy, this->cp_body, nullptr
-            );
-        } else {
-            _body_node_destroy(cp_space, this->cp_body, nullptr);
-        }
+        space_safe_call(this->get_space(),
+            [body_ptr=this->cp_body](const SpaceNode* space_node_phys) {
+            if (space_node_phys) {
+                cpSpaceRemoveBody(space_node_phys->cp_space, body_ptr);
+            }
+            cpBodyFree(body_ptr);
+        });
+        this->cp_body = nullptr;
     }
 }
 
@@ -316,11 +344,26 @@ void BodyNode::attach_to_simulation()
     if (cpBodyGetSpace(this->cp_body) == nullptr) {
         Node* node = container_node(this);
         log("Attaching body node %p to simulation (space)", node);
-        assert(node->parent != nullptr);
-        assert(node->parent->type == NodeType::space);
-        assert(node->parent->space.cp_space != nullptr);
-        cpSpaceAddBody(node->parent->space.cp_space, this->cp_body);
+        KAACORE_ASSERT(node->parent != nullptr);
+        KAACORE_ASSERT(node->parent->type == NodeType::space);
+        KAACORE_ASSERT(node->parent->space.cp_space != nullptr);
+        space_safe_call(node->parent,
+            [&](const SpaceNode* space_node_phys) {
+            cpSpaceAddBody(node->parent->space.cp_space, this->cp_body);
+        });
     }
+}
+
+SpaceNode* BodyNode::get_space() const
+{
+    if (this->cp_body) {
+        cpSpace* cp_space = cpBodyGetSpace(this->cp_body);
+        if (cp_space) {
+            return static_cast<SpaceNode*>(cpSpaceGetUserData(cp_space));
+        }
+    }
+
+    return nullptr;
 }
 
 void BodyNode::set_body_type(const BodyNodeType type)
@@ -459,43 +502,43 @@ void BodyNode::activate()
     cpBodyActivate(this->cp_body);
 }
 
-void HitboxNode::initialize()
+HitboxNode::HitboxNode()
 {
 }
 
-void _hitbox_node_destroy(cpSpace* cp_space, void* cp_shape_obj,
-                        void* data)
-{
-    auto cp_shape = static_cast<cpShape*>(cp_shape_obj);
-    if (cp_space != nullptr) {
-        cpSpaceRemoveShape(cp_space, cp_shape);
-    }
-    cpShapeFree(cp_shape);
-}
-
-void HitboxNode::destroy()
+HitboxNode::~HitboxNode()
 {
     if (this->cp_shape != nullptr) {
         cpShapeSetUserData(this->cp_shape, nullptr);
+        space_safe_call(this->get_space(),
+            [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+            if (space_node_phys) {
+                cpSpaceRemoveShape(space_node_phys->cp_space, shape_ptr);
+            }
+            cpShapeFree(shape_ptr);
+        });
+        this->cp_shape = nullptr;
+    }
+}
+
+SpaceNode* HitboxNode::get_space() const
+{
+    if (this->cp_shape) {
         cpSpace* cp_space = cpShapeGetSpace(this->cp_shape);
-        if (cp_space != nullptr and cpSpaceIsLocked(cp_space)) {
-            cpSpaceAddPostStepCallback(
-                cp_space, _hitbox_node_destroy, this->cp_shape, nullptr
-            );
-        } else {
-            _hitbox_node_destroy(cp_space, this->cp_shape, nullptr);
+        if (cp_space) {
+            return static_cast<SpaceNode*>(cpSpaceGetUserData(cp_space));
         }
     }
+
+    return nullptr;
 }
 
 void HitboxNode::update_physics_shape()
 {
-    if (this->cp_shape != nullptr) {
-        // TODO destroy old shape or delegate after cpSpace step
-    }
-
     Node* node = container_node(this);
     log("Updating hitbox node %p shape", node);
+
+    cpShape* new_cp_shape;
 
     KAACORE_ASSERT(node->shape.type != ShapeType::none);
     KAACORE_ASSERT(node->shape.type != ShapeType::freeform);
@@ -503,24 +546,47 @@ void HitboxNode::update_physics_shape()
     // TODO handle node matrix transformations
     if (node->shape.type == ShapeType::segment) {
         KAACORE_ASSERT(node->shape.points.size() == 2);
-        this->cp_shape = cpSegmentShapeNew(
+        new_cp_shape = cpSegmentShapeNew(
             nullptr, cp_points[0], cp_points[1], node->shape.radius
         );
     } else if (node->shape.type == ShapeType::circle) {
         KAACORE_ASSERT(node->shape.points.size() == 1);
-        this->cp_shape = cpCircleShapeNew(
+        new_cp_shape = cpCircleShapeNew(
             nullptr, node->shape.radius, cp_points[0]
         );
     } else if (node->shape.type == ShapeType::polygon) {
-        this->cp_shape = cpPolyShapeNewRaw(
+        new_cp_shape = cpPolyShapeNewRaw(
             nullptr, node->shape.points.size(), cp_points, 0.
         );
     }
 
-    cpShapeSetUserData(this->cp_shape, this);
+    cpShapeSetUserData(new_cp_shape, this);
+    cpShapeSetElasticity(new_cp_shape, 0.95);
 
-    // XXX default elasticity?
-    cpShapeSetElasticity(this->cp_shape, 0.95);
+    if (this->cp_shape != nullptr) {
+        cpShapeSetUserData(this->cp_shape, nullptr);
+
+        // copy over existing cpShape parameters
+        cpShapeSetCollisionType(new_cp_shape,
+                                cpShapeGetCollisionType(this->cp_shape));
+        cpShapeSetFilter(new_cp_shape,
+                         cpShapeGetFilter(this->cp_shape));
+
+        space_safe_call(this->get_space(),
+            [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+            if (space_node_phys) {
+                cpSpaceRemoveShape(space_node_phys->cp_space, shape_ptr);
+            }
+            cpShapeFree(shape_ptr);
+        });
+        this->cp_shape = nullptr;
+    }
+
+    this->cp_shape = new_cp_shape;
+
+    if (node->parent) {
+        this->attach_to_simulation();
+    }
 }
 
 void HitboxNode::attach_to_simulation()
@@ -533,7 +599,10 @@ void HitboxNode::attach_to_simulation()
         KAACORE_ASSERT(node->parent != nullptr);
         KAACORE_ASSERT(node->parent->type == NodeType::body);
         KAACORE_ASSERT(node->parent->body.cp_body != nullptr);
-        cpShapeSetBody(this->cp_shape, node->parent->body.cp_body);
+        space_safe_call(node->parent->body.get_space(),
+            [&, node](const SpaceNode* space_node_phys) {
+            cpShapeSetBody(this->cp_shape, node->parent->body.cp_body);
+        });
     }
 
     if (cpShapeGetSpace(this->cp_shape) == nullptr
@@ -541,7 +610,10 @@ void HitboxNode::attach_to_simulation()
         log("Attaching hitbox node %p to simulation (space)", node);
         KAACORE_ASSERT(node->parent->parent->type == NodeType::space);
         KAACORE_ASSERT(node->parent->parent->space.cp_space != nullptr);
-        cpSpaceAddShape(node->parent->parent->space.cp_space, this->cp_shape);
+        space_safe_call(node->parent->parent,
+            [&](const SpaceNode* space_node_phys) {
+            cpSpaceAddShape(space_node_phys->cp_space, this->cp_shape);
+        });
     }
 }
 

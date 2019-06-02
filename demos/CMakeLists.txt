@@ -16,12 +16,16 @@ list(APPEND DEMO_TARGETS demo-sprites)
 add_executable(demo-polygon-tester polygon_tester.cpp)
 list(APPEND DEMO_TARGETS demo-polygon-tester)
 
+add_executable(demo-fonts fonts.cpp)
+list(APPEND DEMO_TARGETS demo-fonts)
+
 
 target_link_libraries(demo-basic kaacore)
 target_link_libraries(demo-basic-scene kaacore)
 target_link_libraries(demo-physics kaacore)
 target_link_libraries(demo-sprites kaacore)
 target_link_libraries(demo-polygon-tester kaacore)
+target_link_libraries(demo-fonts kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES
