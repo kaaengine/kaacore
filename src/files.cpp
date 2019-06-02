@@ -2,6 +2,8 @@
 #include <string>
 #include <fstream>
 
+#include "kaacore/log.h"
+
 #include "kaacore/files.h"
 
 
@@ -9,6 +11,7 @@ namespace kaacore {
 
 RawFile::RawFile(const std::string file_path) : path(file_path)
 {
+    log("Reading file: %s", file_path.c_str());
     std::ifstream f(file_path, std::ifstream::binary);
     f.seekg(0, std::ios::end);
     auto len = f.tellg();

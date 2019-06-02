@@ -16,6 +16,7 @@ set(SRC_CXX_FILES
     sprites.cpp
     window.cpp
     geometry.cpp
+    fonts.cpp
 )
 
 set(SRC_H_FILES
@@ -35,6 +36,7 @@ set(SRC_H_FILES
     ../include/kaacore/window.h
     ../include/kaacore/geometry.h
     ../include/kaacore/display.h
+    ../include/kaacore/fonts.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
@@ -86,6 +88,7 @@ target_include_directories(kaacore PUBLIC
 target_link_libraries(
     kaacore PUBLIC
     SDL2 SDL_mixer bgfx chipmunk_static glm $<TARGET_OBJECTS:SDL_mixer>
+    stb $<TARGET_OBJECTS:stb>
 )
 
 if (KAACORE_SHARED)
