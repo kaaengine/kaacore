@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <functional>
 
 #include <glm/glm.hpp>
@@ -57,13 +58,18 @@ typedef std::function<uint8_t(const Arbiter,
                               const CollisionPair, const CollisionPair)> \
         CollisionHandlerFunc;
 
+typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
+
 
 struct SpaceNode {
     cpSpace* cp_space = nullptr;
     uint32_t time_acc = 0;
+    std::vector<SpacePostStepFunc> post_step_callbacks;
 
-    void initialize();
-    void destroy();
+    SpaceNode();
+    ~SpaceNode();
+
+    void add_post_step_callback(const SpacePostStepFunc& func);
 
     void simulate(uint32_t dt);
     void set_collision_handler(
@@ -96,9 +102,11 @@ enum struct BodyNodeType {
 struct BodyNode {
     cpBody* cp_body = nullptr;
 
-    void initialize();
-    void destroy();
+    BodyNode();
+    ~BodyNode();
+
     void attach_to_simulation();
+    SpaceNode* get_space() const;
 
     void set_body_type(const BodyNodeType type);
     BodyNodeType get_body_type() const;
@@ -136,10 +144,12 @@ struct BodyNode {
 struct HitboxNode {
     cpShape* cp_shape = nullptr;
 
-    void initialize();
-    void destroy();
+    HitboxNode();
+    ~HitboxNode();
+
     void update_physics_shape();
     void attach_to_simulation();
+    SpaceNode* get_space() const;
 
     void set_trigger_id(const CollisionTriggerId trigger_id);
     CollisionTriggerId get_trigger_id() const;

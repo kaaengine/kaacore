@@ -25,6 +25,9 @@ struct DemoScene : Scene {
 
     std::vector<Node*> balls;
 
+    bool delete_on_collision = false;
+    bool change_shape_on_collision = false;
+
     Node* init_wall(const glm::dvec2& a, const glm::dvec2& b)
     {
         Node* wall_hitbox = new Node(NodeType::hitbox);
@@ -80,9 +83,9 @@ struct DemoScene : Scene {
             ball->set_position(
                 {position_dist(generator), position_dist(generator)}
             );
-            ball->body.set_velocity(
-                {speed_dist(generator), speed_dist(generator)}
-            );
+            // ball->body.set_velocity(
+            //     {speed_dist(generator), speed_dist(generator)}
+            // );
             ball->body.set_moment(10.);
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
@@ -95,10 +98,29 @@ struct DemoScene : Scene {
         }
 
         this->container->space.set_collision_handler(120, 120,
-            [](const Arbiter arbiter,
+            [&, circle_shape, polygon_shape](const Arbiter arbiter,
                const CollisionPair pair_a, const CollisionPair pair_b) -> uint8_t
             {
                 std::cout << "Collision! " << int(arbiter.phase) << std::endl;
+                if (this->delete_on_collision) {
+                    delete pair_a.body_node;
+                } else if (arbiter.phase == CollisionPhase::separate and 
+                           this->change_shape_on_collision) {
+                    if (pair_a.hitbox_node->shape.type == ShapeType::circle) {
+                        pair_a.body_node->set_shape(polygon_shape);
+                        pair_a.hitbox_node->set_shape(polygon_shape);
+                    } else {
+                        pair_a.body_node->set_shape(circle_shape);
+                        pair_a.hitbox_node->set_shape(circle_shape);
+                    }
+                    if (pair_b.hitbox_node->shape.type == ShapeType::circle) {
+                        pair_b.body_node->set_shape(polygon_shape);
+                        pair_b.hitbox_node->set_shape(polygon_shape);
+                    } else {
+                        pair_b.body_node->set_shape(circle_shape);
+                        pair_b.hitbox_node->set_shape(circle_shape);
+                    }
+                }
                 return 1;
             }, CollisionPhase::begin | CollisionPhase::separate
         );
@@ -123,6 +145,21 @@ struct DemoScene : Scene {
                 this->container->set_position(this->container->position + glm::dvec2(0., 0.1));
             } else if (event.is_pressing(Keycode::d)) {
                 this->container->set_position(this->container->position + glm::dvec2(0.1, 0.));
+            } else if (event.is_pressing(Keycode::r)) {
+                delete this->box;
+            } else if (event.is_pressing(Keycode::t)) {
+                delete this->container;
+            } else if (event.is_pressing(Keycode::x)) {
+                if (not this->balls.empty()) {
+                    delete this->balls.back();
+                    this->balls.pop_back();
+                }
+            } else if (event.is_pressing(Keycode::num_1)) {
+                std::cout << "Enabling delete_on_collision" << std::endl;
+                this->delete_on_collision = true;
+            } else if (event.is_pressing(Keycode::num_2)) {
+                std::cout << "Enabling change_shape_on_collision" << std::endl;
+                this->change_shape_on_collision = true;
             }
         }
     }
