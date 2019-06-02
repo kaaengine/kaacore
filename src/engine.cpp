@@ -17,7 +17,7 @@ namespace kaacore {
 
 Engine* engine;
 
-Engine::Engine() {
+Engine::Engine() noexcept(false) {
     KAACORE_CHECK(engine == nullptr);
 
     log<LogLevel::info>("Initializing Kaacore.");
@@ -30,7 +30,7 @@ Engine::Engine() {
     this->audio_manager = std::make_unique<AudioManager>();
 }
 
-Engine::~Engine() {
+Engine::~Engine() noexcept(false) {
     KAACORE_CHECK(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
@@ -68,6 +68,7 @@ void Engine::run(Scene* scene)
     this->scene = scene;
     uint32_t ticks = SDL_GetTicks();
 
+    scene->on_enter();
     while(this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
@@ -75,12 +76,21 @@ void Engine::run(Scene* scene)
         this->time += dt;
         this->_pump_events();
 
+        if (this->next_scene != nullptr) {
+            this->_swap_scenes();
+        }
+
         this->renderer->begin_frame();
         this->scene->process_frame(dt);
         this->renderer->end_frame();
     }
+    scene->on_exit();
 
     log("Engine stopped.");
+}
+
+void Engine::change_scene(Scene* scene) {
+    this->next_scene = scene;
 }
 
 void Engine::quit() {
@@ -122,6 +132,13 @@ std::unique_ptr<Renderer> Engine::_create_renderer()
     bgfx::init(init_data);
 
     return std::make_unique<Renderer>(this->window->size());
+}
+
+void Engine::_swap_scenes() {
+    this->scene->on_exit();
+    this->next_scene->on_enter();
+    this->scene = this->next_scene;
+    this->next_scene = nullptr;
 }
 
 void Engine::_pump_events()
