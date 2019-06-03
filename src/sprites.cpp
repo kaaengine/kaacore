@@ -20,10 +20,18 @@ Sprite Sprite::load(const char* path, uint64_t flags)
 
 Sprite Sprite::crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const
 {
-    KAACORE_CHECK(new_origin.x < this->dimensions.x and
-                  new_origin.y < this->dimensions.y);
-    KAACORE_CHECK(new_dimensions.x < this->dimensions.x - new_origin.x and
-                  new_dimensions.y < this->dimensions.y - new_origin.y);
+    if (new_origin.x > this->dimensions.x) {
+        log<LogLevel::warn>("Requested origin.x is greater than original");
+    }
+    if (new_origin.y > this->dimensions.y) {
+        log<LogLevel::warn>("Requested origin.y is greater than original");
+    }
+    if (new_dimensions.x > this->dimensions.x - new_origin.x) {
+        log<LogLevel::warn>("Requested dimensions.x is greater than available");
+    }
+    if (new_dimensions.y > this->dimensions.y - new_origin.y) {
+        log<LogLevel::warn>("Requested dimensions.y is greater than available");
+    }
     Sprite new_sprite(*this);
     new_sprite.origin = this->origin + new_origin;
     if (new_dimensions == glm::dvec2(0., 0.)) {
