@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/geometry.h"
+#include "kaacore/exceptions.h"
 
 #include "kaacore/shapes.h"
 
@@ -82,7 +83,7 @@ Shape Shape::Box(const glm::dvec2 size)
 Shape Shape::Polygon(const std::vector<glm::dvec2>& points)
 {
     auto polygon_type = classify_polygon(points);
-    assert(polygon_type != PolygonType::not_convex);
+    KAACORE_CHECK(polygon_type != PolygonType::not_convex);
 
     std::vector<glm::dvec2> polygon_points = points;
 

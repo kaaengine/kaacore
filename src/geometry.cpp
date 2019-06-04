@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/exceptions.h"
+
 #include "kaacore/geometry.h"
 
 
@@ -89,7 +91,7 @@ glm::dvec2 find_points_center(const std::vector<glm::dvec2>& points)
 std::pair<glm::dvec2, glm::dvec2>
 find_points_minmax(const std::vector<glm::dvec2>& points)
 {
-    assert(points.size() > 0);
+    KAACORE_CHECK(points.size() > 0);
     glm::dvec2 min_pt = points[0];
     glm::dvec2 max_pt = points[0];
     for (const auto& pt : points) {
