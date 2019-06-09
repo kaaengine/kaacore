@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/renderer.h"
+#include "kaacore/geometry.h"
 
 
 namespace kaacore {
@@ -25,15 +26,14 @@ struct Shape {
 
     std::vector<VertexIndex> indices;
     std::vector<StandardVertexData> vertices;
+    BoundingBox<float> vertices_bbox;
 
     Shape()
     : type(ShapeType::none) {};
     Shape(const ShapeType type, const std::vector<glm::dvec2>& points,
           const double radius,
           const std::vector<VertexIndex>& indices,
-          const std::vector<StandardVertexData>& vertices)
-    : type(type), points(points), radius(radius),
-      indices(indices), vertices(vertices) {};
+          const std::vector<StandardVertexData>& vertices);
 
     inline operator bool() const {return this->type != ShapeType::none;}
 

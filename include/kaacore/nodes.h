@@ -6,6 +6,7 @@
 #include <bgfx/bgfx.h>
 
 #include "kaacore/renderer.h"
+#include "kaacore/geometry.h"
 #include "kaacore/shapes.h"
 #include "kaacore/physics.h"
 #include "kaacore/fonts.h"
@@ -53,6 +54,7 @@ struct Node {
     Sprite sprite;
     glm::dvec4 color = {1., 1., 1., 1.};
     bool visible = true;
+    Alignment origin_alignment = Alignment::none;
 
     Scene* scene = nullptr;
     Node* parent = nullptr;

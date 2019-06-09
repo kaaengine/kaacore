@@ -11,6 +11,18 @@
 
 namespace kaacore {
 
+Shape::Shape(const ShapeType type, const std::vector<glm::dvec2>& points,
+             const double radius,
+             const std::vector<VertexIndex>& indices,
+             const std::vector<StandardVertexData>& vertices)
+    : type(type), points(points), radius(radius),
+      indices(indices), vertices(vertices)
+{
+    for (const auto& vt : vertices) {
+        this->vertices_bbox.add_point(vt.xyz);
+    }
+};
+
 Shape Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 {
     const double radius = 1;
