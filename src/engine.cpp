@@ -68,7 +68,7 @@ void Engine::run(Scene* scene)
     this->scene = scene;
     uint32_t ticks = SDL_GetTicks();
 
-    scene->on_enter();
+    this->scene->on_enter();
     while(this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
@@ -84,7 +84,8 @@ void Engine::run(Scene* scene)
         this->scene->process_frame(dt);
         this->renderer->end_frame();
     }
-    scene->on_exit();
+    this->scene->on_exit();
+    this->scene = nullptr;
 
     log("Engine stopped.");
 }
