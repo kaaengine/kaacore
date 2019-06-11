@@ -78,6 +78,7 @@ struct Node {
     void recalculate_render_data();
 
     void set_position(const glm::dvec2& position);
+    void set_rotation(const double rotation);
     void set_shape(const Shape& shape);
     void set_sprite(const Sprite& sprite);
     glm::dvec2 get_absolute_position();
