@@ -19,7 +19,6 @@ struct Camera {
     glm::dvec2 size = {10., 10.};
 
     glm::fmat4 calculated_view;
-    glm::fmat4 calculated_proj;
 
     Camera();
     void refresh();

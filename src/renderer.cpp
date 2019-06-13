@@ -4,11 +4,13 @@
 
 #include <bgfx/bgfx.h>
 
-#include "kaacore/renderer.h"
+#include "kaacore/engine.h"
 #include "kaacore/log.h"
 #include "kaacore/files.h"
 #include "kaacore/texture_loader.h"
 #include "kaacore/embedded_data.h"
+
+#include "kaacore/renderer.h"
 
 
 namespace kaacore {
@@ -71,7 +73,7 @@ Renderer::Renderer(const glm::uvec2& window_size)
     );
 
     bgfx::setViewClear(0, this->clear_flags);
-    this->reset(window_size.x, window_size.y);
+    this->reset();
 
     this->default_image = load_default_image();
     this->default_texture = this->default_image->texture_handle;
@@ -119,6 +121,44 @@ void Renderer::end_frame()
     bgfx::frame();
 }
 
+void Renderer::reset()
+{
+    log<LogLevel::debug>("Calling Renderer::reset()");
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    auto window_size = get_engine()->window->size();
+    bgfx::reset(window_size.x, window_size.y, this->reset_flags);
+
+    double aspect_ratio = double(virtual_resolution.x) / double(virtual_resolution.y);
+    double window_aspect_ratio = double(window_size.x) / double(window_size.y);
+
+    glm::uvec2 view_size;
+
+    if (aspect_ratio < window_aspect_ratio) {
+        view_size = {
+            window_size.y * aspect_ratio,
+            window_size.y
+        };
+    } else if (aspect_ratio > window_aspect_ratio) {
+        view_size = {
+            window_size.x,
+            window_size.x * (1. / aspect_ratio)
+        };
+    } else {
+        view_size = window_size;
+    }
+
+    // TODO: add support for multiple views
+    bgfx::setViewRect(
+        0,
+        (window_size.x - view_size.x) / 2, (window_size.y - view_size.y) / 2,
+        view_size.x, view_size.y
+    );
+
+    this->projection_matrix = glm::ortho(
+        -float(virtual_resolution.x) / 2, float(virtual_resolution.x) / 2,
+        float(virtual_resolution.y) / 2, -float(virtual_resolution.y) / 2
+    );
+}
 
 void Renderer::render_vertices(const std::vector<StandardVertexData>& vertices,
                                const std::vector<VertexIndex>& indices,

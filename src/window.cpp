@@ -1,3 +1,5 @@
+#include "kaacore/engine.h"
+
 #include "kaacore/window.h"
 
 

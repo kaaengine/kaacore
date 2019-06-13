@@ -14,6 +14,7 @@ using namespace kaacore;
 
 
 struct DemoScene : Scene {
+    Node* background;
     Node* node1;
     Node* node2;
     Node* container_node;
@@ -30,10 +31,19 @@ struct DemoScene : Scene {
 
         const std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
+        this->root_node.scale = {50., 50.};
+
         this->specific_shape = Shape::Freeform(indices, vertices);
         this->polygon_shape = Shape::Polygon(
             {{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}}
         );
+
+        this->background = new Node();
+        this->background->shape = Shape::Box({1e4, 1e4});
+        this->background->color = {0.5, 0.5, 0.5, 0.25};
+        this->background->z_index = -100;
+
+        this->root_node.add_child(this->background);
 
         this->node1 = new Node();
         this->node1->position = {3., 3.};
@@ -132,6 +142,11 @@ struct DemoScene : Scene {
                 this->camera.position = this->node1->get_absolute_position();
                 this->camera.refresh();
                 log("Camera position: %lf %lf", this->camera.position.x, this->camera.position.y);
+            } else if (event.is_pressing(Keycode::f)) {
+                get_engine()->window->fullscreen(!get_engine()->window->fullscreen());
+            } else if (event.is_pressing(Keycode::g)) {
+                auto size = get_engine()->window->size();
+                log("Current size: %u x %u", size.x, size.y);
             }
         }
         // get_engine()->renderer->render_vertices(vertices, indices, texture);
