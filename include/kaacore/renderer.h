@@ -55,6 +55,8 @@ struct Renderer {
     bgfx::TextureHandle default_texture;
 
     glm::fmat4 projection_matrix;
+    glm::uvec2 view_size;
+    glm::uvec2 border_size;
 
     Renderer(const glm::uvec2& window_size);
     ~Renderer();

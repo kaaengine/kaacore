@@ -13,21 +13,15 @@
 #include "kaacore/engine.h"
 
 
-#define DEFAULT_VIRTUAL_RESOLUTION {800, 600}
-
-
 namespace kaacore {
 
 Engine* engine;
 
 
-Engine::Engine() noexcept(false)
-    : Engine(DEFAULT_VIRTUAL_RESOLUTION)
-{
-}
-
-Engine::Engine(glm::uvec2 virtual_resolution) noexcept(false)
- : _virtual_resolution(virtual_resolution)
+Engine::Engine(const glm::uvec2& virtual_resolution,
+               const VirtualResolutionMode vr_mode) noexcept(false)
+ : _virtual_resolution(virtual_resolution),
+   _virtual_resolution_mode(vr_mode)
 {
     KAACORE_CHECK(engine == nullptr);
     KAACORE_CHECK(virtual_resolution.x > 0 and virtual_resolution.y > 0);
@@ -119,6 +113,17 @@ void Engine::virtual_resolution(const glm::uvec2& resolution)
 {
     KAACORE_CHECK(resolution.x > 0 and resolution.y > 0);
     this->_virtual_resolution = resolution;
+    this->renderer->reset();
+}
+
+VirtualResolutionMode Engine::virtual_resolution_mode() const
+{
+    return this->_virtual_resolution_mode;
+}
+
+void Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
+{
+    this->_virtual_resolution_mode = vr_mode;
     this->renderer->reset();
 }
 
