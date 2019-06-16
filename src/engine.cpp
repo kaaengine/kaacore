@@ -89,7 +89,7 @@ void Engine::run(Scene* scene)
     log("Engine stopped.");
 }
 
-void Engine::change_scene(Scene* scene) {
+void Engine::set_scene(Scene* scene) {
     this->next_scene = scene;
 }
 
