@@ -120,14 +120,17 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other)
 
 SpaceNode::SpaceNode()
 {
-    log("Creating simulation node: %p", container_node(this));
     this->cp_space = cpSpaceNew();
+    log<LogLevel::debug>("Creating space node %p (cpSpace: %p)",
+                         container_node(this), this->cp_space);
     cpSpaceSetUserData(this->cp_space, this);
     this->time_acc = 0;
 }
 
 SpaceNode::~SpaceNode()
 {
+    log<LogLevel::debug>("Destroying space node %p (cpSpace: %p)",
+                         container_node(this), this->cp_space);
     cpSpaceDestroy(this->cp_space);
     // TODO destroy collision handlers?
 }
@@ -318,6 +321,8 @@ bool SpaceNode::is_locked() const
 BodyNode::BodyNode()
 {
     this->cp_body = cpBodyNewKinematic();
+    log<LogLevel::debug>("Creating body node %p (cpBody: %p)",
+                         container_node(this), this->cp_body);
     cpBodySetUserData(this->cp_body, this);
     this->set_body_type(BodyNodeType::dynamic);
 }
@@ -325,9 +330,13 @@ BodyNode::BodyNode()
 BodyNode::~BodyNode()
 {
     if (this->cp_body != nullptr) {
+        log<LogLevel::debug>("Destroying body node %p (cpBody: %p)",
+                             container_node(this), this->cp_body);
         cpBodySetUserData(this->cp_body, nullptr);
         space_safe_call(this->get_space(),
             [body_ptr=this->cp_body](const SpaceNode* space_node_phys) {
+            log<LogLevel::debug>("Simulation callback: destroying cpBody %p",
+                                 body_ptr);
             if (space_node_phys) {
                 cpSpaceRemoveBody(space_node_phys->cp_space, body_ptr);
             }
@@ -343,13 +352,16 @@ void BodyNode::attach_to_simulation()
 
     if (cpBodyGetSpace(this->cp_body) == nullptr) {
         Node* node = container_node(this);
-        log("Attaching body node %p to simulation (space)", node);
+        log<LogLevel::debug>("Attaching body node %p to simulation (space) (cpBody: %p)",
+                             node, this->cp_body);
         KAACORE_ASSERT(node->parent != nullptr);
         KAACORE_ASSERT(node->parent->type == NodeType::space);
         KAACORE_ASSERT(node->parent->space.cp_space != nullptr);
         space_safe_call(node->parent,
             [&](const SpaceNode* space_node_phys) {
-            cpSpaceAddBody(node->parent->space.cp_space, this->cp_body);
+            log<LogLevel::debug>("Simulation callback: attaching cpBody %p",
+                                 this->cp_body);
+            cpSpaceAddBody(space_node_phys->cp_space, this->cp_body);
         });
     }
 }
@@ -509,9 +521,13 @@ HitboxNode::HitboxNode()
 HitboxNode::~HitboxNode()
 {
     if (this->cp_shape != nullptr) {
+        log<LogLevel::debug>("Destroying hitbox node %p (cpShape: %p)",
+                             container_node(this), this->cp_shape);
         cpShapeSetUserData(this->cp_shape, nullptr);
         space_safe_call(this->get_space(),
             [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+            log<LogLevel::debug>("Simulation callback: destroying cpShape %p",
+                                 shape_ptr);
             if (space_node_phys) {
                 cpSpaceRemoveShape(space_node_phys->cp_space, shape_ptr);
             }
@@ -536,8 +552,6 @@ SpaceNode* HitboxNode::get_space() const
 void HitboxNode::update_physics_shape()
 {
     Node* node = container_node(this);
-    log("Updating hitbox node %p shape", node);
-
     cpShape* new_cp_shape;
 
     KAACORE_ASSERT(node->shape.type != ShapeType::none);
@@ -560,6 +574,9 @@ void HitboxNode::update_physics_shape()
         );
     }
 
+    log<LogLevel::debug>("Updating hitbox node %p shape (cpShape: %p)",
+                         node, new_cp_shape);
+
     cpShapeSetUserData(new_cp_shape, this);
     cpShapeSetElasticity(new_cp_shape, 0.95);
 
@@ -574,6 +591,8 @@ void HitboxNode::update_physics_shape()
 
         space_safe_call(this->get_space(),
             [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+            log<LogLevel::debug>("Simulation callback: destroying old cpShape %p",
+                                 shape_ptr);
             if (space_node_phys) {
                 cpSpaceRemoveShape(space_node_phys->cp_space, shape_ptr);
             }
@@ -595,24 +614,35 @@ void HitboxNode::attach_to_simulation()
     Node* node = container_node(this);
 
     if (cpShapeGetBody(this->cp_shape) == nullptr) {
-        log("Attaching hitbox node %p to simulation (body)", node);
+        log<LogLevel::debug>("Attaching hitbox node %p to simulation (body) (cpShape: %p)",
+                             node, this->cp_shape);
         KAACORE_ASSERT(node->parent != nullptr);
         KAACORE_ASSERT(node->parent->type == NodeType::body);
         KAACORE_ASSERT(node->parent->body.cp_body != nullptr);
         space_safe_call(node->parent->body.get_space(),
-            [&, node](const SpaceNode* space_node_phys) {
-            cpShapeSetBody(this->cp_shape, node->parent->body.cp_body);
+            [body_ptr=node->parent->body.cp_body, shape_ptr=this->cp_shape]
+            (const SpaceNode* space_node_phys) {
+            log<LogLevel::debug>(
+                "Simulation callback: attaching cpShape %p to body (cpBody: %p)",
+                shape_ptr, body_ptr
+            );
+            cpShapeSetBody(shape_ptr, body_ptr);
         });
     }
 
     if (cpShapeGetSpace(this->cp_shape) == nullptr
         and node->parent->parent != nullptr) {
-        log("Attaching hitbox node %p to simulation (space)", node);
+        log<LogLevel::debug>("Attaching hitbox node %p to simulation (space) (cpShape: %p)",
+                             node, this->cp_shape);
         KAACORE_ASSERT(node->parent->parent->type == NodeType::space);
         KAACORE_ASSERT(node->parent->parent->space.cp_space != nullptr);
         space_safe_call(node->parent->parent,
-            [&](const SpaceNode* space_node_phys) {
-            cpSpaceAddShape(space_node_phys->cp_space, this->cp_shape);
+            [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+            log<LogLevel::debug>(
+                "Simulation callback: attaching cpShape %p to space (cpSpace: %p)",
+                shape_ptr, space_node_phys->cp_space
+            );
+            cpSpaceAddShape(space_node_phys->cp_space, shape_ptr);
         });
     }
 }

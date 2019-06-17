@@ -140,6 +140,14 @@ void Node::set_position(const glm::dvec2& position)
     }
 }
 
+void Node::set_rotation(const double rotation)
+{
+    this->rotation = rotation;
+    if (this->type == NodeType::body) {
+        this->body.override_simulation_rotation();
+    }
+}
+
 void Node::set_shape(const Shape& shape)
 {
     this->shape = shape;
