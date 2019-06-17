@@ -41,6 +41,17 @@ struct MyForeignWrapper : ForeignNodeWrapper {
 };
 
 
+struct ChildrenIterator {
+    ChildrenIterator(std::vector<Node*> children={})
+        : _children(children) {}
+
+    std::vector<Node*>::const_iterator begin() {return this->_children.begin();}
+    std::vector<Node*>::const_iterator end() {return this->_children.end();}
+
+private:
+    std::vector<Node*> _children;
+};
+
 struct Scene;
 
 struct Node {
@@ -74,6 +85,7 @@ struct Node {
     ~Node();
 
     void add_child(Node* child_node);
+    ChildrenIterator iter_children() {return ChildrenIterator(this->children);}
     void recalculate_matrix();
     void recalculate_render_data();
 
