@@ -17,7 +17,13 @@ enum struct PolygonType {
 
 
 enum struct Alignment {
-    none = 0,
+    // 0b..XX (bits 1-2) - alignment of X axis
+    // 0bXX.. (bits 3-4) - alignment of Y axis
+    // alignment values:
+    // - 01 - align to minimal value (left or top side)
+    // - 10 - align to maximal value (right or bottom side)
+    // - 11 - align to mean value
+    none = 0b0000,
     top = 0b1011,
     bottom = 0b0111,
     left = 0b1110,
@@ -62,7 +68,7 @@ struct BoundingBox {
         return (!std::isnan(this->min_x) and
                 !std::isnan(this->max_x) and
                 !std::isnan(this->min_y) and
-                !std::isnan(this->max_x));
+                !std::isnan(this->max_y));
     }
 };
 
