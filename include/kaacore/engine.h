@@ -36,7 +36,7 @@ public:
 
     std::vector<Display> get_displays();
     void run(Scene* scene);
-    void set_scene(Scene *scene);
+    void change_scene(Scene *scene);
     void quit();
 
 private:
