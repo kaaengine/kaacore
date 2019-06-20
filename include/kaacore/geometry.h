@@ -16,24 +16,33 @@ enum struct PolygonType {
 };
 
 
+// 0bXX.. (bits 3-4) - alignment of X axis
+// 0b..XX (bits 1-2) - alignment of Y axis
+
+const uint8_t Alignment_x_coord_mask = 0b1100;
+const uint8_t Alignment_y_coord_mask = 0b0011;
+
 enum struct Alignment {
-    // 0b..XX (bits 1-2) - alignment of X axis
-    // 0bXX.. (bits 3-4) - alignment of Y axis
     // alignment values:
     // - 01 - align to minimal value (left or top side)
     // - 10 - align to maximal value (right or bottom side)
     // - 11 - align to mean value
     none = 0b0000,
-    top = 0b1011,
-    bottom = 0b0111,
-    left = 0b1110,
-    right = 0b1101,
+    top = 0b1110,
+    bottom = 0b1101,
+    left = 0b1011,
+    right = 0b0111,
     top_left = 0b1010,
-    bottom_left = 0b0110,
-    top_right = 0b1001,
+    bottom_left = 0b1001,
+    top_right = 0b0110,
     bottom_right = 0b0101,
     center = 0b1111,
 };
+
+inline constexpr uint8_t operator&(const Alignment alignment, uint8_t mask)
+{
+    return uint8_t(alignment) & mask;
+}
 
 
 template <typename T>
@@ -81,22 +90,31 @@ glm::vec<2, T> calculate_realignment_vector(Alignment alignment, const BoundingB
     }
 
     T align_x;
-    if ((uint8_t(alignment) & 0b0011) == 0b0010) {
-        align_x = -bbox.min_x;
-    } else if ((uint8_t(alignment) & 0b0011) == 0b0001) {
-        align_x = -bbox.max_x;
-    } else {
-        align_x = -(bbox.min_x + bbox.max_x) / 2.;
+    switch(alignment & Alignment_x_coord_mask) {
+        case (Alignment::center & Alignment_x_coord_mask):
+            align_x = -(bbox.min_x + bbox.max_x) / 2.;
+            break;
+        case (Alignment::left & Alignment_x_coord_mask):
+            align_x = -bbox.min_x;
+            break;
+        case (Alignment::right & Alignment_x_coord_mask):
+            align_x = -bbox.max_x;
+            break;
     }
 
     T align_y;
-    if ((uint8_t(alignment) & 0b1100) == 0b1000) {
-        align_y = -bbox.min_y;
-    } else if ((uint8_t(alignment) & 0b1100) == 0b0100) {
-        align_y = -bbox.max_y;
-    } else {
-        align_y = -(bbox.min_y + bbox.max_y) / 2.;
+    switch(alignment & Alignment_y_coord_mask) {
+        case (Alignment::center & Alignment_y_coord_mask):
+            align_y = -(bbox.min_y + bbox.max_y) / 2.;
+            break;
+        case (Alignment::top & Alignment_y_coord_mask):
+            align_y = -bbox.min_y;
+            break;
+        case (Alignment::bottom & Alignment_y_coord_mask):
+            align_y = -bbox.max_y;
+            break;
     }
+
     return {align_x, align_y};
 }
 
