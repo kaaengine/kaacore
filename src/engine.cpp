@@ -34,11 +34,11 @@ Engine::~Engine() noexcept(false) {
     KAACORE_CHECK(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
-    this->audio_manager.release();
-    this->input_manager.release();
-    this->renderer.release();
+    this->audio_manager.reset();
+    this->input_manager.reset();
+    this->renderer.reset();
     bgfx::shutdown();
-    this->window.release();
+    this->window.reset();
     SDL_Quit();
     engine = nullptr;
 }
