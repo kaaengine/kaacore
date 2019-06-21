@@ -13,7 +13,7 @@ struct RawFile {
     std::string path;
     std::vector<uint8_t> content;
 
-    RawFile(const std::string file_path);
+    RawFile(const std::string file_path) noexcept(false);
 };
 
 } // namespace kaacore
