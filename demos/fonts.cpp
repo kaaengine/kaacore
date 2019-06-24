@@ -93,6 +93,33 @@ struct DemoFontsScene : Scene {
                 this->node_text->text.content(
                     this->node_text->text.content() + " "
                 );
+            } else if (event.is_pressing(Keycode::kp_7)) {
+                this->background->origin_alignment = Alignment::top_left;
+                this->node_text_raw->origin_alignment = Alignment::top_left;
+            } else if (event.is_pressing(Keycode::kp_8)) {
+                this->background->origin_alignment = Alignment::top;
+                this->node_text_raw->origin_alignment = Alignment::top;
+            } else if (event.is_pressing(Keycode::kp_9)) {
+                this->background->origin_alignment = Alignment::top_right;
+                this->node_text_raw->origin_alignment = Alignment::top_right;
+            } else if (event.is_pressing(Keycode::kp_4)) {
+                this->background->origin_alignment = Alignment::left;
+                this->node_text_raw->origin_alignment = Alignment::left;
+            } else if (event.is_pressing(Keycode::kp_5)) {
+                this->background->origin_alignment = Alignment::center;
+                this->node_text_raw->origin_alignment = Alignment::center;
+            } else if (event.is_pressing(Keycode::kp_6)) {
+                this->background->origin_alignment = Alignment::right;
+                this->node_text_raw->origin_alignment = Alignment::right;
+            } else if (event.is_pressing(Keycode::kp_1)) {
+                this->background->origin_alignment = Alignment::bottom_left;
+                this->node_text_raw->origin_alignment = Alignment::bottom_left;
+            } else if (event.is_pressing(Keycode::kp_2)) {
+                this->background->origin_alignment = Alignment::bottom;
+                this->node_text_raw->origin_alignment = Alignment::bottom;
+            } else if (event.is_pressing(Keycode::kp_3)) {
+                this->background->origin_alignment = Alignment::bottom_right;
+                this->node_text_raw->origin_alignment = Alignment::bottom_right;
             }
         }
     }

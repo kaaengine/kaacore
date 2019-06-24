@@ -109,9 +109,14 @@ void Node::recalculate_matrix()
 void Node::recalculate_render_data()
 {
     // TODO optimize
+    glm::fvec2 pos_realignment = calculate_realignment_vector(
+        this->origin_alignment, this->shape.vertices_bbox
+    );
     this->render_data.computed_vertices = this->shape.vertices;
     for (auto& vertex : this->render_data.computed_vertices) {
-        glm::dvec4 pos = {vertex.xyz.x, vertex.xyz.y, vertex.xyz.z, 1.};
+        glm::dvec4 pos = {vertex.xyz.x + pos_realignment.x,
+                          vertex.xyz.y + pos_realignment.y,
+                          vertex.xyz.z, 1.};
         pos = this->matrix * pos;
         vertex.xyz = {pos.x, pos.y, pos.z};
 
