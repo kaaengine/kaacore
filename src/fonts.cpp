@@ -7,6 +7,7 @@
 #include "kaacore/texture_loader.h"
 #include "kaacore/utils.h"
 #include "kaacore/nodes.h"
+#include "kaacore/fonts.h"
 #include "kaacore/exceptions.h"
 
 #include "kaacore/fonts.h"
@@ -207,6 +208,12 @@ std::vector<FontRenderGlyph> FontData::generate_render_glyphs(
         } else {
             ch_value = static_cast<uint32_t>(ch) - font_baker_first_glyph;
         }
+
+        if (ch_value > font_baker_glyphs_count) {
+            log<LogLevel::warn>("Unhadled font character: %llu", ch_value);
+            ch_value = static_cast<uint32_t>('?') - font_baker_first_glyph;
+        }
+
         auto glyph_data = this->baked_font.at(ch_value);
 
         if (not render_glyphs.empty()) {
