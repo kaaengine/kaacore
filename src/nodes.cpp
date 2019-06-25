@@ -26,6 +26,7 @@ Node::Node(NodeType type) : type(type)
         this->z_index = 100;
     } else if (type == NodeType::text) {
         new (&this->text) TextNode();
+        this->origin_alignment = Alignment::center;
     }
 }
 

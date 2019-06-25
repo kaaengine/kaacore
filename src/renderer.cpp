@@ -17,28 +17,6 @@ template<class T, size_t N>
 constexpr size_t array_size(T (&)[N]) { return N; }
 
 
-void StandardVertexData::align_position_center(std::vector<StandardVertexData>& vertices)
-{
-    if (vertices.size() > 0) {
-        glm::fvec3 min_vertex = vertices[0].xyz;
-        glm::fvec3 max_vertex = vertices[0].xyz;
-
-        for (const auto& vertex_data : vertices) {
-            min_vertex = glm::min(vertex_data.xyz, min_vertex);
-            max_vertex = glm::max(vertex_data.xyz, max_vertex);
-        }
-
-        glm::fvec3 diff = glm::fvec3(
-            max_vertex.x - min_vertex.x, max_vertex.y - min_vertex.y, 0.
-        ) * -0.5f;
-
-        for (auto& vertex_data : vertices) {
-            vertex_data.xyz += diff;
-        }
-    }
-}
-
-
 std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
 load_default_shaders(bgfx::RendererType::Enum renderer_type)
 {

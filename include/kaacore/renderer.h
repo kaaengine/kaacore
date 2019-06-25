@@ -36,8 +36,6 @@ struct StandardVertexData {
     {
         return StandardVertexData(x, y, 0., u, v, m, n);
     }
-
-    static void align_position_center(std::vector<StandardVertexData>& vertices);
 };
 
 
