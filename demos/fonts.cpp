@@ -125,7 +125,7 @@ struct DemoFontsScene : Scene {
 
 extern "C" int main(int argc, char *argv[])
 {
-    Engine eng;
+    Engine eng({800, 600});
     DemoFontsScene scene;
     eng.window->show();
     eng.run(&scene);

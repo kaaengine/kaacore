@@ -94,7 +94,7 @@ struct PolygonTesterDemoScene : Scene {
 
 extern "C" int main(int argc, char *argv[])
 {
-    Engine eng;
+    Engine eng({800, 600});
     eng.window->show();
     PolygonTesterDemoScene scene;
     eng.run(&scene);

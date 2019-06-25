@@ -146,6 +146,8 @@ const std::vector<Event>& Scene::get_events() const
 
 Camera::Camera()
 {
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    this->position = {double(virtual_resolution.x) / 2, double(virtual_resolution.y) / 2};
     this->refresh();
 }
 

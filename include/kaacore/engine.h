@@ -13,9 +13,6 @@
 #include "kaacore/exceptions.h"
 
 
-#define KAACORE_DEFAULT_VIRTUAL_RESOLUTION {800, 600}
-
-
 namespace kaacore {
 
 class Scene;
@@ -48,7 +45,7 @@ public:
     std::unique_ptr<AudioManager> audio_manager;
 
     Engine(
-        const glm::uvec2& virtual_resolution=KAACORE_DEFAULT_VIRTUAL_RESOLUTION,
+        const glm::uvec2& virtual_resolution,
         const VirtualResolutionMode vr_mode=VirtualResolutionMode::adaptive_stretch
     ) noexcept(false);
     ~Engine() noexcept(false);

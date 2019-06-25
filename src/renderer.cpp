@@ -19,6 +19,8 @@ namespace kaacore {
 template<class T, size_t N>
 constexpr size_t array_size(T (&)[N]) { return N; }
 
+const uint32_t renderer_clear_color = 0x202020ff;
+
 
 std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
 load_default_shaders(bgfx::RendererType::Enum renderer_type)
@@ -73,7 +75,7 @@ Renderer::Renderer(const glm::uvec2& window_size)
         "s_texture", bgfx::UniformType::Enum::Int1, 1
     );
 
-    bgfx::setViewClear(0, this->clear_flags);
+    bgfx::setViewClear(0, this->clear_flags, renderer_clear_color);
     this->reset();
 
     this->default_image = load_default_image();
