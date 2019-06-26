@@ -6,7 +6,6 @@
 #include <utility>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "kaacore/engine.h"
@@ -101,7 +100,7 @@ void Scene::process_frame(uint32_t dt)
     bgfx::setViewTransform(
         0,
         glm::value_ptr(this->camera.calculated_view),
-        glm::value_ptr(this->camera.calculated_proj)
+        glm::value_ptr(get_engine()->renderer->projection_matrix)
     );
     this->time += dt;
     this->update(dt);
@@ -147,6 +146,8 @@ const std::vector<Event>& Scene::get_events() const
 
 Camera::Camera()
 {
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    this->position = {double(virtual_resolution.x) / 2, double(virtual_resolution.y) / 2};
     this->refresh();
 }
 
@@ -162,11 +163,6 @@ void Camera::refresh()
                 static_cast<float>(this->rotation), glm::fvec3(0., 0., 1.)),
             glm::fvec3(-this->position.x, -this->position.y, 0.)
         );
-
-    this->calculated_proj = glm::ortho(
-        -this->size.x / 2, this->size.x / 2,
-        this->size.y / 2, -this->size.y / 2
-    );
 }
 
 } // namespace kaacore

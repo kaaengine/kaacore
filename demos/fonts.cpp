@@ -30,9 +30,6 @@ struct DemoFontsScene : Scene {
     Node* node_text;
 
     DemoFontsScene() {
-        this->camera.size = {800., 600.};
-        this->camera.refresh();
-
         auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
         auto render_glyphs = font._font_data->generate_render_glyphs("Hello World \n\n\nFooBar FooBar", 30.);
         FontRenderGlyph::arrange_glyphs(render_glyphs, 15., 35., 120.);
@@ -128,7 +125,7 @@ struct DemoFontsScene : Scene {
 
 extern "C" int main(int argc, char *argv[])
 {
-    Engine eng;
+    Engine eng({800, 600});
     DemoFontsScene scene;
     eng.window->show();
     eng.run(&scene);

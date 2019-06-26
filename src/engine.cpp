@@ -17,8 +17,14 @@ namespace kaacore {
 
 Engine* engine;
 
-Engine::Engine() noexcept(false) {
+
+Engine::Engine(const glm::uvec2& virtual_resolution,
+               const VirtualResolutionMode vr_mode) noexcept(false)
+ : _virtual_resolution(virtual_resolution),
+   _virtual_resolution_mode(vr_mode)
+{
     KAACORE_CHECK(engine == nullptr);
+    KAACORE_CHECK(virtual_resolution.x > 0 and virtual_resolution.y > 0);
 
     log<LogLevel::info>("Initializing Kaacore.");
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -98,6 +104,29 @@ void Engine::quit() {
     this->is_running = false;
 }
 
+glm::uvec2 Engine::virtual_resolution() const
+{
+    return this->_virtual_resolution;
+}
+
+void Engine::virtual_resolution(const glm::uvec2& resolution)
+{
+    KAACORE_CHECK(resolution.x > 0 and resolution.y > 0);
+    this->_virtual_resolution = resolution;
+    this->renderer->reset();
+}
+
+VirtualResolutionMode Engine::virtual_resolution_mode() const
+{
+    return this->_virtual_resolution_mode;
+}
+
+void Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
+{
+    this->_virtual_resolution_mode = vr_mode;
+    this->renderer->reset();
+}
+
 std::unique_ptr<Window> Engine::_create_window()
 {
     Display display = this->get_displays().at(0);
@@ -150,7 +179,8 @@ void Engine::_pump_events()
         // TODO handle callbacks
         if (event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            this->renderer->reset(event.window.data1, event.window.data2);
+            this->renderer->reset();
+            // this->renderer->reset(event.window.data1, event.window.data2);
             // TODO update camera
             continue;
         }

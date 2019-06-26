@@ -4,17 +4,22 @@
 
 #include <bgfx/bgfx.h>
 
-#include "kaacore/renderer.h"
+#include "kaacore/engine.h"
 #include "kaacore/log.h"
 #include "kaacore/files.h"
 #include "kaacore/texture_loader.h"
 #include "kaacore/embedded_data.h"
+#include "kaacore/exceptions.h"
+
+#include "kaacore/renderer.h"
 
 
 namespace kaacore {
 
 template<class T, size_t N>
 constexpr size_t array_size(T (&)[N]) { return N; }
+
+const uint32_t renderer_clear_color = 0x202020ff;
 
 
 std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
@@ -70,8 +75,8 @@ Renderer::Renderer(const glm::uvec2& window_size)
         "s_texture", bgfx::UniformType::Enum::Int1, 1
     );
 
-    bgfx::setViewClear(0, this->clear_flags);
-    this->reset(window_size.x, window_size.y);
+    bgfx::setViewClear(0, this->clear_flags, renderer_clear_color);
+    this->reset();
 
     this->default_image = load_default_image();
     this->default_texture = this->default_image->texture_handle;
@@ -119,6 +124,63 @@ void Renderer::end_frame()
     bgfx::frame();
 }
 
+void Renderer::reset()
+{
+    log<LogLevel::debug>("Calling Renderer::reset()");
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    auto virtual_resolution_mode = get_engine()->_virtual_resolution_mode;
+    auto window_size = get_engine()->window->size();
+    bgfx::reset(window_size.x, window_size.y, this->reset_flags);
+
+    glm::uvec2 view_size;
+    glm::uvec2 border_size;
+
+    if (virtual_resolution_mode == VirtualResolutionMode::adaptive_stretch) {
+        double aspect_ratio = double(virtual_resolution.x) / double(virtual_resolution.y);
+        double window_aspect_ratio = double(window_size.x) / double(window_size.y);
+
+        if (aspect_ratio < window_aspect_ratio) {
+            view_size = {
+                window_size.y * aspect_ratio,
+                window_size.y
+            };
+        } else if (aspect_ratio > window_aspect_ratio) {
+            view_size = {
+                window_size.x,
+                window_size.x * (1. / aspect_ratio)
+            };
+        } else {
+            view_size = window_size;
+        }
+        border_size = {(window_size.x - view_size.x) / 2,
+                       (window_size.y - view_size.y) / 2};
+    } else if (virtual_resolution_mode == VirtualResolutionMode::aggresive_stretch) {
+        view_size = window_size;
+        border_size = {0, 0};
+    } else if (virtual_resolution_mode == VirtualResolutionMode::no_stretch) {
+        view_size = virtual_resolution;
+        border_size = {
+            window_size.x > view_size.x ? (window_size.x - view_size.x) / 2 : 0,
+            window_size.y > view_size.y ? (window_size.y - view_size.y) / 2 : 0
+        };
+    } else {
+        throw exception("Unrecognized virtual resolution");
+    }
+
+    // TODO: add support for multiple views
+    bgfx::setViewRect(
+        0,
+        border_size.x, border_size.y,
+        view_size.x, view_size.y
+    );
+
+    this->projection_matrix = glm::ortho(
+        -float(virtual_resolution.x) / 2, float(virtual_resolution.x) / 2,
+        float(virtual_resolution.y) / 2, -float(virtual_resolution.y) / 2
+    );
+    this->view_size = view_size;
+    this->border_size = border_size;
+}
 
 void Renderer::render_vertices(const std::vector<StandardVertexData>& vertices,
                                const std::vector<VertexIndex>& indices,

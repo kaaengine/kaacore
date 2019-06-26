@@ -5,9 +5,11 @@
 
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/files.h"
 #include "kaacore/texture_loader.h"
+#include "kaacore/log.h"
 
 
 namespace kaacore {
@@ -52,18 +54,17 @@ struct Renderer {
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
+    glm::fmat4 projection_matrix;
+    glm::uvec2 view_size;
+    glm::uvec2 border_size;
+
     Renderer(const glm::uvec2& window_size);
     ~Renderer();
 
     void begin_frame();
     void end_frame();
 
-    inline void reset(int32_t width, int32_t height)
-    {
-        bgfx::reset(width, height, this->reset_flags);
-        // TODO: add support for multiple views
-        bgfx::setViewRect(0, 0, 0, width, height);
-    }
+    void reset();
 
     void render_vertices(const std::vector<StandardVertexData>& vertices,
                          const std::vector<VertexIndex>& indices,

@@ -16,7 +16,7 @@ using namespace kaacore;
 
 extern "C" int main(int argc, char *argv[])
 {
-    Engine eng;
+    Engine eng({10, 10});
     eng.window->show();
     bool running = true;
 

@@ -5,6 +5,7 @@
 #include <SDL.h>
 
 #include <bgfx/platform.h>
+#include <glm/glm.hpp>
 
 #include "kaacore/window.h"
 #include "kaacore/renderer.h"
@@ -18,6 +19,14 @@ class Scene;
 struct Display;
 class InputManager;
 
+
+enum struct VirtualResolutionMode {
+    adaptive_stretch = 1,
+    aggresive_stretch = 2,
+    no_stretch = 3,
+};
+
+
 class Engine {
 public:
     uint64_t time = 0;
@@ -26,18 +35,31 @@ public:
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
+    glm::uvec2 _virtual_resolution;
+    VirtualResolutionMode _virtual_resolution_mode = \
+        VirtualResolutionMode::adaptive_stretch;
+
     std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
     std::unique_ptr<AudioManager> audio_manager;
 
-    Engine() noexcept(false);
+    Engine(
+        const glm::uvec2& virtual_resolution,
+        const VirtualResolutionMode vr_mode=VirtualResolutionMode::adaptive_stretch
+    ) noexcept(false);
     ~Engine() noexcept(false);
 
     std::vector<Display> get_displays();
     void run(Scene* scene);
     void change_scene(Scene *scene);
     void quit();
+
+    glm::uvec2 virtual_resolution() const;
+    void virtual_resolution(const glm::uvec2& resolution);
+
+    VirtualResolutionMode virtual_resolution_mode() const;
+    void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
 private:
     std::unique_ptr<Window> _create_window();
