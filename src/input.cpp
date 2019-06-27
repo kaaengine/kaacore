@@ -34,7 +34,7 @@ bool Event::is_pressing(Keycode kc) const
 
 bool Event::is_pressing(Mousecode mc) const
 {
-    return (this->sdl_event.type == SDL_MOUSEBUTTONDOWN or
+    return (this->sdl_event.type == SDL_MOUSEBUTTONDOWN and
             this->sdl_event.button.button == static_cast<uint8_t>(mc));
 }
 
@@ -46,7 +46,7 @@ bool Event::is_releasing(Keycode kc) const
 
 bool Event::is_releasing(Mousecode mc) const
 {
-    return (this->sdl_event.type == SDL_MOUSEBUTTONUP or
+    return (this->sdl_event.type == SDL_MOUSEBUTTONUP and
             this->sdl_event.button.button == static_cast<uint8_t>(mc));
 }
 
