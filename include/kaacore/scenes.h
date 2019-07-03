@@ -16,7 +16,6 @@ struct Camera {
     glm::dvec2 position;
     double rotation = 0.;
     glm::dvec2 scale = {1., 1.};
-    glm::dvec2 size = {10., 10.};
 
     glm::fmat4 calculated_view;
 

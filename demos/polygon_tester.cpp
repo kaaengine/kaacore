@@ -21,8 +21,6 @@ struct PolygonTesterDemoScene : Scene {
     PolygonTesterDemoScene()
     {
         this->engine = get_engine();
-        this->camera.size = this->engine->window->size();
-        this->camera.refresh();
 
         this->shape_repr = new Node();
         this->shape_repr->set_position({0, 0});
