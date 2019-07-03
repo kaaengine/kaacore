@@ -79,6 +79,7 @@ void Scene::process_nodes(uint32_t dt)
         );
     }
 
+    this->camera.refresh();
     std::sort(rendering_queue.begin(), rendering_queue.end());
 
     for (const auto& qn : rendering_queue) {

@@ -127,6 +127,7 @@ extern "C" int main(int argc, char *argv[])
 {
     Engine eng({800, 600});
     DemoFontsScene scene;
+    scene.camera.position = {0., 0.};
     eng.window->show();
     eng.run(&scene);
 

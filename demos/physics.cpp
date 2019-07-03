@@ -32,6 +32,7 @@ struct DemoScene : Scene {
     {
         Node* wall_hitbox = new Node(NodeType::hitbox);
         wall_hitbox->set_shape(Shape::Segment(a, b));
+        wall_hitbox->color = {1., 0.0, 0.6, 0.4};
         return wall_hitbox;
     }
 
@@ -83,6 +84,7 @@ struct DemoScene : Scene {
             ball->set_position(
                 {position_dist(generator), position_dist(generator)}
             );
+            ball->color = {1., 1., 0., 1.};
             // ball->body.set_velocity(
             //     {speed_dist(generator), speed_dist(generator)}
             // );
@@ -125,7 +127,7 @@ struct DemoScene : Scene {
             }, CollisionPhase::begin | CollisionPhase::separate
         );
         this->container->space.set_gravity({0.0, 2.5});
-        this->box->body.set_angular_velocity(0.05);
+        this->box->body.set_angular_velocity(-0.50);
     }
 
     void update(uint32_t dt) override
@@ -171,6 +173,7 @@ extern "C" int main(int argc, char *argv[])
     Engine eng({15, 15});
     eng.window->show();
     DemoScene scene;
+    scene.camera.position = {0., 0.};
     eng.run(&scene);
 
     return 0;

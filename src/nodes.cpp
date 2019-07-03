@@ -22,8 +22,7 @@ Node::Node(NodeType type) : type(type)
         new (&this->body) BodyNode();
     } else if (type == NodeType::hitbox) {
         new (&this->hitbox) HitboxNode();
-        this->color = {1., 0., 1., 0.5};
-        this->z_index = 100;
+        this->color = {1., 0., 0., 0.};
     } else if (type == NodeType::text) {
         new (&this->text) TextNode();
         this->origin_alignment = Alignment::center;
