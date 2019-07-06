@@ -76,11 +76,8 @@ struct PolygonTesterDemoScene : Scene {
                 break;
             } else if (event.is_pressing(Mousecode::left)) {
                 auto pos = event.get_mouse_position();
-                log("Adding point: (%f, %f)", pos.x, pos.y);
-                auto window_size = this->engine->window->size();
-                this->add_point(
-                    pos - glm::dvec2(window_size.x / 2, window_size.y / 2)
-                );
+                log("Adding point: (%lf, %lf)", pos.x, pos.y);
+                this->add_point(pos);
             } else if (event.is_pressing(Keycode::f)) {
                 log("Finalizing polygon");
                 this->finalize_polygon();
@@ -92,7 +89,7 @@ struct PolygonTesterDemoScene : Scene {
 
 extern "C" int main(int argc, char *argv[])
 {
-    Engine eng({800, 600});
+    Engine eng({800, 600}, VirtualResolutionMode::aggresive_stretch);
     eng.window->show();
     PolygonTesterDemoScene scene;
     eng.run(&scene);

@@ -1,9 +1,21 @@
 #include <SDL.h>
 
+#include "kaacore/engine.h"
+
 #include "kaacore/input.h"
 
 
 namespace kaacore {
+
+glm::dvec2 _naive_screen_position_to_virtual(int32_t x, int32_t y)
+{
+    auto engine = get_engine();
+    glm::dvec2 pos = {x, y};
+    pos -= engine->renderer->border_size;
+    pos.x *= double(engine->virtual_resolution().x) / double(engine->renderer->view_size.x);
+    pos.y *= double(engine->virtual_resolution().y) / double(engine->renderer->view_size.y);
+    return pos;
+}
 
 Event::Event() : sdl_event() {}
 
@@ -52,7 +64,9 @@ bool Event::is_releasing(Mousecode mc) const
 
 glm::dvec2 Event::get_mouse_position() const
 {
-    return glm::dvec2(this->sdl_event.button.x, this->sdl_event.button.y);
+    return _naive_screen_position_to_virtual(
+        this->sdl_event.button.x, this->sdl_event.button.y
+    );
 }
 
 
@@ -94,7 +108,7 @@ glm::dvec2 InputManager::get_mouse_position() const
 {
     int pos_x, pos_y;
     SDL_GetMouseState(&pos_x, &pos_y);
-    return glm::dvec2(pos_x, pos_y);
+    return _naive_screen_position_to_virtual(pos_x, pos_y);
 }
 
 } // namespace kaacore
