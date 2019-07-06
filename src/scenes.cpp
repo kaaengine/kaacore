@@ -152,7 +152,6 @@ Camera::Camera()
     this->refresh();
 }
 
-
 void Camera::refresh()
 {
     this->calculated_view = \
@@ -164,6 +163,20 @@ void Camera::refresh()
                 static_cast<float>(this->rotation), glm::fvec3(0., 0., 1.)),
             glm::fvec3(-this->position.x, -this->position.y, 0.)
         );
+}
+
+glm::dvec2 Camera::unproject_position(const glm::dvec2& pos)
+{
+    this->refresh();
+    auto virtual_resolution = get_engine()->virtual_resolution();
+
+    // account for virtual_resolution / 2 since we want to get
+    // top-left corner of camera 'window'
+    glm::fvec4 pos4 = {pos.x - virtual_resolution.x / 2,
+                       pos.y - virtual_resolution.y / 2,
+                       0., 1.};
+    pos4 = glm::inverse(this->calculated_view) * pos4;
+    return {pos4.x, pos4.y};
 }
 
 } // namespace kaacore
