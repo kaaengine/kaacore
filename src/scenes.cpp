@@ -39,16 +39,25 @@ Scene::~Scene() noexcept(false)
 }
 
 
+void Scene::process_simulations(uint32_t dt)
+{
+    for (Node* space_node : this->simulations_registry) {
+        space_node->space.simulate(dt);
+
+        for (Node* child_node : space_node->children) {
+            if (child_node->type == NodeType::body) {
+                child_node->body.sync_simulation_position();
+                child_node->body.sync_simulation_rotation();
+            }
+        }
+    }
+}
+
+
 void Scene::process_nodes(uint32_t dt)
 {
     static std::deque<Node*> processing_queue;
     static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
-
-    // process simulations before everything else, so collision callbacks
-    // won't break nodes tree during processing
-    for (Node* space_node : this->simulations_registry) {
-        space_node->space.simulate(dt);
-    }
 
     processing_queue.clear();
     rendering_queue.clear();
@@ -59,11 +68,6 @@ void Scene::process_nodes(uint32_t dt)
 
         for (const auto child_node : node->children) {
             processing_queue.push_back(child_node);
-        }
-
-        if (node->type == NodeType::body) {
-            node->body.sync_simulation_position();
-            node->body.sync_simulation_rotation();
         }
 
         if (node->sprite and node->sprite.auto_animate) {
@@ -79,7 +83,6 @@ void Scene::process_nodes(uint32_t dt)
         );
     }
 
-    this->camera.refresh();
     std::sort(rendering_queue.begin(), rendering_queue.end());
 
     for (const auto& qn : rendering_queue) {
@@ -98,13 +101,15 @@ void Scene::process_nodes(uint32_t dt)
 
 void Scene::process_frame(uint32_t dt)
 {
+    this->time += dt;
+    this->process_simulations(dt);
+    this->update(dt);
+    this->camera.refresh();
     bgfx::setViewTransform(
         0,
         glm::value_ptr(this->camera.calculated_view),
         glm::value_ptr(get_engine()->renderer->projection_matrix)
     );
-    this->time += dt;
-    this->update(dt);
     this->process_nodes(dt);
 }
 

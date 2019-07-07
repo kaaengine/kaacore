@@ -40,6 +40,7 @@ struct Scene {
     virtual void update(uint32_t dt);
     virtual void on_exit();
     virtual void process_nodes(uint32_t dt);
+    virtual void process_simulations(uint32_t dt);
 
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
