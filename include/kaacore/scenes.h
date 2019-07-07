@@ -35,12 +35,13 @@ struct Scene {
     Scene();
     virtual ~Scene() noexcept(false);
 
-    virtual void process_frame(uint32_t dt);
     virtual void on_enter();
     virtual void update(uint32_t dt);
     virtual void on_exit();
-    virtual void process_nodes(uint32_t dt);
-    virtual void process_simulations(uint32_t dt);
+
+    void process_frame(uint32_t dt);
+    void process_nodes(uint32_t dt);
+    void process_nodes_drawing(uint32_t dt);
 
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
