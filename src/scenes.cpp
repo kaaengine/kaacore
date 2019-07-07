@@ -82,24 +82,25 @@ void Scene::process_nodes_drawing(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
-        for (const auto child_node : node->children) {
-            processing_queue.push_back(child_node);
-        }
+        if (node->visible) {
+            for (const auto child_node : node->children) {
+                processing_queue.push_back(child_node);
+            }
 
-        node->recalculate_matrix();
-        node->recalculate_render_data();
+            node->recalculate_matrix();
+            node->recalculate_render_data();
 
-        rendering_queue.emplace_back(
-            std::abs(std::numeric_limits<int16_t>::min()) + node->z_index,
-            node
-        );
+            rendering_queue.emplace_back(
+                std::abs(std::numeric_limits<int16_t>::min()) + node->z_index,
+                node
+            );
+    }
     }
 
     std::sort(rendering_queue.begin(), rendering_queue.end());
 
     for (const auto& qn : rendering_queue) {
-        if (std::get<Node*>(qn)->render_data.computed_vertices.empty() or
-            not std::get<Node*>(qn)->visible) {
+        if (std::get<Node*>(qn)->render_data.computed_vertices.empty()) {
             continue;
         }
         get_engine()->renderer->render_vertices(
