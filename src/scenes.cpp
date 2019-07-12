@@ -42,17 +42,14 @@ Scene::~Scene() noexcept(false)
 void Scene::process_nodes(uint32_t dt)
 {
     static std::deque<Node*> processing_queue;
-    static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
 
-    // process simulations before everything else, so collision callbacks
-    // won't break nodes tree during processing
+    processing_queue.clear();
+    processing_queue.push_back(&this->root_node);
+
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
     }
 
-    processing_queue.clear();
-    rendering_queue.clear();
-    processing_queue.push_back(&this->root_node);
     while (not processing_queue.empty()) {
         Node* node = processing_queue.front();
         processing_queue.pop_front();
@@ -69,6 +66,25 @@ void Scene::process_nodes(uint32_t dt)
         if (node->sprite and node->sprite.auto_animate) {
             node->sprite.animation_time_step(dt);
         }
+    }
+}
+
+
+void Scene::process_nodes_drawing(uint32_t dt)
+{
+    static std::deque<Node*> processing_queue;
+    static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
+
+    processing_queue.clear();
+    rendering_queue.clear();
+    processing_queue.push_back(&this->root_node);
+    while (not processing_queue.empty()) {
+        Node* node = processing_queue.front();
+        processing_queue.pop_front();
+
+        for (const auto child_node : node->children) {
+            processing_queue.push_back(child_node);
+        }
 
         node->recalculate_matrix();
         node->recalculate_render_data();
@@ -79,7 +95,6 @@ void Scene::process_nodes(uint32_t dt)
         );
     }
 
-    this->camera.refresh();
     std::sort(rendering_queue.begin(), rendering_queue.end());
 
     for (const auto& qn : rendering_queue) {
@@ -98,14 +113,16 @@ void Scene::process_nodes(uint32_t dt)
 
 void Scene::process_frame(uint32_t dt)
 {
+    this->time += dt;
+    this->process_nodes(dt);
+    this->update(dt);
+    this->camera.refresh();
     bgfx::setViewTransform(
         0,
         glm::value_ptr(this->camera.calculated_view),
         glm::value_ptr(get_engine()->renderer->projection_matrix)
     );
-    this->time += dt;
-    this->update(dt);
-    this->process_nodes(dt);
+    this->process_nodes_drawing(dt);
 }
 
 
