@@ -19,6 +19,8 @@ list(APPEND DEMO_TARGETS demo-polygon-tester)
 add_executable(demo-fonts fonts.cpp)
 list(APPEND DEMO_TARGETS demo-fonts)
 
+add_executable(demo-timers timers.cpp)
+list(APPEND DEMO_TARGETS demo-timers)
 
 target_link_libraries(demo-basic kaacore)
 target_link_libraries(demo-basic-scene kaacore)
@@ -26,6 +28,7 @@ target_link_libraries(demo-physics kaacore)
 target_link_libraries(demo-sprites kaacore)
 target_link_libraries(demo-polygon-tester kaacore)
 target_link_libraries(demo-fonts kaacore)
+target_link_libraries(demo-timers kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES
