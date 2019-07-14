@@ -1,4 +1,5 @@
 #include <memory>
+#include <unordered_map>
 
 #include "kaacore/log.h"
 #include "kaacore/timers.h"
