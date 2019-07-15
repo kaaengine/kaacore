@@ -73,8 +73,16 @@ void Scene::process_nodes(uint32_t dt)
             node->body.sync_simulation_rotation();
         }
 
+        if (node->_transition) {
+            node->_transition.step(node, dt);
+        }
+
         if (node->_sprite and node->_sprite.auto_animate) {
             node->_sprite.animation_time_step(dt);
+        }
+
+        for (const auto child_node : node->_children) {
+            processing_queue.push_back(child_node);
         }
     }
 }

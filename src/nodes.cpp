@@ -290,6 +290,11 @@ Node* Node::parent() const
     return this->_parent;
 }
 
+void Node::set_transition(const NodeTransitionHandle& transition)
+{
+    this->transition.setup(transition);
+}
+
 void Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)
 {
     KAACORE_ASSERT(!this->_node_wrapper);

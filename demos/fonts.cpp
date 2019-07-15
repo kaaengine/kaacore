@@ -56,6 +56,10 @@ struct DemoFontsScene : Scene {
         this->node_text->text.first_line_indent(15.);
         this->node_text->color({0., 0., 0., 1.});
         this->root_node.add_child(this->node_text);
+
+        this->node_text->set_transition(
+            std::make_shared<NodePositionTransition>(glm::dvec2(200., 200.), 5000.)
+        );
     }
 
     void update(uint32_t dt) override
