@@ -17,6 +17,7 @@ set(SRC_CXX_FILES
     window.cpp
     geometry.cpp
     fonts.cpp
+    timers.cpp
 )
 
 set(SRC_H_FILES
@@ -37,6 +38,7 @@ set(SRC_H_FILES
     ../include/kaacore/geometry.h
     ../include/kaacore/display.h
     ../include/kaacore/fonts.h
+    ../include/kaacore/timers.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
