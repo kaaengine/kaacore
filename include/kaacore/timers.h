@@ -6,7 +6,7 @@
 
 namespace kaacore {
 
-typedef uint32_t TimerID;
+typedef std::uintptr_t TimerID;
 typedef std::function<void()> TimerCallback;
 
 extern uint32_t KAACORE_Timer;
@@ -26,9 +26,13 @@ public:
 
 private:
     bool _single_shot;
-    uint32_t _timer_id;
+    TimerID _timer_id;
     uint32_t _interval;
     TimerCallback _callback;
+
+    void _start();
+    void _stop();
+    bool _is_running();
 };
 
 }

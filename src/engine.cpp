@@ -177,10 +177,9 @@ void Engine::_pump_events()
     this->input_manager->clear_events();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        // TODO handle callbacks
         if (event.type == KAACORE_Timer) {
-            auto timer_id_ptr = static_cast<TimerID*>(event.user.data1);
-            resolve_timer(*timer_id_ptr);
+            auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
+            resolve_timer(timer_id);
         } else if (event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             this->renderer->reset();
