@@ -21,6 +21,7 @@ struct PolygonTesterDemoScene : Scene {
     PolygonTesterDemoScene()
     {
         this->engine = get_engine();
+        this->camera.position = {0., 0.};
 
         this->shape_repr = new Node();
         this->shape_repr->set_position({0, 0});
@@ -76,14 +77,26 @@ struct PolygonTesterDemoScene : Scene {
                 break;
             } else if (event.is_pressing(Mousecode::left)) {
                 auto pos = event.get_mouse_position();
-                log("Adding point: (%f, %f)", pos.x, pos.y);
-                auto window_size = this->engine->window->size();
-                this->add_point(
-                    pos - glm::dvec2(window_size.x / 2, window_size.y / 2)
-                );
+                pos = this->camera.unproject_position(pos);
+                log("Adding point: (%lf, %lf)", pos.x, pos.y);
+                this->add_point(pos);
             } else if (event.is_pressing(Keycode::f)) {
                 log("Finalizing polygon");
                 this->finalize_polygon();
+            } else if (event.is_pressing(Keycode::w)) {
+                this->camera.position += glm::dvec2(0., -2.5);
+            } else if (event.is_pressing(Keycode::a)) {
+                this->camera.position += glm::dvec2(-2.5, 0.);
+            } else if (event.is_pressing(Keycode::s)) {
+                this->camera.position += glm::dvec2(0., 2.5);
+            } else if (event.is_pressing(Keycode::d)) {
+                this->camera.position += glm::dvec2(2.5, 0.);
+            } else if (event.is_pressing(Keycode::i)) {
+                this->camera.scale += glm::dvec2(0.1, 0.1);
+            } else if (event.is_pressing(Keycode::o)) {
+                this->camera.scale -= glm::dvec2(0.1, 0.1);
+            } else if (event.is_pressing(Keycode::r)) {
+                this->camera.rotation += 0.3;
             }
         }
     }
@@ -92,7 +105,7 @@ struct PolygonTesterDemoScene : Scene {
 
 extern "C" int main(int argc, char *argv[])
 {
-    Engine eng({800, 600});
+    Engine eng({800, 600}, VirtualResolutionMode::aggresive_stretch);
     eng.window->show();
     PolygonTesterDemoScene scene;
     eng.run(&scene);

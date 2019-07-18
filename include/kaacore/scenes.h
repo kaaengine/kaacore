@@ -21,6 +21,7 @@ struct Camera {
 
     Camera();
     void refresh();
+    glm::dvec2 unproject_position(const glm::dvec2& pos);
 };
 
 
