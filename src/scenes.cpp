@@ -25,8 +25,8 @@ Scene::Scene()
 
 Scene::~Scene() noexcept(false)
 {
-    auto engine = get_engine();
-    if (this == engine->scene || this == engine->next_scene) {
+    auto engine = get_engine(false);
+    if (engine && (this == engine->scene || this == engine->next_scene)) {
         throw kaacore::exception(
             "An attempt to delete current scene detected. Aborting."
         );

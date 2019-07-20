@@ -71,8 +71,10 @@ private:
 extern Engine* engine;
 
 
-inline Engine* get_engine() {
-    KAACORE_ASSERT(engine != nullptr);
+inline Engine* get_engine(bool must_exist=true) {
+    if (must_exist) {
+        KAACORE_CHECK(engine != nullptr);
+    }
     return engine;
 }
 
