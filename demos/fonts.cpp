@@ -10,6 +10,7 @@
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"
 #include "kaacore/fonts.h"
+#include "kaacore/node_transitions.h"
 
 using namespace kaacore;
 
@@ -58,7 +59,11 @@ struct DemoFontsScene : Scene {
         this->root_node.add_child(this->node_text);
 
         this->node_text->set_transition(
-            std::make_shared<NodePositionTransition>(glm::dvec2(200., 200.), 5000.)
+            make_node_transitions_sequence({
+                make_node_transition<NodePositionTransition>(glm::dvec2(200., 200.), 2000.),
+                make_node_transition<NodePositionTransition>(glm::dvec2(0., 300.), 2000.),
+                make_node_transition<NodePositionTransition>(glm::dvec2(-200., -500.), 4000.)
+            })
         );
     }
 

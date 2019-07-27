@@ -1,46 +1,97 @@
+#include <cmath>
+
 #include "kaacore/nodes.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/log.h"
 
 #include "kaacore/transitions.h"
 
 
 namespace kaacore {
 
+
+NodeTransitionBase::NodeTransitionBase()
+: duration(std::nan(""))
+{
+}
+
 NodeTransitionBase::NodeTransitionBase(const double dur)
 : duration(dur)
 {
 }
 
+std::unique_ptr<TransitionStateBase> NodeTransitionBase::prepare_state(Node* node) const
+{
+    return nullptr;
+}
 
-struct NodePositionTransitionState : TransitionStateBase {
-    glm::dvec2 node_starting_position;
 
-    NodePositionTransitionState(glm::dvec2 pos)
-    : node_starting_position(pos)
+struct _NodeTransitionsSequenceSubState {
+    NodeTransitionHandle handle;
+    std::unique_ptr<TransitionStateBase> state;
+    bool state_prepared;
+    bool finished;
+    double ending_t;
+
+    _NodeTransitionsSequenceSubState(const NodeTransitionHandle& transition_handle, const double ending_t)
+    : handle(transition_handle), ending_t(ending_t),
+      state(nullptr), state_prepared(false), finished(false)
     {
     }
 };
 
 
-NodePositionTransition::NodePositionTransition(const glm::dvec2& move_vector, const double dur)
-: NodeTransitionBase(dur), _move_vector(move_vector)
+struct _NodeTransitionsSequenceState : TransitionStateBase {
+    std::vector<_NodeTransitionsSequenceSubState> sequence_sub_states;
+};
+
+
+NodeTransitionsSequence::NodeTransitionsSequence(
+    const std::vector<NodeTransitionHandle>& transitions) noexcept(false)
 {
+    double total_duration = 0.;
+    for (const auto& tr : transitions) {
+        KAACORE_CHECK(tr->duration >= 0.);
+        total_duration += tr->duration;
+        this->_transitions_sequence.emplace_back(tr, total_duration);
+    }
+    this->duration = total_duration;
 }
 
-std::unique_ptr<TransitionStateBase>
-NodePositionTransition::prepare_state(Node* node) const
+std::unique_ptr<TransitionStateBase> NodeTransitionsSequence::prepare_state(Node* node) const
 {
-    return std::make_unique<NodePositionTransitionState>(node->position);
+    auto sequence_state = std::make_unique<_NodeTransitionsSequenceState>();
+    for (const auto& sub_tr : this->_transitions_sequence) {
+        sequence_state->sequence_sub_states.emplace_back(
+            sub_tr.handle, sub_tr.ending_time / this->duration
+        );
+    }
+
+    return sequence_state;
 }
 
-void NodePositionTransition::evaluate(TransitionStateBase* state_b,
-                                      Node* node, double t) const
+void NodeTransitionsSequence::evaluate(TransitionStateBase* state_b, Node* node, const double t) const
 {
-    auto state = static_cast<NodePositionTransitionState*>(state_b);
-    node->set_position(
-        glm::mix(state->node_starting_position,
-                 state->node_starting_position + this->_move_vector, t)
-    );
+    double current_starting_t = 0.;
+    auto state = static_cast<_NodeTransitionsSequenceState*>(state_b);
+    for (auto& sub_state : state->sequence_sub_states) {
+        if (not sub_state.state_prepared) {
+            sub_state.state = sub_state.handle->prepare_state(node);
+            sub_state.state_prepared = true;
+        }
+        if (not sub_state.finished) {
+            double sub_t = (t - current_starting_t) / (sub_state.ending_t - current_starting_t);
+            sub_state.handle->evaluate(
+                sub_state.state.get(), node, glm::min(sub_t, 1.)
+            );
+            if (sub_t >= 1.) {
+                sub_state.finished = true;
+            } else {
+                break;
+            }
+        }
+        current_starting_t = sub_state.ending_t;
+    }
 }
 
 
@@ -69,7 +120,7 @@ void NodeTransitionRunner::step(Node* node, const uint32_t dt)
     this->current_time += dt;
     double t = double(this->current_time) / this->transition_handle->duration;
     this->transition_handle->evaluate(
-        this->transition_state.get(), node, t
+        this->transition_state.get(), node, glm::min(t, 1.)
     );
     if (t >= 1.) {
         this->finished = true;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <glm/glm.hpp>
 
@@ -21,19 +22,31 @@ class NodeTransitionBase {
     public:
     double duration;
 
+    NodeTransitionBase();
     NodeTransitionBase(const double duration);
 
-    virtual std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const = 0;
+    virtual std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
     virtual void evaluate(TransitionStateBase* state, Node* node, const double t) const = 0;
 };
 
-class NodePositionTransition : public NodeTransitionBase {
-    glm::dvec2 _move_vector;
+
+class NodeTransitionsSequence : public NodeTransitionBase {
+    struct _SubTransition {
+        NodeTransitionHandle handle;
+        double ending_time;
+
+        _SubTransition(const NodeTransitionHandle& handle, const double ending_time)
+        : handle(handle), ending_time(ending_time)
+        {
+        }
+    };
+
+    std::vector<_SubTransition> _transitions_sequence;
 
     public:
-    NodePositionTransition(const glm::dvec2& move_vector, const double duration);
-    std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const override;
-    void evaluate(TransitionStateBase* state, Node* node, const double t) const override;
+    NodeTransitionsSequence(const std::vector<NodeTransitionHandle>& transitions) noexcept(false);
+    std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
+    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
 };
 
 
@@ -49,5 +62,14 @@ struct NodeTransitionRunner {
     operator bool() const;
 };
 
+
+template <class T, class... Args>
+NodeTransitionHandle make_node_transition(Args&&... args) {
+    return std::make_shared<T>(std::forward<Args>(args)...);
+};
+
+inline NodeTransitionHandle make_node_transitions_sequence(const std::vector<NodeTransitionHandle>& transitions) {
+    return std::make_shared<NodeTransitionsSequence>(transitions);
+}
 
 } // namespace kaacore
