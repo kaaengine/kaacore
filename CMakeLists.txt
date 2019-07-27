@@ -7,6 +7,9 @@ option(KAACORE_SHARED "Build kaacore-shared" OFF)
 option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
 
 add_subdirectory(third_party/bgfx)
+if (TARGET astc-codec)
+    set_target_properties(astc-codec PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 set(SDL_STATIC OFF CACHE BOOL "")
 add_subdirectory(third_party/sdl2)

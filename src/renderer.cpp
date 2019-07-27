@@ -78,7 +78,7 @@ Renderer::Renderer(const glm::uvec2& window_size)
         .end();
 
     this->texture_uniform = bgfx::createUniform(
-        "s_texture", bgfx::UniformType::Enum::Int1, 1
+        "s_texture", bgfx::UniformType::Enum::Sampler, 1
     );
 
     bgfx::setViewClear(0, this->clear_flags, renderer_clear_color);
