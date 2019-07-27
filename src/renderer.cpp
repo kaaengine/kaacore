@@ -36,11 +36,17 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
         vs_data_size = array_size(default_glsl_vertex_shader);
         fs_data_size = array_size(default_glsl_fragment_shader);
     } else if (renderer_type == bgfx::RendererType::Enum::Direct3D9) {
-        vs_data = default_hlsl_d3d9_vertex_shader;
         log("Loading default Direct3D9 HLSL shaders.");
+        vs_data = default_hlsl_d3d9_vertex_shader;
         fs_data = default_hlsl_d3d9_fragment_shader;
         vs_data_size = array_size(default_hlsl_d3d9_vertex_shader);
         fs_data_size = array_size(default_hlsl_d3d9_fragment_shader);
+    } else if (renderer_type == bgfx::RendererType::Enum::Direct3D11) {
+        log("Loading default Direct3D11 HLSL shaders.");
+        vs_data = default_hlsl_d3d11_vertex_shader;
+        fs_data = default_hlsl_d3d11_fragment_shader;
+        vs_data_size = array_size(default_hlsl_d3d11_vertex_shader);
+        fs_data_size = array_size(default_hlsl_d3d11_fragment_shader);
     } else {
         log<LogLevel::warn>("No default shaders loaded");
         return std::make_tuple(false, nullptr, nullptr);

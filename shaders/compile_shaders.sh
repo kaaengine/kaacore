@@ -10,7 +10,7 @@ cd `dirname $0`
 
 compile_shader()
 {
-	${SHADERC_BIN} --verbose -i ../third_party/source/bgfx/bgfx/src/ $@
+	${SHADERC_BIN} --verbose -i ../third_party/bgfx/bgfx/src/ $@
 }
 
 compile_vs()
@@ -34,4 +34,7 @@ if [ "$1" == "windows" ]
 then
 	compile_vs "default_hlsl_d3d9_vertex_shader" --platform windows -p vs_3_0 -O 3
 	compile_fs "default_hlsl_d3d9_fragment_shader" --platform windows -p ps_3_0 -O 3
+
+	compile_vs "default_hlsl_d3d11_vertex_shader" --platform windows -p vs_5_0 -O 3
+	compile_fs "default_hlsl_d3d11_fragment_shader" --platform windows -p ps_5_0 -O 3
 fi
