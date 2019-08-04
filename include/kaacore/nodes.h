@@ -87,6 +87,8 @@ class Node {
 
     const NodeType type() const;
 
+    const std::vector<Node*>& children();
+
     glm::dvec2 position();
     glm::dvec2 absolute_position();
     void position(const glm::dvec2& position);
@@ -117,6 +119,8 @@ class Node {
 
     Scene* scene() const;
     Node* parent() const;
+
+    void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
 };
 

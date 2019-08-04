@@ -142,6 +142,11 @@ const NodeType Node::type() const
     return this->_type;
 }
 
+const std::vector<Node*>& Node::children()
+{
+    return this->_children;
+}
+
 glm::dvec2 Node::position()
 {
     return this->_position;
@@ -260,6 +265,12 @@ Scene* Node::scene() const
 Node* Node::parent() const
 {
     return this->_parent;
+}
+
+void Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)
+{
+    KAACORE_ASSERT(!this->_node_wrapper);
+    this->_node_wrapper = std::move(wrapper);
 }
 
 ForeignNodeWrapper* Node::wrapper_ptr() const
