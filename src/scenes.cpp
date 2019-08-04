@@ -142,7 +142,7 @@ void Scene::on_exit()
 void Scene::register_simulation(Node* node)
 {
     KAACORE_ASSERT(node->_type == NodeType::space);
-    KAACORE_ASSERT(node->space.cp_space != nullptr);
+    KAACORE_ASSERT(node->space._cp_space != nullptr);
     if (this->simulations_registry.find(node) == this->simulations_registry.end()) {
         this->simulations_registry.insert(node);
     }
@@ -151,7 +151,7 @@ void Scene::register_simulation(Node* node)
 void Scene::unregister_simulation(Node* node)
 {
     KAACORE_ASSERT(node->_type == NodeType::space);
-    KAACORE_ASSERT(node->space.cp_space != nullptr);
+    KAACORE_ASSERT(node->space._cp_space != nullptr);
     auto pos = this->simulations_registry.find(node);
     KAACORE_ASSERT(pos != this->simulations_registry.end());
     this->simulations_registry.erase(pos);

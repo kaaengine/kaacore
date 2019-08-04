@@ -52,7 +52,7 @@ struct DemoScene : Scene {
         this->root_node.add_child(this->container);
 
         this->box = new Node(NodeType::body);
-        this->box->body.set_body_type(BodyNodeType::kinematic);
+        this->box->body.body_type(BodyNodeType::kinematic);
 
         this->wall_l = this->init_wall(
             {-box_size, +box_size}, {-box_size, -box_size}
@@ -76,7 +76,7 @@ struct DemoScene : Scene {
 
         for (int i = 0; i < 5; i++) {
             Node* ball = new Node(NodeType::body);
-            ball->body.set_body_type(BodyNodeType::dynamic);
+            ball->body.body_type(BodyNodeType::dynamic);
 
             Shape& chosen_shape = shape_dist(generator) ? polygon_shape : circle_shape;
 
@@ -88,11 +88,11 @@ struct DemoScene : Scene {
             // ball->body.set_velocity(
             //     {speed_dist(generator), speed_dist(generator)}
             // );
-            ball->body.set_moment(10.);
+            ball->body.moment(10.);
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
             ball_hitbox->shape(chosen_shape);
-            ball_hitbox->hitbox.set_trigger_id(120);
+            ball_hitbox->hitbox.trigger_id(120);
 
             this->balls.push_back(ball);
             container->add_child(ball);
@@ -126,8 +126,8 @@ struct DemoScene : Scene {
                 return 1;
             }, CollisionPhase::begin | CollisionPhase::separate
         );
-        this->container->space.set_gravity({0.0, 2.5});
-        this->box->body.set_angular_velocity(-0.50);
+        this->container->space.gravity({0.0, 2.5});
+        this->box->body.angular_velocity(-0.50);
     }
 
     void update(uint32_t dt) override
