@@ -19,14 +19,14 @@ struct DemoScene : Scene {
 
     DemoScene() {
         this->node = new Node();
-        this->node->position = {0, 0};
-        this->node->color = {1., 0., 0., 1};
-        this->node->shape = Shape::Box({100., 100.});
+        this->node->position({0, 0});
+        this->node->color({1., 0., 0., 1});
+        this->node->shape(Shape::Box({100., 100.}));
         this->root_node.add_child(this->node);
 
         this->timer = Timer(1000, [this]() {
             log("Timer callback called.");
-            this->node->visible = !this->node->visible;
+            this->node->visible(!this->node->visible());
         }, false);
         this->timer.start();
     }

@@ -24,8 +24,8 @@ struct PolygonTesterDemoScene : Scene {
         this->camera.position = {0., 0.};
 
         this->shape_repr = new Node();
-        this->shape_repr->set_position({0, 0});
-        this->shape_repr->set_shape(Shape::Box({3, 3}));
+        this->shape_repr->position({0, 0});
+        this->shape_repr->shape(Shape::Box({3, 3}));
         this->root_node.add_child(this->shape_repr);
     }
 
@@ -35,8 +35,8 @@ struct PolygonTesterDemoScene : Scene {
             return;
         }
         Node* point_node = new Node();
-        point_node->set_position(p);
-        point_node->set_shape(Shape::Circle(1.));
+        point_node->position(p);
+        point_node->shape(Shape::Circle(1.));
         this->root_node.add_child(point_node);
 
         if (this->points.size()) {
@@ -48,8 +48,8 @@ struct PolygonTesterDemoScene : Scene {
     void add_segment(const glm::dvec2& a, const glm::dvec2& b)
     {
         Node* segment_node = new Node();
-        segment_node->set_position(a);
-        segment_node->set_shape(Shape::Segment({0, 0}, b - a));
+        segment_node->position(a);
+        segment_node->shape(Shape::Segment({0, 0}, b - a));
         this->root_node.add_child(segment_node);
     }
 
@@ -62,7 +62,7 @@ struct PolygonTesterDemoScene : Scene {
         auto polygon_type = classify_polygon(this->points);
         log("Polygon type: %d", static_cast<int>(polygon_type));
         if (polygon_type != PolygonType::not_convex) {
-            this->shape_repr->set_shape(Shape::Polygon(this->points));
+            this->shape_repr->shape(Shape::Polygon(this->points));
         } else {
             log<LogLevel::error>("Polygon not convex!");
         }

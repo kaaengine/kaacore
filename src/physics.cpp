@@ -16,11 +16,11 @@ namespace kaacore {
 // assertion helpers
 
 #define ASSERT_VALID_SPACE_NODE() \
-    KAACORE_ASSERT(container_node(this)->type == NodeType::space); \
+    KAACORE_ASSERT(container_node(this)->_type == NodeType::space); \
     KAACORE_ASSERT(this->cp_space != nullptr);
 
 #define ASSERT_VALID_BODY_NODE() \
-    KAACORE_ASSERT(container_node(this)->type == NodeType::body); \
+    KAACORE_ASSERT(container_node(this)->_type == NodeType::body); \
     KAACORE_ASSERT(this->cp_body != nullptr);
 
 #define ASSERT_DYNAMIC_BODY_NODE() \
@@ -28,7 +28,7 @@ namespace kaacore {
     KAACORE_ASSERT(this->get_body_type() == BodyNodeType::dynamic);
 
 #define ASSERT_VALID_HITBOX_NODE() \
-    KAACORE_ASSERT(container_node(this)->type == NodeType::hitbox); \
+    KAACORE_ASSERT(container_node(this)->_type == NodeType::hitbox); \
     KAACORE_ASSERT(this->cp_shape != nullptr);
 
 
@@ -78,7 +78,7 @@ void space_safe_call(SpaceNode* space_node_phys, const SpacePostStepFunc& func)
 
 void space_safe_call(Node* space_node, const SpacePostStepFunc& func)
 {
-    KAACORE_ASSERT(space_node->type == NodeType::space);
+    KAACORE_ASSERT(space_node->type() == NodeType::space);
     space_safe_call(&space_node->space, func);
 }
 
@@ -354,10 +354,10 @@ void BodyNode::attach_to_simulation()
         Node* node = container_node(this);
         log<LogLevel::debug>("Attaching body node %p to simulation (space) (cpBody: %p)",
                              node, this->cp_body);
-        KAACORE_ASSERT(node->parent != nullptr);
-        KAACORE_ASSERT(node->parent->type == NodeType::space);
-        KAACORE_ASSERT(node->parent->space.cp_space != nullptr);
-        space_safe_call(node->parent,
+        KAACORE_ASSERT(node->_parent != nullptr);
+        KAACORE_ASSERT(node->_parent->_type == NodeType::space);
+        KAACORE_ASSERT(node->_parent->space.cp_space != nullptr);
+        space_safe_call(node->_parent,
             [&](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>("Simulation callback: attaching cpBody %p",
                                  this->cp_body);
@@ -426,13 +426,13 @@ void BodyNode::override_simulation_position()
 {
     ASSERT_VALID_BODY_NODE();
     cpBodySetPosition(this->cp_body,
-                      convert_vector(container_node(this)->position));
+                      convert_vector(container_node(this)->_position));
 }
 
 void BodyNode::sync_simulation_position() const
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->position = \
+    container_node(this)->_position = \
         convert_vector(cpBodyGetPosition(this->cp_body));
 }
 
@@ -440,13 +440,13 @@ void BodyNode::sync_simulation_position() const
 void BodyNode::override_simulation_rotation()
 {
     ASSERT_VALID_BODY_NODE();
-    cpBodySetAngle(this->cp_body, container_node(this)->rotation);
+    cpBodySetAngle(this->cp_body, container_node(this)->_rotation);
 }
 
 void BodyNode::sync_simulation_rotation() const
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->rotation = cpBodyGetAngle(this->cp_body);
+    container_node(this)->_rotation = cpBodyGetAngle(this->cp_body);
 }
 
 void BodyNode::set_velocity(const glm::dvec2 velocity)
@@ -554,23 +554,23 @@ void HitboxNode::update_physics_shape()
     Node* node = container_node(this);
     cpShape* new_cp_shape;
 
-    KAACORE_ASSERT(node->shape.type != ShapeType::none);
-    KAACORE_ASSERT(node->shape.type != ShapeType::freeform);
-    cpVect* cp_points = reinterpret_cast<cpVect*>(node->shape.points.data());
+    KAACORE_ASSERT(node->_shape.type != ShapeType::none);
+    KAACORE_ASSERT(node->_shape.type != ShapeType::freeform);
+    cpVect* cp_points = reinterpret_cast<cpVect*>(node->_shape.points.data());
     // TODO handle node matrix transformations
-    if (node->shape.type == ShapeType::segment) {
-        KAACORE_ASSERT(node->shape.points.size() == 2);
+    if (node->_shape.type == ShapeType::segment) {
+        KAACORE_ASSERT(node->_shape.points.size() == 2);
         new_cp_shape = cpSegmentShapeNew(
-            nullptr, cp_points[0], cp_points[1], node->shape.radius
+            nullptr, cp_points[0], cp_points[1], node->_shape.radius
         );
-    } else if (node->shape.type == ShapeType::circle) {
-        KAACORE_ASSERT(node->shape.points.size() == 1);
+    } else if (node->_shape.type == ShapeType::circle) {
+        KAACORE_ASSERT(node->_shape.points.size() == 1);
         new_cp_shape = cpCircleShapeNew(
-            nullptr, node->shape.radius, cp_points[0]
+            nullptr, node->_shape.radius, cp_points[0]
         );
-    } else if (node->shape.type == ShapeType::polygon) {
+    } else if (node->_shape.type == ShapeType::polygon) {
         new_cp_shape = cpPolyShapeNewRaw(
-            nullptr, node->shape.points.size(), cp_points, 0.
+            nullptr, node->_shape.points.size(), cp_points, 0.
         );
     }
 
@@ -603,7 +603,7 @@ void HitboxNode::update_physics_shape()
 
     this->cp_shape = new_cp_shape;
 
-    if (node->parent) {
+    if (node->_parent) {
         this->attach_to_simulation();
     }
 }
@@ -616,11 +616,11 @@ void HitboxNode::attach_to_simulation()
     if (cpShapeGetBody(this->cp_shape) == nullptr) {
         log<LogLevel::debug>("Attaching hitbox node %p to simulation (body) (cpShape: %p)",
                              node, this->cp_shape);
-        KAACORE_ASSERT(node->parent != nullptr);
-        KAACORE_ASSERT(node->parent->type == NodeType::body);
-        KAACORE_ASSERT(node->parent->body.cp_body != nullptr);
-        space_safe_call(node->parent->body.get_space(),
-            [body_ptr=node->parent->body.cp_body, shape_ptr=this->cp_shape]
+        KAACORE_ASSERT(node->_parent != nullptr);
+        KAACORE_ASSERT(node->_parent->_type == NodeType::body);
+        KAACORE_ASSERT(node->_parent->body.cp_body != nullptr);
+        space_safe_call(node->_parent->body.get_space(),
+            [body_ptr=node->_parent->body.cp_body, shape_ptr=this->cp_shape]
             (const SpaceNode* space_node_phys) {
             log<LogLevel::debug>(
                 "Simulation callback: attaching cpShape %p to body (cpBody: %p)",
@@ -631,12 +631,12 @@ void HitboxNode::attach_to_simulation()
     }
 
     if (cpShapeGetSpace(this->cp_shape) == nullptr
-        and node->parent->parent != nullptr) {
+        and node->_parent->_parent != nullptr) {
         log<LogLevel::debug>("Attaching hitbox node %p to simulation (space) (cpShape: %p)",
                              node, this->cp_shape);
-        KAACORE_ASSERT(node->parent->parent->type == NodeType::space);
-        KAACORE_ASSERT(node->parent->parent->space.cp_space != nullptr);
-        space_safe_call(node->parent->parent,
+        KAACORE_ASSERT(node->_parent->_parent->_type == NodeType::space);
+        KAACORE_ASSERT(node->_parent->_parent->space.cp_space != nullptr);
+        space_safe_call(node->_parent->_parent,
             [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>(
                 "Simulation callback: attaching cpShape %p to space (cpSpace: %p)",

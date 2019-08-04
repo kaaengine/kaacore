@@ -15,7 +15,7 @@ typedef cpBitmask CollisionBitmask;
 
 constexpr uint32_t default_simulation_step_size = 10;
 
-struct Node;
+class Node;
 struct SpaceNode;
 struct BodyNode;
 struct HitboxNode;

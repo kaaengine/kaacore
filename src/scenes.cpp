@@ -19,7 +19,7 @@ namespace kaacore {
 
 Scene::Scene()
 {
-    this->root_node.scene = this;
+    this->root_node._scene = this;
 }
 
 
@@ -32,8 +32,8 @@ Scene::~Scene() noexcept(false)
         );
     }
 
-    while (not this->root_node.children.empty()) {
-        delete this->root_node.children[0];
+    while (not this->root_node._children.empty()) {
+        delete this->root_node._children[0];
     }
     KAACORE_ASSERT(this->simulations_registry.empty());
 }
@@ -54,17 +54,17 @@ void Scene::process_nodes(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
-        for (const auto child_node : node->children) {
+        for (const auto child_node : node->_children) {
             processing_queue.push_back(child_node);
         }
 
-        if (node->type == NodeType::body) {
+        if (node->_type == NodeType::body) {
             node->body.sync_simulation_position();
             node->body.sync_simulation_rotation();
         }
 
-        if (node->sprite and node->sprite.auto_animate) {
-            node->sprite.animation_time_step(dt);
+        if (node->_sprite and node->_sprite.auto_animate) {
+            node->_sprite.animation_time_step(dt);
         }
     }
 }
@@ -82,8 +82,8 @@ void Scene::process_nodes_drawing(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
-        if (node->visible) {
-            for (const auto child_node : node->children) {
+        if (node->_visible) {
+            for (const auto child_node : node->_children) {
                 processing_queue.push_back(child_node);
             }
 
@@ -91,7 +91,7 @@ void Scene::process_nodes_drawing(uint32_t dt)
             node->recalculate_render_data();
 
             rendering_queue.emplace_back(
-                std::abs(std::numeric_limits<int16_t>::min()) + node->z_index,
+                std::abs(std::numeric_limits<int16_t>::min()) + node->_z_index,
                 node
             );
     }
@@ -100,13 +100,13 @@ void Scene::process_nodes_drawing(uint32_t dt)
     std::sort(rendering_queue.begin(), rendering_queue.end());
 
     for (const auto& qn : rendering_queue) {
-        if (std::get<Node*>(qn)->render_data.computed_vertices.empty()) {
+        if (std::get<Node*>(qn)->_render_data.computed_vertices.empty()) {
             continue;
         }
         get_engine()->renderer->render_vertices(
-            std::get<Node*>(qn)->render_data.computed_vertices,
-            std::get<Node*>(qn)->shape.indices,
-            std::get<Node*>(qn)->render_data.texture_handle
+            std::get<Node*>(qn)->_render_data.computed_vertices,
+            std::get<Node*>(qn)->_shape.indices,
+            std::get<Node*>(qn)->_render_data.texture_handle
         );
     }
 }
@@ -141,7 +141,7 @@ void Scene::on_exit()
 
 void Scene::register_simulation(Node* node)
 {
-    KAACORE_ASSERT(node->type == NodeType::space);
+    KAACORE_ASSERT(node->_type == NodeType::space);
     KAACORE_ASSERT(node->space.cp_space != nullptr);
     if (this->simulations_registry.find(node) == this->simulations_registry.end()) {
         this->simulations_registry.insert(node);
@@ -150,7 +150,7 @@ void Scene::register_simulation(Node* node)
 
 void Scene::unregister_simulation(Node* node)
 {
-    KAACORE_ASSERT(node->type == NodeType::space);
+    KAACORE_ASSERT(node->_type == NodeType::space);
     KAACORE_ASSERT(node->space.cp_space != nullptr);
     auto pos = this->simulations_registry.find(node);
     KAACORE_ASSERT(pos != this->simulations_registry.end());

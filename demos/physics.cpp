@@ -31,8 +31,8 @@ struct DemoScene : Scene {
     Node* init_wall(const glm::dvec2& a, const glm::dvec2& b)
     {
         Node* wall_hitbox = new Node(NodeType::hitbox);
-        wall_hitbox->set_shape(Shape::Segment(a, b));
-        wall_hitbox->color = {1., 0.0, 0.6, 0.4};
+        wall_hitbox->shape(Shape::Segment(a, b));
+        wall_hitbox->color({1., 0.0, 0.6, 0.4});
         return wall_hitbox;
     }
 
@@ -80,18 +80,18 @@ struct DemoScene : Scene {
 
             Shape& chosen_shape = shape_dist(generator) ? polygon_shape : circle_shape;
 
-            ball->set_shape(chosen_shape);
-            ball->set_position(
+            ball->shape(chosen_shape);
+            ball->position(
                 {position_dist(generator), position_dist(generator)}
             );
-            ball->color = {1., 1., 0., 1.};
+            ball->color({1., 1., 0., 1.});
             // ball->body.set_velocity(
             //     {speed_dist(generator), speed_dist(generator)}
             // );
             ball->body.set_moment(10.);
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
-            ball_hitbox->set_shape(chosen_shape);
+            ball_hitbox->shape(chosen_shape);
             ball_hitbox->hitbox.set_trigger_id(120);
 
             this->balls.push_back(ball);
@@ -108,19 +108,19 @@ struct DemoScene : Scene {
                     delete pair_a.body_node;
                 } else if (arbiter.phase == CollisionPhase::separate and 
                            this->change_shape_on_collision) {
-                    if (pair_a.hitbox_node->shape.type == ShapeType::circle) {
-                        pair_a.body_node->set_shape(polygon_shape);
-                        pair_a.hitbox_node->set_shape(polygon_shape);
+                    if (pair_a.hitbox_node->shape().type == ShapeType::circle) {
+                        pair_a.body_node->shape(polygon_shape);
+                        pair_a.hitbox_node->shape(polygon_shape);
                     } else {
-                        pair_a.body_node->set_shape(circle_shape);
-                        pair_a.hitbox_node->set_shape(circle_shape);
+                        pair_a.body_node->shape(circle_shape);
+                        pair_a.hitbox_node->shape(circle_shape);
                     }
-                    if (pair_b.hitbox_node->shape.type == ShapeType::circle) {
-                        pair_b.body_node->set_shape(polygon_shape);
-                        pair_b.hitbox_node->set_shape(polygon_shape);
+                    if (pair_b.hitbox_node->shape().type == ShapeType::circle) {
+                        pair_b.body_node->shape(polygon_shape);
+                        pair_b.hitbox_node->shape(polygon_shape);
                     } else {
-                        pair_b.body_node->set_shape(circle_shape);
-                        pair_b.hitbox_node->set_shape(circle_shape);
+                        pair_b.body_node->shape(circle_shape);
+                        pair_b.hitbox_node->shape(circle_shape);
                     }
                 }
                 return 1;
@@ -140,13 +140,13 @@ struct DemoScene : Scene {
                 get_engine()->quit();
                 break;
             } else if (event.is_pressing(Keycode::w)) {
-                this->container->set_position(this->container->position + glm::dvec2(0., -0.1));
+                this->container->position(this->container->position() + glm::dvec2(0., -0.1));
             } else if (event.is_pressing(Keycode::a)) {
-                this->container->set_position(this->container->position + glm::dvec2(-0.1, 0.));
+                this->container->position(this->container->position() + glm::dvec2(-0.1, 0.));
             } else if (event.is_pressing(Keycode::s)) {
-                this->container->set_position(this->container->position + glm::dvec2(0., 0.1));
+                this->container->position(this->container->position() + glm::dvec2(0., 0.1));
             } else if (event.is_pressing(Keycode::d)) {
-                this->container->set_position(this->container->position + glm::dvec2(0.1, 0.));
+                this->container->position(this->container->position() + glm::dvec2(0.1, 0.));
             } else if (event.is_pressing(Keycode::r)) {
                 delete this->box;
             } else if (event.is_pressing(Keycode::t)) {

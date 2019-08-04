@@ -31,7 +31,7 @@ struct DemoScene : Scene {
 
         const std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
-        this->root_node.scale = {50., 50.};
+        this->root_node.scale({50., 50.});
 
         this->specific_shape = Shape::Freeform(indices, vertices);
         this->polygon_shape = Shape::Polygon(
@@ -39,32 +39,32 @@ struct DemoScene : Scene {
         );
 
         this->background = new Node();
-        this->background->shape = Shape::Box({1e4, 1e4});
-        this->background->color = {0.5, 0.5, 0.5, 0.25};
-        this->background->z_index = -100;
+        this->background->shape(Shape::Box({1e4, 1e4}));
+        this->background->color({0.5, 0.5, 0.5, 0.25});
+        this->background->z_index(-100);
 
         this->root_node.add_child(this->background);
 
         this->node1 = new Node();
-        this->node1->position = {3., 3.};
-        this->node1->rotation = 1.;
-        this->node1->scale = {1., 3.,};
-        this->node1->color = {1., 0., 0., 1};
-        this->node1->shape = Shape::Box({2., 1.});
-        this->node1->z_index = 10;
+        this->node1->position({3., 3.});
+        this->node1->rotation(1.);
+        this->node1->scale({1., 3.,});
+        this->node1->color({1., 0., 0., 1});
+        this->node1->shape(Shape::Box({2., 1.}));
+        this->node1->z_index(10);
         this->node1->recalculate_matrix();
         this->node1->recalculate_render_data();
 
         this->root_node.add_child(this->node1);
 
         this->node2 = new Node();
-        this->node2->position = {-3., 3.};
-        this->node2->rotation = 10.;
-        this->node2->scale = {1., 1.,};
-        this->node2->color = {0., 1., 0., 1};
+        this->node2->position({-3., 3.});
+        this->node2->rotation(10.);
+        this->node2->scale({1., 1.});
+        this->node2->color({0., 1., 0., 1});
         // this->node2->shape = Shape::Circle({0., 0.}, 1.5);
-        this->node2->shape = Shape::Segment({-5., -5.}, {2., 2.});
-        this->node2->z_index = 10;
+        this->node2->shape(Shape::Segment({-5., -5.}, {2., 2.}));
+        this->node2->z_index(10);
         this->node2->recalculate_matrix();
         this->node2->recalculate_render_data();
 
@@ -77,21 +77,21 @@ struct DemoScene : Scene {
         };
 
         this->container_node = new Node();
-        this->container_node->position = {0., 0.};
-        this->container_node->shape = Shape::Box({9., 9.});
+        this->container_node->position({0., 0.});
+        this->container_node->shape(Shape::Box({9., 9.}));
         this->container_node->recalculate_matrix();
         this->container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
             Node* inner_node = new Node();
-            inner_node->position = p;
-            inner_node->color = {0., 0., 1., 1};
-            inner_node->scale = {0.5, 0.5};
-            inner_node->set_shape(this->polygon_shape);
+            inner_node->position(p);
+            inner_node->color({0., 0., 1., 1});
+            inner_node->scale({0.5, 0.5});
+            inner_node->shape(this->polygon_shape);
             if (p.x != 0. and p.y != 0.) {
-                inner_node->z_index = 10;
+                inner_node->z_index(10);
             } else {
-                inner_node->z_index = -10;
+                inner_node->z_index(-10);
             }
 
             this->container_node->add_child(inner_node);
@@ -132,14 +132,14 @@ struct DemoScene : Scene {
                 this->camera.rotation += 0.2;
                 this->camera.refresh();
             } else if (event.is_pressing(Keycode::m)) {
-                this->node1->rotation += 0.2;
-                this->node1->position.x += 1.;
-                log("Node position: %lf %lf", this->node1->position.x, this->node1->position.y);
+                this->node1->rotation(this->node1->rotation() + 0.2);
+                this->node1->position(this->node1->position() + glm::dvec2(1., 0.));
+                log("Node position: %lf %lf", this->node1->position().x, this->node1->position().y);
             } else if (event.is_pressing(Keycode::n)) {
-                this->root_node.position += glm::dvec2(-1., -2.);
-                log("World position: %lf %lf", this->root_node.position.x, this->root_node.position.y);
+                this->root_node.position(this->root_node.position() + glm::dvec2(-1., -2.));
+                log("World position: %lf %lf", this->root_node.position().x, this->root_node.position().y);
             } else if (event.is_pressing(Keycode::c)) {
-                this->camera.position = this->node1->get_absolute_position();
+                this->camera.position = this->node1->absolute_position();
                 this->camera.refresh();
                 log("Camera position: %lf %lf", this->camera.position.x, this->camera.position.y);
             } else if (event.is_pressing(Keycode::f)) {
