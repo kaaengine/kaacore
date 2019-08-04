@@ -62,6 +62,7 @@ class Node {
     bool _visible = true;
     Alignment _origin_alignment = Alignment::none;
     uint32_t _lifetime = 0;
+    NodeTransitionRunner _transition;
 
     Scene* _scene = nullptr;
     Node* _parent = nullptr;
@@ -122,10 +123,11 @@ class Node {
     uint32_t lifetime();
     void lifetime(const uint32_t& lifetime);
 
+    NodeTransitionHandle transition();
+    void transition(const NodeTransitionHandle& transition);
+
     Scene* scene() const;
     Node* parent() const;
-
-    void set_transition(const NodeTransitionHandle& transition);
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;

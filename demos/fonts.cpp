@@ -58,11 +58,13 @@ struct DemoFontsScene : Scene {
         this->node_text->color({0., 0., 0., 1.});
         this->root_node.add_child(this->node_text);
 
-        this->node_text->set_transition(
+        this->node_text->transition(
             make_node_transitions_sequence({
                 make_node_transition<NodePositionTransition>(glm::dvec2(200., 200.), 2000.),
                 make_node_transition<NodePositionTransition>(glm::dvec2(0., 300.), 2000.),
-                make_node_transition<NodePositionTransition>(glm::dvec2(-200., -500.), 4000.)
+                make_node_transition<NodeScaleTransition>(glm::dvec2(7., 7.), 500.),
+                make_node_transition<NodeColorTransition>(glm::dvec4(1., 1., 1., -0.5), 5000.),
+                make_node_transition<NodePositionTransition>(glm::dvec2(-200., -500.), 18000.)
             })
         );
     }

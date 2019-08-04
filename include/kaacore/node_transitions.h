@@ -49,8 +49,19 @@ class NodeAttributeTransition : public NodeTransitionBase {
 
 
 typedef NodeAttributeTransition<glm::dvec2,
-                                &Node::get_position, &Node::set_position> \
+                                &Node::position, &Node::position> \
         NodePositionTransition;
 
+typedef NodeAttributeTransition<double,
+                                &Node::rotation, &Node::rotation> \
+        NodeRotationTransition;
+
+typedef NodeAttributeTransition<glm::dvec2,
+                                &Node::scale, &Node::scale> \
+        NodeScaleTransition;
+
+typedef NodeAttributeTransition<glm::dvec4,
+                                &Node::color, &Node::color> \
+        NodeColorTransition;
 
 } // namespace kaacore
