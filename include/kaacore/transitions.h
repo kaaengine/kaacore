@@ -30,7 +30,7 @@ class NodeTransitionBase {
 };
 
 
-class NodeTransitionsSequence : public NodeTransitionBase {
+class NodeTransitionsGroupBase : public NodeTransitionBase {
     struct _SubTransition {
         NodeTransitionHandle handle;
         double ending_time;
@@ -41,11 +41,24 @@ class NodeTransitionsSequence : public NodeTransitionBase {
         }
     };
 
-    std::vector<_SubTransition> _transitions_sequence;
+    protected:
+    std::vector<_SubTransition> _sub_transitions;
 
     public:
-    NodeTransitionsSequence(const std::vector<NodeTransitionHandle>& transitions) noexcept(false);
     std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
+};
+
+
+class NodeTransitionsSequence : public NodeTransitionsGroupBase {
+    public:
+    NodeTransitionsSequence(const std::vector<NodeTransitionHandle>& transitions) noexcept(false);
+    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
+};
+
+
+class NodeTransitionsParallel : public NodeTransitionsGroupBase {
+    public:
+    NodeTransitionsParallel(const std::vector<NodeTransitionHandle>& transitions) noexcept(false);
     void evaluate(TransitionStateBase* state, Node* node, const double t) const;
 };
 
@@ -70,6 +83,10 @@ NodeTransitionHandle make_node_transition(Args&&... args) {
 
 inline NodeTransitionHandle make_node_transitions_sequence(const std::vector<NodeTransitionHandle>& transitions) {
     return std::make_shared<NodeTransitionsSequence>(transitions);
+}
+
+inline NodeTransitionHandle make_node_transitions_parallel(const std::vector<NodeTransitionHandle>& transitions) {
+    return std::make_shared<NodeTransitionsParallel>(transitions);
 }
 
 } // namespace kaacore
