@@ -63,6 +63,24 @@ class NodeTransitionsParallel : public NodeTransitionsGroupBase {
 };
 
 
+class NodeTransitionDelay : public NodeTransitionBase {
+    public:
+    NodeTransitionDelay(const double duration);
+    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
+};
+
+
+typedef std::function<void(Node*)> NodeTransitionCallbackFunc;
+
+class NodeTransitionCallback : public NodeTransitionBase {
+    NodeTransitionCallbackFunc callback_func;
+
+    public:
+    NodeTransitionCallback(const NodeTransitionCallbackFunc& func);
+    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
+};
+
+
 struct NodeTransitionRunner {
     NodeTransitionHandle transition_handle;
     std::unique_ptr<TransitionStateBase> transition_state;

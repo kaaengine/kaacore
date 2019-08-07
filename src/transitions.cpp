@@ -129,6 +129,28 @@ void NodeTransitionsParallel::evaluate(TransitionStateBase* state_b, Node* node,
 }
 
 
+NodeTransitionDelay::NodeTransitionDelay(const double duration)
+: NodeTransitionBase(duration)
+{
+}
+
+void NodeTransitionDelay::evaluate(TransitionStateBase* state, Node* node, const double t) const
+{
+}
+
+
+NodeTransitionCallback::NodeTransitionCallback(const NodeTransitionCallbackFunc& func)
+: callback_func(func), NodeTransitionBase(0.)
+{
+}
+
+void NodeTransitionCallback::evaluate(TransitionStateBase* state, Node* node, const double t) const
+{
+    KAACORE_ASSERT(this->callback_func);
+    this->callback_func(node);
+}
+
+
 void NodeTransitionRunner::setup(const NodeTransitionHandle& transition)
 {
     this->transition_handle = transition;
