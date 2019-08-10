@@ -16,20 +16,20 @@ namespace kaacore {
 // assertion helpers
 
 #define ASSERT_VALID_SPACE_NODE() \
-    KAACORE_ASSERT(container_node(this)->type == NodeType::space); \
-    KAACORE_ASSERT(this->cp_space != nullptr);
+    KAACORE_ASSERT(container_node(this)->_type == NodeType::space); \
+    KAACORE_ASSERT(this->_cp_space != nullptr);
 
 #define ASSERT_VALID_BODY_NODE() \
-    KAACORE_ASSERT(container_node(this)->type == NodeType::body); \
-    KAACORE_ASSERT(this->cp_body != nullptr);
+    KAACORE_ASSERT(container_node(this)->_type == NodeType::body); \
+    KAACORE_ASSERT(this->_cp_body != nullptr);
 
 #define ASSERT_DYNAMIC_BODY_NODE() \
     ASSERT_VALID_BODY_NODE(); \
-    KAACORE_ASSERT(this->get_body_type() == BodyNodeType::dynamic);
+    KAACORE_ASSERT(this->body_type() == BodyNodeType::dynamic);
 
 #define ASSERT_VALID_HITBOX_NODE() \
-    KAACORE_ASSERT(container_node(this)->type == NodeType::hitbox); \
-    KAACORE_ASSERT(this->cp_shape != nullptr);
+    KAACORE_ASSERT(container_node(this)->_type == NodeType::hitbox); \
+    KAACORE_ASSERT(this->_cp_shape != nullptr);
 
 
 // conversions
@@ -68,7 +68,7 @@ inline constexpr Node* container_node(const HitboxNode* hitbox)
 
 void space_safe_call(SpaceNode* space_node_phys, const SpacePostStepFunc& func)
 {
-    if (space_node_phys and space_node_phys->is_locked()) {
+    if (space_node_phys and space_node_phys->locked()) {
         space_node_phys->add_post_step_callback(func);
     } else {
         func(space_node_phys);
@@ -78,7 +78,7 @@ void space_safe_call(SpaceNode* space_node_phys, const SpacePostStepFunc& func)
 
 void space_safe_call(Node* space_node, const SpacePostStepFunc& func)
 {
-    KAACORE_ASSERT(space_node->type == NodeType::space);
+    KAACORE_ASSERT(space_node->type() == NodeType::space);
     space_safe_call(&space_node->space, func);
 }
 
@@ -120,51 +120,51 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other)
 
 SpaceNode::SpaceNode()
 {
-    this->cp_space = cpSpaceNew();
+    this->_cp_space = cpSpaceNew();
     log<LogLevel::debug>("Creating space node %p (cpSpace: %p)",
-                         container_node(this), this->cp_space);
-    cpSpaceSetUserData(this->cp_space, this);
-    this->time_acc = 0;
+                         container_node(this), this->_cp_space);
+    cpSpaceSetUserData(this->_cp_space, this);
+    this->_time_acc = 0;
 }
 
 SpaceNode::~SpaceNode()
 {
     log<LogLevel::debug>("Destroying space node %p (cpSpace: %p)",
-                         container_node(this), this->cp_space);
-    cpSpaceDestroy(this->cp_space);
+                         container_node(this), this->_cp_space);
+    cpSpaceDestroy(this->_cp_space);
     // TODO destroy collision handlers?
 }
 
-void _cp_call_post_step_callbacks(cpSpace* cp_space, void* space_node_phys_ptr,
+void cp_call_post_step_callbacks(cpSpace* cp_space, void* space_node_phys_ptr,
                                   void* data)
 {
     SpaceNode* space_node_phys = static_cast<SpaceNode*>(space_node_phys_ptr);
-    for (const auto& func : space_node_phys->post_step_callbacks) {
+    for (const auto& func : space_node_phys->_post_step_callbacks) {
         func(space_node_phys);
     }
-    space_node_phys->post_step_callbacks.clear();
+    space_node_phys->_post_step_callbacks.clear();
 }
 
 
 void SpaceNode::add_post_step_callback(const SpacePostStepFunc& func)
 {
-    if (this->post_step_callbacks.empty()) {
+    if (this->_post_step_callbacks.empty()) {
         cpSpaceAddPostStepCallback(
-            this->cp_space, _cp_call_post_step_callbacks, this, nullptr
+            this->_cp_space, cp_call_post_step_callbacks, this, nullptr
         );
     }
-    this->post_step_callbacks.push_back(func);
+    this->_post_step_callbacks.push_back(func);
 }
 
 void SpaceNode::simulate(const uint32_t dt)
 {
     ASSERT_VALID_SPACE_NODE();
-    uint32_t time_left = dt + this->time_acc;
+    uint32_t time_left = dt + this->_time_acc;
     while (time_left > default_simulation_step_size) {
-        cpSpaceStep(this->cp_space, 0.001 * default_simulation_step_size);
+        cpSpaceStep(this->_cp_space, 0.001 * default_simulation_step_size);
         time_left -= default_simulation_step_size;
     }
-    this->time_acc = time_left;
+    this->_time_acc = time_left;
 }
 
 template<typename R_type, CollisionPhase phase, bool non_null_nodes>
@@ -221,7 +221,7 @@ void SpaceNode::set_collision_handler(
 )
 {
     cpCollisionHandler* cp_handler = cpSpaceAddCollisionHandler(
-        this->cp_space, static_cast<cpCollisionType>(trigger_a),
+        this->_cp_space, static_cast<cpCollisionType>(trigger_a),
         static_cast<cpCollisionType>(trigger_b)
     );
 
@@ -275,74 +275,74 @@ void SpaceNode::set_collision_handler(
     }
 }
 
-void SpaceNode::set_gravity(const glm::dvec2 gravity)
+glm::dvec2 SpaceNode::gravity()
 {
     ASSERT_VALID_SPACE_NODE();
-    cpSpaceSetGravity(this->cp_space, convert_vector(gravity));
+    return convert_vector(cpSpaceGetGravity(this->_cp_space));
 }
 
-glm::dvec2 SpaceNode::get_gravity() const
+void SpaceNode::gravity(const glm::dvec2& gravity)
 {
     ASSERT_VALID_SPACE_NODE();
-    return convert_vector(cpSpaceGetGravity(this->cp_space));
+    cpSpaceSetGravity(this->_cp_space, convert_vector(gravity));
 }
 
-void SpaceNode::set_damping(const double damping)
+double SpaceNode::damping()
 {
     ASSERT_VALID_SPACE_NODE();
-    cpSpaceSetDamping(this->cp_space, damping);
+    return cpSpaceGetDamping(this->_cp_space);
 }
 
-double SpaceNode::get_damping() const
+void SpaceNode::damping(const double& damping)
 {
     ASSERT_VALID_SPACE_NODE();
-    return cpSpaceGetDamping(this->cp_space);
+    cpSpaceSetDamping(this->_cp_space, damping);
 }
 
-void SpaceNode::set_sleeping_threshold(const double threshold)
+double SpaceNode::sleeping_threshold()
 {
     ASSERT_VALID_SPACE_NODE();
-    cpSpaceSetSleepTimeThreshold(this->cp_space, threshold);
+    return cpSpaceGetSleepTimeThreshold(this->_cp_space);
 }
 
-double SpaceNode::get_sleeping_threshold() const
+void SpaceNode::sleeping_threshold(const double& threshold)
 {
     ASSERT_VALID_SPACE_NODE();
-    return cpSpaceGetSleepTimeThreshold(this->cp_space);
+    cpSpaceSetSleepTimeThreshold(this->_cp_space, threshold);
 }
 
-bool SpaceNode::is_locked() const
+bool SpaceNode::locked() const
 {
     ASSERT_VALID_SPACE_NODE();
-    return cpSpaceIsLocked(this->cp_space);
+    return cpSpaceIsLocked(this->_cp_space);
 }
 
 
 BodyNode::BodyNode()
 {
-    this->cp_body = cpBodyNewKinematic();
+    this->_cp_body = cpBodyNewKinematic();
     log<LogLevel::debug>("Creating body node %p (cpBody: %p)",
-                         container_node(this), this->cp_body);
-    cpBodySetUserData(this->cp_body, this);
-    this->set_body_type(BodyNodeType::dynamic);
+                         container_node(this), this->_cp_body);
+    cpBodySetUserData(this->_cp_body, this);
+    this->body_type(BodyNodeType::dynamic);
 }
 
 BodyNode::~BodyNode()
 {
-    if (this->cp_body != nullptr) {
+    if (this->_cp_body != nullptr) {
         log<LogLevel::debug>("Destroying body node %p (cpBody: %p)",
-                             container_node(this), this->cp_body);
-        cpBodySetUserData(this->cp_body, nullptr);
-        space_safe_call(this->get_space(),
-            [body_ptr=this->cp_body](const SpaceNode* space_node_phys) {
+                             container_node(this), this->_cp_body);
+        cpBodySetUserData(this->_cp_body, nullptr);
+        space_safe_call(this->space(),
+            [body_ptr=this->_cp_body](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>("Simulation callback: destroying cpBody %p",
                                  body_ptr);
             if (space_node_phys) {
-                cpSpaceRemoveBody(space_node_phys->cp_space, body_ptr);
+                cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
             }
             cpBodyFree(body_ptr);
         });
-        this->cp_body = nullptr;
+        this->_cp_body = nullptr;
     }
 }
 
@@ -350,26 +350,52 @@ void BodyNode::attach_to_simulation()
 {
     ASSERT_VALID_BODY_NODE();
 
-    if (cpBodyGetSpace(this->cp_body) == nullptr) {
+    if (cpBodyGetSpace(this->_cp_body) == nullptr) {
         Node* node = container_node(this);
         log<LogLevel::debug>("Attaching body node %p to simulation (space) (cpBody: %p)",
-                             node, this->cp_body);
-        KAACORE_ASSERT(node->parent != nullptr);
-        KAACORE_ASSERT(node->parent->type == NodeType::space);
-        KAACORE_ASSERT(node->parent->space.cp_space != nullptr);
-        space_safe_call(node->parent,
+                             node, this->_cp_body);
+        KAACORE_ASSERT(node->_parent != nullptr);
+        KAACORE_ASSERT(node->_parent->_type == NodeType::space);
+        KAACORE_ASSERT(node->_parent->space._cp_space != nullptr);
+        space_safe_call(node->_parent,
             [&](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>("Simulation callback: attaching cpBody %p",
-                                 this->cp_body);
-            cpSpaceAddBody(space_node_phys->cp_space, this->cp_body);
+                                 this->_cp_body);
+            cpSpaceAddBody(space_node_phys->_cp_space, this->_cp_body);
         });
     }
 }
 
-SpaceNode* BodyNode::get_space() const
+void BodyNode::override_simulation_position()
 {
-    if (this->cp_body) {
-        cpSpace* cp_space = cpBodyGetSpace(this->cp_body);
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetPosition(this->_cp_body,
+                      convert_vector(container_node(this)->_position));
+}
+
+void BodyNode::sync_simulation_position() const
+{
+    ASSERT_VALID_BODY_NODE();
+    container_node(this)->_position = \
+        convert_vector(cpBodyGetPosition(this->_cp_body));
+}
+
+void BodyNode::override_simulation_rotation()
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetAngle(this->_cp_body, container_node(this)->_rotation);
+}
+
+void BodyNode::sync_simulation_rotation() const
+{
+    ASSERT_VALID_BODY_NODE();
+    container_node(this)->_rotation = cpBodyGetAngle(this->_cp_body);
+}
+
+SpaceNode* BodyNode::space() const
+{
+    if (this->_cp_body) {
+        cpSpace* cp_space = cpBodyGetSpace(this->_cp_body);
         if (cp_space) {
             return static_cast<SpaceNode*>(cpSpaceGetUserData(cp_space));
         }
@@ -378,141 +404,114 @@ SpaceNode* BodyNode::get_space() const
     return nullptr;
 }
 
-void BodyNode::set_body_type(const BodyNodeType type)
+BodyNodeType BodyNode::body_type()
 {
     ASSERT_VALID_BODY_NODE();
-    cpBodySetType(this->cp_body, static_cast<cpBodyType>(type));
+    return static_cast<BodyNodeType>(cpBodyGetType(this->_cp_body));
+}
+
+void BodyNode::body_type(const BodyNodeType& type)
+{
+    ASSERT_VALID_BODY_NODE();
+    cpBodySetType(this->_cp_body, static_cast<cpBodyType>(type));
 
     if (type == BodyNodeType::dynamic) {
-        if (this->get_mass() == 0.) {
-            this->set_mass(20.);
+        if (this->mass() == 0.) {
+            this->mass(20.);
         }
-        if (this->get_moment() == 0.) {
-            this->set_moment(10000.);
+        if (this->moment() == 0.) {
+            this->moment(10000.);
         }
     }
 }
-BodyNodeType BodyNode::get_body_type() const
-{
-    ASSERT_VALID_BODY_NODE();
-    return static_cast<BodyNodeType>(cpBodyGetType(this->cp_body));
-}
 
-void BodyNode::set_mass(const double m)
+double BodyNode::mass()
 {
     ASSERT_DYNAMIC_BODY_NODE();
-    cpBodySetMass(this->cp_body, m);
+    return cpBodyGetMass(this->_cp_body);
 }
 
-double BodyNode::get_mass() const
+void BodyNode::mass(const double& m)
 {
     ASSERT_DYNAMIC_BODY_NODE();
-    return cpBodyGetMass(this->cp_body);
+    cpBodySetMass(this->_cp_body, m);
 }
 
-void BodyNode::set_moment(const double i)
+double BodyNode::moment()
 {
     ASSERT_DYNAMIC_BODY_NODE();
-    cpBodySetMoment(this->cp_body, i);
+    return cpBodyGetMoment(this->_cp_body);
 }
 
-double BodyNode::get_moment() const
+void BodyNode::moment(const double& i)
 {
     ASSERT_DYNAMIC_BODY_NODE();
-    return cpBodyGetMoment(this->cp_body);
+    cpBodySetMoment(this->_cp_body, i);
 }
 
-void BodyNode::override_simulation_position()
+glm::dvec2 BodyNode::velocity()
 {
     ASSERT_VALID_BODY_NODE();
-    cpBodySetPosition(this->cp_body,
-                      convert_vector(container_node(this)->position));
+    return convert_vector(cpBodyGetVelocity(this->_cp_body));
 }
 
-void BodyNode::sync_simulation_position() const
+void BodyNode::velocity(const glm::dvec2& velocity)
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->position = \
-        convert_vector(cpBodyGetPosition(this->cp_body));
+    cpBodySetVelocity(this->_cp_body, convert_vector(velocity));
 }
 
-
-void BodyNode::override_simulation_rotation()
+glm::dvec2 BodyNode::force()
 {
     ASSERT_VALID_BODY_NODE();
-    cpBodySetAngle(this->cp_body, container_node(this)->rotation);
+    return convert_vector(cpBodyGetForce(this->_cp_body));
 }
 
-void BodyNode::sync_simulation_rotation() const
+void BodyNode::force(const glm::dvec2& force)
+{
+    cpBodySetForce(this->_cp_body, convert_vector(force));
+}
+
+double BodyNode::torque()
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->rotation = cpBodyGetAngle(this->cp_body);
+    return cpBodyGetTorque(this->_cp_body);
 }
 
-void BodyNode::set_velocity(const glm::dvec2 velocity)
+void BodyNode::torque(const double& torque)
 {
     ASSERT_VALID_BODY_NODE();
-    cpBodySetVelocity(this->cp_body, convert_vector(velocity));
+    cpBodySetTorque(this->_cp_body, torque);
 }
 
-glm::dvec2 BodyNode::get_velocity() const
+double BodyNode::angular_velocity()
 {
     ASSERT_VALID_BODY_NODE();
-    return convert_vector(cpBodyGetVelocity(this->cp_body));
+    return cpBodyGetAngularVelocity(this->_cp_body);
 }
 
-void BodyNode::set_force(const glm::dvec2 force)
-{
-    cpBodySetForce(this->cp_body, convert_vector(force));
-}
-
-glm::dvec2 BodyNode::get_force() const
+void BodyNode::angular_velocity(const double& angular_velocity)
 {
     ASSERT_VALID_BODY_NODE();
-    return convert_vector(cpBodyGetForce(this->cp_body));
+    cpBodySetAngularVelocity(this->_cp_body, angular_velocity);
 }
 
-void BodyNode::set_torque(const double torque)
+bool BodyNode::sleeping()
 {
     ASSERT_VALID_BODY_NODE();
-    cpBodySetTorque(this->cp_body, torque);
+    return cpBodyIsSleeping(this->_cp_body);
 }
 
-double BodyNode::get_torque() const
+void BodyNode::sleeping(const bool& sleeping)
 {
     ASSERT_VALID_BODY_NODE();
-    return cpBodyGetTorque(this->cp_body);
+    if (sleeping) {
+        cpBodySleep(this->_cp_body);
+    } else {
+        cpBodyActivate(this->_cp_body);
+    }
 }
 
-void BodyNode::set_angular_velocity(const double angular_velocity)
-{
-    ASSERT_VALID_BODY_NODE();
-    cpBodySetAngularVelocity(this->cp_body, angular_velocity);
-}
-
-double BodyNode::get_angular_velocity() const
-{
-    ASSERT_VALID_BODY_NODE();
-    return cpBodyGetAngularVelocity(this->cp_body);
-}
-
-bool BodyNode::is_sleeping() const
-{
-    ASSERT_VALID_BODY_NODE();
-    return cpBodyIsSleeping(this->cp_body);
-}
-
-void BodyNode::sleep()
-{
-    ASSERT_VALID_BODY_NODE();
-    cpBodySleep(this->cp_body);
-}
-
-void BodyNode::activate()
-{
-    ASSERT_VALID_BODY_NODE();
-    cpBodyActivate(this->cp_body);
-}
 
 HitboxNode::HitboxNode()
 {
@@ -520,27 +519,27 @@ HitboxNode::HitboxNode()
 
 HitboxNode::~HitboxNode()
 {
-    if (this->cp_shape != nullptr) {
+    if (this->_cp_shape != nullptr) {
         log<LogLevel::debug>("Destroying hitbox node %p (cpShape: %p)",
-                             container_node(this), this->cp_shape);
-        cpShapeSetUserData(this->cp_shape, nullptr);
-        space_safe_call(this->get_space(),
-            [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+                             container_node(this), this->_cp_shape);
+        cpShapeSetUserData(this->_cp_shape, nullptr);
+        space_safe_call(this->space(),
+            [shape_ptr=this->_cp_shape](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>("Simulation callback: destroying cpShape %p",
                                  shape_ptr);
             if (space_node_phys) {
-                cpSpaceRemoveShape(space_node_phys->cp_space, shape_ptr);
+                cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
             }
             cpShapeFree(shape_ptr);
         });
-        this->cp_shape = nullptr;
+        this->_cp_shape = nullptr;
     }
 }
 
-SpaceNode* HitboxNode::get_space() const
+SpaceNode* HitboxNode::space() const
 {
-    if (this->cp_shape) {
-        cpSpace* cp_space = cpShapeGetSpace(this->cp_shape);
+    if (this->_cp_shape) {
+        cpSpace* cp_space = cpShapeGetSpace(this->_cp_shape);
         if (cp_space) {
             return static_cast<SpaceNode*>(cpSpaceGetUserData(cp_space));
         }
@@ -554,23 +553,23 @@ void HitboxNode::update_physics_shape()
     Node* node = container_node(this);
     cpShape* new_cp_shape;
 
-    KAACORE_ASSERT(node->shape.type != ShapeType::none);
-    KAACORE_ASSERT(node->shape.type != ShapeType::freeform);
-    cpVect* cp_points = reinterpret_cast<cpVect*>(node->shape.points.data());
+    KAACORE_ASSERT(node->_shape.type != ShapeType::none);
+    KAACORE_ASSERT(node->_shape.type != ShapeType::freeform);
+    cpVect* cp_points = reinterpret_cast<cpVect*>(node->_shape.points.data());
     // TODO handle node matrix transformations
-    if (node->shape.type == ShapeType::segment) {
-        KAACORE_ASSERT(node->shape.points.size() == 2);
+    if (node->_shape.type == ShapeType::segment) {
+        KAACORE_ASSERT(node->_shape.points.size() == 2);
         new_cp_shape = cpSegmentShapeNew(
-            nullptr, cp_points[0], cp_points[1], node->shape.radius
+            nullptr, cp_points[0], cp_points[1], node->_shape.radius
         );
-    } else if (node->shape.type == ShapeType::circle) {
-        KAACORE_ASSERT(node->shape.points.size() == 1);
+    } else if (node->_shape.type == ShapeType::circle) {
+        KAACORE_ASSERT(node->_shape.points.size() == 1);
         new_cp_shape = cpCircleShapeNew(
-            nullptr, node->shape.radius, cp_points[0]
+            nullptr, node->_shape.radius, cp_points[0]
         );
-    } else if (node->shape.type == ShapeType::polygon) {
+    } else if (node->_shape.type == ShapeType::polygon) {
         new_cp_shape = cpPolyShapeNewRaw(
-            nullptr, node->shape.points.size(), cp_points, 0.
+            nullptr, node->_shape.points.size(), cp_points, 0.
         );
     }
 
@@ -580,47 +579,47 @@ void HitboxNode::update_physics_shape()
     cpShapeSetUserData(new_cp_shape, this);
     cpShapeSetElasticity(new_cp_shape, 0.95);
 
-    if (this->cp_shape != nullptr) {
-        cpShapeSetUserData(this->cp_shape, nullptr);
+    if (this->_cp_shape != nullptr) {
+        cpShapeSetUserData(this->_cp_shape, nullptr);
 
         // copy over existing cpShape parameters
         cpShapeSetCollisionType(new_cp_shape,
-                                cpShapeGetCollisionType(this->cp_shape));
+                                cpShapeGetCollisionType(this->_cp_shape));
         cpShapeSetFilter(new_cp_shape,
-                         cpShapeGetFilter(this->cp_shape));
+                         cpShapeGetFilter(this->_cp_shape));
 
-        space_safe_call(this->get_space(),
-            [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+        space_safe_call(this->space(),
+            [shape_ptr=this->_cp_shape](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>("Simulation callback: destroying old cpShape %p",
                                  shape_ptr);
             if (space_node_phys) {
-                cpSpaceRemoveShape(space_node_phys->cp_space, shape_ptr);
+                cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
             }
             cpShapeFree(shape_ptr);
         });
-        this->cp_shape = nullptr;
+        this->_cp_shape = nullptr;
     }
 
-    this->cp_shape = new_cp_shape;
+    this->_cp_shape = new_cp_shape;
 
-    if (node->parent) {
+    if (node->_parent) {
         this->attach_to_simulation();
     }
 }
 
 void HitboxNode::attach_to_simulation()
 {
-    KAACORE_ASSERT(this->cp_shape != nullptr);
+    KAACORE_ASSERT(this->_cp_shape != nullptr);
     Node* node = container_node(this);
 
-    if (cpShapeGetBody(this->cp_shape) == nullptr) {
+    if (cpShapeGetBody(this->_cp_shape) == nullptr) {
         log<LogLevel::debug>("Attaching hitbox node %p to simulation (body) (cpShape: %p)",
-                             node, this->cp_shape);
-        KAACORE_ASSERT(node->parent != nullptr);
-        KAACORE_ASSERT(node->parent->type == NodeType::body);
-        KAACORE_ASSERT(node->parent->body.cp_body != nullptr);
-        space_safe_call(node->parent->body.get_space(),
-            [body_ptr=node->parent->body.cp_body, shape_ptr=this->cp_shape]
+                             node, this->_cp_shape);
+        KAACORE_ASSERT(node->_parent != nullptr);
+        KAACORE_ASSERT(node->_parent->_type == NodeType::body);
+        KAACORE_ASSERT(node->_parent->body._cp_body != nullptr);
+        space_safe_call(node->_parent->body.space(),
+            [body_ptr=node->_parent->body._cp_body, shape_ptr=this->_cp_shape]
             (const SpaceNode* space_node_phys) {
             log<LogLevel::debug>(
                 "Simulation callback: attaching cpShape %p to body (cpBody: %p)",
@@ -630,76 +629,75 @@ void HitboxNode::attach_to_simulation()
         });
     }
 
-    if (cpShapeGetSpace(this->cp_shape) == nullptr
-        and node->parent->parent != nullptr) {
+    if (cpShapeGetSpace(this->_cp_shape) == nullptr
+        and node->_parent->_parent != nullptr) {
         log<LogLevel::debug>("Attaching hitbox node %p to simulation (space) (cpShape: %p)",
-                             node, this->cp_shape);
-        KAACORE_ASSERT(node->parent->parent->type == NodeType::space);
-        KAACORE_ASSERT(node->parent->parent->space.cp_space != nullptr);
-        space_safe_call(node->parent->parent,
-            [shape_ptr=this->cp_shape](const SpaceNode* space_node_phys) {
+                             node, this->_cp_shape);
+        KAACORE_ASSERT(node->_parent->_parent->_type == NodeType::space);
+        KAACORE_ASSERT(node->_parent->_parent->space._cp_space != nullptr);
+        space_safe_call(node->_parent->_parent,
+            [shape_ptr=this->_cp_shape](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>(
                 "Simulation callback: attaching cpShape %p to space (cpSpace: %p)",
-                shape_ptr, space_node_phys->cp_space
+                shape_ptr, space_node_phys->_cp_space
             );
-            cpSpaceAddShape(space_node_phys->cp_space, shape_ptr);
+            cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
         });
     }
 }
 
-void HitboxNode::set_trigger_id(const CollisionTriggerId trigger_id)
+CollisionTriggerId HitboxNode::trigger_id()
 {
     ASSERT_VALID_HITBOX_NODE();
-    cpShapeSetCollisionType(this->cp_shape, static_cast<cpCollisionType>(trigger_id));
+    return static_cast<CollisionTriggerId>(cpShapeGetCollisionType(this->_cp_shape));
 }
 
-CollisionTriggerId HitboxNode::get_trigger_id() const
+void HitboxNode::trigger_id(const CollisionTriggerId& trigger_id)
 {
     ASSERT_VALID_HITBOX_NODE();
-    return static_cast<CollisionTriggerId>(cpShapeGetCollisionType(this->cp_shape));
+    cpShapeSetCollisionType(this->_cp_shape, static_cast<cpCollisionType>(trigger_id));
 }
 
-void HitboxNode::set_group(const CollisionGroup group)
+CollisionGroup HitboxNode::group()
 {
     ASSERT_VALID_HITBOX_NODE();
-    auto filter = cpShapeGetFilter(this->cp_shape);
+    return cpShapeGetFilter(this->_cp_shape).group;
+}
+
+void HitboxNode::group(const CollisionGroup& group)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    auto filter = cpShapeGetFilter(this->_cp_shape);
     filter.group = group;
-    cpShapeSetFilter(this->cp_shape, filter);
+    cpShapeSetFilter(this->_cp_shape, filter);
 }
 
-CollisionGroup HitboxNode::get_group() const
+CollisionBitmask HitboxNode::mask()
 {
     ASSERT_VALID_HITBOX_NODE();
-    return cpShapeGetFilter(this->cp_shape).group;
+    return cpShapeGetFilter(this->_cp_shape).categories;
 }
 
-void HitboxNode::set_mask(const CollisionBitmask mask)
+void HitboxNode::mask(const CollisionBitmask& mask)
 {
     ASSERT_VALID_HITBOX_NODE();
-    auto filter = cpShapeGetFilter(this->cp_shape);
+    auto filter = cpShapeGetFilter(this->_cp_shape);
     filter.categories = mask;
-    cpShapeSetFilter(this->cp_shape, filter);
+    cpShapeSetFilter(this->_cp_shape, filter);
 }
 
-CollisionBitmask HitboxNode::get_mask() const
+CollisionBitmask HitboxNode::collision_mask()
 {
     ASSERT_VALID_HITBOX_NODE();
-    return cpShapeGetFilter(this->cp_shape).categories;
+    return cpShapeGetFilter(this->_cp_shape).mask;
 }
 
-
-void HitboxNode::set_collision_mask(const CollisionBitmask mask)
+void HitboxNode::collision_mask(const CollisionBitmask& mask)
 {
     ASSERT_VALID_HITBOX_NODE();
-    auto filter = cpShapeGetFilter(this->cp_shape);
+    auto filter = cpShapeGetFilter(this->_cp_shape);
     filter.mask = mask;
-    cpShapeSetFilter(this->cp_shape, filter);
-}
-
-CollisionBitmask HitboxNode::get_collision_mask() const
-{
-    ASSERT_VALID_HITBOX_NODE();
-    return cpShapeGetFilter(this->cp_shape).mask;
+    cpShapeSetFilter(this->_cp_shape, filter);
 }
 
 } // namespace kaacore

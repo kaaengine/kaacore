@@ -44,27 +44,33 @@ struct MyForeignWrapper : ForeignNodeWrapper {
 
 struct Scene;
 
-struct Node {
-    const NodeType type = NodeType::basic;
-    glm::dvec2 position = {0., 0.};
-    double rotation = 0.;
-    glm::dvec2 scale = {1., 1.};
-    int16_t z_index = 0;
-    Shape shape;
-    Sprite sprite;
-    glm::dvec4 color = {1., 1., 1., 1.};
-    bool visible = true;
-    Alignment origin_alignment = Alignment::none;
+class Node {
+    friend struct Scene;
+    friend struct SpaceNode;
+    friend struct BodyNode;
+    friend struct HitboxNode;
 
-    Scene* scene = nullptr;
-    Node* parent = nullptr;
-    std::vector<Node*> children;
+    const NodeType _type = NodeType::basic;
+    glm::dvec2 _position = {0., 0.};
+    double _rotation = 0.;
+    glm::dvec2 _scale = {1., 1.};
+    int16_t _z_index = 0;
+    Shape _shape;
+    Sprite _sprite;
+    glm::dvec4 _color = {1., 1., 1., 1.};
+    bool _visible = true;
+    Alignment _origin_alignment = Alignment::none;
 
-    std::unique_ptr<ForeignNodeWrapper> node_wrapper;
+    Scene* _scene = nullptr;
+    Node* _parent = nullptr;
+    std::vector<Node*> _children;
 
-    NodeRenderData render_data;
-    glm::fmat4 matrix;
+    std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
 
+    NodeRenderData _render_data;
+    glm::fmat4 _matrix;
+
+    public:
     union {
         SpaceNode space;
         BodyNode body;
@@ -79,11 +85,43 @@ struct Node {
     void recalculate_matrix();
     void recalculate_render_data();
 
-    void set_position(const glm::dvec2& position);
-    void set_rotation(const double rotation);
-    void set_shape(const Shape& shape);
-    void set_sprite(const Sprite& sprite);
-    glm::dvec2 get_absolute_position();
+    const NodeType type() const;
+
+    const std::vector<Node*>& children();
+
+    glm::dvec2 position();
+    glm::dvec2 absolute_position();
+    void position(const glm::dvec2& position);
+
+    double rotation();
+    void rotation(const double& rotation);
+
+    glm::dvec2 scale();
+    void scale(const glm::dvec2& scale);
+
+    int16_t z_index();
+    void z_index(const int16_t& z_index);
+
+    Shape shape();
+    void shape(const Shape& shape);
+
+    Sprite& sprite_ref();
+    void sprite(const Sprite& sprite);
+
+    glm::dvec4 color();
+    void color(const glm::dvec4& color);
+
+    bool visible();
+    void visible(const bool& visible);
+
+    Alignment origin_alignment();
+    void origin_alignment(const Alignment& alignment);
+
+    Scene* scene() const;
+    Node* parent() const;
+
+    void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
+    ForeignNodeWrapper* wrapper_ptr() const;
 };
 
 } // namespace kaacore

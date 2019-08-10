@@ -14,7 +14,7 @@
 
 namespace kaacore {
 
-Node::Node(NodeType type) : type(type)
+Node::Node(NodeType type) : _type(type)
 {
     if (type == NodeType::space) {
         new (&this->space) SpaceNode();
@@ -22,63 +22,63 @@ Node::Node(NodeType type) : type(type)
         new (&this->body) BodyNode();
     } else if (type == NodeType::hitbox) {
         new (&this->hitbox) HitboxNode();
-        this->color = {1., 0., 0., 0.};
+        this->_color = {1., 0., 0., 0.};
     } else if (type == NodeType::text) {
         new (&this->text) TextNode();
-        this->origin_alignment = Alignment::center;
+        this->_origin_alignment = Alignment::center;
     }
 }
 
 Node::~Node()
 {
-    if (this->parent != nullptr) {
+    if (this->_parent != nullptr) {
         auto pos_in_parent = std::find(
-            this->parent->children.begin(), this->parent->children.end(), this
+            this->_parent->_children.begin(), this->_parent->_children.end(), this
         );
-        if (pos_in_parent != this->parent->children.end()) {
-            this->parent->children.erase(pos_in_parent);
+        if (pos_in_parent != this->_parent->_children.end()) {
+            this->_parent->_children.erase(pos_in_parent);
         }
     }
 
-    while (not this->children.empty()) {
-        delete this->children[0];
+    while (not this->_children.empty()) {
+        delete this->_children[0];
     }
 
-    if (this->type == NodeType::space) {
-        if (this->scene) {
-            this->scene->unregister_simulation(this);
+    if (this->_type == NodeType::space) {
+        if (this->_scene) {
+            this->_scene->unregister_simulation(this);
         }
         this->space.~SpaceNode();
-    } else if (this->type == NodeType::body) {
+    } else if (this->_type == NodeType::body) {
         this->body.~BodyNode();
-    } else if (this->type == NodeType::hitbox) {
+    } else if (this->_type == NodeType::hitbox) {
         this->hitbox.~HitboxNode();
-    } else if (this->type == NodeType::text) {
+    } else if (this->_type == NodeType::text) {
         this->text.~TextNode();
     }
 }
 
 void Node::add_child(Node* child_node)
 {
-    KAACORE_CHECK(child_node->parent == nullptr);
-    child_node->parent = this;
-    this->children.push_back(child_node);
+    KAACORE_CHECK(child_node->_parent == nullptr);
+    child_node->_parent = this;
+    this->_children.push_back(child_node);
 
     // TODO set root
     // TODO optimize (replace with iterator?)
     std::function<void(Node*)> initialize_node;
     initialize_node = [&initialize_node, this](Node* n)
     {
-        n->scene = this->scene;
-        if (n->type == NodeType::space) {
-            n->scene->register_simulation(n);
-        } else if (n->type == NodeType::body) {
+        n->_scene = this->_scene;
+        if (n->_type == NodeType::space) {
+            n->_scene->register_simulation(n);
+        } else if (n->_type == NodeType::body) {
             n->body.attach_to_simulation();
-        } else if (n->type == NodeType::hitbox) {
+        } else if (n->_type == NodeType::hitbox) {
             n->hitbox.attach_to_simulation();
         }
 
-        std::for_each(n->children.begin(), n->children.end(),
+        std::for_each(n->_children.begin(), n->_children.end(),
                       initialize_node);
     };
     initialize_node(child_node);
@@ -88,21 +88,21 @@ void Node::recalculate_matrix()
 {
     static glm::fmat4 identity(1.0);
     glm::fmat4* parent_matrix_p;
-    if (this->parent != nullptr) {
-        parent_matrix_p = &this->parent->matrix;
+    if (this->_parent != nullptr) {
+        parent_matrix_p = &this->_parent->_matrix;
     } else {
         parent_matrix_p = &identity;
     }
-    this->matrix = \
+    this->_matrix = \
         glm::scale(
             glm::rotate(
                 glm::translate(
                     *parent_matrix_p,
-                    glm::fvec3(this->position.x, this->position.y, 0.)
+                    glm::fvec3(this->_position.x, this->_position.y, 0.)
                 ),
-                static_cast<float>(this->rotation), glm::fvec3(0., 0., 1.)
+                static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)
                 ),
-            glm::fvec3(this->scale.x, this->scale.y, 1.)
+            glm::fvec3(this->_scale.x, this->_scale.y, 1.)
         );
 }
 
@@ -110,71 +110,172 @@ void Node::recalculate_render_data()
 {
     // TODO optimize
     glm::fvec2 pos_realignment = calculate_realignment_vector(
-        this->origin_alignment, this->shape.vertices_bbox
+        this->_origin_alignment, this->_shape.vertices_bbox
     );
-    this->render_data.computed_vertices = this->shape.vertices;
-    for (auto& vertex : this->render_data.computed_vertices) {
+    this->_render_data.computed_vertices = this->_shape.vertices;
+    for (auto& vertex : this->_render_data.computed_vertices) {
         glm::dvec4 pos = {vertex.xyz.x + pos_realignment.x,
                           vertex.xyz.y + pos_realignment.y,
                           vertex.xyz.z, 1.};
-        pos = this->matrix * pos;
+        pos = this->_matrix * pos;
         vertex.xyz = {pos.x, pos.y, pos.z};
 
-        if (this->sprite.has_texture()) {
-            auto uv_rect = this->sprite.get_display_rect();
+        if (this->_sprite.has_texture()) {
+            auto uv_rect = this->_sprite.get_display_rect();
             vertex.uv = glm::mix(
                 uv_rect.first, uv_rect.second, vertex.uv
             );
         }
 
-        vertex.rgba *= this->color;
+        vertex.rgba *= this->_color;
     }
 
-    if (this->sprite.has_texture()) {
-        this->render_data.texture_handle = this->sprite.texture->texture_handle;
+    if (this->_sprite.has_texture()) {
+        this->_render_data.texture_handle = this->_sprite.texture->texture_handle;
     } else {
-        this->render_data.texture_handle = get_engine()->renderer->default_texture;
+        this->_render_data.texture_handle = get_engine()->renderer->default_texture;
     }
 }
 
-void Node::set_position(const glm::dvec2& position)
+const NodeType Node::type() const
 {
-    this->position = position;
-    if (this->type == NodeType::body) {
+    return this->_type;
+}
+
+const std::vector<Node*>& Node::children()
+{
+    return this->_children;
+}
+
+glm::dvec2 Node::position()
+{
+    return this->_position;
+}
+
+glm::dvec2 Node::absolute_position()
+{
+    this->recalculate_matrix();
+    glm::fvec4 pos = {0., 0., 0., 1.};
+    pos = this->_matrix * pos;
+    return {pos.x, pos.y};
+}
+
+void Node::position(const glm::dvec2& position)
+{
+    this->_position = position;
+    if (this->_type == NodeType::body) {
         this->body.override_simulation_position();
     }
 }
 
-void Node::set_rotation(const double rotation)
+double Node::rotation()
 {
-    this->rotation = rotation;
-    if (this->type == NodeType::body) {
+    return this->_rotation;
+}
+
+void Node::rotation(const double& rotation)
+{
+    this->_rotation = rotation;
+    if (this->_type == NodeType::body) {
         this->body.override_simulation_rotation();
     }
 }
 
-void Node::set_shape(const Shape& shape)
+glm::dvec2 Node::scale()
 {
-    this->shape = shape;
-    if (this->type == NodeType::hitbox) {
+    return this->_scale;
+}
+
+void Node::scale(const glm::dvec2& scale)
+{
+    this->_scale = scale;
+}
+
+int16_t Node::z_index()
+{
+    return this->_z_index;
+}
+
+void Node::z_index(const int16_t& z_index)
+{
+    this->_z_index = z_index;
+}
+
+Shape Node::shape()
+{
+    return this->_shape;
+}
+
+void Node::shape(const Shape& shape)
+{
+    this->_shape = shape;
+    if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
 }
 
-void Node::set_sprite(const Sprite& sprite)
+Sprite& Node::sprite_ref()
 {
-    this->sprite = sprite;
-    if (!this->shape) {
-        this->set_shape(Shape::Box(sprite.get_size()));
+    return this->_sprite;
+}
+
+void Node::sprite(const Sprite& sprite)
+{
+    this->_sprite = sprite;
+    if (!this->_shape) {
+        this->shape(Shape::Box(sprite.get_size()));
     }
 }
 
-glm::dvec2 Node::get_absolute_position()
+glm::dvec4 Node::color()
 {
-    this->recalculate_matrix();
-    glm::fvec4 pos = {0., 0., 0., 1.};
-    pos = this->matrix * pos;
-    return {pos.x, pos.y};
+    return this->_color;
+}
+
+void Node::color(const glm::dvec4& color)
+{
+    this->_color = color;
+}
+
+bool Node::visible()
+{
+    return this->_visible;
+}
+
+void Node::visible(const bool& visible)
+{
+    this->_visible = visible;
+}
+
+Alignment Node::origin_alignment()
+{
+    return this->_origin_alignment;
+}
+
+void Node::origin_alignment(const Alignment& alignment)
+{
+    this->_origin_alignment = alignment;
+}
+
+Scene* Node::scene() const
+{
+    return this->_scene;
+}
+
+Node* Node::parent() const
+{
+    return this->_parent;
+}
+
+void Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)
+{
+    KAACORE_ASSERT(!this->_node_wrapper);
+    this->_node_wrapper = std::move(wrapper);
+}
+
+ForeignNodeWrapper* Node::wrapper_ptr() const
+{
+    return this->_node_wrapper.get();
 }
 
 

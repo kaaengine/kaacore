@@ -275,8 +275,8 @@ void TextNode::_update_shape()
     );
 
     Node* node = container_node(this);
-    node->set_sprite(this->_font._font_data->baked_texture);
-    node->set_shape(
+    node->sprite(this->_font._font_data->baked_texture);
+    node->shape(
         FontRenderGlyph::make_shape(this->_render_glyphs)
     );
 }

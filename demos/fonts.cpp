@@ -36,25 +36,25 @@ struct DemoFontsScene : Scene {
         auto text_shape = FontRenderGlyph::make_shape(render_glyphs);
 
         this->background = new Node();
-        this->background->set_shape(Shape::Box({700, 570}));
-        this->background->color = {0.5, 0.5, 0.5, 1.};
-        this->background->z_index = -10;
+        this->background->shape(Shape::Box({700, 570}));
+        this->background->color({0.5, 0.5, 0.5, 1.});
+        this->background->z_index(-10);
         this->root_node.add_child(this->background);
 
         this->node_text_raw = new Node();
-        this->node_text_raw->position = {-125., 0.};
-        this->node_text_raw->set_shape(text_shape);
-        this->node_text_raw->set_sprite(font._font_data->baked_texture);
+        this->node_text_raw->position({-125., 0.});
+        this->node_text_raw->shape(text_shape);
+        this->node_text_raw->sprite(font._font_data->baked_texture);
         this->root_node.add_child(this->node_text_raw);
 
         this->node_text = new Node(NodeType::text);
-        this->node_text->position = {200., 0.};
+        this->node_text->position({200., 0.});
         this->node_text->text.font(font);
         this->node_text->text.content(txt_lorem_ipsum);
         this->node_text->text.font_size(24.);
         this->node_text->text.line_width(270.);
         this->node_text->text.first_line_indent(15.);
-        this->node_text->color = {0., 0., 0., 1.};
+        this->node_text->color({0., 0., 0., 1.});
         this->root_node.add_child(this->node_text);
     }
 
@@ -91,32 +91,32 @@ struct DemoFontsScene : Scene {
                     this->node_text->text.content() + " "
                 );
             } else if (event.is_pressing(Keycode::kp_7)) {
-                this->background->origin_alignment = Alignment::top_left;
-                this->node_text_raw->origin_alignment = Alignment::top_left;
+                this->background->origin_alignment(Alignment::top_left);
+                this->node_text_raw->origin_alignment(Alignment::top_left);
             } else if (event.is_pressing(Keycode::kp_8)) {
-                this->background->origin_alignment = Alignment::top;
-                this->node_text_raw->origin_alignment = Alignment::top;
+                this->background->origin_alignment(Alignment::top);
+                this->node_text_raw->origin_alignment(Alignment::top);
             } else if (event.is_pressing(Keycode::kp_9)) {
-                this->background->origin_alignment = Alignment::top_right;
-                this->node_text_raw->origin_alignment = Alignment::top_right;
+                this->background->origin_alignment(Alignment::top_right);
+                this->node_text_raw->origin_alignment(Alignment::top_right);
             } else if (event.is_pressing(Keycode::kp_4)) {
-                this->background->origin_alignment = Alignment::left;
-                this->node_text_raw->origin_alignment = Alignment::left;
+                this->background->origin_alignment(Alignment::left);
+                this->node_text_raw->origin_alignment(Alignment::left);
             } else if (event.is_pressing(Keycode::kp_5)) {
-                this->background->origin_alignment = Alignment::center;
-                this->node_text_raw->origin_alignment = Alignment::center;
+                this->background->origin_alignment(Alignment::center);
+                this->node_text_raw->origin_alignment(Alignment::center);
             } else if (event.is_pressing(Keycode::kp_6)) {
-                this->background->origin_alignment = Alignment::right;
-                this->node_text_raw->origin_alignment = Alignment::right;
+                this->background->origin_alignment(Alignment::right);
+                this->node_text_raw->origin_alignment(Alignment::right);
             } else if (event.is_pressing(Keycode::kp_1)) {
-                this->background->origin_alignment = Alignment::bottom_left;
-                this->node_text_raw->origin_alignment = Alignment::bottom_left;
+                this->background->origin_alignment(Alignment::bottom_left);
+                this->node_text_raw->origin_alignment(Alignment::bottom_left);
             } else if (event.is_pressing(Keycode::kp_2)) {
-                this->background->origin_alignment = Alignment::bottom;
-                this->node_text_raw->origin_alignment = Alignment::bottom;
+                this->background->origin_alignment(Alignment::bottom);
+                this->node_text_raw->origin_alignment(Alignment::bottom);
             } else if (event.is_pressing(Keycode::kp_3)) {
-                this->background->origin_alignment = Alignment::bottom_right;
-                this->node_text_raw->origin_alignment = Alignment::bottom_right;
+                this->background->origin_alignment(Alignment::bottom_right);
+                this->node_text_raw->origin_alignment(Alignment::bottom_right);
             }
         }
     }

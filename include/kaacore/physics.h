@@ -15,10 +15,10 @@ typedef cpBitmask CollisionBitmask;
 
 constexpr uint32_t default_simulation_step_size = 10;
 
-struct Node;
-struct SpaceNode;
-struct BodyNode;
-struct HitboxNode;
+class Node;
+class SpaceNode;
+class BodyNode;
+class HitboxNode;
 
 
 enum struct CollisionPhase {
@@ -60,18 +60,28 @@ typedef std::function<uint8_t(const Arbiter,
 
 typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
 
+void cp_call_post_step_callbacks(cpSpace* cp_space, void* space_node_phys_ptr, void* data);
 
-struct SpaceNode {
-    cpSpace* cp_space = nullptr;
-    uint32_t time_acc = 0;
-    std::vector<SpacePostStepFunc> post_step_callbacks;
+
+class SpaceNode {
+    friend class Node;
+    friend class BodyNode;
+    friend class HitboxNode;
+    friend class Scene;
+    friend void cp_call_post_step_callbacks(cpSpace*, void*, void*);
+
+    cpSpace* _cp_space = nullptr;
+    uint32_t _time_acc = 0;
+    std::vector<SpacePostStepFunc> _post_step_callbacks;
 
     SpaceNode();
     ~SpaceNode();
 
+    void simulate(uint32_t dt);
+
+    public:
     void add_post_step_callback(const SpacePostStepFunc& func);
 
-    void simulate(uint32_t dt);
     void set_collision_handler(
         CollisionTriggerId trigger_a, CollisionTriggerId trigger_b,
         CollisionHandlerFunc handler,
@@ -79,16 +89,16 @@ struct SpaceNode {
         bool only_non_deleted_nodes=true
     );
 
-    void set_gravity(const glm::dvec2 gravity);
-    glm::dvec2 get_gravity() const;
+    void gravity(const glm::dvec2& gravity);
+    glm::dvec2 gravity();
 
-    void set_damping(const double damping);
-    double get_damping() const;
+    void damping(const double& damping);
+    double damping();
 
-    void set_sleeping_threshold(const double threshold);
-    double get_sleeping_threshold() const;
+    void sleeping_threshold(const double& threshold);
+    double sleeping_threshold();
 
-    bool is_locked() const;
+    bool locked() const;
 };
 
 
@@ -99,23 +109,17 @@ enum struct BodyNodeType {
 };
 
 
-struct BodyNode {
-    cpBody* cp_body = nullptr;
+class BodyNode {
+    friend class Node;
+    friend class HitboxNode;
+    friend class Scene;
+
+    cpBody* _cp_body = nullptr;
 
     BodyNode();
     ~BodyNode();
 
     void attach_to_simulation();
-    SpaceNode* get_space() const;
-
-    void set_body_type(const BodyNodeType type);
-    BodyNodeType get_body_type() const;
-
-    void set_mass(const double m);
-    double get_mass() const;
-
-    void set_moment(const double i);
-    double get_moment() const;
 
     void override_simulation_position();
     void sync_simulation_position() const;
@@ -123,45 +127,60 @@ struct BodyNode {
     void override_simulation_rotation();
     void sync_simulation_rotation() const;
 
-    void set_velocity(const glm::dvec2 velocity);
-    glm::dvec2 get_velocity() const;
+    public:
+    SpaceNode* space() const;
 
-    void set_force(const glm::dvec2 force);
-    glm::dvec2 get_force() const;
+    void body_type(const BodyNodeType& type);
+    BodyNodeType body_type();
 
-    void set_torque(const double torque);
-    double get_torque() const;
+    void mass(const double& m);
+    double mass();
 
-    void set_angular_velocity(const double angular_velocity);
-    double get_angular_velocity() const;
+    void moment(const double& i);
+    double moment();
 
-    bool is_sleeping() const;
-    void sleep();
-    void activate();
+    void velocity(const glm::dvec2& velocity);
+    glm::dvec2 velocity();
+
+    void force(const glm::dvec2& force);
+    glm::dvec2 force();
+
+    void torque(const double& torque);
+    double torque();
+
+    void angular_velocity(const double& angular_velocity);
+    double angular_velocity();
+
+    bool sleeping();
+    void sleeping(const bool& sleeping);
 };
 
 
-struct HitboxNode {
-    cpShape* cp_shape = nullptr;
+class HitboxNode {
+    friend class Node;
+
+    cpShape* _cp_shape = nullptr;
 
     HitboxNode();
     ~HitboxNode();
 
     void update_physics_shape();
     void attach_to_simulation();
-    SpaceNode* get_space() const;
 
-    void set_trigger_id(const CollisionTriggerId trigger_id);
-    CollisionTriggerId get_trigger_id() const;
+    public:
+    SpaceNode* space() const;
 
-    void set_group(const CollisionGroup group);
-    CollisionGroup get_group() const;
+    void trigger_id(const CollisionTriggerId& trigger_id);
+    CollisionTriggerId trigger_id();
 
-    void set_mask(const CollisionBitmask mask);
-    CollisionBitmask get_mask() const;
+    void group(const CollisionGroup& group);
+    CollisionGroup group();
 
-    void set_collision_mask(const CollisionBitmask mask);
-    CollisionBitmask get_collision_mask() const;
+    void mask(const CollisionBitmask& mask);
+    CollisionBitmask mask();
+
+    void collision_mask(const CollisionBitmask& mask);
+    CollisionBitmask collision_mask();
 };
 
 } // namespace kaacore
