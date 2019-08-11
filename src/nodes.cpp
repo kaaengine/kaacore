@@ -165,6 +165,8 @@ void Node::position(const glm::dvec2& position)
     this->_position = position;
     if (this->_type == NodeType::body) {
         this->body.override_simulation_position();
+    } else if (this->_type == NodeType::hitbox) {
+        this->hitbox.update_physics_shape();
     }
 }
 
@@ -178,6 +180,8 @@ void Node::rotation(const double& rotation)
     this->_rotation = rotation;
     if (this->_type == NodeType::body) {
         this->body.override_simulation_rotation();
+    } else if (this->_type == NodeType::hitbox) {
+        this->hitbox.update_physics_shape();
     }
 }
 
@@ -189,6 +193,9 @@ glm::dvec2 Node::scale()
 void Node::scale(const glm::dvec2& scale)
 {
     this->_scale = scale;
+    if (this->_type == NodeType::hitbox) {
+        this->hitbox.update_physics_shape();
+    }
 }
 
 int16_t Node::z_index()

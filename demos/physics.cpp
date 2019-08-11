@@ -33,6 +33,7 @@ struct DemoScene : Scene {
         Node* wall_hitbox = new Node(NodeType::hitbox);
         wall_hitbox->shape(Shape::Segment(a, b));
         wall_hitbox->color({1., 0.0, 0.6, 0.4});
+        wall_hitbox->scale({1.5, 1.5});
         return wall_hitbox;
     }
 
@@ -40,7 +41,7 @@ struct DemoScene : Scene {
     {
         std::random_device random_dev;
         std::default_random_engine generator(random_dev());
-        std::normal_distribution<double> position_dist(0.0, 1.7);
+        std::normal_distribution<double> position_dist(0.0, 1.5);
         std::normal_distribution<double> speed_dist(0.0, 3.);
         std::uniform_int_distribution<> shape_dist(0, 1);
         Shape polygon_shape = Shape::Polygon({
@@ -74,7 +75,7 @@ struct DemoScene : Scene {
 
         this->container->add_child(this->box);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
             Node* ball = new Node(NodeType::body);
             ball->body.body_type(BodyNodeType::dynamic);
 
@@ -92,7 +93,12 @@ struct DemoScene : Scene {
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
             ball_hitbox->shape(chosen_shape);
+            ball_hitbox->scale({1.5, 1.5});
+            ball_hitbox->rotation(1.57);
+            ball_hitbox->position({0.2, 0.2});
             ball_hitbox->hitbox.trigger_id(120);
+            ball_hitbox->color({0., 0., 1., 0.5});
+            ball_hitbox->z_index(ball->z_index() + 1);
 
             this->balls.push_back(ball);
             container->add_child(ball);
