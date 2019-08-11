@@ -54,6 +54,16 @@ void Scene::process_nodes(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
+        if (node->_lifetime) {
+            if (node->_lifetime <= dt) {
+                delete node;
+                continue;
+            } else {
+                KAACORE_ASSERT(node->_lifetime > dt);
+                node->_lifetime -= dt;
+            }
+        }
+
         for (const auto child_node : node->_children) {
             processing_queue.push_back(child_node);
         }

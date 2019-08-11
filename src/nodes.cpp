@@ -257,6 +257,16 @@ void Node::origin_alignment(const Alignment& alignment)
     this->_origin_alignment = alignment;
 }
 
+uint32_t Node::lifetime()
+{
+    return this->_lifetime;
+}
+
+void Node::lifetime(const uint32_t& lifetime)
+{
+    this->_lifetime = lifetime;
+}
+
 Scene* Node::scene() const
 {
     return this->_scene;
