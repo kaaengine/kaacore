@@ -82,20 +82,16 @@ struct DemoScene : Scene {
             Shape& chosen_shape = shape_dist(generator) ? polygon_shape : circle_shape;
 
             ball->shape(chosen_shape);
+            ball->scale({1.5, 1.5});
             ball->position(
                 {position_dist(generator), position_dist(generator)}
             );
             ball->color({1., 1., 0., 1.});
-            // ball->body.set_velocity(
-            //     {speed_dist(generator), speed_dist(generator)}
-            // );
             ball->body.moment(10.);
 
             Node* ball_hitbox = new Node(NodeType::hitbox);
             ball_hitbox->shape(chosen_shape);
             ball_hitbox->scale({1.5, 1.5});
-            ball_hitbox->rotation(1.57);
-            ball_hitbox->position({0.2, 0.2});
             ball_hitbox->hitbox.trigger_id(120);
             ball_hitbox->color({0., 0., 1., 0.5});
             ball_hitbox->z_index(ball->z_index() + 1);

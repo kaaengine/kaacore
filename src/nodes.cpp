@@ -75,7 +75,7 @@ void Node::add_child(Node* child_node)
         } else if (n->_type == NodeType::body) {
             n->body.attach_to_simulation();
         } else if (n->_type == NodeType::hitbox) {
-            n->hitbox.attach_to_simulation();
+            n->hitbox.update_physics_shape();
         }
 
         std::for_each(n->_children.begin(), n->_children.end(),
@@ -193,7 +193,13 @@ glm::dvec2 Node::scale()
 void Node::scale(const glm::dvec2& scale)
 {
     this->_scale = scale;
-    if (this->_type == NodeType::hitbox) {
+    if (this->_type == NodeType::body) {
+        for (const auto& n : this->_children) {
+            if (n->_type == NodeType::hitbox) {
+                n->hitbox.update_physics_shape();
+            }
+        }
+    } else if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
 }

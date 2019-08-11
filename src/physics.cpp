@@ -596,7 +596,9 @@ void HitboxNode::update_physics_shape()
     cpShape* new_cp_shape;
 
     const HitboxTransform hitbox_transform(
-        node->_position, node->_rotation, node->_scale
+        node->_position, node->_rotation,
+        // include parent's (BodyNode) scale
+        node->_scale * (node->_parent ? node->_parent->_scale : glm::dvec2(1.))
     );
 
     KAACORE_ASSERT(node->_shape.type != ShapeType::none);
