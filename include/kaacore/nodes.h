@@ -60,6 +60,7 @@ class Node {
     glm::dvec4 _color = {1., 1., 1., 1.};
     bool _visible = true;
     Alignment _origin_alignment = Alignment::none;
+    uint32_t _lifetime = 0;
 
     Scene* _scene = nullptr;
     Node* _parent = nullptr;
@@ -116,6 +117,9 @@ class Node {
 
     Alignment origin_alignment();
     void origin_alignment(const Alignment& alignment);
+
+    uint32_t lifetime();
+    void lifetime(const uint32_t& lifetime);
 
     Scene* scene() const;
     Node* parent() const;
