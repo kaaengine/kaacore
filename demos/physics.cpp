@@ -158,6 +158,11 @@ struct DemoScene : Scene {
                     delete this->balls.back();
                     this->balls.pop_back();
                 }
+            } else if (event.is_pressing(Keycode::l)) {
+                std::cout << "Setting objects lifetime" << std::endl;
+                for (const auto node : this->balls) {
+                    node->lifetime(5000);
+                }
             } else if (event.is_pressing(Keycode::num_1)) {
                 std::cout << "Enabling delete_on_collision" << std::endl;
                 this->delete_on_collision = true;
