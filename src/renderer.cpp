@@ -70,7 +70,7 @@ std::unique_ptr<Image> load_default_image()
 Renderer::Renderer(const glm::uvec2& window_size)
 {
     log("Initializing renderer.");
-    this->vertex_decl.begin() \
+    this->vertex_layout.begin() \
         .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float) \
         .add(bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float) \
         .add(bgfx::Attrib::Enum::TexCoord1, 2, bgfx::AttribType::Enum::Float) \
@@ -202,7 +202,7 @@ void Renderer::render_vertices(const std::vector<StandardVertexData>& vertices,
                  | BGFX_STATE_BLEND_ALPHA);
 
     bgfx::allocTransientVertexBuffer(&vertices_buffer, vertices.size(),
-                                     this->vertex_decl);
+                                     this->vertex_layout);
     bgfx::allocTransientIndexBuffer(&indices_buffer, indices.size());
 
     std::memcpy(vertices_buffer.data, vertices.data(),

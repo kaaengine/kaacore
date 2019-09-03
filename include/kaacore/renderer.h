@@ -45,7 +45,7 @@ struct Renderer {
     uint32_t clear_flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
     uint32_t reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
 
-    bgfx::VertexDecl vertex_decl;
+    bgfx::VertexLayout vertex_layout;
 
     std::unique_ptr<Image> default_image;
 
