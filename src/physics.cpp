@@ -45,6 +45,48 @@ glm::dvec2 convert_vector(const cpVect vec)
 }
 
 
+struct HitboxTransform {
+    glm::dvec2 translation;
+    double rotation;
+    glm::dvec2 scale;
+
+    cpTransform _transform;
+
+    HitboxTransform(const glm::dvec2& tr, const double& r, const glm::dvec2& sc)
+    : translation(tr), scale(sc), rotation(r)
+    {
+        this->_transform = \
+            cpTransformMult(
+                cpTransformTranslate(convert_vector(this->translation)),
+                cpTransformMult(
+                    cpTransformRotate(this->rotation),
+                    cpTransformScale(this->scale.x, this->scale.y)
+                )
+            );
+    }
+
+    std::vector<cpVect> transform_points(const std::vector<glm::dvec2>& points) const
+    {
+        std::vector<cpVect> cp_points;
+        cp_points.reserve(points.size());
+
+        for (const auto& pt : points) {
+            cp_points.emplace_back(
+                cpTransformPoint(this->_transform, convert_vector(pt))
+            );
+        }
+
+        return cp_points;
+    }
+
+    double flat_radius() const
+    {
+        KAACORE_CHECK(this->scale.x == this->scale.y);
+        return this->scale.x;
+    }
+};
+
+
 inline constexpr Node* container_node(const SpaceNode* space)
 {
     // static_assert(std::is_standard_layout<Node>::value, "");
@@ -553,23 +595,28 @@ void HitboxNode::update_physics_shape()
     Node* node = container_node(this);
     cpShape* new_cp_shape;
 
+    const HitboxTransform hitbox_transform(
+        node->_position, node->_rotation,
+        // include parent's (BodyNode) scale
+        node->_scale * (node->_parent ? node->_parent->_scale : glm::dvec2(1.))
+    );
+
     KAACORE_ASSERT(node->_shape.type != ShapeType::none);
     KAACORE_ASSERT(node->_shape.type != ShapeType::freeform);
-    cpVect* cp_points = reinterpret_cast<cpVect*>(node->_shape.points.data());
-    // TODO handle node matrix transformations
+    std::vector<cpVect> cp_points = hitbox_transform.transform_points(node->_shape.points);
     if (node->_shape.type == ShapeType::segment) {
         KAACORE_ASSERT(node->_shape.points.size() == 2);
         new_cp_shape = cpSegmentShapeNew(
-            nullptr, cp_points[0], cp_points[1], node->_shape.radius
+            nullptr, cp_points[0], cp_points[1], node->_shape.radius * hitbox_transform.flat_radius()
         );
     } else if (node->_shape.type == ShapeType::circle) {
         KAACORE_ASSERT(node->_shape.points.size() == 1);
         new_cp_shape = cpCircleShapeNew(
-            nullptr, node->_shape.radius, cp_points[0]
+            nullptr, node->_shape.radius * hitbox_transform.flat_radius(), cp_points[0]
         );
     } else if (node->_shape.type == ShapeType::polygon) {
         new_cp_shape = cpPolyShapeNewRaw(
-            nullptr, node->_shape.points.size(), cp_points, 0.
+            nullptr, node->_shape.points.size(), cp_points.data(), 0.
         );
     }
 
