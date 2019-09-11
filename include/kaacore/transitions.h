@@ -23,9 +23,6 @@ struct TransitionTimePoint {
     double abs_t;
     bool is_backing;
     uint32_t cycle_index;
-
-    bool operator<(const TransitionTimePoint& other) const;
-    bool operator==(const TransitionTimePoint& other) const;
 };
 
 
@@ -34,40 +31,10 @@ struct TransitionWarping {
     bool back_and_forth;
     uint64_t easing;
 
-    TransitionWarping(uint32_t loops = 1, bool back_and_forth = false)
-    : loops(loops), back_and_forth(back_and_forth)
-    {
-        // KAACORE_ASSERT(this->loops >= 0);
-    }
+    TransitionWarping(uint32_t loops = 1, bool back_and_forth = false);
 
-    double duration_factor() const
-    {
-        if (this->loops == 0) {
-            return INFINITY;
-        } else {
-            return double(this->loops) * (1 + int(this->back_and_forth));
-        }
-    }
-
-    TransitionTimePoint warp_time(const TransitionTimePoint& tp, const double internal_duration) const
-    {
-        double duration_factor = (1 + int(this->back_and_forth));
-        double warped_abs_t = glm::mod(tp.abs_t, internal_duration * duration_factor);
-
-        // prevent floating errors from resetting cycle
-        uint32_t cycle_index = tp.abs_t / (internal_duration * duration_factor);
-        if (this->loops > 0 and cycle_index >= this->loops) {
-            warped_abs_t = internal_duration * duration_factor;
-            cycle_index--;
-        }
-
-        if (this->back_and_forth and warped_abs_t > internal_duration) {
-            warped_abs_t = fabs(2 * internal_duration - warped_abs_t);
-            return TransitionTimePoint{warped_abs_t, (tp.is_backing != true), cycle_index};
-        } else {
-            return TransitionTimePoint{warped_abs_t, (tp.is_backing != false), cycle_index};
-        }
-    }
+    double duration_factor() const;
+    TransitionTimePoint warp_time(const TransitionTimePoint& tp, const double internal_duration) const;
 };
 
 
@@ -82,7 +49,15 @@ class NodeTransitionBase {
     NodeTransitionBase(const double duration, const TransitionWarping& warping = TransitionWarping());
 
     virtual std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
-    virtual void evaluate_abs(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
+    virtual void process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const = 0;
+};
+
+
+class NodeTransitionCustomizable : public NodeTransitionBase {
+    public:
+    using NodeTransitionBase::NodeTransitionBase;
+
+    virtual void process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
     virtual void evaluate(TransitionStateBase* state, Node* node, const double t) const = 0;
 };
 
@@ -101,10 +76,6 @@ class NodeTransitionsGroupBase : public NodeTransitionBase {
 
     protected:
     std::vector<_SubTransition> _sub_transitions;
-
-    public:
-    // std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
-    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
 };
 
 
@@ -112,7 +83,7 @@ class NodeTransitionsSequence : public NodeTransitionsGroupBase {
     public:
     NodeTransitionsSequence(const std::vector<NodeTransitionHandle>& transitions, const TransitionWarping& warping=TransitionWarping()) noexcept(false);
     std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
-    void evaluate_abs(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
+    void process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
 };
 
 
@@ -120,14 +91,14 @@ class NodeTransitionsParallel : public NodeTransitionsGroupBase {
     public:
     NodeTransitionsParallel(const std::vector<NodeTransitionHandle>& transitions, const TransitionWarping& warping=TransitionWarping()) noexcept(false);
     std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
-    void evaluate_abs(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
+    void process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
 };
 
 
 class NodeTransitionDelay : public NodeTransitionBase {
     public:
     NodeTransitionDelay(const double duration);
-    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
+    void process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
 };
 
 
@@ -138,8 +109,7 @@ class NodeTransitionCallback : public NodeTransitionBase {
 
     public:
     NodeTransitionCallback(const NodeTransitionCallbackFunc& func);
-    void evaluate_abs(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
-    void evaluate(TransitionStateBase* state, Node* node, const double t) const;
+    void process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const;
 };
 
 

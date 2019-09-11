@@ -39,14 +39,14 @@ struct NodeAttributeTransitionState : TransitionStateBase {
 template<typename T,
          T (Node::*F_getter)(),
          void(Node::*F_setter)(const T&)>
-class NodeAttributeTransition : public NodeTransitionBase {
+class NodeAttributeTransition : public NodeTransitionCustomizable {
     AttributeTransitionMethod _advance_method;
     T _value_advance;
 
     public:
     NodeAttributeTransition(T value_advance, const AttributeTransitionMethod& advance_method,
                             const double duration, const TransitionWarping& warping = TransitionWarping())
-    : NodeTransitionBase(duration, warping), _value_advance(value_advance), _advance_method(advance_method)
+    : NodeTransitionCustomizable(duration, warping), _value_advance(value_advance), _advance_method(advance_method)
     {
     }
 
@@ -81,14 +81,14 @@ template<typename T,
          N Node::*N_member,
          T (N::*F_getter)(),
          void(N::*F_setter)(const T&)>
-class SpecializedNodeAttributeTransition : public NodeTransitionBase {
+class SpecializedNodeAttributeTransition : public NodeTransitionCustomizable {
     AttributeTransitionMethod _advance_method;
     T _value_advance;
 
     public:
     SpecializedNodeAttributeTransition(T value_advance, const AttributeTransitionMethod& advance_method,
                             const double duration, const TransitionWarping& warping = TransitionWarping())
-    : NodeTransitionBase(duration, warping), _value_advance(value_advance), _advance_method(advance_method)
+    : NodeTransitionCustomizable(duration, warping), _value_advance(value_advance), _advance_method(advance_method)
     {
     }
 

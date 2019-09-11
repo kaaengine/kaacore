@@ -9,6 +9,42 @@
 
 namespace kaacore {
 
+TransitionWarping::TransitionWarping(uint32_t loops, bool back_and_forth)
+: loops(loops), back_and_forth(back_and_forth)
+{
+    KAACORE_ASSERT(this->loops >= 0);
+}
+
+double TransitionWarping::duration_factor() const
+{
+    if (this->loops == 0) {
+        return INFINITY;
+    } else {
+        return double(this->loops) * (1 + int(this->back_and_forth));
+    }
+}
+
+TransitionTimePoint TransitionWarping::warp_time(const TransitionTimePoint& tp, const double internal_duration) const
+{
+    double duration_factor = (1 + int(this->back_and_forth));
+    double warped_abs_t = glm::mod(tp.abs_t, internal_duration * duration_factor);
+
+    // prevent floating errors from resetting cycle
+    uint32_t cycle_index = tp.abs_t / (internal_duration * duration_factor);
+    if (this->loops > 0 and cycle_index >= this->loops) {
+        warped_abs_t = internal_duration * duration_factor;
+        cycle_index--;
+    }
+
+    if (this->back_and_forth and warped_abs_t > internal_duration) {
+        warped_abs_t = fabs(2 * internal_duration - warped_abs_t);
+        return TransitionTimePoint{warped_abs_t, (tp.is_backing != true), cycle_index};
+    } else {
+        return TransitionTimePoint{warped_abs_t, (tp.is_backing != false), cycle_index};
+    }
+}
+
+
 NodeTransitionBase::NodeTransitionBase()
 : duration(std::nan("")), internal_duration(std::nan(""))
 {
@@ -24,12 +60,12 @@ std::unique_ptr<TransitionStateBase> NodeTransitionBase::prepare_state(Node* nod
     return nullptr;
 }
 
-void NodeTransitionBase::evaluate_abs(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+
+void NodeTransitionCustomizable::process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
 {
-    KAACORE_ASSERT(this->duration > 0.);
+    KAACORE_ASSERT(this->duration >= 0.);
     const TransitionTimePoint local_tp = this->warping.warp_time(tp, this->internal_duration);
     const double warped_t = local_tp.abs_t / this->internal_duration;
-    // log(" * abs_t: %lf, warped_t: %lf, duration: %lf", tp.abs_t, warped_t, this->internal_duration);
     this->evaluate(state, node, warped_t);
 }
 
@@ -47,12 +83,6 @@ struct _NodeTransitionsGroupSubState {
     {
     }
 };
-
-
-void NodeTransitionsGroupBase::evaluate(TransitionStateBase* state, Node* node, const double t) const
-{
-    KAACORE_CHECK(!"UNREACHABLE");
-}
 
 
 struct _NodeTransitionsSequenceState : TransitionStateBase {
@@ -89,18 +119,15 @@ std::unique_ptr<TransitionStateBase> NodeTransitionsSequence::prepare_state(Node
     return sequence_state;
 }
 
-void NodeTransitionsSequence::evaluate_abs(TransitionStateBase* state_b, Node* node, const TransitionTimePoint& tp) const
+void NodeTransitionsSequence::process_time_point(TransitionStateBase* state_b, Node* node, const TransitionTimePoint& tp) const
 {
     const TransitionTimePoint warped_tp = this->warping.warp_time(tp, this->internal_duration);
     auto state = static_cast<_NodeTransitionsSequenceState*>(state_b);
     auto it = state->sub_state_it;
     uint32_t cur_cycle_index = state->prev_tp.cycle_index;
     bool is_backing = state->prev_tp.is_backing;
-    // log("abs_t: %lg, warped abs_t: %lg, backing: %u, target_backing: %u, parent_backing: %u",
-        // tp.abs_t, warped_tp.abs_t, is_backing, warped_tp.is_backing, tp.is_backing);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
-        // log("cur_cycle_index: %u, target_cycle_index: %u", cur_cycle_index, warped_tp.cycle_index);
         if (not it->state_prepared) {
             it->state = it->handle->prepare_state(node);
             it->state_prepared = true;
@@ -112,9 +139,7 @@ void NodeTransitionsSequence::evaluate_abs(TransitionStateBase* state_b, Node* n
         );
         const TransitionTimePoint sub_tp = TransitionTimePoint{sub_abs_t, is_backing};
 
-        // log("sub_abs_t: %lf, starting: %lf, ending: %lf", sub_abs_t, it->starting_abs_t, it->ending_abs_t);
-
-        it->handle->evaluate_abs(it->state.get(), node, sub_tp);
+        it->handle->process_time_point(it->state.get(), node, sub_tp);
 
         if (cur_cycle_index == warped_tp.cycle_index and
             is_backing == warped_tp.is_backing and
@@ -122,7 +147,6 @@ void NodeTransitionsSequence::evaluate_abs(TransitionStateBase* state_b, Node* n
             it->ending_abs_t >= warped_tp.abs_t) {
             break;
         }
-        // log("! going to next transition in sequence");
 
         if (not is_backing) {
             it++;
@@ -189,18 +213,14 @@ std::unique_ptr<TransitionStateBase> NodeTransitionsParallel::prepare_state(Node
     return sequence_state;
 }
 
-void NodeTransitionsParallel::evaluate_abs(TransitionStateBase* state_b, Node* node, const TransitionTimePoint& tp) const
+void NodeTransitionsParallel::process_time_point(TransitionStateBase* state_b, Node* node, const TransitionTimePoint& tp) const
 {
     auto state = static_cast<_NodeTransitionsParallelState*>(state_b);
     const TransitionTimePoint warped_tp = this->warping.warp_time(tp, this->internal_duration);
     uint32_t cur_cycle_index = state->prev_tp.cycle_index;
     bool is_backing = state->prev_tp.is_backing;
-    // log("abs_t: %lf, warped abs_t: %lf", abs_t, warped_tp.abs_t);
-    // log("parallel sub_states count: %u", state->sub_states.size());
-    // log("cur_cycle_index: %u, target_cycle_index: %u", cur_cycle_index, warped_tp.cycle_index);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
-        // log("cur_cycle_index: %u, target_cycle_index: %u", cur_cycle_index, warped_tp.cycle_index);
         for (auto& sub_state : state->sub_states) {
             if (not sub_state.state_prepared) {
                 sub_state.state = sub_state.handle->prepare_state(node);
@@ -224,19 +244,17 @@ void NodeTransitionsParallel::evaluate_abs(TransitionStateBase* state_b, Node* n
                 sub_fits = (warped_tp.abs_t > sub_state.starting_abs_t and
                             warped_tp.abs_t < sub_state.ending_abs_t);
             }
-            // log("[%p] sub_abs_t: %lf, starting: %lf, ending: %lf",
-                // &sub_state, sub_abs_t, sub_state.starting_abs_t, sub_state.ending_abs_t);
             const TransitionTimePoint sub_tp = TransitionTimePoint{sub_abs_t, is_backing};
 
             if (not sub_state.sleeping) {
-                sub_state.handle->evaluate_abs(sub_state.state.get(), node, sub_tp);
+                sub_state.handle->process_time_point(sub_state.state.get(), node, sub_tp);
                 if (not sub_fits) {
                     sub_state.sleeping = true;
                 }
             } else {
                 if (sub_fits) {
                     // TODO consider calling sub-transition edges
-                    sub_state.handle->evaluate_abs(sub_state.state.get(), node, sub_tp);
+                    sub_state.handle->process_time_point(sub_state.state.get(), node, sub_tp);
                     sub_state.sleeping = false;
                 }
             }
@@ -265,7 +283,7 @@ NodeTransitionDelay::NodeTransitionDelay(const double duration)
 {
 }
 
-void NodeTransitionDelay::evaluate(TransitionStateBase* state, Node* node, const double t) const
+void NodeTransitionDelay::process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
 {
 }
 
@@ -275,15 +293,10 @@ NodeTransitionCallback::NodeTransitionCallback(const NodeTransitionCallbackFunc&
 {
 }
 
-void NodeTransitionCallback::evaluate_abs(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+void NodeTransitionCallback::process_time_point(TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
 {
     KAACORE_ASSERT(this->callback_func);
     this->callback_func(node);
-}
-
-void NodeTransitionCallback::evaluate(TransitionStateBase* state, Node* node, const double t) const
-{
-    KAACORE_CHECK(!"UNREACHABLE");
 }
 
 
@@ -310,7 +323,7 @@ void NodeTransitionRunner::step(Node* node, const uint32_t dt)
     }
 
     this->current_time += dt;
-    this->transition_handle->evaluate_abs(
+    this->transition_handle->process_time_point(
         this->transition_state.get(), node, TransitionTimePoint{double(this->current_time)}
     );
     if (this->current_time >= this->transition_handle->duration) {
