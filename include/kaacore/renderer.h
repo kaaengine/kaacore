@@ -42,9 +42,6 @@ struct StandardVertexData {
 
 
 struct Renderer {
-    uint32_t clear_flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
-    uint32_t reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
-
     bgfx::VertexLayout vertex_layout;
 
     std::unique_ptr<Image> default_image;
@@ -61,6 +58,9 @@ struct Renderer {
     Renderer(const glm::uvec2& window_size);
     ~Renderer();
 
+    void clear_color(glm::dvec4 color);
+    glm::dvec4 clear_color();
+
     void begin_frame();
     void end_frame();
 
@@ -69,6 +69,11 @@ struct Renderer {
     void render_vertices(const std::vector<StandardVertexData>& vertices,
                          const std::vector<VertexIndex>& indices,
                          const bgfx::TextureHandle texture) const;
+private:
+
+    uint32_t _clear_color_hex = 0x000000ff;
+    uint32_t _clear_flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
+    uint32_t _reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
 };
 
 } // namespace kaacore

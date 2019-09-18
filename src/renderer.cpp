@@ -19,8 +19,6 @@ namespace kaacore {
 template<class T, size_t N>
 constexpr size_t array_size(T (&)[N]) { return N; }
 
-const uint32_t renderer_clear_color = 0x202020ff;
-
 
 std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
 load_default_shaders(bgfx::RendererType::Enum renderer_type)
@@ -81,7 +79,7 @@ Renderer::Renderer(const glm::uvec2& window_size)
         "s_texture", bgfx::UniformType::Enum::Sampler, 1
     );
 
-    bgfx::setViewClear(0, this->clear_flags, renderer_clear_color);
+    bgfx::setViewClear(0, this->_clear_flags, this->_clear_color_hex);
     this->reset();
 
     this->default_image = load_default_image();
@@ -118,6 +116,29 @@ Renderer::~Renderer() {
 }
 
 
+void Renderer::clear_color(glm::dvec4 color)
+{
+    uint32_t r, g, b, a;
+    a = static_cast<uint32_t>(color.a * 255.0);
+    b = static_cast<uint32_t>(color.b * 255.0) << 8;
+    g = static_cast<uint32_t>(color.g * 255.0) << 16;
+    r = static_cast<uint32_t>(color.r * 255.0) << 24;
+    this->_clear_color_hex = a + b + g + r;
+    bgfx::setViewClear(0, this->_clear_flags, this->_clear_color_hex);
+}
+
+glm::dvec4 Renderer::clear_color()
+{
+    double r, g, b, a;
+    auto hex_color = this->_clear_color_hex;
+    a = hex_color & 0xFF;
+    b = (hex_color & (0xFF << 8) >> 8);
+    g = (hex_color & (0xFF << 16) >> 16);
+    r = (hex_color & (0xFF << 24) >> 24);
+    return {r, g, b, a};
+}
+
+
 void Renderer::begin_frame()
 {
     // TODO prepare buffers, etc.
@@ -136,7 +157,7 @@ void Renderer::reset()
     auto virtual_resolution = get_engine()->virtual_resolution();
     auto virtual_resolution_mode = get_engine()->_virtual_resolution_mode;
     auto window_size = get_engine()->window->size();
-    bgfx::reset(window_size.x, window_size.y, this->reset_flags);
+    bgfx::reset(window_size.x, window_size.y, this->_reset_flags);
 
     glm::uvec2 view_size;
     glm::uvec2 border_size;
