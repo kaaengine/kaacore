@@ -119,10 +119,10 @@ Renderer::~Renderer() {
 void Renderer::clear_color(glm::dvec4 color)
 {
     uint32_t r, g, b, a;
-    a = static_cast<uint32_t>(color.a * 255.0);
-    b = static_cast<uint32_t>(color.b * 255.0) << 8;
-    g = static_cast<uint32_t>(color.g * 255.0) << 16;
-    r = static_cast<uint32_t>(color.r * 255.0) << 24;
+    a = static_cast<uint32_t>(color.a * 255.0 + 0.5);
+    b = static_cast<uint32_t>(color.b * 255.0 + 0.5) << 8;
+    g = static_cast<uint32_t>(color.g * 255.0 + 0.5) << 16;
+    r = static_cast<uint32_t>(color.r * 255.0 + 0.5) << 24;
     this->_clear_color_hex = a + b + g + r;
     bgfx::setViewClear(0, this->_clear_flags, this->_clear_color_hex);
 }
