@@ -71,7 +71,7 @@ struct Renderer {
                          const bgfx::TextureHandle texture) const;
 private:
 
-    uint32_t _clear_color_hex = 0x000000ff;
+    glm::dvec4 _clear_color = {0, 0, 0, 1.};
     uint32_t _clear_flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
     uint32_t _reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
 };

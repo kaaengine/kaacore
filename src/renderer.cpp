@@ -79,7 +79,7 @@ Renderer::Renderer(const glm::uvec2& window_size)
         "s_texture", bgfx::UniformType::Enum::Sampler, 1
     );
 
-    bgfx::setViewClear(0, this->_clear_flags, this->_clear_color_hex);
+    this->clear_color(this->_clear_color);
     this->reset();
 
     this->default_image = load_default_image();
@@ -123,19 +123,14 @@ void Renderer::clear_color(glm::dvec4 color)
     b = static_cast<uint32_t>(color.b * 255.0 + 0.5) << 8;
     g = static_cast<uint32_t>(color.g * 255.0 + 0.5) << 16;
     r = static_cast<uint32_t>(color.r * 255.0 + 0.5) << 24;
-    this->_clear_color_hex = a + b + g + r;
-    bgfx::setViewClear(0, this->_clear_flags, this->_clear_color_hex);
+    auto clear_color_hex = a + b + g + r;
+    bgfx::setViewClear(0, this->_clear_flags, clear_color_hex);
+    this->_clear_color = color;
 }
 
 glm::dvec4 Renderer::clear_color()
 {
-    double r, g, b, a;
-    auto hex_color = this->_clear_color_hex;
-    a = hex_color & 0xFF;
-    b = (hex_color & (0xFF << 8) >> 8);
-    g = (hex_color & (0xFF << 16) >> 16);
-    r = (hex_color & (0xFF << 24) >> 24);
-    return {r, g, b, a};
+    return this->_clear_color;
 }
 
 
