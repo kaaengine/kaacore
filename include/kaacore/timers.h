@@ -11,6 +11,7 @@ typedef std::function<void()> TimerCallback;
 
 extern uint32_t KAACORE_Timer;
 void resolve_timer(TimerID timer_id);
+void destroy_timers();
 
 class Timer {
 

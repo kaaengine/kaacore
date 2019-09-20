@@ -68,6 +68,10 @@ void resolve_timer(TimerID timer_id) {
     timer_data.internal_timer_id = _spawn_sdl_timer(timer_id, next_interval);
 }
 
+void destroy_timers() {
+    _timer_data_map.clear();
+}
+
 Timer::Timer(
     const uint32_t interval,
     const TimerCallback callback, const bool single_shot

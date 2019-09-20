@@ -44,8 +44,9 @@ Engine::~Engine() noexcept(false) {
     this->audio_manager.reset();
     this->input_manager.reset();
     this->renderer.reset();
-    bgfx::shutdown();
     this->window.reset();
+    bgfx::shutdown();
+    destroy_timers();
     SDL_Quit();
     engine = nullptr;
 }
