@@ -64,10 +64,6 @@ void Scene::process_nodes(uint32_t dt)
             }
         }
 
-        for (const auto child_node : node->_children) {
-            processing_queue.push_back(child_node);
-        }
-
         if (node->_type == NodeType::body) {
             node->body.sync_simulation_position();
             node->body.sync_simulation_rotation();

@@ -100,7 +100,7 @@ class SpecializedNodeAttributeTransition : public NodeTransitionCustomizable {
 
     std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const
     {
-        const N* spec_node = &node->*N_member;
+        N* spec_node = &(node->*N_member);
         return std::make_unique<NodeAttributeTransitionState<T>>(
             (spec_node->*F_getter)(), this->_value_advance, this->_advance_method
         );
@@ -109,7 +109,7 @@ class SpecializedNodeAttributeTransition : public NodeTransitionCustomizable {
     void evaluate(TransitionStateBase* state_b, Node* node, const double t) const
     {
         auto state = static_cast<NodeAttributeTransitionState<T>*>(state_b);
-        N* spec_node = &node->*N_member;
+        N* spec_node = &(node->*N_member);
         T new_value = glm::mix(
             state->origin_value, state->destination_value, t
         );
