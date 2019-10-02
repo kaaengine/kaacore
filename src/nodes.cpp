@@ -270,6 +270,16 @@ void Node::origin_alignment(const Alignment& alignment)
     this->_origin_alignment = alignment;
 }
 
+NodeTransitionHandle Node::transition()
+{
+    return this->_transition.transition_handle;
+}
+
+void Node::transition(const NodeTransitionHandle& transition)
+{
+    this->_transition.setup(transition);
+}
+
 uint32_t Node::lifetime()
 {
     return this->_lifetime;

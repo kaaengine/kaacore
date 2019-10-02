@@ -11,6 +11,7 @@
 #include "kaacore/physics.h"
 #include "kaacore/fonts.h"
 #include "kaacore/sprites.h"
+#include "kaacore/transitions.h"
 
 
 namespace kaacore {
@@ -61,6 +62,7 @@ class Node {
     bool _visible = true;
     Alignment _origin_alignment = Alignment::none;
     uint32_t _lifetime = 0;
+    NodeTransitionRunner _transition;
 
     Scene* _scene = nullptr;
     Node* _parent = nullptr;
@@ -120,6 +122,9 @@ class Node {
 
     uint32_t lifetime();
     void lifetime(const uint32_t& lifetime);
+
+    NodeTransitionHandle transition();
+    void transition(const NodeTransitionHandle& transition);
 
     Scene* scene() const;
     Node* parent() const;
