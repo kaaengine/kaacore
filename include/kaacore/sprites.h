@@ -5,7 +5,6 @@
 #include "kaacore/resources.h"
 #include "kaacore/texture_loader.h"
 
-
 namespace kaacore {
 
 struct Sprite {
@@ -32,10 +31,10 @@ struct Sprite {
     Sprite();
     Sprite(Resource<Image> texture);
 
-    static Sprite load(const char* path, uint64_t flags=BGFX_SAMPLER_NONE);
+    static Sprite load(const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
 
-    inline bool has_texture() const {return bool(this->texture);}
-    inline operator bool() const {return this->has_texture();}
+    inline bool has_texture() const { return bool(this->texture); }
+    inline operator bool() const { return this->has_texture(); }
 
     Sprite crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const;
     Sprite crop(glm::dvec2 new_origin) const;

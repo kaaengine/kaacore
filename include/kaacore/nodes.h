@@ -1,18 +1,17 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
+#include <memory>
+#include <vector>
 
-#include "kaacore/renderer.h"
-#include "kaacore/geometry.h"
-#include "kaacore/shapes.h"
-#include "kaacore/physics.h"
 #include "kaacore/fonts.h"
+#include "kaacore/geometry.h"
+#include "kaacore/physics.h"
+#include "kaacore/renderer.h"
+#include "kaacore/shapes.h"
 #include "kaacore/sprites.h"
 #include "kaacore/transitions.h"
-
 
 namespace kaacore {
 
@@ -24,24 +23,20 @@ enum struct NodeType {
     text = 5,
 };
 
-
 struct NodeRenderData {
     std::vector<StandardVertexData> computed_vertices;
     bgfx::TextureHandle texture_handle;
 };
-
 
 struct ForeignNodeWrapper {
     ForeignNodeWrapper() = default;
     virtual ~ForeignNodeWrapper() = default;
 };
 
-
 struct MyForeignWrapper : ForeignNodeWrapper {
     MyForeignWrapper();
     ~MyForeignWrapper();
 };
-
 
 struct Scene;
 
@@ -73,7 +68,7 @@ class Node {
     NodeRenderData _render_data;
     glm::fmat4 _matrix;
 
-    public:
+  public:
     union {
         SpaceNode space;
         BodyNode body;

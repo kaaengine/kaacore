@@ -1,17 +1,16 @@
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 
 #include <glm/glm.hpp>
 
 #include "kaacore/engine.h"
-#include "kaacore/scenes.h"
-#include "kaacore/nodes.h"
 #include "kaacore/geometry.h"
 #include "kaacore/log.h"
+#include "kaacore/nodes.h"
+#include "kaacore/scenes.h"
 
 using namespace kaacore;
-
 
 struct PolygonTesterDemoScene : Scene {
     std::vector<glm::dvec2> points;
@@ -53,7 +52,8 @@ struct PolygonTesterDemoScene : Scene {
         this->root_node.add_child(segment_node);
     }
 
-    void finalize_polygon() {
+    void finalize_polygon()
+    {
         this->add_segment(this->points.back(), this->points.front());
         auto center = find_points_center(this->points);
         for (auto& pt : this->points) {
@@ -102,8 +102,8 @@ struct PolygonTesterDemoScene : Scene {
     }
 };
 
-
-extern "C" int main(int argc, char *argv[])
+extern "C" int
+main(int argc, char* argv[])
 {
     Engine eng({800, 600}, VirtualResolutionMode::aggresive_stretch);
     eng.window->show();

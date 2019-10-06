@@ -1,11 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <functional>
+#include <vector>
 
-#include <glm/glm.hpp>
 #include <chipmunk/chipmunk.h>
-
+#include <glm/glm.hpp>
 
 namespace kaacore {
 
@@ -20,7 +19,6 @@ class SpaceNode;
 class BodyNode;
 class HitboxNode;
 
-
 enum struct CollisionPhase {
     begin = 1,
     pre_solve = 2,
@@ -29,22 +27,20 @@ enum struct CollisionPhase {
     any_phase = 15
 };
 
-
 struct Arbiter {
     cpArbiter* cp_arbiter;
     CollisionPhase phase;
     Node* space;
 
-    Arbiter(CollisionPhase phase, SpaceNode* space_phys,
-            cpArbiter* cp_arbiter);
+    Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
 };
 
-
-uint8_t operator|(CollisionPhase phase, uint8_t other);
-uint8_t operator|(CollisionPhase phase, CollisionPhase other);
+uint8_t
+operator|(CollisionPhase phase, uint8_t other);
+uint8_t
+operator|(CollisionPhase phase, CollisionPhase other);
 uint8_t operator&(CollisionPhase phase, uint8_t other);
 uint8_t operator&(CollisionPhase phase, CollisionPhase other);
-
 
 struct CollisionPair {
     Node* body_node;
@@ -53,15 +49,15 @@ struct CollisionPair {
     CollisionPair(BodyNode* body, HitboxNode* hitbox);
 };
 
-
-typedef std::function<uint8_t(const Arbiter,
-                              const CollisionPair, const CollisionPair)> \
-        CollisionHandlerFunc;
+typedef std::function<uint8_t(
+    const Arbiter, const CollisionPair, const CollisionPair)>
+    CollisionHandlerFunc;
 
 typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
 
-void cp_call_post_step_callbacks(cpSpace* cp_space, void* space_node_phys_ptr, void* data);
-
+void
+cp_call_post_step_callbacks(
+    cpSpace* cp_space, void* space_node_phys_ptr, void* data);
 
 class SpaceNode {
     friend class Node;
@@ -79,15 +75,14 @@ class SpaceNode {
 
     void simulate(uint32_t dt);
 
-    public:
+  public:
     void add_post_step_callback(const SpacePostStepFunc& func);
 
     void set_collision_handler(
         CollisionTriggerId trigger_a, CollisionTriggerId trigger_b,
         CollisionHandlerFunc handler,
-        uint8_t phases_mask=uint8_t(CollisionPhase::any_phase),
-        bool only_non_deleted_nodes=true
-    );
+        uint8_t phases_mask = uint8_t(CollisionPhase::any_phase),
+        bool only_non_deleted_nodes = true);
 
     void gravity(const glm::dvec2& gravity);
     glm::dvec2 gravity();
@@ -101,13 +96,11 @@ class SpaceNode {
     bool locked() const;
 };
 
-
 enum struct BodyNodeType {
     dynamic = cpBodyType::CP_BODY_TYPE_DYNAMIC,
     kinematic = cpBodyType::CP_BODY_TYPE_KINEMATIC,
     static_ = cpBodyType::CP_BODY_TYPE_STATIC
 };
-
 
 class BodyNode {
     friend class Node;
@@ -127,7 +120,7 @@ class BodyNode {
     void override_simulation_rotation();
     void sync_simulation_rotation() const;
 
-    public:
+  public:
     SpaceNode* space() const;
 
     void body_type(const BodyNodeType& type);
@@ -155,7 +148,6 @@ class BodyNode {
     void sleeping(const bool& sleeping);
 };
 
-
 class HitboxNode {
     friend class Node;
 
@@ -167,7 +159,7 @@ class HitboxNode {
     void update_physics_shape();
     void attach_to_simulation();
 
-    public:
+  public:
     SpaceNode* space() const;
 
     void trigger_id(const CollisionTriggerId& trigger_id);

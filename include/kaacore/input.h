@@ -5,7 +5,6 @@
 #include <SDL.h>
 #include <glm/glm.hpp>
 
-
 namespace kaacore {
 
 enum class Keycode {
@@ -273,12 +272,10 @@ enum class Keycode {
     sleep = SDLK_SLEEP,
 };
 
-
 enum class Mousecode {
     left = SDL_BUTTON_LEFT,
     right = SDL_BUTTON_RIGHT,
 };
-
 
 struct Event {
     SDL_Event sdl_event;
@@ -295,7 +292,6 @@ struct Event {
     bool is_releasing(Mousecode kc) const;
     glm::dvec2 get_mouse_position() const;
 };
-
 
 struct InputManager {
     std::vector<Event> events_queue;

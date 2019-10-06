@@ -4,25 +4,23 @@
 #include <SDL_config.h>
 #include <SDL_syswm.h>
 
-#include "kaacore/log.h"
-#include "kaacore/engine.h"
-#include "kaacore/scenes.h"
 #include "kaacore/display.h"
+#include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/log.h"
+#include "kaacore/scenes.h"
 #include "kaacore/timers.h"
 
 #include "kaacore/engine.h"
-
 
 namespace kaacore {
 
 Engine* engine;
 
-
-Engine::Engine(const glm::uvec2& virtual_resolution,
-               const VirtualResolutionMode vr_mode) noexcept(false)
- : _virtual_resolution(virtual_resolution),
-   _virtual_resolution_mode(vr_mode)
+Engine::Engine(
+    const glm::uvec2& virtual_resolution,
+    const VirtualResolutionMode vr_mode) noexcept(false)
+    : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
 {
     KAACORE_CHECK(engine == nullptr);
     KAACORE_CHECK(virtual_resolution.x > 0 and virtual_resolution.y > 0);
@@ -37,7 +35,8 @@ Engine::Engine(const glm::uvec2& virtual_resolution,
     this->audio_manager = std::make_unique<AudioManager>();
 }
 
-Engine::~Engine() noexcept(false) {
+Engine::~Engine() noexcept(false)
+{
     KAACORE_CHECK(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
@@ -51,7 +50,8 @@ Engine::~Engine() noexcept(false) {
     engine = nullptr;
 }
 
-std::vector<Display> Engine::get_displays()
+std::vector<Display>
+Engine::get_displays()
 {
     SDL_Rect rect;
     std::vector<Display> result;
@@ -68,7 +68,8 @@ std::vector<Display> Engine::get_displays()
     return result;
 }
 
-void Engine::run(Scene* scene)
+void
+Engine::run(Scene* scene)
 {
     this->is_running = true;
     log("Engine is running.");
@@ -77,7 +78,7 @@ void Engine::run(Scene* scene)
     uint32_t ticks = SDL_GetTicks();
 
     this->scene->on_enter();
-    while(this->is_running) {
+    while (this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
@@ -98,44 +99,54 @@ void Engine::run(Scene* scene)
     log("Engine stopped.");
 }
 
-void Engine::change_scene(Scene* scene) {
+void
+Engine::change_scene(Scene* scene)
+{
     this->next_scene = scene;
 }
 
-void Engine::quit() {
+void
+Engine::quit()
+{
     this->is_running = false;
 }
 
-glm::uvec2 Engine::virtual_resolution() const
+glm::uvec2
+Engine::virtual_resolution() const
 {
     return this->_virtual_resolution;
 }
 
-void Engine::virtual_resolution(const glm::uvec2& resolution)
+void
+Engine::virtual_resolution(const glm::uvec2& resolution)
 {
     KAACORE_CHECK(resolution.x > 0 and resolution.y > 0);
     this->_virtual_resolution = resolution;
     this->renderer->reset();
 }
 
-VirtualResolutionMode Engine::virtual_resolution_mode() const
+VirtualResolutionMode
+Engine::virtual_resolution_mode() const
 {
     return this->_virtual_resolution_mode;
 }
 
-void Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
+void
+Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
     this->renderer->reset();
 }
 
-std::unique_ptr<Window> Engine::_create_window()
+std::unique_ptr<Window>
+Engine::_create_window()
 {
     Display display = this->get_displays().at(0);
     return std::make_unique<Window>(display.size * 2u / 3u);
 }
 
-std::unique_ptr<Renderer> Engine::_create_renderer()
+std::unique_ptr<Renderer>
+Engine::_create_renderer()
 {
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
@@ -166,14 +177,17 @@ std::unique_ptr<Renderer> Engine::_create_renderer()
     return std::make_unique<Renderer>(this->window->size());
 }
 
-void Engine::_swap_scenes() {
+void
+Engine::_swap_scenes()
+{
     this->scene->on_exit();
     this->next_scene->on_enter();
     this->scene = this->next_scene;
     this->next_scene = nullptr;
 }
 
-void Engine::_pump_events()
+void
+Engine::_pump_events()
 {
     this->input_manager->clear_events();
     SDL_Event event;
@@ -181,7 +195,8 @@ void Engine::_pump_events()
         if (event.type == KAACORE_Timer) {
             auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
             resolve_timer(timer_id);
-        } else if (event.type == SDL_WINDOWEVENT and
+        } else if (
+            event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             this->renderer->reset();
             // this->renderer->reset(event.window.data1, event.window.data2);

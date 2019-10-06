@@ -4,6 +4,4 @@
 
 #include "kaacore/log.h"
 
-
-namespace kaacore {
-} // namespace kaacore
+namespace kaacore {} // namespace kaacore

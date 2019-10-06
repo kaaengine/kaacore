@@ -1,17 +1,15 @@
-#include <vector>
-#include <string>
 #include <fstream>
+#include <string>
+#include <vector>
 
-#include "kaacore/log.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/log.h"
 
 #include "kaacore/files.h"
 
-
 namespace kaacore {
 
-RawFile::RawFile(const std::string file_path) noexcept(false)
-    : path(file_path)
+RawFile::RawFile(const std::string file_path) noexcept(false) : path(file_path)
 {
     log("Reading file: %s", file_path.c_str());
     std::ifstream f(file_path, std::ifstream::binary);

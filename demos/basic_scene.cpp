@@ -1,17 +1,16 @@
-#include <vector>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include <glm/glm.hpp>
 
 #include "kaacore/engine.h"
-#include "kaacore/scenes.h"
-#include "kaacore/log.h"
 #include "kaacore/input.h"
+#include "kaacore/log.h"
 #include "kaacore/nodes.h"
+#include "kaacore/scenes.h"
 
 using namespace kaacore;
-
 
 struct DemoScene : Scene {
     Node* background;
@@ -21,22 +20,21 @@ struct DemoScene : Scene {
     Shape specific_shape;
     Shape polygon_shape;
 
-    DemoScene() {
+    DemoScene()
+    {
         const std::vector<StandardVertexData> vertices = {
-            {-1., -1., 0.,       0., 1.,     -1., -1.,   0., 1., 1., 1.},
-            {1., -1., 0.,        1., 1.,      1., -1.,   1., 0., 1., 1.},
-            {1., 1., 0.,         1., 0.,      1.,  1.,   1., 1., 0., 1.},
-            {-1., 1., 0.,        0., 0.,     -1.,  1.,   1., 1., 1., 0.}
-        };
+            {-1., -1., 0., 0., 1., -1., -1., 0., 1., 1., 1.},
+            {1., -1., 0., 1., 1., 1., -1., 1., 0., 1., 1.},
+            {1., 1., 0., 1., 0., 1., 1., 1., 1., 0., 1.},
+            {-1., 1., 0., 0., 0., -1., 1., 1., 1., 1., 0.}};
 
         const std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
         this->root_node.scale({50., 50.});
 
         this->specific_shape = Shape::Freeform(indices, vertices);
-        this->polygon_shape = Shape::Polygon(
-            {{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}}
-        );
+        this->polygon_shape =
+            Shape::Polygon({{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}});
 
         this->background = new Node();
         this->background->shape(Shape::Box({1e4, 1e4}));
@@ -48,7 +46,10 @@ struct DemoScene : Scene {
         this->node1 = new Node();
         this->node1->position({3., 3.});
         this->node1->rotation(1.);
-        this->node1->scale({1., 3.,});
+        this->node1->scale({
+            1.,
+            3.,
+        });
         this->node1->color({1., 0., 0., 1});
         this->node1->shape(Shape::Box({2., 1.}));
         this->node1->z_index(10);
@@ -70,11 +71,9 @@ struct DemoScene : Scene {
 
         this->root_node.add_child(this->node2);
 
-        std::vector<glm::dvec2> positions = {
-            {-2., -2.}, {0., -2.}, {2., -2.},
-            {-2., 0.},  {0., 0.},  {2., 0.},
-            {-2., 2.},  {0., 2.},  {2., 2.}
-        };
+        std::vector<glm::dvec2> positions = {{-2., -2.}, {0., -2.}, {2., -2.},
+                                             {-2., 0.},  {0., 0.},  {2., 0.},
+                                             {-2., 2.},  {0., 2.},  {2., 2.}};
 
         this->container_node = new Node();
         this->container_node->position({0., 0.});
@@ -105,7 +104,6 @@ struct DemoScene : Scene {
         log<LogLevel::debug>("DemoScene update %lu/%llu", dt, this->time);
         auto texture = get_engine()->renderer->default_texture;
 
-
         for (auto const& event : this->get_events()) {
             if (event.is_pressing(Keycode::q) or event.is_quit()) {
                 get_engine()->quit();
@@ -133,17 +131,23 @@ struct DemoScene : Scene {
                 this->camera.refresh();
             } else if (event.is_pressing(Keycode::m)) {
                 this->node1->rotation(this->node1->rotation() + 0.2);
-                this->node1->position(this->node1->position() + glm::dvec2(1., 0.));
-                log("Node position: %lf %lf", this->node1->position().x, this->node1->position().y);
+                this->node1->position(
+                    this->node1->position() + glm::dvec2(1., 0.));
+                log("Node position: %lf %lf", this->node1->position().x,
+                    this->node1->position().y);
             } else if (event.is_pressing(Keycode::n)) {
-                this->root_node.position(this->root_node.position() + glm::dvec2(-1., -2.));
-                log("World position: %lf %lf", this->root_node.position().x, this->root_node.position().y);
+                this->root_node.position(
+                    this->root_node.position() + glm::dvec2(-1., -2.));
+                log("World position: %lf %lf", this->root_node.position().x,
+                    this->root_node.position().y);
             } else if (event.is_pressing(Keycode::c)) {
                 this->camera.position = this->node1->absolute_position();
                 this->camera.refresh();
-                log("Camera position: %lf %lf", this->camera.position.x, this->camera.position.y);
+                log("Camera position: %lf %lf", this->camera.position.x,
+                    this->camera.position.y);
             } else if (event.is_pressing(Keycode::f)) {
-                get_engine()->window->fullscreen(!get_engine()->window->fullscreen());
+                get_engine()->window->fullscreen(
+                    !get_engine()->window->fullscreen());
             } else if (event.is_pressing(Keycode::g)) {
                 auto size = get_engine()->window->size();
                 log("Current size: %u x %u", size.x, size.y);
@@ -153,8 +157,8 @@ struct DemoScene : Scene {
     }
 };
 
-
-extern "C" int main(int argc, char *argv[])
+extern "C" int
+main(int argc, char* argv[])
 {
     Engine eng{{800, 600}, VirtualResolutionMode::no_stretch};
     eng.window->show();
