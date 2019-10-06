@@ -1,14 +1,13 @@
 #pragma once
 
-#include <vector>
 #include <set>
+#include <vector>
 
 #include <glm/glm.hpp>
 
+#include "kaacore/input.h"
 #include "kaacore/nodes.h"
 #include "kaacore/physics.h"
-#include "kaacore/input.h"
-
 
 namespace kaacore {
 
@@ -23,7 +22,6 @@ struct Camera {
     void refresh();
     glm::dvec2 unproject_position(const glm::dvec2& pos);
 };
-
 
 struct Scene {
     Node root_node;

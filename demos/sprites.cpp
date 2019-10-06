@@ -1,23 +1,23 @@
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 
 #include "kaacore/engine.h"
-#include "kaacore/scenes.h"
-#include "kaacore/resources.h"
-#include "kaacore/texture_loader.h"
-#include "kaacore/nodes.h"
 #include "kaacore/log.h"
+#include "kaacore/nodes.h"
+#include "kaacore/resources.h"
+#include "kaacore/scenes.h"
+#include "kaacore/texture_loader.h"
 
 using namespace kaacore;
 
 using std::atoi;
 
-
 struct SpritesDemoScene : Scene {
     Node* animating_node;
     Resource<Image> image_file;
 
-    SpritesDemoScene(const char* filepath, int crop_x, int crop_y, int frame_w, int frame_h)
+    SpritesDemoScene(
+        const char* filepath, int crop_x, int crop_y, int frame_w, int frame_h)
     {
         this->image_file = Image::load(filepath);
         Sprite sprite{this->image_file};
@@ -41,29 +41,35 @@ struct SpritesDemoScene : Scene {
                 get_engine()->quit();
                 break;
             } else if (event.is_pressing(Keycode::w)) {
-                this->animating_node->position(this->animating_node->position() + glm::dvec2(0., -0.1));
+                this->animating_node->position(
+                    this->animating_node->position() + glm::dvec2(0., -0.1));
             } else if (event.is_pressing(Keycode::a)) {
-                this->animating_node->position(this->animating_node->position() + glm::dvec2(-0.1, 0.));
+                this->animating_node->position(
+                    this->animating_node->position() + glm::dvec2(-0.1, 0.));
             } else if (event.is_pressing(Keycode::s)) {
-                this->animating_node->position(this->animating_node->position() + glm::dvec2(0., 0.1));
+                this->animating_node->position(
+                    this->animating_node->position() + glm::dvec2(0., 0.1));
             } else if (event.is_pressing(Keycode::d)) {
-                this->animating_node->position(this->animating_node->position() + glm::dvec2(0.1, 0.));
+                this->animating_node->position(
+                    this->animating_node->position() + glm::dvec2(0.1, 0.));
             }
         }
     }
 };
 
-extern "C" int main(int argc, char *argv[])
+extern "C" int
+main(int argc, char* argv[])
 {
     if (argc != 6) {
-        std::cout << "Usage: <image_path> <crop_x> <crop_y> <frame_w> <frame_h>" << std::endl;
+        std::cout << "Usage: <image_path> <crop_x> <crop_y> <frame_w> <frame_h>"
+                  << std::endl;
         return 1;
     }
 
     Engine eng({5, 5});
     eng.window->show();
-    SpritesDemoScene scene{argv[1], atoi(argv[2]), atoi(argv[3]),
-                                    atoi(argv[4]), atoi(argv[5])};
+    SpritesDemoScene scene{argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+                           atoi(argv[5])};
     scene.camera.position = {0., 0.};
     eng.run(&scene);
 

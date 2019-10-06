@@ -1,38 +1,38 @@
-#include <vector>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include <glm/glm.hpp>
 
 #include "kaacore/engine.h"
-#include "kaacore/scenes.h"
-#include "kaacore/log.h"
-#include "kaacore/input.h"
-#include "kaacore/nodes.h"
 #include "kaacore/fonts.h"
+#include "kaacore/input.h"
+#include "kaacore/log.h"
 #include "kaacore/node_transitions.h"
+#include "kaacore/nodes.h"
+#include "kaacore/scenes.h"
 
 using namespace kaacore;
 
-
-static const std::string txt_lorem_ipsum = \
-     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse " \
-     "ultricies lacus massa. Phasellus tempus convallis ligula, et fermentum " \
-     "mauris tincidunt a. Donec consequat felis sed massa suscipit " \
-     "pellentesque. Etiam ullamcorper lacinia arcu ut vehicula. Morbi mattis " \
-     "lacus velit, nec tincidunt diam vulputate sit amet. Maecenas fermentum " \
-     "sagittis justo, id lacinia justo auctor ut. Maecenas mollis neque sit " \
-     "amet tortor porttitor lobortis.";
-
+static const std::string txt_lorem_ipsum =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse "
+    "ultricies lacus massa. Phasellus tempus convallis ligula, et fermentum "
+    "mauris tincidunt a. Donec consequat felis sed massa suscipit "
+    "pellentesque. Etiam ullamcorper lacinia arcu ut vehicula. Morbi mattis "
+    "lacus velit, nec tincidunt diam vulputate sit amet. Maecenas fermentum "
+    "sagittis justo, id lacinia justo auctor ut. Maecenas mollis neque sit "
+    "amet tortor porttitor lobortis.";
 
 struct DemoFontsScene : Scene {
     Node* background;
     Node* node_text_raw;
     Node* node_text;
 
-    DemoFontsScene() {
+    DemoFontsScene()
+    {
         auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
-        auto render_glyphs = font._font_data->generate_render_glyphs("Hello World \n\n\nFooBar FooBar", 30.);
+        auto render_glyphs = font._font_data->generate_render_glyphs(
+            "Hello World \n\n\nFooBar FooBar", 30.);
         FontRenderGlyph::arrange_glyphs(render_glyphs, 15., 35., 120.);
         auto text_shape = FontRenderGlyph::make_shape(render_glyphs);
 
@@ -58,17 +58,19 @@ struct DemoFontsScene : Scene {
         this->node_text->color({0., 0., 0., 1.});
         this->root_node.add_child(this->node_text);
 
-        this->node_text->transition(
-            make_node_transitions_parallel({
-                make_node_transitions_sequence({
-                    make_node_transition<NodePositionTransition>(glm::dvec2(200., 200.), 2000.),
-                    make_node_transition<NodePositionTransition>(glm::dvec2(0., 300.), 2000.),
-                    make_node_transition<NodeScaleTransition>(glm::dvec2(1., 1.), 500.),
-                    make_node_transition<NodePositionTransition>(glm::dvec2(-200., -500.), 8000.)
-                }),
-                make_node_transition<NodeColorTransition>(glm::dvec4(1., 1., 1., 0.5), 10000.),
-            })
-        );
+        this->node_text->transition(make_node_transitions_parallel({
+            make_node_transitions_sequence(
+                {make_node_transition<NodePositionTransition>(
+                     glm::dvec2(200., 200.), 2000.),
+                 make_node_transition<NodePositionTransition>(
+                     glm::dvec2(0., 300.), 2000.),
+                 make_node_transition<NodeScaleTransition>(
+                     glm::dvec2(1., 1.), 500.),
+                 make_node_transition<NodePositionTransition>(
+                     glm::dvec2(-200., -500.), 8000.)}),
+            make_node_transition<NodeColorTransition>(
+                glm::dvec4(1., 1., 1., 0.5), 10000.),
+        }));
     }
 
     void update(uint32_t dt) override
@@ -97,12 +99,10 @@ struct DemoFontsScene : Scene {
                 this->camera.refresh();
             } else if (event.is_pressing(Keycode::l)) {
                 this->node_text->text.content(
-                    this->node_text->text.content() + "x"
-                );
+                    this->node_text->text.content() + "x");
             } else if (event.is_pressing(Keycode::k)) {
                 this->node_text->text.content(
-                    this->node_text->text.content() + " "
-                );
+                    this->node_text->text.content() + " ");
             } else if (event.is_pressing(Keycode::kp_7)) {
                 this->background->origin_alignment(Alignment::top_left);
                 this->node_text_raw->origin_alignment(Alignment::top_left);
@@ -135,8 +135,8 @@ struct DemoFontsScene : Scene {
     }
 };
 
-
-extern "C" int main(int argc, char *argv[])
+extern "C" int
+main(int argc, char* argv[])
 {
     Engine eng({800, 600});
     DemoFontsScene scene;

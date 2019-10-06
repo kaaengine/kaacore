@@ -10,22 +10,24 @@ typedef std::uintptr_t TimerID;
 typedef std::function<void()> TimerCallback;
 
 extern uint32_t KAACORE_Timer;
-void resolve_timer(TimerID timer_id);
-void destroy_timers();
+void
+resolve_timer(TimerID timer_id);
+void
+destroy_timers();
 
 class Timer {
 
-public:
+  public:
     Timer() = default;
-    Timer(const uint32_t interval,
-        const TimerCallback callback, const bool single_shot=true
-    );
+    Timer(
+        const uint32_t interval, const TimerCallback callback,
+        const bool single_shot = true);
 
     void start();
     bool is_running();
     void stop();
 
-private:
+  private:
     bool _single_shot;
     TimerID _timer_id;
     uint32_t _interval;

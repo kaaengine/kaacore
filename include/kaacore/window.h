@@ -8,10 +8,10 @@
 
 namespace kaacore {
 
-class Window
-{
-friend class Engine;
-public:
+class Window {
+    friend class Engine;
+
+  public:
     Window(const glm::uvec2& size);
     ~Window();
 
@@ -30,7 +30,7 @@ public:
     void position(const glm::uvec2& position);
     void center();
 
-private:
+  private:
     SDL_Window* _window = nullptr;
 };
 

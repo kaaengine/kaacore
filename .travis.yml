@@ -12,6 +12,7 @@ addons:
 
 install: pip3 install cmake==3.13.1
 script:
+  - ./scripts/lint.sh || travis_terminate 1
   - cmake --version
   - cmake -Bbuild .
   - cmake --build build

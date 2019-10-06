@@ -1,11 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include <bimg/decode.h>
 #include <bgfx/bgfx.h>
-
+#include <bimg/decode.h>
 
 namespace kaacore {
 
