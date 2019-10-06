@@ -9,7 +9,7 @@
 #include "kaacore/files.h"
 #include "kaacore/log.h"
 
-#include "kaacore/texture_loader.h"
+#include "kaacore/images.h"
 
 namespace kaacore {
 

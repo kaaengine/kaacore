@@ -7,10 +7,10 @@
 #include "stb_truetype.h"
 
 #include "kaacore/files.h"
+#include "kaacore/images.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources.h"
 #include "kaacore/shapes.h"
-#include "kaacore/texture_loader.h"
 
 namespace kaacore {
 

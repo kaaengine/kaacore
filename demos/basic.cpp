@@ -6,8 +6,8 @@
 
 #include "kaacore/engine.h"
 
+#include "kaacore/images.h"
 #include "kaacore/resources.h"
-#include "kaacore/texture_loader.h"
 #include "kaacore/utils.h"
 
 using namespace std;
