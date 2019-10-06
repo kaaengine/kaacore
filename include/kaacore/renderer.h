@@ -8,8 +8,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/files.h"
+#include "kaacore/images.h"
 #include "kaacore/log.h"
-#include "kaacore/texture_loader.h"
 
 namespace kaacore {
 

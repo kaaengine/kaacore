@@ -2,8 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/images.h"
 #include "kaacore/resources.h"
-#include "kaacore/texture_loader.h"
 
 namespace kaacore {
 
