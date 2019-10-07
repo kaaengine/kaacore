@@ -6,8 +6,8 @@
 
 #include "kaacore/exceptions.h"
 #include "kaacore/fonts.h"
+#include "kaacore/images.h"
 #include "kaacore/nodes.h"
-#include "kaacore/texture_loader.h"
 #include "kaacore/utils.h"
 
 #include "kaacore/fonts.h"

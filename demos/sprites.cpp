@@ -2,11 +2,11 @@
 #include <iostream>
 
 #include "kaacore/engine.h"
+#include "kaacore/images.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
 #include "kaacore/resources.h"
 #include "kaacore/scenes.h"
-#include "kaacore/texture_loader.h"
 
 using namespace kaacore;
 

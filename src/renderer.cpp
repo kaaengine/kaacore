@@ -8,8 +8,8 @@
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
+#include "kaacore/images.h"
 #include "kaacore/log.h"
-#include "kaacore/texture_loader.h"
 
 #include "kaacore/renderer.h"
 
