@@ -32,7 +32,7 @@ struct Scene {
     std::set<Node*> simulations_registry;
 
     Scene();
-    virtual ~Scene() noexcept(false);
+    virtual ~Scene();
 
     virtual void on_enter();
     virtual void update(uint32_t dt);

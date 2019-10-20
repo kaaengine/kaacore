@@ -45,7 +45,7 @@ class Engine {
         const glm::uvec2& virtual_resolution,
         const VirtualResolutionMode vr_mode =
             VirtualResolutionMode::adaptive_stretch) noexcept(false);
-    ~Engine() noexcept(false);
+    ~Engine();
 
     std::vector<Display> get_displays();
     void run(Scene* scene);

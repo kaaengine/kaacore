@@ -35,9 +35,9 @@ Engine::Engine(
     this->audio_manager = std::make_unique<AudioManager>();
 }
 
-Engine::~Engine() noexcept(false)
+Engine::~Engine()
 {
-    KAACORE_CHECK(engine != nullptr);
+    KAACORE_CHECK_TERMINATE(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
     this->audio_manager.reset();

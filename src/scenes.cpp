@@ -21,7 +21,7 @@ Scene::Scene()
     this->root_node._scene = this;
 }
 
-Scene::~Scene() noexcept(false)
+Scene::~Scene()
 {
     auto engine = get_engine(false);
     if (engine && (this == engine->scene || this == engine->next_scene)) {
@@ -32,7 +32,7 @@ Scene::~Scene() noexcept(false)
     while (not this->root_node._children.empty()) {
         delete this->root_node._children[0];
     }
-    KAACORE_ASSERT(this->simulations_registry.empty());
+    KAACORE_ASSERT_TERMINATE(this->simulations_registry.empty());
 }
 
 void

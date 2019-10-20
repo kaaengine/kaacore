@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <stdexcept>
 
 #include "kaacore/log.h"
@@ -25,6 +26,23 @@
     } while (0)
 #else
 #define KAACORE_ASSERT(condition) KAACORE_CHECK(condition)
+#endif
+
+#define KAACORE_CHECK_TERMINATE(condition)                                     \
+    do {                                                                       \
+        if (not(condition)) {                                                  \
+            kaacore::log<kaacore::LogLevel::critical>(                         \
+                KAACORE_TRACE_STRING(condition));                              \
+            std::terminate();                                                  \
+        }                                                                      \
+    } while (0)
+
+#ifdef NDEBUG
+#define KAACORE_ASSERT_TERMINATE(condition)                                    \
+    do {                                                                       \
+    } while (0)
+#else
+#define KAACORE_ASSERT_TERMINATE(condition) KAACORE_CHECK_TERMINATE(condition)
 #endif
 
 namespace kaacore {
