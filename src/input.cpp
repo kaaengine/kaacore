@@ -4,8 +4,10 @@
 #include <SDL.h>
 
 #include "kaacore/engine.h"
-#include "kaacore/input.h"
+#include "kaacore/audio.h"
 #include "kaacore/log.h"
+
+#include "kaacore/input.h"
 
 namespace kaacore {
 
@@ -297,6 +299,12 @@ ControllerID
 ControllerEvent::id() const
 {
     return this->sdl_event.cdevice.which;
+}
+
+bool
+AudioEvent::is_music_finished() const
+{
+    return this->sdl_event.type == event_music_finished;
 }
 
 Event::Event() {}

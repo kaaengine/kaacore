@@ -10,6 +10,9 @@
 
 namespace kaacore {
 
+const uint32_t event_music_finished = SDL_RegisterEvents(1);
+
+
 SoundData::SoundData(Mix_Chunk* raw_sound) : _raw_sound(raw_sound) {}
 
 SoundData::~SoundData()
@@ -98,6 +101,15 @@ Music::play(double volume_factor)
     get_engine()->audio_manager->play_music(*this, this->volume * volume_factor);
 }
 
+
+void _music_finished_hook()
+{
+    SDL_Event event;
+    event.type = event_music_finished;
+    SDL_PushEvent(&event);
+}
+
+
 AudioManager::AudioManager() : master_sound_volume(1.), master_music_volume(1.)
 {
     SDL_InitSubSystem(SDL_INIT_AUDIO);
@@ -109,12 +121,14 @@ AudioManager::AudioManager() : master_sound_volume(1.), master_music_volume(1.)
         );
         return;
     }
+    Mix_HookMusicFinished(_music_finished_hook);
 }
 
 AudioManager::~AudioManager()
 {
     Mix_CloseAudio();
     Mix_Quit();
+    Mix_HookMusicFinished(nullptr);
 }
 
 Mix_Chunk*

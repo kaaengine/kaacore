@@ -8,6 +8,8 @@
 #include <SDL.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/audio.h"
+
 namespace kaacore {
 
 typedef SDL_JoystickID ControllerID;
@@ -437,6 +439,10 @@ struct ControllerEvent : public BaseEvent {
     bool is_pressing(const ControllerButton cb) const;
     bool is_releasing(const ControllerButton cb) const;
     double axis_motion(const ControllerAxis ca) const;
+};
+
+struct AudioEvent : public BaseEvent {
+    bool is_music_finished() const;
 };
 
 struct Event {

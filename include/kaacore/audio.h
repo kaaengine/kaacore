@@ -1,10 +1,13 @@
 #pragma once
 
+#include <SDL.h>
 #include <SDL_mixer.h>
 
 #include "kaacore/resources.h"
 
 namespace kaacore {
+
+extern const uint32_t event_music_finished;
 
 struct SoundData {
     Mix_Chunk* _raw_sound;
