@@ -74,6 +74,9 @@ struct AudioManager {
     void play_sound(const Sound& sound, const double volume_factor = 1.);
     void play_music(const Music& music, const double volume_factor = 1.);
     MusicState music_state();
+
+    uint16_t mixing_channels() const;
+    void mixing_channels(const uint16_t channels);
 };
 
 } // namespace kaacore

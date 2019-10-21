@@ -11,6 +11,7 @@
 namespace kaacore {
 
 const uint32_t event_music_finished = SDL_RegisterEvents(1);
+const uint16_t default_mixing_channels_count = 32;
 
 
 SoundData::SoundData(Mix_Chunk* raw_sound) : _raw_sound(raw_sound) {}
@@ -122,6 +123,7 @@ AudioManager::AudioManager() : master_sound_volume(1.), master_music_volume(1.)
         return;
     }
     Mix_HookMusicFinished(_music_finished_hook);
+    this->mixing_channels(default_mixing_channels_count);
 }
 
 AudioManager::~AudioManager()
@@ -203,6 +205,16 @@ AudioManager::music_state()
     } else {
         return MusicState::stopped;
     }
+}
+
+uint16_t AudioManager::mixing_channels() const
+{
+    return Mix_AllocateChannels(-1);
+}
+
+void AudioManager::mixing_channels(const uint16_t channels)
+{
+    Mix_AllocateChannels(channels);
 }
 
 } // namespace kaacore
