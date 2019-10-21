@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SDL_mixer.h"
+#include <SDL_mixer.h>
 
 #include "kaacore/resources.h"
 
@@ -53,7 +53,7 @@ struct Music {
 
     operator bool() const;
     bool is_playing() const;
-    void play();
+    void play(double volume_factor = 1.);
 };
 
 struct AudioManager {

@@ -14,7 +14,9 @@ SoundData::SoundData(Mix_Chunk* raw_sound) : _raw_sound(raw_sound) {}
 
 SoundData::~SoundData()
 {
-    Mix_FreeChunk(this->_raw_sound);
+    if (this->_raw_sound) {
+        Mix_FreeChunk(this->_raw_sound);
+    }
 }
 
 Resource<SoundData>
@@ -53,7 +55,9 @@ MusicData::MusicData(Mix_Music* raw_music) : _raw_music(raw_music) {}
 
 MusicData::~MusicData()
 {
-    Mix_FreeMusic(this->_raw_music);
+    if (this->_raw_music) {
+        Mix_FreeMusic(this->_raw_music);
+    }
 }
 
 Resource<MusicData>
@@ -88,17 +92,23 @@ Music::operator bool() const
 }
 
 void
-Music::play()
+Music::play(double volume_factor)
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
-    get_engine()->audio_manager->play_music(*this, this->volume);
+    get_engine()->audio_manager->play_music(*this, this->volume * volume_factor);
 }
 
 AudioManager::AudioManager() : master_sound_volume(1.), master_music_volume(1.)
 {
     SDL_InitSubSystem(SDL_INIT_AUDIO);
     Mix_Init(0); // no libraries, just WAV support
-    Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048);
+    auto err_code = Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048);
+    if (err_code == -1) {
+        log<LogLevel::error>(
+            "Failed to open audio (%s)", Mix_GetError()
+        );
+        return;
+    }
 }
 
 AudioManager::~AudioManager()
@@ -115,7 +125,6 @@ AudioManager::load_raw_sound(const char* path)
         log<LogLevel::error>(
             "Failed to load sound from path %s (%s)", path, Mix_GetError());
     }
-    KAACORE_CHECK(raw_sound != nullptr);
     return raw_sound;
 }
 
@@ -127,7 +136,6 @@ AudioManager::load_raw_music(const char* path)
         log<LogLevel::error>(
             "Failed to load music from path %s (%s)", path, Mix_GetError());
     }
-    KAACORE_CHECK(raw_music != nullptr);
     return raw_music;
 }
 
@@ -135,19 +143,40 @@ void
 AudioManager::play_sound(const Sound& sound, const double volume_factor)
 {
     KAACORE_ASSERT(bool(sound));
-    Mix_VolumeChunk(
-        sound._sound_data->_raw_sound,
-        this->master_sound_volume * volume_factor * MIX_MAX_VOLUME);
-    Mix_PlayChannel(-1, sound._sound_data->_raw_sound, 0);
+    if (sound._sound_data->_raw_sound) {
+        auto channel = Mix_PlayChannel(-1, sound._sound_data->_raw_sound, 0);
+        if (channel < 0) {
+            log<LogLevel::error>(
+                "Failed to play sound (%s)", Mix_GetError()
+            );
+            Mix_Volume(
+                channel,
+                this->master_sound_volume * volume_factor * MIX_MAX_VOLUME
+            );
+            return;
+        }
+    } else {
+        log<LogLevel::error>("Failed to played incorrectly loaded sound");
+    }
 }
 
 void
 AudioManager::play_music(const Music& music, const double volume_factor)
 {
     KAACORE_ASSERT(bool(music));
-    Mix_VolumeMusic(this->master_music_volume * volume_factor * MIX_MAX_VOLUME);
-    Mix_PlayMusic(music._music_data->_raw_music, 1);
-    this->current_music = music;
+    if (music._music_data->_raw_music) {
+        auto err_code = Mix_PlayMusic(music._music_data->_raw_music, 1);
+        if (err_code == -1) {
+            log<LogLevel::error>(
+                "Failed to play music (%s)", Mix_GetError()
+            );
+            return;
+        }
+        Mix_VolumeMusic(this->master_music_volume * volume_factor * MIX_MAX_VOLUME);
+        this->current_music = music;
+    } else {
+        log<LogLevel::error>("Failed to played incorrectly loaded music");
+    }
 }
 
 MusicState
