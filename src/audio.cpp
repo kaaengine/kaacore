@@ -29,10 +29,10 @@ SoundData::load(const char* path)
     return std::make_shared<SoundData>(raw_sound);
 }
 
-Sound::Sound() : volume(1.) {}
+Sound::Sound() : _volume(1.) {}
 
 Sound::Sound(Resource<SoundData> sound_data, double volume)
-    : _sound_data(sound_data), volume(volume)
+    : _sound_data(sound_data), _volume(volume)
 {}
 
 Sound
@@ -41,9 +41,27 @@ Sound::load(const char* path, double volume)
     return Sound(SoundData::load(path), volume);
 }
 
+double
+Sound::volume() const
+{
+    return this->_volume;
+}
+
+void
+Sound::volume(const double vol)
+{
+    this->_volume = vol;
+}
+
 Sound::operator bool() const
 {
     return bool(this->_sound_data);
+}
+
+bool
+Sound::operator==(const Sound& other) const
+{
+    return this->_sound_data == other._sound_data;
 }
 
 void
@@ -51,7 +69,7 @@ Sound::play(double volume_factor)
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     get_engine()->audio_manager->play_sound(
-        *this, this->volume * volume_factor);
+        *this, this->_volume * volume_factor);
 }
 
 MusicData::MusicData(Mix_Music* raw_music) : _raw_music(raw_music) {}
@@ -70,10 +88,10 @@ MusicData::load(const char* path)
     return std::make_shared<MusicData>(raw_music);
 }
 
-Music::Music() : volume(1.) {}
+Music::Music() : _volume(1.) {}
 
 Music::Music(Resource<MusicData> music_data, double volume)
-    : _music_data(music_data), volume(volume)
+    : _music_data(music_data), _volume(volume)
 {}
 
 Music
@@ -86,7 +104,19 @@ Music
 Music::get_current()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
-    return get_engine()->audio_manager->current_music;
+    return get_engine()->audio_manager->_current_music;
+}
+
+double
+Music::volume() const
+{
+    return this->_volume;
+}
+
+void
+Music::volume(const double vol)
+{
+    this->_volume = vol;
 }
 
 Music::operator bool() const
@@ -94,12 +124,18 @@ Music::operator bool() const
     return bool(this->_music_data);
 }
 
+bool
+Music::operator==(const Music& other) const
+{
+    return this->_music_data == other._music_data;
+}
+
 void
 Music::play(double volume_factor)
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     get_engine()->audio_manager->play_music(
-        *this, this->volume * volume_factor);
+        *this, this->_volume * volume_factor);
 }
 
 void
@@ -110,7 +146,8 @@ _music_finished_hook()
     SDL_PushEvent(&event);
 }
 
-AudioManager::AudioManager() : master_sound_volume(1.), master_music_volume(1.)
+AudioManager::AudioManager()
+    : _master_volume(1.), _master_sound_volume(1.), _master_music_volume(1.)
 {
     SDL_InitSubSystem(SDL_INIT_AUDIO);
     Mix_Init(0); // no libraries, just WAV support
@@ -162,8 +199,8 @@ AudioManager::play_sound(const Sound& sound, const double volume_factor)
         if (channel < 0) {
             log<LogLevel::error>("Failed to play sound (%s)", Mix_GetError());
             Mix_Volume(
-                channel,
-                this->master_sound_volume * volume_factor * MIX_MAX_VOLUME);
+                channel, this->_master_volume * this->_master_sound_volume *
+                             volume_factor * MIX_MAX_VOLUME);
             return;
         }
     } else {
@@ -182,8 +219,9 @@ AudioManager::play_music(const Music& music, const double volume_factor)
             return;
         }
         Mix_VolumeMusic(
-            this->master_music_volume * volume_factor * MIX_MAX_VOLUME);
-        this->current_music = music;
+            this->_master_volume * this->_master_music_volume * volume_factor *
+            MIX_MAX_VOLUME);
+        this->_current_music = music;
     } else {
         log<LogLevel::error>("Failed to played incorrectly loaded music");
     }
@@ -211,6 +249,42 @@ void
 AudioManager::mixing_channels(const uint16_t channels)
 {
     Mix_AllocateChannels(channels);
+}
+
+double
+AudioManager::master_volume() const
+{
+    return this->_master_volume;
+}
+
+void
+AudioManager::master_volume(const double vol)
+{
+    this->_master_volume = vol;
+}
+
+double
+AudioManager::master_sound_volume() const
+{
+    return this->_master_sound_volume;
+}
+
+void
+AudioManager::master_sound_volume(const double vol)
+{
+    this->_master_sound_volume = vol;
+}
+
+double
+AudioManager::master_music_volume() const
+{
+    return this->_master_music_volume;
+}
+
+void
+AudioManager::master_music_volume(const double vol)
+{
+    this->_master_music_volume = vol;
 }
 
 } // namespace kaacore

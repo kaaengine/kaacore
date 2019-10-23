@@ -18,15 +18,24 @@ struct SoundData {
     static Resource<SoundData> load(const char* path);
 };
 
-struct Sound {
-    Resource<SoundData> _sound_data;
-    double volume;
+class Sound {
+    friend class AudioManager;
 
-    Sound();
+    Resource<SoundData> _sound_data;
+    double _volume;
+
     Sound(Resource<SoundData> sound_data, double volume = 1.);
+
+  public:
+    Sound();
     static Sound load(const char* path, double volume = 1.);
 
     operator bool() const;
+    bool operator==(const Sound& other) const;
+
+    double volume() const;
+    void volume(const double vol);
+
     void play(double volume_factor = 1.);
 };
 
@@ -45,35 +54,59 @@ struct MusicData {
     static Resource<MusicData> load(const char* path);
 };
 
-struct Music {
-    Resource<MusicData> _music_data;
-    double volume;
+class Music {
+    friend class AudioManager;
 
-    Music();
+    Resource<MusicData> _music_data;
+    double _volume;
+
     Music(Resource<MusicData> effect_data, double volume = 1.);
+
+  public:
+    Music();
     static Music load(const char* path, double volume = 1.);
     static Music get_current();
 
     operator bool() const;
+    bool operator==(const Music& other) const;
+
+    double volume() const;
+    void volume(const double vol);
+
     bool is_playing() const;
     void play(double volume_factor = 1.);
 };
 
-struct AudioManager {
-    double master_sound_volume;
-    double master_music_volume;
+class AudioManager {
+    friend class Sound;
+    friend struct SoundData;
+    friend class Music;
+    friend struct MusicData;
 
-    Music current_music;
-
-    AudioManager();
-    ~AudioManager();
+    double _master_volume;
+    double _master_sound_volume;
+    double _master_music_volume;
+    Music _current_music;
 
     Mix_Chunk* load_raw_sound(const char* path);
     Mix_Music* load_raw_music(const char* path);
 
     void play_sound(const Sound& sound, const double volume_factor = 1.);
     void play_music(const Music& music, const double volume_factor = 1.);
+
+  public:
+    AudioManager();
+    ~AudioManager();
     MusicState music_state();
+
+    double master_volume() const;
+    void master_volume(const double vol);
+
+    double master_sound_volume() const;
+    void master_sound_volume(const double vol);
+
+    double master_music_volume() const;
+    void master_music_volume(const double vol);
 
     uint16_t mixing_channels() const;
     void mixing_channels(const uint16_t channels);
