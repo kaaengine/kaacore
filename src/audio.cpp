@@ -107,6 +107,13 @@ Music::get_current()
     return get_engine()->audio_manager->_current_music;
 }
 
+MusicState
+Music::get_state()
+{
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    return get_engine()->audio_manager->music_state();
+}
+
 double
 Music::volume() const
 {
@@ -128,6 +135,13 @@ bool
 Music::operator==(const Music& other) const
 {
     return this->_music_data == other._music_data;
+}
+
+bool
+Music::is_playing() const
+{
+    return *this == this->get_current() and
+           this->get_state() == MusicState::playing;
 }
 
 void

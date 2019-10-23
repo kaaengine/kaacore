@@ -66,6 +66,7 @@ class Music {
     Music();
     static Music load(const char* path, double volume = 1.);
     static Music get_current();
+    static MusicState get_state();
 
     operator bool() const;
     bool operator==(const Music& other) const;
@@ -93,11 +94,11 @@ class AudioManager {
 
     void play_sound(const Sound& sound, const double volume_factor = 1.);
     void play_music(const Music& music, const double volume_factor = 1.);
+    MusicState music_state();
 
   public:
     AudioManager();
     ~AudioManager();
-    MusicState music_state();
 
     double master_volume() const;
     void master_volume(const double vol);
