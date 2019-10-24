@@ -89,12 +89,16 @@ class AudioManager {
     double _master_music_volume;
     Music _current_music;
 
+    double _initial_music_volume;
+
     Mix_Chunk* load_raw_sound(const char* path);
     Mix_Music* load_raw_music(const char* path);
 
     void play_sound(const Sound& sound, const double volume_factor = 1.);
     void play_music(const Music& music, const double volume_factor = 1.);
     MusicState music_state();
+
+    void _recalc_music_volume();
 
   public:
     AudioManager();

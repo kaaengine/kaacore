@@ -212,11 +212,11 @@ AudioManager::play_sound(const Sound& sound, const double volume_factor)
         auto channel = Mix_PlayChannel(-1, sound._sound_data->_raw_sound, 0);
         if (channel < 0) {
             log<LogLevel::error>("Failed to play sound (%s)", Mix_GetError());
-            Mix_Volume(
-                channel, this->_master_volume * this->_master_sound_volume *
-                             volume_factor * MIX_MAX_VOLUME);
             return;
         }
+        Mix_Volume(
+            channel, this->_master_volume * this->_master_sound_volume *
+                         volume_factor * MIX_MAX_VOLUME);
     } else {
         log<LogLevel::error>("Failed to played incorrectly loaded sound");
     }
@@ -232,10 +232,9 @@ AudioManager::play_music(const Music& music, const double volume_factor)
             log<LogLevel::error>("Failed to play music (%s)", Mix_GetError());
             return;
         }
-        Mix_VolumeMusic(
-            this->_master_volume * this->_master_music_volume * volume_factor *
-            MIX_MAX_VOLUME);
+        this->_initial_music_volume = volume_factor;
         this->_current_music = music;
+        this->_recalc_music_volume();
     } else {
         log<LogLevel::error>("Failed to played incorrectly loaded music");
     }
@@ -275,6 +274,7 @@ void
 AudioManager::master_volume(const double vol)
 {
     this->_master_volume = vol;
+    this->_recalc_music_volume();
 }
 
 double
@@ -299,6 +299,15 @@ void
 AudioManager::master_music_volume(const double vol)
 {
     this->_master_music_volume = vol;
+    this->_recalc_music_volume();
+}
+
+void
+AudioManager::_recalc_music_volume()
+{
+    Mix_VolumeMusic(
+        this->_master_volume * this->_master_music_volume *
+        this->_initial_music_volume * MIX_MAX_VOLUME);
 }
 
 } // namespace kaacore
