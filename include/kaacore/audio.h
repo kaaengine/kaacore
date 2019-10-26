@@ -76,6 +76,11 @@ class Music {
 
     bool is_playing() const;
     void play(double volume_factor = 1.);
+
+    bool is_paused() const;
+    bool pause();
+    bool resume();
+    bool stop();
 };
 
 class AudioManager {
@@ -97,6 +102,10 @@ class AudioManager {
     void play_sound(const Sound& sound, const double volume_factor = 1.);
     void play_music(const Music& music, const double volume_factor = 1.);
     MusicState music_state();
+
+    void _pause_music();
+    void _resume_music();
+    void _stop_music();
 
     void _recalc_music_volume();
 

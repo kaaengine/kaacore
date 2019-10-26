@@ -152,6 +152,52 @@ Music::play(double volume_factor)
         *this, this->_volume * volume_factor);
 }
 
+bool
+Music::is_paused() const
+{
+    if (this->get_current() == *this
+        and this->get_state() == MusicState::paused) {
+        return true;
+    }
+    return false;
+}
+
+bool
+Music::pause()
+{
+    if (this->get_current() == *this
+        and this->get_state() == MusicState::playing) {
+        get_engine()->audio_manager->_pause_music();
+        return true;
+    }
+    return false;
+}
+
+bool
+Music::resume()
+{
+    if (this->get_current() == *this
+        and this->get_state() == MusicState::paused) {
+        get_engine()->audio_manager->_resume_music();
+        return true;
+    }
+    return false;
+}
+
+bool
+Music::stop()
+{
+    auto state = this->get_state();
+    if (this->get_current() == *this
+        and (state == MusicState::paused
+             or state == MusicState::playing)) {
+        get_engine()->audio_manager->_stop_music();
+        return true;
+    }
+    return false;
+}
+
+
 void
 _music_finished_hook()
 {
@@ -244,9 +290,11 @@ MusicState
 AudioManager::music_state()
 {
     if (Mix_PlayingMusic()) {
-        return MusicState::playing;
-    } else if (Mix_PausedMusic()) {
-        return MusicState::paused;
+        if (Mix_PausedMusic()) {
+            return MusicState::paused;
+        } else {
+            return MusicState::playing;
+        }
     } else {
         return MusicState::stopped;
     }
@@ -300,6 +348,24 @@ AudioManager::master_music_volume(const double vol)
 {
     this->_master_music_volume = vol;
     this->_recalc_music_volume();
+}
+
+void
+AudioManager::_pause_music()
+{
+    Mix_PauseMusic();
+}
+
+void
+AudioManager::_resume_music()
+{
+    Mix_ResumeMusic();
+}
+
+void
+AudioManager::_stop_music()
+{
+    Mix_HaltMusic();
 }
 
 void
