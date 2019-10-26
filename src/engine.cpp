@@ -4,6 +4,7 @@
 #include <SDL_config.h>
 #include <SDL_syswm.h>
 
+#include "kaacore/audio.h"
 #include "kaacore/display.h"
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
@@ -196,6 +197,10 @@ Engine::_pump_events()
         if (event.type == KAACORE_Timer) {
             auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
             resolve_timer(timer_id);
+        } else if (event.type == event_music_finished) {
+            this->audio_manager->_handle_music_finished();
+        } else if (event.type == event_channel_finished) {
+            this->audio_manager->_handle_channel_finished(event.user.code);
         } else if (
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {

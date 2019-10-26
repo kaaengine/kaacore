@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <SDL.h>
 #include <SDL_mixer.h>
 
@@ -8,6 +10,7 @@
 namespace kaacore {
 
 extern const uint32_t event_music_finished;
+extern const uint32_t event_channel_finished;
 
 struct SoundData {
     Mix_Chunk* _raw_sound;
@@ -83,7 +86,18 @@ class Music {
     bool stop();
 };
 
+struct _MusicState {
+    double requested_volume;
+    Music current_music;
+};
+
+struct _ChannelState {
+    double requested_volume;
+    Sound current_sound;
+};
+
 class AudioManager {
+    friend class Engine;
     friend class Sound;
     friend struct SoundData;
     friend class Music;
@@ -92,9 +106,9 @@ class AudioManager {
     double _master_volume;
     double _master_sound_volume;
     double _master_music_volume;
-    Music _current_music;
 
-    double _initial_music_volume;
+    _MusicState _music_state;
+    std::vector<_ChannelState> _channels_state;
 
     Mix_Chunk* load_raw_sound(const char* path);
     Mix_Music* load_raw_music(const char* path);
@@ -108,6 +122,11 @@ class AudioManager {
     void _stop_music();
 
     void _recalc_music_volume();
+    void _recalc_channels_volume();
+    void _recalc_channel_volume(uint16_t channel_id);
+
+    void _handle_music_finished();
+    void _handle_channel_finished(uint16_t channel_id);
 
   public:
     AudioManager();

@@ -11,6 +11,7 @@
 namespace kaacore {
 
 const uint32_t event_music_finished = SDL_RegisterEvents(1);
+const uint32_t event_channel_finished = SDL_RegisterEvents(1);
 const uint16_t default_mixing_channels_count = 32;
 
 SoundData::SoundData(Mix_Chunk* raw_sound) : _raw_sound(raw_sound) {}
@@ -104,7 +105,7 @@ Music
 Music::get_current()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
-    return get_engine()->audio_manager->_current_music;
+    return get_engine()->audio_manager->_music_state.current_music;
 }
 
 MusicState
@@ -140,6 +141,7 @@ Music::operator==(const Music& other) const
 bool
 Music::is_playing() const
 {
+    KAACORE_ASSERT(get_engine()->audio_manager);
     return *this == this->get_current() and
            this->get_state() == MusicState::playing;
 }
@@ -155,8 +157,9 @@ Music::play(double volume_factor)
 bool
 Music::is_paused() const
 {
-    if (this->get_current() == *this
-        and this->get_state() == MusicState::paused) {
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    if (this->get_current() == *this and
+        this->get_state() == MusicState::paused) {
         return true;
     }
     return false;
@@ -165,8 +168,9 @@ Music::is_paused() const
 bool
 Music::pause()
 {
-    if (this->get_current() == *this
-        and this->get_state() == MusicState::playing) {
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    if (this->get_current() == *this and
+        this->get_state() == MusicState::playing) {
         get_engine()->audio_manager->_pause_music();
         return true;
     }
@@ -176,8 +180,9 @@ Music::pause()
 bool
 Music::resume()
 {
-    if (this->get_current() == *this
-        and this->get_state() == MusicState::paused) {
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    if (this->get_current() == *this and
+        this->get_state() == MusicState::paused) {
         get_engine()->audio_manager->_resume_music();
         return true;
     }
@@ -187,22 +192,30 @@ Music::resume()
 bool
 Music::stop()
 {
+    KAACORE_ASSERT(get_engine()->audio_manager);
     auto state = this->get_state();
-    if (this->get_current() == *this
-        and (state == MusicState::paused
-             or state == MusicState::playing)) {
+    if (this->get_current() == *this and
+        (state == MusicState::paused or state == MusicState::playing)) {
         get_engine()->audio_manager->_stop_music();
         return true;
     }
     return false;
 }
 
-
 void
 _music_finished_hook()
 {
     SDL_Event event;
     event.type = event_music_finished;
+    SDL_PushEvent(&event);
+}
+
+void
+_channel_finished_hook(int channel)
+{
+    SDL_Event event;
+    event.type = event_channel_finished;
+    event.user.code = channel;
     SDL_PushEvent(&event);
 }
 
@@ -218,6 +231,8 @@ AudioManager::AudioManager()
         return;
     }
     Mix_HookMusicFinished(_music_finished_hook);
+    Mix_ChannelFinished(_channel_finished_hook);
+    this->_channels_state.resize(MIX_CHANNELS);
     this->mixing_channels(default_mixing_channels_count);
 }
 
@@ -226,6 +241,7 @@ AudioManager::~AudioManager()
     Mix_CloseAudio();
     Mix_Quit();
     Mix_HookMusicFinished(nullptr);
+    Mix_ChannelFinished(nullptr);
 }
 
 Mix_Chunk*
@@ -260,9 +276,10 @@ AudioManager::play_sound(const Sound& sound, const double volume_factor)
             log<LogLevel::error>("Failed to play sound (%s)", Mix_GetError());
             return;
         }
-        Mix_Volume(
-            channel, this->_master_volume * this->_master_sound_volume *
-                         volume_factor * MIX_MAX_VOLUME);
+        KAACORE_ASSERT(channel < this->_channels_state.size());
+        this->_channels_state[channel].current_sound = sound;
+        this->_channels_state[channel].requested_volume = volume_factor;
+        this->_recalc_channel_volume(channel);
     } else {
         log<LogLevel::error>("Failed to played incorrectly loaded sound");
     }
@@ -278,8 +295,8 @@ AudioManager::play_music(const Music& music, const double volume_factor)
             log<LogLevel::error>("Failed to play music (%s)", Mix_GetError());
             return;
         }
-        this->_initial_music_volume = volume_factor;
-        this->_current_music = music;
+        this->_music_state.current_music = music;
+        this->_music_state.requested_volume = volume_factor;
         this->_recalc_music_volume();
     } else {
         log<LogLevel::error>("Failed to played incorrectly loaded music");
@@ -310,6 +327,7 @@ void
 AudioManager::mixing_channels(const uint16_t channels)
 {
     Mix_AllocateChannels(channels);
+    this->_channels_state.resize(channels);
 }
 
 double
@@ -323,6 +341,7 @@ AudioManager::master_volume(const double vol)
 {
     this->_master_volume = vol;
     this->_recalc_music_volume();
+    this->_recalc_channels_volume();
 }
 
 double
@@ -335,6 +354,7 @@ void
 AudioManager::master_sound_volume(const double vol)
 {
     this->_master_sound_volume = vol;
+    this->_recalc_channels_volume();
 }
 
 double
@@ -373,7 +393,46 @@ AudioManager::_recalc_music_volume()
 {
     Mix_VolumeMusic(
         this->_master_volume * this->_master_music_volume *
-        this->_initial_music_volume * MIX_MAX_VOLUME);
+        this->_music_state.requested_volume * MIX_MAX_VOLUME);
+}
+
+void
+AudioManager::_recalc_channels_volume()
+{
+    size_t channels_count = this->_channels_state.size();
+    for (size_t i = 0; i < channels_count; i++) {
+        if (this->_channels_state[i].current_sound) {
+            this->_recalc_channel_volume(i);
+        }
+    }
+}
+
+void
+AudioManager::_recalc_channel_volume(uint16_t channel_id)
+{
+    KAACORE_ASSERT(channel_id < this->_channels_state.size());
+    KAACORE_ASSERT(this->_channels_state[channel_id].current_sound);
+    Mix_Volume(
+        channel_id, this->_master_volume * this->_master_sound_volume *
+                        this->_channels_state[channel_id].requested_volume *
+                        MIX_MAX_VOLUME);
+}
+
+void
+AudioManager::_handle_music_finished()
+{
+    log<LogLevel::debug>("Music channel finished playback");
+    this->_music_state.current_music = Music(); // empty Music
+}
+
+void
+AudioManager::_handle_channel_finished(uint16_t channel_id)
+{
+    log<LogLevel::debug>("Sound channel #%u finished playback", channel_id);
+    if (channel_id < this->_channels_state.size()) {
+        this->_channels_state[channel_id].current_sound =
+            Sound(); // empty sound
+    }
 }
 
 } // namespace kaacore
