@@ -377,6 +377,23 @@ Event::controller() const
     return nullptr;
 }
 
+std::string
+InputManager::SystemManager::get_clipboard_text() const {
+    auto text = SDL_GetClipboardText();
+    if (text == nullptr) {
+        log<LogLevel::error>("Unable to read clipboard content.");
+        return "";
+    }
+    return text;
+}
+
+void
+InputManager::SystemManager::set_clipboard_text(const std::string& text) const {
+    if (SDL_SetClipboardText(text.c_str()) < 0) {
+        log<LogLevel::error>("Unable to set clipboard content.");
+    }
+}
+
 bool
 InputManager::KeyboardManager::is_pressed(const Keycode kc) const
 {

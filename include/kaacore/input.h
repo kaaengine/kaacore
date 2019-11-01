@@ -451,6 +451,11 @@ struct Event {
 struct InputManager {
     std::vector<Event> events_queue;
 
+    struct SystemManager {
+        std::string get_clipboard_text() const;
+        void set_clipboard_text(const std::string& text) const;
+    } system;
+
     struct KeyboardManager {
         bool is_pressed(const Keycode kc) const;
         bool is_released(const Keycode kc) const;
