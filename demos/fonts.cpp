@@ -76,60 +76,71 @@ struct DemoFontsScene : Scene {
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::q) or event.is_quit()) {
+            auto system = event.system();
+            if (system and system->is_quit()) {
                 get_engine()->quit();
                 break;
-            } else if (event.is_pressing(Keycode::w)) {
-                this->camera.position += glm::dvec2(0., -2.5);
-                this->camera.refresh();
-            } else if (event.is_pressing(Keycode::a)) {
-                this->camera.position += glm::dvec2(-2.5, 0.);
-                this->camera.refresh();
-            } else if (event.is_pressing(Keycode::s)) {
-                this->camera.position += glm::dvec2(0., 2.5);
-                this->camera.refresh();
-            } else if (event.is_pressing(Keycode::d)) {
-                this->camera.position += glm::dvec2(2.5, 0.);
-                this->camera.refresh();
-            } else if (event.is_pressing(Keycode::i)) {
-                this->camera.scale += glm::dvec2(0.1, 0.1);
-                this->camera.refresh();
-            } else if (event.is_pressing(Keycode::o)) {
-                this->camera.scale -= glm::dvec2(0.1, 0.1);
-                this->camera.refresh();
-            } else if (event.is_pressing(Keycode::l)) {
-                this->node_text->text.content(
-                    this->node_text->text.content() + "x");
-            } else if (event.is_pressing(Keycode::k)) {
-                this->node_text->text.content(
-                    this->node_text->text.content() + " ");
-            } else if (event.is_pressing(Keycode::kp_7)) {
-                this->background->origin_alignment(Alignment::top_left);
-                this->node_text_raw->origin_alignment(Alignment::top_left);
-            } else if (event.is_pressing(Keycode::kp_8)) {
-                this->background->origin_alignment(Alignment::top);
-                this->node_text_raw->origin_alignment(Alignment::top);
-            } else if (event.is_pressing(Keycode::kp_9)) {
-                this->background->origin_alignment(Alignment::top_right);
-                this->node_text_raw->origin_alignment(Alignment::top_right);
-            } else if (event.is_pressing(Keycode::kp_4)) {
-                this->background->origin_alignment(Alignment::left);
-                this->node_text_raw->origin_alignment(Alignment::left);
-            } else if (event.is_pressing(Keycode::kp_5)) {
-                this->background->origin_alignment(Alignment::center);
-                this->node_text_raw->origin_alignment(Alignment::center);
-            } else if (event.is_pressing(Keycode::kp_6)) {
-                this->background->origin_alignment(Alignment::right);
-                this->node_text_raw->origin_alignment(Alignment::right);
-            } else if (event.is_pressing(Keycode::kp_1)) {
-                this->background->origin_alignment(Alignment::bottom_left);
-                this->node_text_raw->origin_alignment(Alignment::bottom_left);
-            } else if (event.is_pressing(Keycode::kp_2)) {
-                this->background->origin_alignment(Alignment::bottom);
-                this->node_text_raw->origin_alignment(Alignment::bottom);
-            } else if (event.is_pressing(Keycode::kp_3)) {
-                this->background->origin_alignment(Alignment::bottom_right);
-                this->node_text_raw->origin_alignment(Alignment::bottom_right);
+            }
+
+            auto keyboard = event.keyboard();
+            if (keyboard) {
+                if (keyboard->is_pressing(Keycode::q)) {
+                    get_engine()->quit();
+                    break;
+                } else if (keyboard->is_pressing(Keycode::w)) {
+                    this->camera.position += glm::dvec2(0., -2.5);
+                    this->camera.refresh();
+                } else if (keyboard->is_pressing(Keycode::a)) {
+                    this->camera.position += glm::dvec2(-2.5, 0.);
+                    this->camera.refresh();
+                } else if (keyboard->is_pressing(Keycode::s)) {
+                    this->camera.position += glm::dvec2(0., 2.5);
+                    this->camera.refresh();
+                } else if (keyboard->is_pressing(Keycode::d)) {
+                    this->camera.position += glm::dvec2(2.5, 0.);
+                    this->camera.refresh();
+                } else if (keyboard->is_pressing(Keycode::i)) {
+                    this->camera.scale += glm::dvec2(0.1, 0.1);
+                    this->camera.refresh();
+                } else if (keyboard->is_pressing(Keycode::o)) {
+                    this->camera.scale -= glm::dvec2(0.1, 0.1);
+                    this->camera.refresh();
+                } else if (keyboard->is_pressing(Keycode::l)) {
+                    this->node_text->text.content(
+                        this->node_text->text.content() + "x");
+                } else if (keyboard->is_pressing(Keycode::k)) {
+                    this->node_text->text.content(
+                        this->node_text->text.content() + " ");
+                } else if (keyboard->is_pressing(Keycode::kp_7)) {
+                    this->background->origin_alignment(Alignment::top_left);
+                    this->node_text_raw->origin_alignment(Alignment::top_left);
+                } else if (keyboard->is_pressing(Keycode::kp_8)) {
+                    this->background->origin_alignment(Alignment::top);
+                    this->node_text_raw->origin_alignment(Alignment::top);
+                } else if (keyboard->is_pressing(Keycode::kp_9)) {
+                    this->background->origin_alignment(Alignment::top_right);
+                    this->node_text_raw->origin_alignment(Alignment::top_right);
+                } else if (keyboard->is_pressing(Keycode::kp_4)) {
+                    this->background->origin_alignment(Alignment::left);
+                    this->node_text_raw->origin_alignment(Alignment::left);
+                } else if (keyboard->is_pressing(Keycode::kp_5)) {
+                    this->background->origin_alignment(Alignment::center);
+                    this->node_text_raw->origin_alignment(Alignment::center);
+                } else if (keyboard->is_pressing(Keycode::kp_6)) {
+                    this->background->origin_alignment(Alignment::right);
+                    this->node_text_raw->origin_alignment(Alignment::right);
+                } else if (keyboard->is_pressing(Keycode::kp_1)) {
+                    this->background->origin_alignment(Alignment::bottom_left);
+                    this->node_text_raw->origin_alignment(
+                        Alignment::bottom_left);
+                } else if (keyboard->is_pressing(Keycode::kp_2)) {
+                    this->background->origin_alignment(Alignment::bottom);
+                    this->node_text_raw->origin_alignment(Alignment::bottom);
+                } else if (keyboard->is_pressing(Keycode::kp_3)) {
+                    this->background->origin_alignment(Alignment::bottom_right);
+                    this->node_text_raw->origin_alignment(
+                        Alignment::bottom_right);
+                }
             }
         }
     }

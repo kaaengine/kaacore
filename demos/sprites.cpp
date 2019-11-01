@@ -37,21 +37,32 @@ struct SpritesDemoScene : Scene {
         log<LogLevel::debug>("DemoScene update %lu/%llu", dt, this->time);
 
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::q) or event.is_quit()) {
+            auto system = event.system();
+            if (system and system->is_quit()) {
                 get_engine()->quit();
                 break;
-            } else if (event.is_pressing(Keycode::w)) {
-                this->animating_node->position(
-                    this->animating_node->position() + glm::dvec2(0., -0.1));
-            } else if (event.is_pressing(Keycode::a)) {
-                this->animating_node->position(
-                    this->animating_node->position() + glm::dvec2(-0.1, 0.));
-            } else if (event.is_pressing(Keycode::s)) {
-                this->animating_node->position(
-                    this->animating_node->position() + glm::dvec2(0., 0.1));
-            } else if (event.is_pressing(Keycode::d)) {
-                this->animating_node->position(
-                    this->animating_node->position() + glm::dvec2(0.1, 0.));
+            }
+
+            auto keyboard = event.keyboard();
+            if (not keyboard) {
+                if (keyboard->is_pressing(Keycode::q)) {
+                    get_engine()->quit();
+                    break;
+                } else if (keyboard->is_pressing(Keycode::w)) {
+                    this->animating_node->position(
+                        this->animating_node->position() +
+                        glm::dvec2(0., -0.1));
+                } else if (keyboard->is_pressing(Keycode::a)) {
+                    this->animating_node->position(
+                        this->animating_node->position() +
+                        glm::dvec2(-0.1, 0.));
+                } else if (keyboard->is_pressing(Keycode::s)) {
+                    this->animating_node->position(
+                        this->animating_node->position() + glm::dvec2(0., 0.1));
+                } else if (keyboard->is_pressing(Keycode::d)) {
+                    this->animating_node->position(
+                        this->animating_node->position() + glm::dvec2(0.1, 0.));
+                }
             }
         }
     }

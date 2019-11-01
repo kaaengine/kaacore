@@ -70,7 +70,10 @@ struct TransitionsDemoScene : Scene {
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::q) or event.is_quit()) {
+            auto system = event.system();
+            auto keyboard = event.keyboard();
+            if ((keyboard and keyboard->is_pressing(Keycode::q)) or
+                (system and system->is_quit())) {
                 get_engine()->quit();
                 break;
             }
