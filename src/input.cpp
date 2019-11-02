@@ -378,7 +378,8 @@ Event::controller() const
 }
 
 std::string
-InputManager::SystemManager::get_clipboard_text() const {
+InputManager::SystemManager::get_clipboard_text() const
+{
     auto text = SDL_GetClipboardText();
     if (text == nullptr) {
         log<LogLevel::error>("Unable to read clipboard content.");
@@ -388,7 +389,8 @@ InputManager::SystemManager::get_clipboard_text() const {
 }
 
 void
-InputManager::SystemManager::set_clipboard_text(const std::string& text) const {
+InputManager::SystemManager::set_clipboard_text(const std::string& text) const
+{
     if (SDL_SetClipboardText(text.c_str()) < 0) {
         log<LogLevel::error>("Unable to set clipboard content.");
     }
@@ -556,7 +558,7 @@ InputManager::push_event(SDL_Event sdl_event)
             log<LogLevel::info>("Controller disconnected.");
             break;
 
-        case static_cast<SDL_EventType>(EventType::controller_remaped):
+        case static_cast<SDL_EventType>(EventType::controller_remapped):
             log<LogLevel::info>("Controller remapped.");
             break;
     }

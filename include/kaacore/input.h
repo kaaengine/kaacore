@@ -342,7 +342,7 @@ enum class EventType {
     controller_button_up = SDL_CONTROLLERBUTTONUP,
     controller_added = SDL_CONTROLLERDEVICEADDED,
     controller_removed = SDL_CONTROLLERDEVICEREMOVED,
-    controller_remaped = SDL_CONTROLLERDEVICEREMAPPED
+    controller_remapped = SDL_CONTROLLERDEVICEREMAPPED
 };
 
 const ComposedEventType WindowEvents = {EventType::window};
@@ -360,7 +360,7 @@ const ComposedEventType MouseEvents = {
 const ComposedEventType ControllerEvents = {
     EventType::controller_axis_motion, EventType::controller_button_down,
     EventType::controller_button_up,   EventType::controller_added,
-    EventType::controller_removed,     EventType::controller_remaped};
+    EventType::controller_removed,     EventType::controller_remapped};
 
 struct BaseEvent {
     SDL_Event sdl_event;
