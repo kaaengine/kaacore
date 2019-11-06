@@ -410,7 +410,6 @@ struct MouseEvent : public BaseEvent {
 };
 
 struct ControllerEvent : public BaseEvent {
-
     bool is_button() const;
     bool is_axis() const;
     bool is_added() const;
@@ -420,11 +419,12 @@ struct ControllerEvent : public BaseEvent {
     ControllerID id() const;
     bool is_pressing(const ControllerButton cb) const;
     bool is_releasing(const ControllerButton cb) const;
+    bool is_pressing(const ControllerAxis ca) const;
+    bool is_relassing(const ControllerAxis ca) const;
     double axis_motion(const ControllerAxis ca) const;
 };
 
 struct Event {
-
     union {
         BaseEvent common;
 
@@ -464,20 +464,23 @@ struct InputManager {
     struct MouseManager {
         bool is_pressed(const MouseButton mb) const;
         bool is_released(const MouseButton mb) const;
-        glm::dvec2 get_mouse_position() const;
+        glm::dvec2 get_position() const;
     } mouse;
 
     struct ControllerManager {
         ~ControllerManager();
         bool is_connected(const ControllerID id) const;
-        bool is_pressed(const ControllerID id, const ControllerButton cb) const;
+        bool is_pressed(const ControllerButton cb, const ControllerID id) const;
         bool is_released(
-            const ControllerID id, const ControllerButton cb) const;
-        double get_axis(const ControllerID id, const ControllerAxis axis) const;
+            const ControllerButton cb, const ControllerID id) const;
+        bool is_pressed(const ControllerAxis ca, const ControllerID id) const;
+        bool is_released(const ControllerAxis ca, const ControllerID id) const;
+        double get_axis_motion(
+            const ControllerAxis axis, const ControllerID id) const;
         std::string get_name(const ControllerID id) const;
         glm::dvec2 get_triggers(const ControllerID id) const;
         glm::dvec2 get_sticks(
-            const ControllerID id, const ComposedControllerAxis axis) const;
+            const ComposedControllerAxis axis, const ControllerID id) const;
         std::vector<ControllerID> get_connected_controllers() const;
 
         ControllerID connect(int device_index);

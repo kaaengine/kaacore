@@ -226,13 +226,16 @@ MouseEvent::motion() const
 glm::dvec2
 MouseEvent::scroll() const
 {
-    // TODO: direction?
-    if (this->is_wheel()) {
-        return _naive_screen_position_to_virtual(
-            this->sdl_event.wheel.x, this->sdl_event.wheel.y);
+    if (not this->is_wheel()) {
+        return {0, 0};
     }
 
-    return {0, 0};
+    auto scrolled = _naive_screen_position_to_virtual(
+        this->sdl_event.wheel.x, this->sdl_event.wheel.y);
+    if (this->sdl_event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
+        scrolled *= -1;
+    }
+    return scrolled;
 }
 
 bool
@@ -422,7 +425,7 @@ InputManager::MouseManager::is_released(const MouseButton mb) const
 }
 
 glm::dvec2
-InputManager::MouseManager::get_mouse_position() const
+InputManager::MouseManager::get_position() const
 {
     int pos_x, pos_y;
     SDL_GetMouseState(&pos_x, &pos_y);
@@ -449,7 +452,7 @@ InputManager::ControllerManager::is_connected(const ControllerID id) const
 
 bool
 InputManager::ControllerManager::is_pressed(
-    const ControllerID id, const ControllerButton cb) const
+    const ControllerButton cb, const ControllerID id) const
 {
     if (not this->is_connected(id)) {
         return false;
@@ -462,14 +465,28 @@ InputManager::ControllerManager::is_pressed(
 
 bool
 InputManager::ControllerManager::is_released(
-    const ControllerID id, const ControllerButton cb) const
+    const ControllerButton cb, const ControllerID id) const
 {
-    return not this->is_pressed(id, cb);
+    return not this->is_pressed(cb, id);
+}
+
+bool
+InputManager::ControllerManager::is_pressed(
+    const ControllerAxis ca, const ControllerID id) const
+{
+    return this->get_axis_motion(ca, id);
+}
+
+bool
+InputManager::ControllerManager::is_released(
+    const ControllerAxis ca, const ControllerID id) const
+{
+    return not this->is_pressed(ca, id);
 }
 
 double
-InputManager::ControllerManager::get_axis(
-    const ControllerID id, const ControllerAxis axis) const
+InputManager::ControllerManager::get_axis_motion(
+    const ControllerAxis axis, const ControllerID id) const
 {
     if (not this->is_connected(id)) {
         return 0;
@@ -497,16 +514,17 @@ glm::dvec2
 InputManager::ControllerManager::get_triggers(const ControllerID id) const
 {
     return {
-        this->get_axis(id, ControllerAxis::trigger_left),
-        this->get_axis(id, ControllerAxis::trigger_right),
+        this->get_axis_motion(ControllerAxis::trigger_left, id),
+        this->get_axis_motion(ControllerAxis::trigger_right, id),
     };
 }
 
 glm::dvec2
 InputManager::ControllerManager::get_sticks(
-    const ControllerID id, const ComposedControllerAxis axis) const
+    const ComposedControllerAxis axis, const ControllerID id) const
 {
-    return {this->get_axis(id, axis.at(0)), this->get_axis(id, axis.at(1))};
+    return {this->get_axis_motion(axis.at(0), id),
+            this->get_axis_motion(axis.at(1), id)};
 }
 
 std::vector<ControllerID>
