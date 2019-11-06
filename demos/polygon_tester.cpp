@@ -78,8 +78,7 @@ struct PolygonTesterDemoScene : Scene {
                 break;
             }
 
-            auto mouse = event.mouse();
-            if (mouse) {
+            if (auto mouse = event.mouse()) {
                 if (mouse->is_pressing(MouseButton::left)) {
                     auto pos = mouse->position();
                     pos = this->camera.unproject_position(pos);
@@ -93,8 +92,7 @@ struct PolygonTesterDemoScene : Scene {
                 }
             }
 
-            auto keyboard = event.keyboard();
-            if (keyboard) {
+            if (auto keyboard = event.keyboard()) {
                 if (keyboard->is_pressing(Keycode::q)) {
                     get_engine()->quit();
                     break;

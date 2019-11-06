@@ -37,15 +37,13 @@ struct DemoScene : Scene {
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-
             auto system = event.system();
             if (system and system->is_quit()) {
                 get_engine()->quit();
                 break;
             }
 
-            auto keyboard = event.keyboard();
-            if (keyboard) {
+            if (auto keyboard = event.keyboard()) {
                 if (keyboard->is_pressing(Keycode::q)) {
                     get_engine()->quit();
                     break;

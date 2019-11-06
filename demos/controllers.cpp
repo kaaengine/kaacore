@@ -18,8 +18,7 @@ struct DemoScene : Scene {
                 break;
             }
 
-            auto controller = event.controller();
-            if (controller) {
+            if (auto controller = event.controller()) {
                 if (controller->is_button()) {
                     if (controller->is_pressing(ControllerButton::a)) {
                         log<LogLevel::info>("A button pressed.");

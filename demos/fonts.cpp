@@ -82,8 +82,7 @@ struct DemoFontsScene : Scene {
                 break;
             }
 
-            auto keyboard = event.keyboard();
-            if (keyboard) {
+            if (auto keyboard = event.keyboard()) {
                 if (keyboard->is_pressing(Keycode::q)) {
                     get_engine()->quit();
                     break;

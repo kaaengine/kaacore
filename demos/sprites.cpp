@@ -43,8 +43,7 @@ struct SpritesDemoScene : Scene {
                 break;
             }
 
-            auto keyboard = event.keyboard();
-            if (not keyboard) {
+            if (auto keyboard = event.keyboard()) {
                 if (keyboard->is_pressing(Keycode::q)) {
                     get_engine()->quit();
                     break;
