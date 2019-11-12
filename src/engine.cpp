@@ -28,6 +28,7 @@ Engine::Engine(
     log<LogLevel::info>("Initializing Kaacore.");
     SDL_Init(SDL_INIT_EVERYTHING);
     engine = this;
+    setup_initial_logging_levels();
 
     this->window = this->_create_window();
     this->renderer = this->_create_renderer();
