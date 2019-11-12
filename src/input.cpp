@@ -521,10 +521,16 @@ InputManager::ControllerManager::get_triggers(const ControllerID id) const
 
 glm::dvec2
 InputManager::ControllerManager::get_sticks(
-    const ComposedControllerAxis axis, const ControllerID id) const
+    const ControllerAxis axis, const ControllerID id) const
 {
-    return {this->get_axis_motion(axis.at(0), id),
-            this->get_axis_motion(axis.at(1), id)};
+    if (axis == ControllerAxis::stick_left) {
+        return {this->get_axis_motion(ControllerAxis::left_x, id),
+                this->get_axis_motion(ControllerAxis::left_y, id)};
+    } else if (axis == ControllerAxis::stick_right) {
+        return {this->get_axis_motion(ControllerAxis::right_x, id),
+                this->get_axis_motion(ControllerAxis::right_y, id)};
+    }
+    return {0, 0};
 }
 
 std::vector<ControllerID>

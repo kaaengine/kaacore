@@ -10,11 +10,6 @@
 
 namespace kaacore {
 
-enum class ControllerAxis;
-enum class EventType;
-
-typedef std::vector<ControllerAxis> ComposedControllerAxis;
-typedef std::vector<EventType> ComposedEventType;
 typedef SDL_JoystickID ControllerID;
 
 enum class Keycode {
@@ -315,17 +310,13 @@ enum class ControllerAxis {
     right_y = SDL_CONTROLLER_AXIS_RIGHTY,
     trigger_left = SDL_CONTROLLER_AXIS_TRIGGERLEFT,
     trigger_right = SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+
+    // composed axes
+    stick_left = SDL_CONTROLLER_AXIS_MAX + 0xFF,
+    stick_right
 };
 
-const ComposedControllerAxis ControllerAxisLeft = {ControllerAxis::left_x,
-                                                   ControllerAxis::left_y};
-
-const ComposedControllerAxis ControllerAxisRight = {ControllerAxis::right_x,
-                                                    ControllerAxis::right_y};
-
 enum class EventType {
-    window = SDL_WINDOWEVENT,
-
     quit = SDL_QUIT,
     clipboard_updated = SDL_CLIPBOARDUPDATE,
 
@@ -342,25 +333,15 @@ enum class EventType {
     controller_button_up = SDL_CONTROLLERBUTTONUP,
     controller_added = SDL_CONTROLLERDEVICEADDED,
     controller_removed = SDL_CONTROLLERDEVICEREMOVED,
-    controller_remapped = SDL_CONTROLLERDEVICEREMAPPED
+    controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
+
+    // composed types
+    window = SDL_WINDOWEVENT,
+    system = SDL_LASTEVENT - 0xFF,
+    keyboard,
+    mouse,
+    controller
 };
-
-const ComposedEventType WindowEvents = {EventType::window};
-
-const ComposedEventType SystemEvents = {EventType::quit,
-                                        EventType::clipboard_updated};
-
-const ComposedEventType KeyboardEvents = {EventType::key_down,
-                                          EventType::key_up};
-
-const ComposedEventType MouseEvents = {
-    EventType::mouse_motion, EventType::mouse_button_down,
-    EventType::mouse_button_up, EventType::mouse_wheel};
-
-const ComposedEventType ControllerEvents = {
-    EventType::controller_axis_motion, EventType::controller_button_down,
-    EventType::controller_button_up,   EventType::controller_added,
-    EventType::controller_removed,     EventType::controller_remapped};
 
 struct BaseEvent {
     SDL_Event sdl_event;
@@ -419,8 +400,6 @@ struct ControllerEvent : public BaseEvent {
     ControllerID id() const;
     bool is_pressing(const ControllerButton cb) const;
     bool is_releasing(const ControllerButton cb) const;
-    bool is_pressing(const ControllerAxis ca) const;
-    bool is_relassing(const ControllerAxis ca) const;
     double axis_motion(const ControllerAxis ca) const;
 };
 
@@ -480,7 +459,7 @@ struct InputManager {
         std::string get_name(const ControllerID id) const;
         glm::dvec2 get_triggers(const ControllerID id) const;
         glm::dvec2 get_sticks(
-            const ComposedControllerAxis axis, const ControllerID id) const;
+            const ControllerAxis axis, const ControllerID id) const;
         std::vector<ControllerID> get_connected_controllers() const;
 
         ControllerID connect(int device_index);
