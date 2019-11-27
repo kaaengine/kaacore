@@ -370,7 +370,7 @@ struct WindowEvent : public BaseEvent {
     bool is_close() const;
 
     glm::dvec2 window_size() const;
-    glm::dvec2 windows_position() const;
+    glm::dvec2 window_position() const;
 };
 
 struct KeyboardEvent : public BaseEvent {

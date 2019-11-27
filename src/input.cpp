@@ -138,7 +138,7 @@ WindowEvent::window_size() const
 }
 
 glm::dvec2
-WindowEvent::windows_position() const
+WindowEvent::window_position() const
 {
     if (not this->is_moved()) {
         return {0, 0};
