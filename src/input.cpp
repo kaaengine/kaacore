@@ -570,6 +570,10 @@ InputManager::ControllerManager::disconnect(ControllerID id)
 void
 InputManager::push_event(SDL_Event sdl_event)
 {
+    if (not _is_event_supported(sdl_event.type)) {
+        return;
+    }
+
     switch (sdl_event.type) {
         case static_cast<SDL_EventType>(EventType::controller_added):
             sdl_event.cdevice.which =

@@ -343,6 +343,28 @@ enum class EventType {
     controller
 };
 
+static inline bool
+_is_event_supported(uint32_t type)
+{
+    if (type == static_cast<uint32_t>(EventType::quit) or
+        type == static_cast<uint32_t>(EventType::clipboard_updated) or
+        type == static_cast<uint32_t>(EventType::key_down) or
+        type == static_cast<uint32_t>(EventType::key_up) or
+        type == static_cast<uint32_t>(EventType::mouse_motion) or
+        type == static_cast<uint32_t>(EventType::mouse_button_down) or
+        type == static_cast<uint32_t>(EventType::mouse_button_up) or
+        type == static_cast<uint32_t>(EventType::mouse_wheel) or
+        type == static_cast<uint32_t>(EventType::controller_axis_motion) or
+        type == static_cast<uint32_t>(EventType::controller_button_down) or
+        type == static_cast<uint32_t>(EventType::controller_button_up) or
+        type == static_cast<uint32_t>(EventType::controller_added) or
+        type == static_cast<uint32_t>(EventType::controller_removed) or
+        type == static_cast<uint32_t>(EventType::controller_remapped)) {
+        return true;
+    }
+    return false;
+}
+
 struct BaseEvent {
     SDL_Event sdl_event;
 

@@ -199,9 +199,6 @@ Engine::_pump_events()
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             this->renderer->reset();
-            // this->renderer->reset(event.window.data1, event.window.data2);
-            // TODO update camera
-            continue;
         }
         this->input_manager->push_event(event);
     }
