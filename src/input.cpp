@@ -213,29 +213,21 @@ MouseEvent::position() const
 }
 
 glm::dvec2
-MouseEvent::motion() const
-{
-    if (not this->is_motion()) {
-        return _naive_screen_position_to_virtual(
-            this->sdl_event.motion.xrel, this->sdl_event.motion.yrel);
-    }
-
-    return {0, 0};
-}
-
-glm::dvec2
 MouseEvent::scroll() const
 {
     if (not this->is_wheel()) {
         return {0, 0};
     }
 
-    auto scrolled = _naive_screen_position_to_virtual(
-        this->sdl_event.wheel.x, this->sdl_event.wheel.y);
+    auto direction =
+        glm::dvec2(this->sdl_event.wheel.x, this->sdl_event.wheel.y);
+    // positive Y axis goes down
+    direction *= -1;
+
     if (this->sdl_event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
-        scrolled *= -1;
+        direction *= -1;
     }
-    return scrolled;
+    return direction;
 }
 
 bool
@@ -521,12 +513,12 @@ InputManager::ControllerManager::get_triggers(const ControllerID id) const
 
 glm::dvec2
 InputManager::ControllerManager::get_sticks(
-    const CompoundEventType axis, const ControllerID id) const
+    const CompoundControllerAxis axis, const ControllerID id) const
 {
-    if (axis == CompoundEventType::left_stick) {
+    if (axis == CompoundControllerAxis::left_stick) {
         return {this->get_axis_motion(ControllerAxis::left_x, id),
                 this->get_axis_motion(ControllerAxis::left_y, id)};
-    } else if (axis == CompoundEventType::right_stick) {
+    } else if (axis == CompoundControllerAxis::right_stick) {
         return {this->get_axis_motion(ControllerAxis::right_x, id),
                 this->get_axis_motion(ControllerAxis::right_y, id)};
     }

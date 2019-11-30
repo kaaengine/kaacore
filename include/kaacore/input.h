@@ -337,11 +337,10 @@ enum class CompoundEventType {
     system = 0,
     keyboard,
     mouse,
-    controller,
-
-    left_stick,
-    right_stick
+    controller
 };
+
+enum class CompoundControllerAxis { left_stick, right_stick };
 
 static inline bool
 _is_event_supported(uint32_t type)
@@ -408,7 +407,6 @@ struct MouseEvent : public BaseEvent {
     bool is_pressing(const MouseButton mb) const;
     bool is_releasing(const MouseButton mb) const;
     glm::dvec2 position() const;
-    glm::dvec2 motion() const;
     glm::dvec2 scroll() const;
 };
 
@@ -481,7 +479,7 @@ struct InputManager {
         std::string get_name(const ControllerID id) const;
         glm::dvec2 get_triggers(const ControllerID id) const;
         glm::dvec2 get_sticks(
-            const CompoundEventType axis, const ControllerID id) const;
+            const CompoundControllerAxis axis, const ControllerID id) const;
         std::vector<ControllerID> get_connected_controllers() const;
 
         ControllerID connect(int device_index);
