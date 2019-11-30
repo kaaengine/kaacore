@@ -219,12 +219,15 @@ MouseEvent::scroll() const
         return {0, 0};
     }
 
-    auto scrolled = _naive_screen_position_to_virtual(
-        this->sdl_event.wheel.x, this->sdl_event.wheel.y);
+    auto direction =
+        glm::dvec2(this->sdl_event.wheel.x, this->sdl_event.wheel.y);
+    // positive Y axis goes down
+    direction *= -1;
+
     if (this->sdl_event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
-        scrolled *= -1;
+        direction *= -1;
     }
-    return scrolled;
+    return direction;
 }
 
 bool
