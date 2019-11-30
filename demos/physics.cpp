@@ -134,41 +134,50 @@ struct DemoScene : Scene {
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::q) or event.is_quit()) {
+            auto system = event.system();
+            if (system and system->is_quit()) {
                 get_engine()->quit();
                 break;
-            } else if (event.is_pressing(Keycode::w)) {
-                this->container->position(
-                    this->container->position() + glm::dvec2(0., -0.1));
-            } else if (event.is_pressing(Keycode::a)) {
-                this->container->position(
-                    this->container->position() + glm::dvec2(-0.1, 0.));
-            } else if (event.is_pressing(Keycode::s)) {
-                this->container->position(
-                    this->container->position() + glm::dvec2(0., 0.1));
-            } else if (event.is_pressing(Keycode::d)) {
-                this->container->position(
-                    this->container->position() + glm::dvec2(0.1, 0.));
-            } else if (event.is_pressing(Keycode::r)) {
-                delete this->box;
-            } else if (event.is_pressing(Keycode::t)) {
-                delete this->container;
-            } else if (event.is_pressing(Keycode::x)) {
-                if (not this->balls.empty()) {
-                    delete this->balls.back();
-                    this->balls.pop_back();
+            }
+
+            if (auto keyboard = event.keyboard()) {
+                if (keyboard->is_pressing(Keycode::q)) {
+                    get_engine()->quit();
+                    break;
+                } else if (keyboard->is_pressing(Keycode::w)) {
+                    this->container->position(
+                        this->container->position() + glm::dvec2(0., -0.1));
+                } else if (keyboard->is_pressing(Keycode::a)) {
+                    this->container->position(
+                        this->container->position() + glm::dvec2(-0.1, 0.));
+                } else if (keyboard->is_pressing(Keycode::s)) {
+                    this->container->position(
+                        this->container->position() + glm::dvec2(0., 0.1));
+                } else if (keyboard->is_pressing(Keycode::d)) {
+                    this->container->position(
+                        this->container->position() + glm::dvec2(0.1, 0.));
+                } else if (keyboard->is_pressing(Keycode::r)) {
+                    delete this->box;
+                } else if (keyboard->is_pressing(Keycode::t)) {
+                    delete this->container;
+                } else if (keyboard->is_pressing(Keycode::x)) {
+                    if (not this->balls.empty()) {
+                        delete this->balls.back();
+                        this->balls.pop_back();
+                    }
+                } else if (keyboard->is_pressing(Keycode::l)) {
+                    std::cout << "Setting objects lifetime" << std::endl;
+                    for (const auto node : this->balls) {
+                        node->lifetime(5000);
+                    }
+                } else if (keyboard->is_pressing(Keycode::num_1)) {
+                    std::cout << "Enabling delete_on_collision" << std::endl;
+                    this->delete_on_collision = true;
+                } else if (keyboard->is_pressing(Keycode::num_2)) {
+                    std::cout << "Enabling change_shape_on_collision"
+                              << std::endl;
+                    this->change_shape_on_collision = true;
                 }
-            } else if (event.is_pressing(Keycode::l)) {
-                std::cout << "Setting objects lifetime" << std::endl;
-                for (const auto node : this->balls) {
-                    node->lifetime(5000);
-                }
-            } else if (event.is_pressing(Keycode::num_1)) {
-                std::cout << "Enabling delete_on_collision" << std::endl;
-                this->delete_on_collision = true;
-            } else if (event.is_pressing(Keycode::num_2)) {
-                std::cout << "Enabling change_shape_on_collision" << std::endl;
-                this->change_shape_on_collision = true;
             }
         }
     }
