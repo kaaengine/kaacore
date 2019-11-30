@@ -310,10 +310,6 @@ enum class ControllerAxis {
     right_y = SDL_CONTROLLER_AXIS_RIGHTY,
     trigger_left = SDL_CONTROLLER_AXIS_TRIGGERLEFT,
     trigger_right = SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
-
-    // composed axes
-    stick_left = SDL_CONTROLLER_AXIS_MAX + 0xFF,
-    stick_right
 };
 
 enum class EventType {
@@ -334,13 +330,17 @@ enum class EventType {
     controller_added = SDL_CONTROLLERDEVICEADDED,
     controller_removed = SDL_CONTROLLERDEVICEREMOVED,
     controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
+};
 
-    // composed types
+enum class CompoundEventType {
     window = SDL_WINDOWEVENT,
-    system = SDL_LASTEVENT - 0xFF,
+    system = 0,
     keyboard,
     mouse,
-    controller
+    controller,
+
+    left_stick,
+    right_stick
 };
 
 static inline bool
@@ -382,8 +382,8 @@ struct WindowEvent : public BaseEvent {
     bool is_exposed() const;
     bool is_moved() const;
     bool is_resized() const;
-    bool is_minimalized() const;
-    bool is_maximalized() const;
+    bool is_minimized() const;
+    bool is_maximized() const;
     bool is_restored() const;
     bool is_enter() const;
     bool is_leave() const;
@@ -391,8 +391,8 @@ struct WindowEvent : public BaseEvent {
     bool is_focus_lost() const;
     bool is_close() const;
 
-    glm::dvec2 window_size() const;
-    glm::dvec2 window_position() const;
+    glm::dvec2 size() const;
+    glm::dvec2 position() const;
 };
 
 struct KeyboardEvent : public BaseEvent {
@@ -442,11 +442,11 @@ struct Event {
     uint32_t type() const;
     uint32_t timestamp() const;
 
-    const SystemEvent* system() const;
-    const WindowEvent* window() const;
-    const KeyboardEvent* keyboard() const;
-    const MouseEvent* mouse() const;
-    const ControllerEvent* controller() const;
+    const SystemEvent* const system() const;
+    const WindowEvent* const window() const;
+    const KeyboardEvent* const keyboard() const;
+    const MouseEvent* const mouse() const;
+    const ControllerEvent* const controller() const;
 };
 
 struct InputManager {
@@ -481,7 +481,7 @@ struct InputManager {
         std::string get_name(const ControllerID id) const;
         glm::dvec2 get_triggers(const ControllerID id) const;
         glm::dvec2 get_sticks(
-            const ControllerAxis axis, const ControllerID id) const;
+            const CompoundEventType axis, const ControllerID id) const;
         std::vector<ControllerID> get_connected_controllers() const;
 
         ControllerID connect(int device_index);

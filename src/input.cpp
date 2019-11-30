@@ -80,13 +80,13 @@ WindowEvent::is_resized() const
 }
 
 bool
-WindowEvent::is_minimalized() const
+WindowEvent::is_minimized() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_MINIMIZED;
 }
 
 bool
-WindowEvent::is_maximalized() const
+WindowEvent::is_maximized() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_MAXIMIZED;
 }
@@ -128,7 +128,7 @@ WindowEvent::is_close() const
 }
 
 glm::dvec2
-WindowEvent::window_size() const
+WindowEvent::size() const
 {
     if (not this->is_resized()) {
         return {0, 0};
@@ -138,7 +138,7 @@ WindowEvent::window_size() const
 }
 
 glm::dvec2
-WindowEvent::window_position() const
+WindowEvent::position() const
 {
     if (not this->is_moved()) {
         return {0, 0};
@@ -327,7 +327,7 @@ Event::timestamp() const
     return this->common.timestamp();
 }
 
-const SystemEvent*
+const SystemEvent* const
 Event::system() const
 {
     auto type = this->type();
@@ -337,7 +337,7 @@ Event::system() const
     return nullptr;
 }
 
-const WindowEvent*
+const WindowEvent* const
 Event::window() const
 {
     if (this->type() == SDL_WINDOWEVENT) {
@@ -346,7 +346,7 @@ Event::window() const
     return nullptr;
 }
 
-const KeyboardEvent*
+const KeyboardEvent* const
 Event::keyboard() const
 {
     auto type = this->type();
@@ -356,7 +356,7 @@ Event::keyboard() const
     return nullptr;
 }
 
-const MouseEvent*
+const MouseEvent* const
 Event::mouse() const
 {
     auto type = this->common.type();
@@ -367,7 +367,7 @@ Event::mouse() const
     return nullptr;
 }
 
-const ControllerEvent*
+const ControllerEvent* const
 Event::controller() const
 {
     auto type = this->common.type();
@@ -521,12 +521,12 @@ InputManager::ControllerManager::get_triggers(const ControllerID id) const
 
 glm::dvec2
 InputManager::ControllerManager::get_sticks(
-    const ControllerAxis axis, const ControllerID id) const
+    const CompoundEventType axis, const ControllerID id) const
 {
-    if (axis == ControllerAxis::stick_left) {
+    if (axis == CompoundEventType::left_stick) {
         return {this->get_axis_motion(ControllerAxis::left_x, id),
                 this->get_axis_motion(ControllerAxis::left_y, id)};
-    } else if (axis == ControllerAxis::stick_right) {
+    } else if (axis == CompoundEventType::right_stick) {
         return {this->get_axis_motion(ControllerAxis::right_x, id),
                 this->get_axis_motion(ControllerAxis::right_y, id)};
     }
