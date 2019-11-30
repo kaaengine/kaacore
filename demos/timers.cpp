@@ -1,4 +1,3 @@
-
 #include <memory>
 #include <vector>
 
@@ -38,14 +37,22 @@ struct DemoScene : Scene {
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::q) or event.is_quit()) {
+            auto system = event.system();
+            if (system and system->is_quit()) {
                 get_engine()->quit();
                 break;
-            } else if (event.is_pressing(Keycode::s)) {
-                if (this->timer.is_running()) {
-                    this->timer.stop();
-                } else {
-                    this->timer.start();
+            }
+
+            if (auto keyboard = event.keyboard()) {
+                if (keyboard->is_pressing(Keycode::q)) {
+                    get_engine()->quit();
+                    break;
+                } else if (keyboard->is_pressing(Keycode::s)) {
+                    if (this->timer.is_running()) {
+                        this->timer.stop();
+                    } else {
+                        this->timer.start();
+                    }
                 }
             }
         }

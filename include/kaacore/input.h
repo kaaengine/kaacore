@@ -1,11 +1,16 @@
 #pragma once
 
+#include <initializer_list>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <SDL.h>
 #include <glm/glm.hpp>
 
 namespace kaacore {
+
+typedef SDL_JoystickID ControllerID;
 
 enum class Keycode {
     unknown = SDLK_UNKNOWN,
@@ -272,38 +277,222 @@ enum class Keycode {
     sleep = SDLK_SLEEP,
 };
 
-enum class Mousecode {
+enum class MouseButton {
     left = SDL_BUTTON_LEFT,
+    middle = SDL_BUTTON_MIDDLE,
     right = SDL_BUTTON_RIGHT,
+    x1 = SDL_BUTTON_X1,
+    x2 = SDL_BUTTON_X2
+};
+
+enum class ControllerButton {
+    a = SDL_CONTROLLER_BUTTON_A,
+    b = SDL_CONTROLLER_BUTTON_B,
+    x = SDL_CONTROLLER_BUTTON_X,
+    y = SDL_CONTROLLER_BUTTON_Y,
+    back = SDL_CONTROLLER_BUTTON_BACK,
+    guide = SDL_CONTROLLER_BUTTON_GUIDE,
+    start = SDL_CONTROLLER_BUTTON_START,
+    left_stick = SDL_CONTROLLER_BUTTON_LEFTSTICK,
+    right_stick = SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+    left_shoulder = SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+    right_shoulder = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+    dpad_up = SDL_CONTROLLER_BUTTON_DPAD_UP,
+    dpad_down = SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+    dpad_left = SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+    dpad_right = SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+};
+
+enum class ControllerAxis {
+    left_x = SDL_CONTROLLER_AXIS_LEFTX,
+    left_y = SDL_CONTROLLER_AXIS_LEFTY,
+    right_x = SDL_CONTROLLER_AXIS_RIGHTX,
+    right_y = SDL_CONTROLLER_AXIS_RIGHTY,
+    trigger_left = SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+    trigger_right = SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+};
+
+enum class EventType {
+    quit = SDL_QUIT,
+    clipboard_updated = SDL_CLIPBOARDUPDATE,
+
+    key_down = SDL_KEYDOWN,
+    key_up = SDL_KEYUP,
+
+    mouse_motion = SDL_MOUSEMOTION,
+    mouse_button_down = SDL_MOUSEBUTTONDOWN,
+    mouse_button_up = SDL_MOUSEBUTTONUP,
+    mouse_wheel = SDL_MOUSEWHEEL,
+
+    controller_axis_motion = SDL_CONTROLLERAXISMOTION,
+    controller_button_down = SDL_CONTROLLERBUTTONDOWN,
+    controller_button_up = SDL_CONTROLLERBUTTONUP,
+    controller_added = SDL_CONTROLLERDEVICEADDED,
+    controller_removed = SDL_CONTROLLERDEVICEREMOVED,
+    controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
+};
+
+enum class CompoundEventType {
+    window = SDL_WINDOWEVENT,
+    system = 0,
+    keyboard,
+    mouse,
+    controller,
+
+    left_stick,
+    right_stick
+};
+
+static inline bool
+_is_event_supported(uint32_t type)
+{
+    if (type == static_cast<uint32_t>(EventType::quit) or
+        type == static_cast<uint32_t>(EventType::clipboard_updated) or
+        type == static_cast<uint32_t>(EventType::key_down) or
+        type == static_cast<uint32_t>(EventType::key_up) or
+        type == static_cast<uint32_t>(EventType::mouse_motion) or
+        type == static_cast<uint32_t>(EventType::mouse_button_down) or
+        type == static_cast<uint32_t>(EventType::mouse_button_up) or
+        type == static_cast<uint32_t>(EventType::mouse_wheel) or
+        type == static_cast<uint32_t>(EventType::controller_axis_motion) or
+        type == static_cast<uint32_t>(EventType::controller_button_down) or
+        type == static_cast<uint32_t>(EventType::controller_button_up) or
+        type == static_cast<uint32_t>(EventType::controller_added) or
+        type == static_cast<uint32_t>(EventType::controller_removed) or
+        type == static_cast<uint32_t>(EventType::controller_remapped)) {
+        return true;
+    }
+    return false;
+}
+
+struct BaseEvent {
+    SDL_Event sdl_event;
+
+    uint32_t type() const;
+    uint32_t timestamp() const;
+};
+
+struct SystemEvent : public BaseEvent {
+    bool is_quit() const;
+    bool is_clipboard_updated() const;
+};
+
+struct WindowEvent : public BaseEvent {
+    bool is_shown() const;
+    bool is_exposed() const;
+    bool is_moved() const;
+    bool is_resized() const;
+    bool is_minimized() const;
+    bool is_maximized() const;
+    bool is_restored() const;
+    bool is_enter() const;
+    bool is_leave() const;
+    bool is_focus_gained() const;
+    bool is_focus_lost() const;
+    bool is_close() const;
+
+    glm::dvec2 size() const;
+    glm::dvec2 position() const;
+};
+
+struct KeyboardEvent : public BaseEvent {
+    bool is_pressing(const Keycode kc) const;
+    bool is_releasing(const Keycode kc) const;
+};
+
+struct MouseEvent : public BaseEvent {
+    bool is_button() const;
+    bool is_motion() const;
+    bool is_wheel() const;
+
+    bool is_pressing(const MouseButton mb) const;
+    bool is_releasing(const MouseButton mb) const;
+    glm::dvec2 position() const;
+    glm::dvec2 motion() const;
+    glm::dvec2 scroll() const;
+};
+
+struct ControllerEvent : public BaseEvent {
+    bool is_button() const;
+    bool is_axis() const;
+    bool is_added() const;
+    bool is_removed() const;
+    bool is_remapped() const;
+
+    ControllerID id() const;
+    bool is_pressing(const ControllerButton cb) const;
+    bool is_releasing(const ControllerButton cb) const;
+    double axis_motion(const ControllerAxis ca) const;
 };
 
 struct Event {
-    SDL_Event sdl_event;
+    union {
+        BaseEvent common;
+
+        SystemEvent _system;
+        WindowEvent _window;
+        KeyboardEvent _keyboard;
+        MouseEvent _mouse;
+        ControllerEvent _controller;
+    };
 
     Event();
-    Event(SDL_Event sdl_event);
+    Event(const SDL_Event sdl_event);
 
-    bool is_quit() const;
-    bool is_keyboard_event() const;
-    bool is_mouse_event() const;
-    bool is_pressing(Keycode kc) const;
-    bool is_pressing(Mousecode mc) const;
-    bool is_releasing(Keycode kc) const;
-    bool is_releasing(Mousecode kc) const;
-    glm::dvec2 get_mouse_position() const;
+    uint32_t type() const;
+    uint32_t timestamp() const;
+
+    const SystemEvent* const system() const;
+    const WindowEvent* const window() const;
+    const KeyboardEvent* const keyboard() const;
+    const MouseEvent* const mouse() const;
+    const ControllerEvent* const controller() const;
 };
 
 struct InputManager {
     std::vector<Event> events_queue;
 
+    struct SystemManager {
+        std::string get_clipboard_text() const;
+        void set_clipboard_text(const std::string& text) const;
+    } system;
+
+    struct KeyboardManager {
+        bool is_pressed(const Keycode kc) const;
+        bool is_released(const Keycode kc) const;
+    } keyboard;
+
+    struct MouseManager {
+        bool is_pressed(const MouseButton mb) const;
+        bool is_released(const MouseButton mb) const;
+        glm::dvec2 get_position() const;
+    } mouse;
+
+    struct ControllerManager {
+        ~ControllerManager();
+        bool is_connected(const ControllerID id) const;
+        bool is_pressed(const ControllerButton cb, const ControllerID id) const;
+        bool is_released(
+            const ControllerButton cb, const ControllerID id) const;
+        bool is_pressed(const ControllerAxis ca, const ControllerID id) const;
+        bool is_released(const ControllerAxis ca, const ControllerID id) const;
+        double get_axis_motion(
+            const ControllerAxis axis, const ControllerID id) const;
+        std::string get_name(const ControllerID id) const;
+        glm::dvec2 get_triggers(const ControllerID id) const;
+        glm::dvec2 get_sticks(
+            const CompoundEventType axis, const ControllerID id) const;
+        std::vector<ControllerID> get_connected_controllers() const;
+
+        ControllerID connect(int device_index);
+        void disconnect(ControllerID id);
+
+      private:
+        std::unordered_map<ControllerID, SDL_GameController*> _connected_map;
+    } controller;
+
     void push_event(SDL_Event sdl_event);
     void clear_events();
-
-    bool is_pressed(Keycode kc) const;
-    bool is_pressed(Mousecode mc) const;
-    bool is_released(Keycode kc) const;
-    bool is_released(Mousecode mc) const;
-    glm::dvec2 get_mouse_position() const;
 };
 
 } // namespace kaacore

@@ -72,31 +72,48 @@ struct PolygonTesterDemoScene : Scene {
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-            if (event.is_pressing(Keycode::q) or event.is_quit()) {
+            auto system = event.system();
+            if (system and system->is_quit()) {
                 get_engine()->quit();
                 break;
-            } else if (event.is_pressing(Mousecode::left)) {
-                auto pos = event.get_mouse_position();
-                pos = this->camera.unproject_position(pos);
-                log("Adding point: (%lf, %lf)", pos.x, pos.y);
-                this->add_point(pos);
-            } else if (event.is_pressing(Keycode::f)) {
-                log("Finalizing polygon");
-                this->finalize_polygon();
-            } else if (event.is_pressing(Keycode::w)) {
-                this->camera.position += glm::dvec2(0., -2.5);
-            } else if (event.is_pressing(Keycode::a)) {
-                this->camera.position += glm::dvec2(-2.5, 0.);
-            } else if (event.is_pressing(Keycode::s)) {
-                this->camera.position += glm::dvec2(0., 2.5);
-            } else if (event.is_pressing(Keycode::d)) {
-                this->camera.position += glm::dvec2(2.5, 0.);
-            } else if (event.is_pressing(Keycode::i)) {
-                this->camera.scale += glm::dvec2(0.1, 0.1);
-            } else if (event.is_pressing(Keycode::o)) {
-                this->camera.scale -= glm::dvec2(0.1, 0.1);
-            } else if (event.is_pressing(Keycode::r)) {
-                this->camera.rotation += 0.3;
+            }
+
+            if (auto mouse = event.mouse()) {
+                if (mouse->is_pressing(MouseButton::left)) {
+                    auto pos = mouse->position();
+                    pos = this->camera.unproject_position(pos);
+                    log("Adding point: (%lf, %lf)", pos.x, pos.y);
+                    this->add_point(pos);
+                } else if (mouse->is_pressing(MouseButton::left)) {
+                    auto pos = mouse->position();
+                    pos = this->camera.unproject_position(pos);
+                    log("Adding point: (%lf, %lf)", pos.x, pos.y);
+                    this->add_point(pos);
+                }
+            }
+
+            if (auto keyboard = event.keyboard()) {
+                if (keyboard->is_pressing(Keycode::q)) {
+                    get_engine()->quit();
+                    break;
+                } else if (keyboard->is_pressing(Keycode::f)) {
+                    log("Finalizing polygon");
+                    this->finalize_polygon();
+                } else if (keyboard->is_pressing(Keycode::w)) {
+                    this->camera.position += glm::dvec2(0., -2.5);
+                } else if (keyboard->is_pressing(Keycode::a)) {
+                    this->camera.position += glm::dvec2(-2.5, 0.);
+                } else if (keyboard->is_pressing(Keycode::s)) {
+                    this->camera.position += glm::dvec2(0., 2.5);
+                } else if (keyboard->is_pressing(Keycode::d)) {
+                    this->camera.position += glm::dvec2(2.5, 0.);
+                } else if (keyboard->is_pressing(Keycode::i)) {
+                    this->camera.scale += glm::dvec2(0.1, 0.1);
+                } else if (keyboard->is_pressing(Keycode::o)) {
+                    this->camera.scale -= glm::dvec2(0.1, 0.1);
+                } else if (keyboard->is_pressing(Keycode::r)) {
+                    this->camera.rotation += 0.3;
+                }
             }
         }
     }

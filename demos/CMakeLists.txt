@@ -25,6 +25,9 @@ list(APPEND DEMO_TARGETS demo-timers)
 add_executable(demo-transitions transitions.cpp)
 list(APPEND DEMO_TARGETS demo-transitions)
 
+add_executable(demo-controllers controllers.cpp)
+list(APPEND DEMO_TARGETS demo-controllers)
+
 target_link_libraries(demo-basic kaacore)
 target_link_libraries(demo-basic-scene kaacore)
 target_link_libraries(demo-physics kaacore)
@@ -33,6 +36,7 @@ target_link_libraries(demo-polygon-tester kaacore)
 target_link_libraries(demo-fonts kaacore)
 target_link_libraries(demo-timers kaacore)
 target_link_libraries(demo-transitions kaacore)
+target_link_libraries(demo-controllers kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES
