@@ -42,6 +42,8 @@
 
 namespace kaacore {
 
+extern bool logging_initialized;
+
 enum class LogLevel {
     verbose = SDL_LOG_PRIORITY_VERBOSE,
     debug = SDL_LOG_PRIORITY_DEBUG,
@@ -65,6 +67,14 @@ enum class LogCategory {
 inline void
 log_dynamic(const LogLevel level, const LogCategory category, const char* msg)
 {
+#ifndef NDEBUG
+    if (not logging_initialized) {
+        SDL_LogMessage(
+            static_cast<int>(LogCategory::misc), SDL_LOG_PRIORITY_WARN, "%s",
+            "Log called with unitialized logging substem.");
+    }
+#endif
+
     SDL_LogMessage(
         static_cast<int>(category), static_cast<SDL_LogPriority>(level), "%s",
         msg);
@@ -94,9 +104,11 @@ log(const char* msg, ...)
 
 LogLevel
 get_logging_level(const LogCategory category);
+
 void
 set_logging_level(const LogCategory category, const LogLevel level);
+
 void
-setup_initial_logging_levels();
+initialize_logging();
 
 } // namespace kaacore

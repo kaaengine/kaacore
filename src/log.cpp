@@ -2,9 +2,13 @@
 
 #include <SDL.h>
 
+#include "kaacore/exceptions.h"
+
 #include "kaacore/log.h"
 
 namespace kaacore {
+
+bool logging_initialized = false;
 
 LogLevel
 get_logging_level(const LogCategory category)
@@ -37,22 +41,27 @@ set_logging_level(const LogCategory category, const char* level_name)
     } else if (strcmp(level_name, "CRITICAL") == 0) {
         level = LogLevel::critical;
     } else {
-        level = LogLevel::debug;
+        log<LogLevel::critical, LogCategory::misc>(
+            "Unsupported logging level_name provided: %s", level_name);
+        throw exception("Unsupported logging level_name provided");
     }
 
     set_logging_level(category, level);
 }
 
 void
-setup_initial_logging_levels()
+initialize_logging()
 {
-    set_logging_level(LogCategory::engine, KAACORE_LOGLEVEL_ENGINE);
-    set_logging_level(LogCategory::renderer, KAACORE_LOGLEVEL_RENDERER);
-    set_logging_level(LogCategory::input, KAACORE_LOGLEVEL_INPUT);
-    set_logging_level(LogCategory::audio, KAACORE_LOGLEVEL_AUDIO);
-    set_logging_level(LogCategory::nodes, KAACORE_LOGLEVEL_NODES);
-    set_logging_level(LogCategory::physics, KAACORE_LOGLEVEL_PHYSICS);
-    set_logging_level(LogCategory::misc, KAACORE_LOGLEVEL_MISC);
+    if (not logging_initialized) {
+        set_logging_level(LogCategory::engine, KAACORE_LOGLEVEL_ENGINE);
+        set_logging_level(LogCategory::renderer, KAACORE_LOGLEVEL_RENDERER);
+        set_logging_level(LogCategory::input, KAACORE_LOGLEVEL_INPUT);
+        set_logging_level(LogCategory::audio, KAACORE_LOGLEVEL_AUDIO);
+        set_logging_level(LogCategory::nodes, KAACORE_LOGLEVEL_NODES);
+        set_logging_level(LogCategory::physics, KAACORE_LOGLEVEL_PHYSICS);
+        set_logging_level(LogCategory::misc, KAACORE_LOGLEVEL_MISC);
+        logging_initialized = true;
+    }
 }
 
 } // namespace kaacore
