@@ -24,6 +24,7 @@ Engine::Engine(
 {
     KAACORE_CHECK(engine == nullptr);
     KAACORE_CHECK(virtual_resolution.x > 0 and virtual_resolution.y > 0);
+    initialize_logging();
 
     log<LogLevel::info>("Initializing Kaacore.");
     SDL_Init(SDL_INIT_EVERYTHING);
