@@ -58,73 +58,73 @@ SystemEvent::clipboard_updated() const
 bool
 WindowEvent::shown() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_SHOWN;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_SHOWN;
 }
 
 bool
 WindowEvent::exposed() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_EXPOSED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_EXPOSED;
 }
 
 bool
 WindowEvent::moved() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_MOVED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_MOVED;
 }
 
 bool
 WindowEvent::resized() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_RESIZED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_RESIZED;
 }
 
 bool
 WindowEvent::minimized() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_MINIMIZED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_MINIMIZED;
 }
 
 bool
 WindowEvent::maximized() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_MAXIMIZED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_MAXIMIZED;
 }
 
 bool
 WindowEvent::restored() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_RESTORED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_RESTORED;
 }
 
 bool
 WindowEvent::enter() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_ENTER;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_ENTER;
 }
 
 bool
 WindowEvent::leave() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_LEAVE;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_LEAVE;
 }
 
 bool
 WindowEvent::focus_gained() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED;
 }
 
 bool
 WindowEvent::focus_lost() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_LOST;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_LOST;
 }
 
 bool
 WindowEvent::close() const
 {
-    this->sdl_event.window.event == SDL_WINDOWEVENT_CLOSE;
+    return this->sdl_event.window.event == SDL_WINDOWEVENT_CLOSE;
 }
 
 glm::dvec2
