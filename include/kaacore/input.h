@@ -332,6 +332,22 @@ enum class EventType {
     controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
 };
 
+enum class WindowEventType {
+    shown = SDL_WINDOWEVENT_SHOWN,
+    hidden = SDL_WINDOWEVENT_HIDDEN,
+    exposed = SDL_WINDOWEVENT_EXPOSED,
+    moved = SDL_WINDOWEVENT_MOVED,
+    resized = SDL_WINDOWEVENT_RESIZED,
+    minimized = SDL_WINDOWEVENT_MINIMIZED,
+    maximized = SDL_WINDOWEVENT_MAXIMIZED,
+    restored = SDL_WINDOWEVENT_RESTORED,
+    enter = SDL_WINDOWEVENT_ENTER,
+    leave = SDL_WINDOWEVENT_LEAVE,
+    focus_gained = SDL_WINDOWEVENT_FOCUS_GAINED,
+    focus_lost = SDL_WINDOWEVENT_FOCUS_LOST,
+    close = SDL_WINDOWEVENT_CLOSE
+};
+
 enum class CompoundEventType {
     window = SDL_WINDOWEVENT,
     system = 0,
@@ -372,23 +388,23 @@ struct BaseEvent {
 };
 
 struct SystemEvent : public BaseEvent {
-    bool is_quit() const;
-    bool is_clipboard_updated() const;
+    bool quit() const;
+    bool clipboard_updated() const;
 };
 
 struct WindowEvent : public BaseEvent {
-    bool is_shown() const;
-    bool is_exposed() const;
-    bool is_moved() const;
-    bool is_resized() const;
-    bool is_minimized() const;
-    bool is_maximized() const;
-    bool is_restored() const;
-    bool is_enter() const;
-    bool is_leave() const;
-    bool is_focus_gained() const;
-    bool is_focus_lost() const;
-    bool is_close() const;
+    bool shown() const;
+    bool exposed() const;
+    bool moved() const;
+    bool resized() const;
+    bool minimized() const;
+    bool maximized() const;
+    bool restored() const;
+    bool enter() const;
+    bool leave() const;
+    bool focus_gained() const;
+    bool focus_lost() const;
+    bool close() const;
 
     glm::dvec2 size() const;
     glm::dvec2 position() const;
@@ -400,9 +416,9 @@ struct KeyboardEvent : public BaseEvent {
 };
 
 struct MouseEvent : public BaseEvent {
-    bool is_button() const;
-    bool is_motion() const;
-    bool is_wheel() const;
+    bool button() const;
+    bool motion() const;
+    bool wheel() const;
 
     bool is_pressing(const MouseButton mb) const;
     bool is_releasing(const MouseButton mb) const;
@@ -411,11 +427,11 @@ struct MouseEvent : public BaseEvent {
 };
 
 struct ControllerEvent : public BaseEvent {
-    bool is_button() const;
-    bool is_axis() const;
-    bool is_added() const;
-    bool is_removed() const;
-    bool is_remapped() const;
+    bool button() const;
+    bool axis() const;
+    bool added() const;
+    bool removed() const;
+    bool remapped() const;
 
     ControllerID id() const;
     bool is_pressing(const ControllerButton cb) const;

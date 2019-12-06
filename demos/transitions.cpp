@@ -73,7 +73,7 @@ struct TransitionsDemoScene : Scene {
             auto system = event.system();
             auto keyboard = event.keyboard();
             if ((keyboard and keyboard->is_pressing(Keycode::q)) or
-                (system and system->is_quit())) {
+                (system and system->quit())) {
                 get_engine()->quit();
                 break;
             }

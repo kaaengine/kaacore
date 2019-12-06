@@ -77,7 +77,7 @@ struct DemoFontsScene : Scene {
     {
         for (auto const& event : this->get_events()) {
             auto system = event.system();
-            if (system and system->is_quit()) {
+            if (system and system->quit()) {
                 get_engine()->quit();
                 break;
             }

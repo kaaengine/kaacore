@@ -13,13 +13,13 @@ struct DemoScene : Scene {
             auto system = event.system();
             auto keyboard = event.keyboard();
             if ((keyboard and keyboard->is_pressing(Keycode::q)) or
-                (system and system->is_quit())) {
+                (system and system->quit())) {
                 get_engine()->quit();
                 break;
             }
 
             if (auto controller = event.controller()) {
-                if (controller->is_button()) {
+                if (controller->button()) {
                     if (controller->is_pressing(ControllerButton::a)) {
                         log<LogLevel::info>("A button pressed.");
                     } else if (controller->is_pressing(ControllerButton::b)) {
@@ -59,7 +59,7 @@ struct DemoScene : Scene {
                                    ControllerButton::start)) {
                         log<LogLevel::info>("Start button pressed.");
                     }
-                } else if (controller->is_axis()) {
+                } else if (controller->axis()) {
                     auto left_x =
                         controller->axis_motion(ControllerAxis::left_x);
                     auto left_y =
