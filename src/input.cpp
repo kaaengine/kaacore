@@ -44,85 +44,85 @@ BaseEvent::timestamp() const
 }
 
 bool
-SystemEvent::is_quit() const
+SystemEvent::quit() const
 {
     return this->type() == SDL_QUIT;
 }
 
 bool
-SystemEvent::is_clipboard_updated() const
+SystemEvent::clipboard_updated() const
 {
     return this->type() == SDL_CLIPBOARDUPDATE;
 }
 
 bool
-WindowEvent::is_shown() const
+WindowEvent::shown() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_SHOWN;
 }
 
 bool
-WindowEvent::is_exposed() const
+WindowEvent::exposed() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_EXPOSED;
 }
 
 bool
-WindowEvent::is_moved() const
+WindowEvent::moved() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_MOVED;
 }
 
 bool
-WindowEvent::is_resized() const
+WindowEvent::resized() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_RESIZED;
 }
 
 bool
-WindowEvent::is_minimized() const
+WindowEvent::minimized() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_MINIMIZED;
 }
 
 bool
-WindowEvent::is_maximized() const
+WindowEvent::maximized() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_MAXIMIZED;
 }
 
 bool
-WindowEvent::is_restored() const
+WindowEvent::restored() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_RESTORED;
 }
 
 bool
-WindowEvent::is_enter() const
+WindowEvent::enter() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_ENTER;
 }
 
 bool
-WindowEvent::is_leave() const
+WindowEvent::leave() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_LEAVE;
 }
 
 bool
-WindowEvent::is_focus_gained() const
+WindowEvent::focus_gained() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED;
 }
 
 bool
-WindowEvent::is_focus_lost() const
+WindowEvent::focus_lost() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_LOST;
 }
 
 bool
-WindowEvent::is_close() const
+WindowEvent::close() const
 {
     this->sdl_event.window.event == SDL_WINDOWEVENT_CLOSE;
 }
@@ -130,7 +130,7 @@ WindowEvent::is_close() const
 glm::dvec2
 WindowEvent::size() const
 {
-    if (not this->is_resized()) {
+    if (not this->resized()) {
         return {0, 0};
     }
 
@@ -140,7 +140,7 @@ WindowEvent::size() const
 glm::dvec2
 WindowEvent::position() const
 {
-    if (not this->is_moved()) {
+    if (not this->moved()) {
         return {0, 0};
     }
 
@@ -164,20 +164,20 @@ KeyboardEvent::is_releasing(Keycode kc) const
 }
 
 bool
-MouseEvent::is_button() const
+MouseEvent::button() const
 {
     return this->type() == SDL_MOUSEBUTTONDOWN or
            this->type() == SDL_MOUSEBUTTONUP;
 }
 
 bool
-MouseEvent::is_motion() const
+MouseEvent::motion() const
 {
     return this->type() == SDL_MOUSEMOTION;
 }
 
 bool
-MouseEvent::is_wheel() const
+MouseEvent::wheel() const
 {
     return this->type() == SDL_MOUSEWHEEL;
 }
@@ -201,10 +201,10 @@ MouseEvent::is_releasing(const MouseButton mb) const
 glm::dvec2
 MouseEvent::position() const
 {
-    if (this->is_button()) {
+    if (this->button()) {
         return _naive_screen_position_to_virtual(
             this->sdl_event.button.x, this->sdl_event.button.y);
-    } else if (this->is_motion()) {
+    } else if (this->motion()) {
         return _naive_screen_position_to_virtual(
             this->sdl_event.motion.x, this->sdl_event.motion.y);
     }
@@ -215,7 +215,7 @@ MouseEvent::position() const
 glm::dvec2
 MouseEvent::scroll() const
 {
-    if (not this->is_wheel()) {
+    if (not this->wheel()) {
         return {0, 0};
     }
 
@@ -231,32 +231,32 @@ MouseEvent::scroll() const
 }
 
 bool
-ControllerEvent::is_button() const
+ControllerEvent::button() const
 {
     return this->type() == SDL_CONTROLLERBUTTONDOWN or
            this->type() == SDL_CONTROLLERBUTTONUP;
 }
 
 bool
-ControllerEvent::is_axis() const
+ControllerEvent::axis() const
 {
     return this->type() == SDL_CONTROLLERAXISMOTION;
 }
 
 bool
-ControllerEvent::is_added() const
+ControllerEvent::added() const
 {
     return this->type() == SDL_CONTROLLERDEVICEADDED;
 }
 
 bool
-ControllerEvent::is_removed() const
+ControllerEvent::removed() const
 {
     return this->type() == SDL_CONTROLLERDEVICEREMOVED;
 }
 
 bool
-ControllerEvent::is_remapped() const
+ControllerEvent::remapped() const
 {
     return this->type() == SDL_CONTROLLERDEVICEREMAPPED;
 }
@@ -264,7 +264,7 @@ ControllerEvent::is_remapped() const
 bool
 ControllerEvent::is_pressing(const ControllerButton cb) const
 {
-    if (not this->is_button()) {
+    if (not this->button()) {
         return false;
     }
     return (
@@ -275,7 +275,7 @@ ControllerEvent::is_pressing(const ControllerButton cb) const
 bool
 ControllerEvent::is_releasing(const ControllerButton cb) const
 {
-    if (not this->is_button()) {
+    if (not this->button()) {
         return false;
     }
     return (
@@ -286,7 +286,7 @@ ControllerEvent::is_releasing(const ControllerButton cb) const
 double
 ControllerEvent::axis_motion(const ControllerAxis ca) const
 {
-    if (not this->is_axis() or
+    if (not this->axis() or
         this->sdl_event.caxis.axis != static_cast<uint8_t>(ca)) {
         return 0;
     }
