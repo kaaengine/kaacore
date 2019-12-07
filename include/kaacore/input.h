@@ -392,7 +392,8 @@ _is_event_supported(uint32_t type)
         type == static_cast<uint32_t>(EventType::controller_button_up) or
         type == static_cast<uint32_t>(EventType::controller_added) or
         type == static_cast<uint32_t>(EventType::controller_removed) or
-        type == static_cast<uint32_t>(EventType::controller_remapped)) {
+        type == static_cast<uint32_t>(EventType::controller_remapped) or
+        type == static_cast<uint32_t>(EventType::music_finished)) {
         return true;
     }
     return false;
@@ -458,7 +459,7 @@ struct ControllerEvent : public BaseEvent {
 };
 
 struct AudioEvent : public BaseEvent {
-    bool is_music_finished() const;
+    bool music_finished() const;
 };
 
 struct Event {
@@ -470,6 +471,7 @@ struct Event {
         KeyboardEvent _keyboard;
         MouseEvent _mouse;
         ControllerEvent _controller;
+        AudioEvent _audio;
     };
 
     Event();
@@ -483,6 +485,7 @@ struct Event {
     const KeyboardEvent* const keyboard() const;
     const MouseEvent* const mouse() const;
     const ControllerEvent* const controller() const;
+    const AudioEvent* const audio() const;
 };
 
 struct InputManager {

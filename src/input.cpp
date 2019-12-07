@@ -314,9 +314,9 @@ ControllerEvent::id() const
 }
 
 bool
-AudioEvent::is_music_finished() const
+AudioEvent::music_finished() const
 {
-    return this->sdl_event.type == EventType::music_finished;
+    return this->type() == EventType::music_finished;
 }
 
 Event::Event() {}
@@ -388,6 +388,15 @@ Event::controller() const
         type == SDL_CONTROLLERDEVICEREMOVED or
         type == SDL_CONTROLLERDEVICEREMAPPED) {
         return &this->_controller;
+    }
+    return nullptr;
+}
+
+const AudioEvent* const
+Event::audio() const
+{
+    if (this->common.type() == EventType::music_finished) {
+        return &this->_audio;
     }
     return nullptr;
 }
