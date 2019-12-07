@@ -93,18 +93,20 @@ Scene::process_nodes_drawing(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
-        if (node->_visible) {
-            for (const auto child_node : node->_children) {
-                processing_queue.push_back(child_node);
-            }
-
-            node->recalculate_matrix();
-            node->recalculate_render_data();
-
-            rendering_queue.emplace_back(
-                std::abs(std::numeric_limits<int16_t>::min()) + node->_z_index,
-                node);
+        if (not node->_visible) {
+            continue;
         }
+
+        for (const auto child_node : node->_children) {
+            processing_queue.push_back(child_node);
+        }
+
+        node->recalculate_model_matrix();
+        node->recalculate_render_data();
+
+        rendering_queue.emplace_back(
+            std::abs(std::numeric_limits<int16_t>::min()) + node->_z_index,
+            node);
     }
 
     std::sort(rendering_queue.begin(), rendering_queue.end());

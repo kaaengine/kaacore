@@ -419,8 +419,8 @@ void
 BodyNode::sync_simulation_position() const
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->_position =
-        convert_vector(cpBodyGetPosition(this->_cp_body));
+    container_node(this)->_set_position(
+        convert_vector(cpBodyGetPosition(this->_cp_body)));
 }
 
 void
@@ -434,7 +434,7 @@ void
 BodyNode::sync_simulation_rotation() const
 {
     ASSERT_VALID_BODY_NODE();
-    container_node(this)->_rotation = cpBodyGetAngle(this->_cp_body);
+    container_node(this)->_set_rotation(cpBodyGetAngle(this->_cp_body));
 }
 
 SpaceNode*

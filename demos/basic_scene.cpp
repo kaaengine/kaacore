@@ -53,7 +53,7 @@ struct DemoScene : Scene {
         this->node1->color({1., 0., 0., 1});
         this->node1->shape(Shape::Box({2., 1.}));
         this->node1->z_index(10);
-        this->node1->recalculate_matrix();
+        this->node1->recalculate_model_matrix();
         this->node1->recalculate_render_data();
 
         this->root_node.add_child(this->node1);
@@ -66,7 +66,7 @@ struct DemoScene : Scene {
         // this->node2->shape = Shape::Circle({0., 0.}, 1.5);
         this->node2->shape(Shape::Segment({-5., -5.}, {2., 2.}));
         this->node2->z_index(10);
-        this->node2->recalculate_matrix();
+        this->node2->recalculate_model_matrix();
         this->node2->recalculate_render_data();
 
         this->root_node.add_child(this->node2);
@@ -78,7 +78,7 @@ struct DemoScene : Scene {
         this->container_node = new Node();
         this->container_node->position({0., 0.});
         this->container_node->shape(Shape::Box({9., 9.}));
-        this->container_node->recalculate_matrix();
+        this->container_node->recalculate_model_matrix();
         this->container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
