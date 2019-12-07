@@ -33,6 +33,18 @@ _normalize_controller_axis(int16_t value)
     return static_cast<double>(value) / std::abs(SHRT_MIN);
 }
 
+bool
+operator==(const EventType& event_type, const uint32_t& event_num)
+{
+    return static_cast<uint32_t>(event_type) == event_num;
+}
+
+bool
+operator==(const uint32_t& event_num, const EventType& event_type)
+{
+    return static_cast<uint32_t>(event_type) == event_num;
+}
+
 uint32_t
 BaseEvent::type() const
 {
@@ -304,7 +316,7 @@ ControllerEvent::id() const
 bool
 AudioEvent::is_music_finished() const
 {
-    return this->sdl_event.type == event_music_finished;
+    return this->sdl_event.type == EventType::music_finished;
 }
 
 Event::Event() {}
@@ -378,6 +390,19 @@ Event::controller() const
         return &this->_controller;
     }
     return nullptr;
+}
+
+
+bool InputManager::_custom_events_registered = false;
+
+InputManager::InputManager()
+{
+    if (not this->_custom_events_registered) {
+        auto num_events = static_cast<uint32_t>(EventType::_sentinel) - SDL_USEREVENT;
+        auto first_event = SDL_RegisterEvents(num_events);
+        KAACORE_CHECK_TERMINATE(first_event == SDL_USEREVENT);
+    }
+    this->_custom_events_registered = true;
 }
 
 std::string

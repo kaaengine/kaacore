@@ -6,7 +6,7 @@
 
 #include "kaacore/audio.h"
 #include "kaacore/display.h"
-#include "kaacore/engine.h"
+#include "kaacore/input.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
 #include "kaacore/scenes.h"
@@ -194,12 +194,12 @@ Engine::_pump_events()
     this->input_manager->clear_events();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        if (event.type == KAACORE_Timer) {
+        if (event.type == EventType::_timer_fired) {
             auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
             resolve_timer(timer_id);
-        } else if (event.type == event_music_finished) {
+        } else if (event.type == EventType::music_finished) {
             this->audio_manager->_handle_music_finished();
-        } else if (event.type == event_channel_finished) {
+        } else if (event.type == EventType::channel_finished) {
             this->audio_manager->_handle_channel_finished(event.user.code);
         } else if (
             event.type == SDL_WINDOWEVENT and

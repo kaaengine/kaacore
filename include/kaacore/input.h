@@ -315,6 +315,8 @@ enum class ControllerAxis {
 };
 
 enum class EventType {
+    // Public SDL events
+    //
     quit = SDL_QUIT,
     clipboard_updated = SDL_CLIPBOARDUPDATE,
 
@@ -332,7 +334,21 @@ enum class EventType {
     controller_added = SDL_CONTROLLERDEVICEADDED,
     controller_removed = SDL_CONTROLLERDEVICEREMOVED,
     controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
+
+    // Public custom events
+
+    music_finished = SDL_USEREVENT,
+    channel_finished,
+
+    // Private custom events
+
+    _timer_fired,
+    _sentinel,
 };
+
+bool operator==(const EventType& event_type, const uint32_t& event_num);
+bool operator==(const uint32_t& event_num, const EventType& event_type);
+
 
 enum class WindowEventType {
     shown = SDL_WINDOWEVENT_SHOWN,
@@ -471,6 +487,9 @@ struct Event {
 
 struct InputManager {
     std::vector<Event> events_queue;
+    static bool _custom_events_registered;
+
+    InputManager();
 
     struct SystemManager {
         std::string get_clipboard_text() const;

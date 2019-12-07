@@ -3,6 +3,7 @@
 #include "SDL_mixer.h"
 
 #include "kaacore/engine.h"
+#include "kaacore/input.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
 
@@ -10,8 +11,6 @@
 
 namespace kaacore {
 
-const uint32_t event_music_finished = SDL_RegisterEvents(1);
-const uint32_t event_channel_finished = SDL_RegisterEvents(1);
 const uint16_t default_mixing_channels_count = 32;
 
 SoundData::SoundData(Mix_Chunk* raw_sound) : _raw_sound(raw_sound) {}
@@ -206,7 +205,7 @@ void
 _music_finished_hook()
 {
     SDL_Event event;
-    event.type = event_music_finished;
+    event.type = static_cast<uint32_t>(EventType::music_finished);
     SDL_PushEvent(&event);
 }
 
@@ -214,7 +213,7 @@ void
 _channel_finished_hook(int channel)
 {
     SDL_Event event;
-    event.type = event_channel_finished;
+    event.type = static_cast<uint32_t>(EventType::channel_finished);
     event.user.code = channel;
     SDL_PushEvent(&event);
 }

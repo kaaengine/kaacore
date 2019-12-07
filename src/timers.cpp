@@ -1,12 +1,12 @@
 #include <unordered_map>
 
+#include "kaacore/input.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
+
 #include "kaacore/timers.h"
 
 namespace kaacore {
-
-uint32_t KAACORE_Timer = SDL_RegisterEvents(1);
 
 struct _TimerData {
     uint32_t interval;
@@ -35,7 +35,7 @@ static uint32_t
 _timer_callback_wrapper(uint32_t interval, void* encoded_id)
 {
     SDL_Event event;
-    event.type = KAACORE_Timer;
+    event.type = static_cast<uint32_t>(EventType::_timer_fired);
     event.user.data1 = encoded_id;
     SDL_PushEvent(&event);
     return 0;

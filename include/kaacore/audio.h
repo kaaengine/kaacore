@@ -9,9 +9,6 @@
 
 namespace kaacore {
 
-extern const uint32_t event_music_finished;
-extern const uint32_t event_channel_finished;
-
 struct SoundData {
     Mix_Chunk* _raw_sound;
 
