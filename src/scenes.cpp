@@ -25,8 +25,9 @@ Scene::~Scene()
 {
     auto engine = get_engine(false);
     if (engine && (this == engine->scene || this == engine->next_scene)) {
-        throw kaacore::exception(
+        log<LogLevel::critical, LogCategory::engine>(
             "An attempt to delete current scene detected. Aborting.");
+        std::terminate();
     }
 
     while (not this->root_node._children.empty()) {
