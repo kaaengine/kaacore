@@ -89,8 +89,8 @@ Node::_compute_model_matrix_cumulative(const Node* const ancestor) const
     std::vector<const Node*> inheritance_chain{pointer};
     while ((pointer = pointer->_parent) != ancestor) {
         if (pointer == nullptr) {
-            throw kaacore::exception("Can't compute positione relative to node "
-                                     "that isn't direct ancestor.");
+            throw kaacore::exception("Can't compute position relative to node "
+                                     "that isn't its parent.");
         }
         inheritance_chain.push_back(pointer);
     }
