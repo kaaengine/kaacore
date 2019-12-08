@@ -104,9 +104,11 @@ class Node {
     void position(const glm::dvec2& position);
 
     double rotation();
+    double absolute_rotation();
     void rotation(const double& rotation);
 
     glm::dvec2 scale();
+    glm::dvec2 absolute_scale();
     void scale(const glm::dvec2& scale);
 
     int16_t z_index();

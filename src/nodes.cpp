@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
@@ -229,6 +230,17 @@ Node::position()
     return this->_position;
 }
 
+void
+Node::position(const glm::dvec2& position)
+{
+    this->_set_position(position);
+    if (this->_type == NodeType::body) {
+        this->body.override_simulation_position();
+    } else if (this->_type == NodeType::hitbox) {
+        this->hitbox.update_physics_shape();
+    }
+}
+
 glm::dvec2
 Node::absolute_position()
 {
@@ -248,6 +260,8 @@ Node::get_relative_position(const Node* const ancestor)
         return this->position();
     } else if (ancestor == nullptr) {
         return this->absolute_position();
+    } else if (ancestor == this) {
+        return {0., 0.};
     }
 
     glm::fvec4 pos = {0., 0., 0., 1.};
@@ -255,21 +269,28 @@ Node::get_relative_position(const Node* const ancestor)
     return {pos.x, pos.y};
 }
 
-void
-Node::position(const glm::dvec2& position)
-{
-    this->_set_position(position);
-    if (this->_type == NodeType::body) {
-        this->body.override_simulation_position();
-    } else if (this->_type == NodeType::hitbox) {
-        this->hitbox.update_physics_shape();
-    }
-}
-
 double
 Node::rotation()
 {
     return this->_rotation;
+}
+
+double
+Node::absolute_rotation()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+
+    glm::vec3 _scale;
+    glm::quat rotation;
+    glm::vec3 _translation;
+    glm::vec3 _skew;
+    glm::vec4 _perspective;
+    glm::decompose(
+        this->_model_matrix.value, _scale, rotation, _translation, _skew,
+        _perspective);
+    return glm::eulerAngles(rotation).z;
 }
 
 void
@@ -287,6 +308,24 @@ glm::dvec2
 Node::scale()
 {
     return this->_scale;
+}
+
+glm::dvec2
+Node::absolute_scale()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+
+    glm::vec3 scale;
+    glm::quat _rotation;
+    glm::vec3 _translation;
+    glm::vec3 _skew;
+    glm::vec4 _perspective;
+    glm::decompose(
+        this->_model_matrix.value, scale, _rotation, _translation, _skew,
+        _perspective);
+    return {scale[0], scale[1]};
 }
 
 void
