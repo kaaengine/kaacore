@@ -131,15 +131,19 @@ Node::_recalculate_model_matrix_cumulative()
 void
 Node::_set_position(const glm::dvec2& position)
 {
+    if (position != this->_position) {
+        this->_mark_dirty();
+    }
     this->_position = position;
-    this->_mark_dirty();
 }
 
 void
 Node::_set_rotation(const double rotation)
 {
+    if (rotation != this->_rotation) {
+        this->_mark_dirty();
+    }
     this->_rotation = rotation;
-    this->_mark_dirty();
 }
 
 void
@@ -331,6 +335,9 @@ Node::absolute_scale()
 void
 Node::scale(const glm::dvec2& scale)
 {
+    if (scale != this->_scale) {
+        this->_mark_dirty();
+    }
     this->_scale = scale;
     if (this->_type == NodeType::body) {
         for (const auto& n : this->_children) {
@@ -341,7 +348,6 @@ Node::scale(const glm::dvec2& scale)
     } else if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
-    this->_mark_dirty();
 }
 
 int16_t
@@ -369,6 +375,7 @@ Node::shape(const Shape& shape)
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
+    // TODO: check if we aren't setting the same shape before marking it dirty
     this->_render_data.is_dirty = true;
 }
 
@@ -385,6 +392,7 @@ Node::sprite(const Sprite& sprite)
     if (!this->_shape) {
         this->shape(Shape::Box(sprite.get_size()));
     }
+    // TODO: check if we aren't setting the same sprite before marking it dirty
     this->_render_data.is_dirty = true;
 }
 
@@ -397,8 +405,10 @@ Node::color()
 void
 Node::color(const glm::dvec4& color)
 {
+    if (color != this->_color) {
+        this->_render_data.is_dirty = true;
+    }
     this->_color = color;
-    this->_render_data.is_dirty = true;
 }
 
 bool
@@ -410,10 +420,10 @@ Node::visible()
 void
 Node::visible(const bool& visible)
 {
-    this->_visible = visible;
-    if (visible) {
+    if (visible and visible != this->_visible) {
         this->_mark_dirty();
     }
+    this->_visible = visible;
 }
 
 Alignment
@@ -425,7 +435,7 @@ Node::origin_alignment()
 void
 Node::origin_alignment(const Alignment& alignment)
 {
-    if (this->_origin_alignment != alignment) {
+    if (alignment != this->_origin_alignment) {
         this->_render_data.is_dirty = true;
     }
     this->_origin_alignment = alignment;
