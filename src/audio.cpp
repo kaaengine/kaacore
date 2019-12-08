@@ -3,8 +3,8 @@
 #include "SDL_mixer.h"
 
 #include "kaacore/engine.h"
-#include "kaacore/input.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/input.h"
 #include "kaacore/log.h"
 
 #include "kaacore/audio.h"

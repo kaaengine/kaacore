@@ -6,8 +6,8 @@
 
 #include "kaacore/audio.h"
 #include "kaacore/display.h"
-#include "kaacore/input.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/input.h"
 #include "kaacore/log.h"
 #include "kaacore/scenes.h"
 #include "kaacore/timers.h"

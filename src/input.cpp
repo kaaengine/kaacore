@@ -3,8 +3,8 @@
 
 #include <SDL.h>
 
-#include "kaacore/engine.h"
 #include "kaacore/audio.h"
+#include "kaacore/engine.h"
 #include "kaacore/log.h"
 
 #include "kaacore/input.h"
@@ -401,13 +401,13 @@ Event::audio() const
     return nullptr;
 }
 
-
 bool InputManager::_custom_events_registered = false;
 
 InputManager::InputManager()
 {
     if (not this->_custom_events_registered) {
-        auto num_events = static_cast<uint32_t>(EventType::_sentinel) - SDL_USEREVENT;
+        auto num_events =
+            static_cast<uint32_t>(EventType::_sentinel) - SDL_USEREVENT;
         auto first_event = SDL_RegisterEvents(num_events);
         KAACORE_CHECK_TERMINATE(first_event == SDL_USEREVENT);
     }

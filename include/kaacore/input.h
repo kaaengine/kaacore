@@ -346,9 +346,10 @@ enum class EventType {
     _sentinel,
 };
 
-bool operator==(const EventType& event_type, const uint32_t& event_num);
-bool operator==(const uint32_t& event_num, const EventType& event_type);
-
+bool
+operator==(const EventType& event_type, const uint32_t& event_num);
+bool
+operator==(const uint32_t& event_num, const EventType& event_type);
 
 enum class WindowEventType {
     shown = SDL_WINDOWEVENT_SHOWN,

@@ -1,7 +1,7 @@
 #include <unordered_map>
 
-#include "kaacore/input.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/input.h"
 #include "kaacore/log.h"
 
 #include "kaacore/timers.h"
