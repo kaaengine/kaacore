@@ -80,6 +80,7 @@ class NodeTransitionsGroupBase : public NodeTransitionBase {
 
   protected:
     std::vector<_SubTransition> _sub_transitions;
+    bool has_infinite_sub_transitions;
 };
 
 class NodeTransitionsSequence : public NodeTransitionsGroupBase {

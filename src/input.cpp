@@ -3,9 +3,11 @@
 
 #include <SDL.h>
 
+#include "kaacore/audio.h"
 #include "kaacore/engine.h"
-#include "kaacore/input.h"
 #include "kaacore/log.h"
+
+#include "kaacore/input.h"
 
 namespace kaacore {
 
@@ -29,6 +31,18 @@ _normalize_controller_axis(int16_t value)
         return static_cast<double>(value) / SHRT_MAX;
     }
     return static_cast<double>(value) / std::abs(SHRT_MIN);
+}
+
+bool
+operator==(const EventType& event_type, const uint32_t& event_num)
+{
+    return static_cast<uint32_t>(event_type) == event_num;
+}
+
+bool
+operator==(const uint32_t& event_num, const EventType& event_type)
+{
+    return static_cast<uint32_t>(event_type) == event_num;
 }
 
 uint32_t
@@ -299,6 +313,12 @@ ControllerEvent::id() const
     return this->sdl_event.cdevice.which;
 }
 
+bool
+AudioEvent::music_finished() const
+{
+    return this->type() == EventType::music_finished;
+}
+
 Event::Event() {}
 Event::Event(SDL_Event sdl_event)
 {
@@ -370,6 +390,28 @@ Event::controller() const
         return &this->_controller;
     }
     return nullptr;
+}
+
+const AudioEvent* const
+Event::audio() const
+{
+    if (this->common.type() == EventType::music_finished) {
+        return &this->_audio;
+    }
+    return nullptr;
+}
+
+bool InputManager::_custom_events_registered = false;
+
+InputManager::InputManager()
+{
+    if (not this->_custom_events_registered) {
+        auto num_events =
+            static_cast<uint32_t>(EventType::_sentinel) - SDL_USEREVENT;
+        auto first_event = SDL_RegisterEvents(num_events);
+        KAACORE_CHECK_TERMINATE(first_event == SDL_USEREVENT);
+    }
+    this->_custom_events_registered = true;
 }
 
 std::string

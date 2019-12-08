@@ -102,15 +102,40 @@ NodeTransitionsSequence::NodeTransitionsSequence(
     const TransitionWarping& warping) noexcept(false)
 {
     double total_duration = 0.;
+    bool has_infinite_subs = false;
+
     for (const auto& tr : transitions) {
+        double sub_duration;
         KAACORE_CHECK(tr->duration >= 0.);
+        if (has_infinite_subs) {
+            throw exception("NodeTransitionsSequence has infinite "
+                            "subtransition on non last position");
+        }
+
+        if (std::isinf(tr->duration)) {
+            sub_duration = tr->internal_duration;
+            has_infinite_subs = true;
+        } else {
+            sub_duration = tr->duration;
+        }
         this->_sub_transitions.emplace_back(
             tr, total_duration, total_duration + tr->duration);
-        total_duration += tr->duration;
+        total_duration += sub_duration;
     }
+    this->has_infinite_sub_transitions = has_infinite_subs;
     this->warping = warping;
-    this->duration = total_duration * warping.duration_factor();
+    if (has_infinite_subs) {
+        // TODO force user to set those implicitly?
+        this->warping.loops = 0;
+        this->warping.back_and_forth = false;
+    }
+    this->duration = total_duration * this->warping.duration_factor();
     this->internal_duration = total_duration;
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionsSequence(%p) constructed - duration: %lf, "
+        "internal_duration: %lf",
+        this, this->duration, this->internal_duration);
 }
 
 std::unique_ptr<TransitionStateBase>
@@ -132,11 +157,18 @@ NodeTransitionsSequence::process_time_point(
     const TransitionTimePoint& tp) const
 {
     const TransitionTimePoint warped_tp =
-        this->warping.warp_time(tp, this->internal_duration);
+        this->has_infinite_sub_transitions
+            ? tp
+            : this->warping.warp_time(tp, this->internal_duration);
     auto state = static_cast<_NodeTransitionsSequenceState*>(state_b);
     auto it = state->sub_state_it;
     uint32_t cur_cycle_index = state->prev_tp.cycle_index;
     bool is_backing = state->prev_tp.is_backing;
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionsSequence(%p)::process_time_point - node: %p, abs_t: "
+        "%lf, warped_abs_t: %lf",
+        this, node, tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         if (not it->state_prepared) {
@@ -198,15 +230,37 @@ NodeTransitionsParallel::NodeTransitionsParallel(
     const std::vector<NodeTransitionHandle>& transitions,
     const TransitionWarping& warping) noexcept(false)
 {
-    double max_duration = 0.;
+    double max_sub_internal_duration = 0.;
+    bool has_infinite_subs = false;
+
     for (const auto& tr : transitions) {
+        double sub_duration;
         KAACORE_CHECK(tr->duration >= 0.);
-        max_duration = glm::max(max_duration, tr->duration);
+        if (std::isinf(tr->duration)) {
+            sub_duration = tr->internal_duration;
+            has_infinite_subs = true;
+        } else {
+            sub_duration = tr->duration;
+        }
+        max_sub_internal_duration =
+            glm::max(max_sub_internal_duration, sub_duration);
         this->_sub_transitions.emplace_back(tr, 0., tr->duration);
     }
+    this->has_infinite_sub_transitions = has_infinite_subs;
     this->warping = warping;
-    this->duration = max_duration * warping.duration_factor();
-    this->internal_duration = max_duration;
+    if (has_infinite_subs) {
+        // TODO force user to set those implicitly?
+        this->warping.loops = 0;
+        this->warping.back_and_forth = false;
+    }
+    this->duration =
+        max_sub_internal_duration * this->warping.duration_factor();
+    this->internal_duration = max_sub_internal_duration;
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionsParallel(%p) constructed - duration: %lf, "
+        "internal_duration: %lf",
+        this, this->duration, this->internal_duration);
 }
 
 std::unique_ptr<TransitionStateBase>
@@ -228,9 +282,16 @@ NodeTransitionsParallel::process_time_point(
 {
     auto state = static_cast<_NodeTransitionsParallelState*>(state_b);
     const TransitionTimePoint warped_tp =
-        this->warping.warp_time(tp, this->internal_duration);
+        this->has_infinite_sub_transitions
+            ? tp
+            : this->warping.warp_time(tp, this->internal_duration);
     uint32_t cur_cycle_index = state->prev_tp.cycle_index;
     bool is_backing = state->prev_tp.is_backing;
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionsParallel(%p)::process_time_point - node: %p, abs_t: "
+        "%lf, warped_abs_t: %lf",
+        this, node, tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         for (auto& sub_state : state->sub_states) {
