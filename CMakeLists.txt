@@ -13,6 +13,7 @@ endif()
 
 set(SDL_STATIC OFF CACHE BOOL "")
 add_subdirectory(third_party/sdl2)
+target_compile_options(SDL2 PUBLIC -D SDL_DISABLE_ANALYZE_MACROS)
 
 set(SDL_MIXER_SHARED OFF CACHE BOOL "")
 add_subdirectory(third_party/sdl_mixer)
