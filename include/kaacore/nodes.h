@@ -23,11 +23,6 @@ enum struct NodeType {
     text = 5,
 };
 
-struct NodeRenderData {
-    std::vector<StandardVertexData> computed_vertices;
-    bgfx::TextureHandle texture_handle;
-};
-
 struct ForeignNodeWrapper {
     ForeignNodeWrapper() = default;
     virtual ~ForeignNodeWrapper() = default;
@@ -65,8 +60,24 @@ class Node {
 
     std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
 
-    NodeRenderData _render_data;
-    glm::fmat4 _matrix;
+    struct {
+        glm::fmat4 value;
+        bool is_dirty = true;
+    } _model_matrix;
+    struct {
+        std::vector<StandardVertexData> computed_vertices;
+        bgfx::TextureHandle texture_handle;
+        bool is_dirty = true;
+    } _render_data;
+
+    void _mark_dirty();
+    glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
+    glm::fmat4 _compute_model_matrix_cumulative(
+        const Node* const ancestor = nullptr) const;
+    void _recalculate_model_matrix();
+    void _recalculate_model_matrix_cumulative();
+    void _set_position(const glm::dvec2& position);
+    void _set_rotation(const double rotation);
 
   public:
     union {
@@ -79,8 +90,8 @@ class Node {
     Node(NodeType type = NodeType::basic);
     ~Node();
 
-    void add_child(Node* child_node);
-    void recalculate_matrix();
+    void add_child(Node* const child_node);
+    void recalculate_model_matrix();
     void recalculate_render_data();
 
     const NodeType type() const;
@@ -89,12 +100,15 @@ class Node {
 
     glm::dvec2 position();
     glm::dvec2 absolute_position();
+    glm::dvec2 get_relative_position(const Node* const ancestor);
     void position(const glm::dvec2& position);
 
     double rotation();
+    double absolute_rotation();
     void rotation(const double& rotation);
 
     glm::dvec2 scale();
+    glm::dvec2 absolute_scale();
     void scale(const glm::dvec2& scale);
 
     int16_t z_index();
@@ -121,8 +135,8 @@ class Node {
     NodeTransitionHandle transition();
     void transition(const NodeTransitionHandle& transition);
 
-    Scene* scene() const;
-    Node* parent() const;
+    Scene* const scene() const;
+    Node* const parent() const;
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;

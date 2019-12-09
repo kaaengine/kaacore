@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
@@ -58,7 +59,95 @@ Node::~Node()
 }
 
 void
-Node::add_child(Node* child_node)
+Node::_mark_dirty()
+{
+    this->_render_data.is_dirty = true;
+    this->_model_matrix.is_dirty = true;
+    for (auto child : this->_children) {
+        if (not child->_model_matrix.is_dirty) {
+            child->_mark_dirty();
+        }
+    }
+}
+
+glm::fmat4
+Node::_compute_model_matrix(const glm::fmat4& parent_matrix) const
+{
+    return glm::scale(
+        glm::rotate(
+            glm::translate(
+                parent_matrix,
+                glm::fvec3(this->_position.x, this->_position.y, 0.)),
+            static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
+        glm::fvec3(this->_scale.x, this->_scale.y, 1.));
+}
+
+glm::fmat4
+Node::_compute_model_matrix_cumulative(const Node* const ancestor) const
+{
+    const Node* pointer = this;
+    std::vector<const Node*> inheritance_chain{pointer};
+    while ((pointer = pointer->_parent) != ancestor) {
+        if (pointer == nullptr) {
+            throw kaacore::exception("Can't compute position relative to node "
+                                     "that isn't its parent.");
+        }
+        inheritance_chain.push_back(pointer);
+    }
+
+    glm::fmat4 matrix(1.0);
+    for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
+         it++) {
+        matrix = (*it)->_compute_model_matrix(matrix);
+    }
+    return matrix;
+}
+
+void
+Node::_recalculate_model_matrix()
+{
+    const static glm::fmat4 identity(1.0);
+    this->_model_matrix.value = this->_compute_model_matrix(
+        this->_parent ? this->_parent->_model_matrix.value : identity);
+    this->_model_matrix.is_dirty = false;
+}
+
+void
+Node::_recalculate_model_matrix_cumulative()
+{
+    Node* pointer = this;
+    std::vector<Node*> inheritance_chain{pointer};
+    while ((pointer = pointer->_parent) != nullptr and
+           pointer->_model_matrix.is_dirty) {
+        inheritance_chain.push_back(pointer);
+    }
+
+    for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
+         it++) {
+        (*it)->_recalculate_model_matrix();
+    }
+}
+
+void
+Node::_set_position(const glm::dvec2& position)
+{
+    if (position != this->_position) {
+        this->_mark_dirty();
+    }
+    this->_position = position;
+}
+
+void
+Node::_set_rotation(const double rotation)
+{
+    if (rotation != this->_rotation) {
+        this->_mark_dirty();
+    }
+    this->_rotation = rotation;
+}
+
+void
+Node::add_child(Node* const child_node)
 {
     KAACORE_CHECK(child_node->_parent == nullptr);
     child_node->_parent = this;
@@ -84,27 +173,21 @@ Node::add_child(Node* child_node)
 }
 
 void
-Node::recalculate_matrix()
+Node::recalculate_model_matrix()
 {
-    static glm::fmat4 identity(1.0);
-    glm::fmat4* parent_matrix_p;
-    if (this->_parent != nullptr) {
-        parent_matrix_p = &this->_parent->_matrix;
-    } else {
-        parent_matrix_p = &identity;
+    if (not this->_model_matrix.is_dirty) {
+        return;
     }
-    this->_matrix = glm::scale(
-        glm::rotate(
-            glm::translate(
-                *parent_matrix_p,
-                glm::fvec3(this->_position.x, this->_position.y, 0.)),
-            static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
-        glm::fvec3(this->_scale.x, this->_scale.y, 1.));
+    this->_recalculate_model_matrix();
 }
 
 void
 Node::recalculate_render_data()
 {
+    if (not this->_render_data.is_dirty) {
+        return;
+    }
+
     // TODO optimize
     glm::fvec2 pos_realignment = calculate_realignment_vector(
         this->_origin_alignment, this->_shape.vertices_bbox);
@@ -112,7 +195,7 @@ Node::recalculate_render_data()
     for (auto& vertex : this->_render_data.computed_vertices) {
         glm::dvec4 pos = {vertex.xyz.x + pos_realignment.x,
                           vertex.xyz.y + pos_realignment.y, vertex.xyz.z, 1.};
-        pos = this->_matrix * pos;
+        pos = this->_model_matrix.value * pos;
         vertex.xyz = {pos.x, pos.y, pos.z};
 
         if (this->_sprite.has_texture()) {
@@ -130,6 +213,7 @@ Node::recalculate_render_data()
         this->_render_data.texture_handle =
             get_engine()->renderer->default_texture;
     }
+    this->_render_data.is_dirty = false;
 }
 
 const NodeType
@@ -150,24 +234,43 @@ Node::position()
     return this->_position;
 }
 
-glm::dvec2
-Node::absolute_position()
-{
-    this->recalculate_matrix();
-    glm::fvec4 pos = {0., 0., 0., 1.};
-    pos = this->_matrix * pos;
-    return {pos.x, pos.y};
-}
-
 void
 Node::position(const glm::dvec2& position)
 {
-    this->_position = position;
+    this->_set_position(position);
     if (this->_type == NodeType::body) {
         this->body.override_simulation_position();
     } else if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
+}
+
+glm::dvec2
+Node::absolute_position()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+
+    glm::fvec4 pos = {0., 0., 0., 1.};
+    pos = this->_model_matrix.value * pos;
+    return {pos.x, pos.y};
+}
+
+glm::dvec2
+Node::get_relative_position(const Node* const ancestor)
+{
+    if (ancestor == this->_parent) {
+        return this->position();
+    } else if (ancestor == nullptr) {
+        return this->absolute_position();
+    } else if (ancestor == this) {
+        return {0., 0.};
+    }
+
+    glm::fvec4 pos = {0., 0., 0., 1.};
+    pos = this->_compute_model_matrix_cumulative(ancestor) * pos;
+    return {pos.x, pos.y};
 }
 
 double
@@ -176,10 +279,28 @@ Node::rotation()
     return this->_rotation;
 }
 
+double
+Node::absolute_rotation()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+
+    glm::vec3 _scale;
+    glm::quat rotation;
+    glm::vec3 _translation;
+    glm::vec3 _skew;
+    glm::vec4 _perspective;
+    glm::decompose(
+        this->_model_matrix.value, _scale, rotation, _translation, _skew,
+        _perspective);
+    return glm::eulerAngles(rotation).z;
+}
+
 void
 Node::rotation(const double& rotation)
 {
-    this->_rotation = rotation;
+    this->_set_rotation(rotation);
     if (this->_type == NodeType::body) {
         this->body.override_simulation_rotation();
     } else if (this->_type == NodeType::hitbox) {
@@ -193,9 +314,30 @@ Node::scale()
     return this->_scale;
 }
 
+glm::dvec2
+Node::absolute_scale()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+
+    glm::vec3 scale;
+    glm::quat _rotation;
+    glm::vec3 _translation;
+    glm::vec3 _skew;
+    glm::vec4 _perspective;
+    glm::decompose(
+        this->_model_matrix.value, scale, _rotation, _translation, _skew,
+        _perspective);
+    return {scale[0], scale[1]};
+}
+
 void
 Node::scale(const glm::dvec2& scale)
 {
+    if (scale != this->_scale) {
+        this->_mark_dirty();
+    }
     this->_scale = scale;
     if (this->_type == NodeType::body) {
         for (const auto& n : this->_children) {
@@ -233,6 +375,8 @@ Node::shape(const Shape& shape)
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
+    // TODO: check if we aren't setting the same shape before marking it dirty
+    this->_render_data.is_dirty = true;
 }
 
 Sprite&
@@ -248,6 +392,8 @@ Node::sprite(const Sprite& sprite)
     if (!this->_shape) {
         this->shape(Shape::Box(sprite.get_size()));
     }
+    // TODO: check if we aren't setting the same sprite before marking it dirty
+    this->_render_data.is_dirty = true;
 }
 
 glm::dvec4
@@ -259,6 +405,9 @@ Node::color()
 void
 Node::color(const glm::dvec4& color)
 {
+    if (color != this->_color) {
+        this->_render_data.is_dirty = true;
+    }
     this->_color = color;
 }
 
@@ -271,6 +420,9 @@ Node::visible()
 void
 Node::visible(const bool& visible)
 {
+    if (visible and visible != this->_visible) {
+        this->_mark_dirty();
+    }
     this->_visible = visible;
 }
 
@@ -283,6 +435,9 @@ Node::origin_alignment()
 void
 Node::origin_alignment(const Alignment& alignment)
 {
+    if (alignment != this->_origin_alignment) {
+        this->_render_data.is_dirty = true;
+    }
     this->_origin_alignment = alignment;
 }
 
@@ -310,13 +465,13 @@ Node::lifetime(const uint32_t& lifetime)
     this->_lifetime = lifetime;
 }
 
-Scene*
+Scene* const
 Node::scene() const
 {
     return this->_scene;
 }
 
-Node*
+Node* const
 Node::parent() const
 {
     return this->_parent;
