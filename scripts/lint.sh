@@ -2,24 +2,22 @@
 
 set -e
 
-if which clang-format
+if which clang-tidy
 then
-    CLANG_FORMAT=clang-format
-elif which clang-format-7
+    CLANG_FORMAT=clang-tidy
+elif which clang-tidy-7
 then
-    CLANG_FORMAT=clang-format-7
+    CLANG_FORMAT=clang-tidy-7
 else
-    echo "clang-format not found!"
+    echo "clang-tidy not found!"
     exit 1
 fi
 
-SOURCES=$(find . -type f \( -name "*.h" -o -name "*.cpp" \) \
-        -not \( -path "./build/*" -o -path "./third_party/*" \))                          
-${CLANG_FORMAT} -version
-${CLANG_FORMAT} -i ${SOURCES}
-DIFF=$(git diff)
+SCRIPTS_DIR=${BASH_SOURCE%/*}
 
-if [ -n "${DIFF}" ]; then
-    echo "${DIFF}"
+if [ ! -f "${SCRIPTS_DIR}/../build/compile_commands.json" ]; then
+    echo "Build the project in order to run linter."
     exit 1
 fi
+
+clang-tidy -p "${SCRIPTS_DIR}/../build/" "${SCRIPTS_DIR}"/../src/*.cpp "$@"
