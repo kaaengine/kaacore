@@ -322,6 +322,7 @@ enum class EventType {
 
     key_down = SDL_KEYDOWN,
     key_up = SDL_KEYUP,
+    text_input = SDL_TEXTINPUT,
 
     mouse_motion = SDL_MOUSEMOTION,
     mouse_button_down = SDL_MOUSEBUTTONDOWN,
@@ -384,6 +385,7 @@ _is_event_supported(uint32_t type)
         type == static_cast<uint32_t>(EventType::clipboard_updated) or
         type == static_cast<uint32_t>(EventType::key_down) or
         type == static_cast<uint32_t>(EventType::key_up) or
+        type == static_cast<uint32_t>(EventType::text_input) or
         type == static_cast<uint32_t>(EventType::mouse_motion) or
         type == static_cast<uint32_t>(EventType::mouse_button_down) or
         type == static_cast<uint32_t>(EventType::mouse_button_up) or
@@ -433,6 +435,8 @@ struct WindowEvent : public BaseEvent {
 struct KeyboardEvent : public BaseEvent {
     bool is_pressing(const Keycode kc) const;
     bool is_releasing(const Keycode kc) const;
+    bool text_input() const;
+    std::string text() const;
 };
 
 struct MouseEvent : public BaseEvent {
