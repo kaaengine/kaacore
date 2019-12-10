@@ -178,6 +178,22 @@ KeyboardEvent::is_releasing(Keycode kc) const
 }
 
 bool
+KeyboardEvent::text_input() const
+{
+    return this->sdl_event.type == SDL_TEXTINPUT;
+}
+
+std::string
+KeyboardEvent::text() const
+{
+    if (not this->text_input()) {
+        return "";
+    }
+
+    return this->sdl_event.text.text;
+}
+
+bool
 MouseEvent::button() const
 {
     return this->type() == SDL_MOUSEBUTTONDOWN or
@@ -362,7 +378,7 @@ const KeyboardEvent* const
 Event::keyboard() const
 {
     auto type = this->type();
-    if (type == SDL_KEYUP or type == SDL_KEYDOWN) {
+    if (type == SDL_KEYUP or type == SDL_KEYDOWN or type == SDL_TEXTINPUT) {
         return &this->_keyboard;
     }
     return nullptr;
