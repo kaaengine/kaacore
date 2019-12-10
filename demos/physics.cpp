@@ -27,6 +27,11 @@ struct DemoScene : Scene {
     bool delete_on_collision = false;
     bool change_shape_on_collision = false;
 
+    Shape query_shape;
+
+    glm::dvec4 default_hitbox_color = {0., 0., 1., 0.5};
+    glm::dvec4 queried_hitbox_color = {1., 0., 1., 0.7};
+
     Node* init_wall(const glm::dvec2& a, const glm::dvec2& b)
     {
         Node* wall_hitbox = new Node(NodeType::hitbox);
@@ -46,6 +51,8 @@ struct DemoScene : Scene {
         Shape polygon_shape =
             Shape::Polygon({{0.3, 0}, {0, 0.3}, {-0.3, 0}, {0, -0.7}});
         Shape circle_shape = Shape::Circle(0.3);
+
+        this->query_shape = Shape::Circle(1.5);
 
         this->container = new Node(NodeType::space);
         this->root_node.add_child(this->container);
@@ -87,7 +94,7 @@ struct DemoScene : Scene {
             ball_hitbox->shape(chosen_shape);
             ball_hitbox->scale({1.5, 1.5});
             ball_hitbox->hitbox.trigger_id(120);
-            ball_hitbox->color({0., 0., 1., 0.5});
+            ball_hitbox->color(this->default_hitbox_color);
             ball_hitbox->z_index(ball->z_index() + 1);
 
             this->balls.push_back(ball);
@@ -179,6 +186,11 @@ struct DemoScene : Scene {
                     this->change_shape_on_collision = true;
                 }
             }
+        }
+
+        auto results = this->container->space.query_shape(this->query_shape);
+        for (auto& res : results) {
+            res.hitbox_node->color(this->queried_hitbox_color);
         }
     }
 };

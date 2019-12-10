@@ -44,43 +44,56 @@ convert_vector(const cpVect vec)
     return {vec.x, vec.y};
 }
 
-struct HitboxTransform {
-    glm::dvec2 translation;
-    double rotation;
-    glm::dvec2 scale;
-
-    cpTransform _transform;
-
-    HitboxTransform(const glm::dvec2& tr, const double& r, const glm::dvec2& sc)
-        : translation(tr), scale(sc), rotation(r)
-    {
-        this->_transform = cpTransformMult(
-            cpTransformTranslate(convert_vector(this->translation)),
-            cpTransformMult(
-                cpTransformRotate(this->rotation),
-                cpTransformScale(this->scale.x, this->scale.y)));
+std::vector<CollisionContactPoint>
+convert_contact_points(const cpContactPointSet* const cp_contact_points)
+{
+    std::vector<CollisionContactPoint> contact_points{};
+    contact_points.reserve(cp_contact_points->count);
+    for (int i = 0; i < cp_contact_points->count; i++) {
+        contact_points.push_back(CollisionContactPoint{
+            convert_vector(cp_contact_points->points[i].pointA),
+            convert_vector(cp_contact_points->points[i].pointB),
+            cp_contact_points->points[i].distance});
     }
 
-    std::vector<cpVect> transform_points(
-        const std::vector<glm::dvec2>& points) const
-    {
-        std::vector<cpVect> cp_points;
-        cp_points.reserve(points.size());
+    return contact_points;
+}
 
-        for (const auto& pt : points) {
-            cp_points.emplace_back(
-                cpTransformPoint(this->_transform, convert_vector(pt)));
-        }
+HitboxTransform::HitboxTransform()
+    : HitboxTransform(glm::dvec2{0., 0.}, 0., glm::dvec2{1., 1.})
+{}
 
-        return cp_points;
+HitboxTransform::HitboxTransform(
+    const glm::dvec2& tr, const double& r, const glm::dvec2& sc)
+    : translation(tr), scale(sc), rotation(r)
+{
+    this->_transform = cpTransformMult(
+        cpTransformTranslate(convert_vector(this->translation)),
+        cpTransformMult(
+            cpTransformRotate(this->rotation),
+            cpTransformScale(this->scale.x, this->scale.y)));
+}
+
+std::vector<cpVect>
+HitboxTransform::transform_points(const std::vector<glm::dvec2>& points) const
+{
+    std::vector<cpVect> cp_points;
+    cp_points.reserve(points.size());
+
+    for (const auto& pt : points) {
+        cp_points.emplace_back(
+            cpTransformPoint(this->_transform, convert_vector(pt)));
     }
 
-    double flat_radius() const
-    {
-        KAACORE_CHECK(this->scale.x == this->scale.y);
-        return this->scale.x;
-    }
-};
+    return cp_points;
+}
+
+double
+HitboxTransform::flat_radius() const
+{
+    KAACORE_CHECK(this->scale.x == this->scale.y);
+    return this->scale.x;
+}
 
 inline constexpr Node*
 container_node(const SpaceNode* space)
@@ -195,6 +208,8 @@ void
 SpaceNode::simulate(const uint32_t dt)
 {
     ASSERT_VALID_SPACE_NODE();
+    log<LogLevel::debug, LogCategory::physics>(
+        "Simulating SpaceNode(%p) physics, dt = %lu", this, dt);
     uint32_t time_left = dt + this->_time_acc;
     while (time_left > default_simulation_step_size) {
         cpSpaceStep(this->_cp_space, 0.001 * default_simulation_step_size);
@@ -304,6 +319,48 @@ SpaceNode::set_collision_handler(
                 void, CollisionPhase::separate, false>;
         }
     }
+}
+
+void
+_cp_space_query_shape_callback(
+    cpShape* cp_shape, cpContactPointSet* points, void* data)
+{
+    log<LogLevel::info, LogCategory::physics>("Query callback! %p", cp_shape);
+    auto results = reinterpret_cast<std::vector<ShapeQueryResult>*>(data);
+    cpBody* cp_body = cpShapeGetBody(cp_shape);
+
+    Node* body_node;
+    Node* hitbox_node;
+
+    if (cp_body) {
+        KAACORE_ASSERT(cpBodyGetUserData(cp_body) != nullptr);
+        body_node =
+            container_node(static_cast<BodyNode*>(cpBodyGetUserData(cp_body)));
+    }
+
+    KAACORE_ASSERT(cpShapeGetUserData(cp_shape) != nullptr);
+    hitbox_node =
+        container_node(static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape)));
+
+    results->push_back(
+        {body_node, hitbox_node, convert_contact_points(points)});
+}
+
+const std::vector<ShapeQueryResult>
+SpaceNode::query_shape(const Shape& shape, const glm::dvec2& position)
+{
+    std::vector<ShapeQueryResult> results;
+    auto shape_uptr =
+        prepare_hitbox_shape(shape, HitboxTransform(position, 0., {1., 1.}));
+
+    // shapes are created without BB set up, cpShapeUpdate refreshes it
+    cpShapeUpdate(shape_uptr.get(), cpTransformIdentity);
+
+    cpSpaceShapeQuery(
+        this->_cp_space, shape_uptr.get(), _cp_space_query_shape_callback,
+        &results);
+
+    return results;
 }
 
 glm::dvec2
@@ -574,6 +631,37 @@ BodyNode::sleeping(const bool& sleeping)
     }
 }
 
+CpShapeUniquePtr
+prepare_hitbox_shape(const Shape& shape, const HitboxTransform& transform)
+{
+    KAACORE_ASSERT(shape.type != ShapeType::none);
+    KAACORE_ASSERT(shape.type != ShapeType::freeform);
+
+    log<LogLevel::debug, LogCategory::physics>(
+        "Preparing hitbox shape with transform +(%lf, %lf), *(%lf, %lf), %%%lf",
+        transform.translation.x, transform.translation.y, transform.scale.x,
+        transform.scale.y, transform.rotation);
+
+    cpShape* shape_ptr = nullptr;
+    std::vector<cpVect> cp_points = transform.transform_points(shape.points);
+    if (shape.type == ShapeType::segment) {
+        KAACORE_ASSERT(shape.points.size() == 2);
+        shape_ptr = cpSegmentShapeNew(
+            nullptr, cp_points[0], cp_points[1],
+            shape.radius * transform.flat_radius());
+    } else if (shape.type == ShapeType::circle) {
+        KAACORE_ASSERT(shape.points.size() == 1);
+        shape_ptr = cpCircleShapeNew(
+            nullptr, shape.radius * transform.flat_radius(), cp_points[0]);
+    } else if (shape.type == ShapeType::polygon) {
+        shape_ptr = cpPolyShapeNewRaw(
+            nullptr, shape.points.size(), cp_points.data(), 0.);
+    }
+    KAACORE_ASSERT(shape_ptr != nullptr);
+
+    return CpShapeUniquePtr{shape_ptr, cpShapeFree};
+}
+
 HitboxNode::HitboxNode() {}
 
 HitboxNode::~HitboxNode()
@@ -622,24 +710,8 @@ HitboxNode::update_physics_shape()
         node->_scale *
             (node->_parent ? node->_parent->_scale : glm::dvec2(1.)));
 
-    KAACORE_ASSERT(node->_shape.type != ShapeType::none);
-    KAACORE_ASSERT(node->_shape.type != ShapeType::freeform);
-    std::vector<cpVect> cp_points =
-        hitbox_transform.transform_points(node->_shape.points);
-    if (node->_shape.type == ShapeType::segment) {
-        KAACORE_ASSERT(node->_shape.points.size() == 2);
-        new_cp_shape = cpSegmentShapeNew(
-            nullptr, cp_points[0], cp_points[1],
-            node->_shape.radius * hitbox_transform.flat_radius());
-    } else if (node->_shape.type == ShapeType::circle) {
-        KAACORE_ASSERT(node->_shape.points.size() == 1);
-        new_cp_shape = cpCircleShapeNew(
-            nullptr, node->_shape.radius * hitbox_transform.flat_radius(),
-            cp_points[0]);
-    } else if (node->_shape.type == ShapeType::polygon) {
-        new_cp_shape = cpPolyShapeNewRaw(
-            nullptr, node->_shape.points.size(), cp_points.data(), 0.);
-    }
+    new_cp_shape =
+        prepare_hitbox_shape(node->_shape, hitbox_transform).release();
 
     log<LogLevel::debug>(
         "Updating hitbox node %p shape (cpShape: %p)", node, new_cp_shape);
