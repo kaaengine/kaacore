@@ -188,7 +188,8 @@ struct DemoScene : Scene {
             }
         }
 
-        auto results = this->container->space.query_shape(this->query_shape);
+        auto results =
+            this->container->space.query_shape_overlaps(this->query_shape);
         for (auto& res : results) {
             res.hitbox_node->color(this->queried_hitbox_color);
         }

@@ -347,7 +347,7 @@ _cp_space_query_shape_callback(
 }
 
 const std::vector<ShapeQueryResult>
-SpaceNode::query_shape(const Shape& shape, const glm::dvec2& position)
+SpaceNode::query_shape_overlaps(const Shape& shape, const glm::dvec2& position)
 {
     std::vector<ShapeQueryResult> results;
     auto shape_uptr =

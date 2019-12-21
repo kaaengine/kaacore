@@ -117,7 +117,7 @@ class SpaceNode {
         uint8_t phases_mask = uint8_t(CollisionPhase::any_phase),
         bool only_non_deleted_nodes = true);
 
-    const std::vector<ShapeQueryResult> query_shape(
+    const std::vector<ShapeQueryResult> query_shape_overlaps(
         const Shape& shape, const glm::dvec2& position = {0., 0.});
 
     void gravity(const glm::dvec2& gravity);
