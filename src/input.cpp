@@ -343,10 +343,10 @@ Event::Event(SDL_Event sdl_event)
     this->common = event;
 }
 
-uint32_t
+EventType
 Event::type() const
 {
-    return this->common.type();
+    return static_cast<EventType>(this->common.type());
 }
 
 uint32_t
@@ -618,6 +618,12 @@ InputManager::ControllerManager::disconnect(ControllerID id)
 }
 
 void
+InputManager::register_callback(EventType event_type, EventCallback callback)
+{
+    this->_registered_callbacks[event_type] = callback;
+}
+
+void
 InputManager::push_event(SDL_Event sdl_event)
 {
     if (not _is_event_supported(sdl_event.type)) {
@@ -628,20 +634,25 @@ InputManager::push_event(SDL_Event sdl_event)
         case static_cast<SDL_EventType>(EventType::controller_added):
             sdl_event.cdevice.which =
                 this->controller.connect(sdl_event.cdevice.which);
-            log<LogLevel::info>("Controller conneced.");
+            log<LogLevel::debug>("Controller conneced.");
             break;
 
         case static_cast<SDL_EventType>(EventType::controller_removed):
             this->controller.disconnect(sdl_event.cdevice.which);
-            log<LogLevel::info>("Controller disconnected.");
-            break;
-
-        case static_cast<SDL_EventType>(EventType::controller_remapped):
-            log<LogLevel::info>("Controller remapped.");
+            log<LogLevel::debug>("Controller disconnected.");
             break;
     }
 
-    this->events_queue.emplace_back(sdl_event);
+    Event event(sdl_event);
+    auto it = this->_registered_callbacks.find(event.type());
+    if (it != this->_registered_callbacks.end()) {
+        auto callback = it->second;
+        if (not callback(event)) {
+            return;
+        }
+    }
+
+    this->events_queue.push_back(std::move(event));
 }
 
 void

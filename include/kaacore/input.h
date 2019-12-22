@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <initializer_list>
 #include <string>
 #include <unordered_map>
@@ -13,6 +14,8 @@
 namespace kaacore {
 
 typedef SDL_JoystickID ControllerID;
+struct Event;
+typedef std::function<bool(const Event&)> EventCallback;
 
 enum class Keycode {
     unknown = SDLK_UNKNOWN,
@@ -316,7 +319,6 @@ enum class ControllerAxis {
 
 enum class EventType {
     // Public SDL events
-    //
     quit = SDL_QUIT,
     clipboard_updated = SDL_CLIPBOARDUPDATE,
 
@@ -337,12 +339,10 @@ enum class EventType {
     controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
 
     // Public custom events
-
     music_finished = SDL_USEREVENT,
     channel_finished,
 
     // Private custom events
-
     _timer_fired,
     _sentinel,
 };
@@ -482,7 +482,7 @@ struct Event {
     Event();
     Event(const SDL_Event sdl_event);
 
-    uint32_t type() const;
+    EventType type() const;
     uint32_t timestamp() const;
 
     const SystemEvent* const system() const;
@@ -538,8 +538,12 @@ struct InputManager {
         std::unordered_map<ControllerID, SDL_GameController*> _connected_map;
     } controller;
 
+    void register_callback(EventType event_type, EventCallback callback);
     void push_event(SDL_Event sdl_event);
     void clear_events();
+
+  private:
+    std::unordered_map<EventType, EventCallback> _registered_callbacks;
 };
 
 } // namespace kaacore
