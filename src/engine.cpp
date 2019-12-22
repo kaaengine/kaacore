@@ -76,10 +76,10 @@ Engine::run(Scene* scene)
     this->is_running = true;
     log("Engine is running.");
 
+    scene->on_attach();
     this->scene = scene;
-    uint32_t ticks = SDL_GetTicks();
-
     this->scene->on_enter();
+    uint32_t ticks = SDL_GetTicks();
     while (this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
@@ -87,16 +87,18 @@ Engine::run(Scene* scene)
         this->time += dt;
         this->_pump_events();
 
-        if (this->next_scene != nullptr) {
-            this->_swap_scenes();
-        }
-
         this->renderer->begin_frame();
         this->scene->process_frame(dt);
         this->renderer->end_frame();
+
+        if (this->next_scene != nullptr) {
+            this->_swap_scenes();
+        }
     }
     this->scene->on_exit();
+    auto prev_scene = this->scene;
     this->scene = nullptr;
+    prev_scene->on_detach();
 
     log("Engine stopped.");
 }
@@ -104,6 +106,7 @@ Engine::run(Scene* scene)
 void
 Engine::change_scene(Scene* scene)
 {
+    scene->on_attach();
     this->next_scene = scene;
 }
 
@@ -184,7 +187,9 @@ Engine::_swap_scenes()
 {
     this->scene->on_exit();
     this->next_scene->on_enter();
+    auto prev_scene = this->scene;
     this->scene = this->next_scene;
+    prev_scene->on_detach();
     this->next_scene = nullptr;
 }
 

@@ -32,9 +32,11 @@ struct Scene {
     Scene();
     virtual ~Scene();
 
+    virtual void on_attach();
     virtual void on_enter();
     virtual void update(uint32_t dt);
     virtual void on_exit();
+    virtual void on_detach();
 
     void process_frame(uint32_t dt);
     void process_nodes(uint32_t dt);

@@ -136,6 +136,10 @@ Scene::process_frame(uint32_t dt)
 }
 
 void
+Scene::on_attach()
+{}
+
+void
 Scene::on_enter()
 {}
 
@@ -145,6 +149,10 @@ Scene::update(uint32_t dt)
 
 void
 Scene::on_exit()
+{}
+
+void
+Scene::on_detach()
 {}
 
 void
