@@ -126,7 +126,6 @@ Scene::process_nodes_drawing(uint32_t dt)
 void
 Scene::process_frame(uint32_t dt)
 {
-    this->time += dt;
     this->process_nodes(dt);
     this->update(dt);
     this->camera.refresh();

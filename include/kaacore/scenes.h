@@ -27,8 +27,6 @@ struct Scene {
     Node root_node;
     Camera camera;
 
-    uint64_t time = 0;
-
     std::set<Node*> simulations_registry;
 
     Scene();
