@@ -433,9 +433,11 @@ struct WindowEvent : public BaseEvent {
 };
 
 struct KeyboardEvent : public BaseEvent {
+    bool key() const;
+    bool text_input() const;
+
     bool is_pressing(const Keycode kc) const;
     bool is_releasing(const Keycode kc) const;
-    bool text_input() const;
     std::string text() const;
 };
 

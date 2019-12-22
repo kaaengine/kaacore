@@ -162,25 +162,30 @@ WindowEvent::position() const
 }
 
 bool
-KeyboardEvent::is_pressing(Keycode kc) const
+KeyboardEvent::key() const
 {
-    return (
-        this->sdl_event.type == SDL_KEYDOWN and
-        this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc));
-}
-
-bool
-KeyboardEvent::is_releasing(Keycode kc) const
-{
-    return (
-        this->sdl_event.type == SDL_KEYUP and
-        this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc));
+    return this->sdl_event.type == SDL_KEYDOWN or
+           this->sdl_event.type == SDL_KEYUP;
 }
 
 bool
 KeyboardEvent::text_input() const
 {
     return this->sdl_event.type == SDL_TEXTINPUT;
+}
+
+bool
+KeyboardEvent::is_pressing(Keycode kc) const
+{
+    return this->sdl_event.type == SDL_KEYDOWN and
+           this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc);
+}
+
+bool
+KeyboardEvent::is_releasing(Keycode kc) const
+{
+    return this->sdl_event.type == SDL_KEYUP and
+           this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc);
 }
 
 std::string
@@ -215,17 +220,15 @@ MouseEvent::wheel() const
 bool
 MouseEvent::is_pressing(const MouseButton mb) const
 {
-    return (
-        this->sdl_event.type == SDL_MOUSEBUTTONDOWN and
-        this->sdl_event.button.button == static_cast<uint8_t>(mb));
+    return this->sdl_event.type == SDL_MOUSEBUTTONDOWN and
+           this->sdl_event.button.button == static_cast<uint8_t>(mb);
 }
 
 bool
 MouseEvent::is_releasing(const MouseButton mb) const
 {
-    return (
-        this->sdl_event.type == SDL_MOUSEBUTTONUP and
-        this->sdl_event.button.button == static_cast<uint8_t>(mb));
+    return this->sdl_event.type == SDL_MOUSEBUTTONUP and
+           this->sdl_event.button.button == static_cast<uint8_t>(mb);
 }
 
 glm::dvec2
@@ -297,9 +300,8 @@ ControllerEvent::is_pressing(const ControllerButton cb) const
     if (not this->button()) {
         return false;
     }
-    return (
-        this->sdl_event.cbutton.state == SDL_PRESSED and
-        this->sdl_event.cbutton.button == static_cast<uint8_t>(cb));
+    return this->sdl_event.cbutton.state == SDL_PRESSED and
+           this->sdl_event.cbutton.button == static_cast<uint8_t>(cb);
 }
 
 bool
@@ -308,9 +310,8 @@ ControllerEvent::is_releasing(const ControllerButton cb) const
     if (not this->button()) {
         return false;
     }
-    return (
-        this->sdl_event.cbutton.state == SDL_RELEASED and
-        this->sdl_event.cbutton.button == static_cast<uint8_t>(cb));
+    return this->sdl_event.cbutton.state == SDL_RELEASED and
+           this->sdl_event.cbutton.button == static_cast<uint8_t>(cb);
 }
 
 double
