@@ -68,11 +68,9 @@ class Engine {
 extern Engine* engine;
 
 inline Engine*
-get_engine(bool must_exist = true)
+get_engine()
 {
-    if (must_exist) {
-        KAACORE_CHECK(engine != nullptr);
-    }
+    KAACORE_CHECK(engine != nullptr);
     return engine;
 }
 

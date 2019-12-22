@@ -10,7 +10,6 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/log.h"
 
 #include "kaacore/scenes.h"
 
@@ -23,13 +22,6 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-    auto engine = get_engine(false);
-    if (engine && (this == engine->scene || this == engine->next_scene)) {
-        log<LogLevel::critical, LogCategory::engine>(
-            "An attempt to delete current scene detected. Aborting.");
-        std::terminate();
-    }
-
     while (not this->root_node._children.empty()) {
         delete this->root_node._children[0];
     }
