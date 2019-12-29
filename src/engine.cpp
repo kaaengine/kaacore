@@ -160,6 +160,9 @@ Engine::_create_renderer()
 #elif SDL_VIDEO_DRIVER_WINDOWS
     this->platform_data.ndt = nullptr;
     this->platform_data.nwh = wminfo.info.win.window;
+#elif SDL_VIDEO_DRIVER_COCOA
+    this->platform_data.ndt = nullptr;
+    this->platform_data.nwh = wminfo.info.cocoa.window;
 #else
 #error "No platform configuration available for given renderer"
 #endif
