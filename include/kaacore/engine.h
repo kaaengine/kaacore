@@ -26,9 +26,7 @@ enum struct VirtualResolutionMode {
 
 class Engine {
   public:
-    uint64_t time = 0;
-    Scene* scene = nullptr;
-    Scene* next_scene = nullptr;
+    uint64_t elapsed_time = 0;
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
@@ -59,10 +57,13 @@ class Engine {
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
   private:
+    Scene* _scene = nullptr;
+    Scene* _next_scene = nullptr;
     std::unique_ptr<Window> _create_window();
     std::unique_ptr<Renderer> _create_renderer();
     void _swap_scenes();
     void _pump_events();
+    void _detach_scenes();
 };
 
 extern Engine* engine;

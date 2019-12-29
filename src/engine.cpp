@@ -42,6 +42,7 @@ Engine::~Engine()
     KAACORE_CHECK_TERMINATE(engine != nullptr);
 
     log<LogLevel::info>("Shutting down Kaacore.");
+    this->_detach_scenes();
     this->audio_manager.reset();
     this->input_manager.reset();
     this->renderer.reset();
@@ -75,31 +76,24 @@ Engine::run(Scene* scene)
 {
     this->is_running = true;
     log("Engine is running.");
-
-    scene->on_attach();
-    this->scene = scene;
-    this->scene->on_enter();
+    this->change_scene(scene);
+    this->_swap_scenes();
     uint32_t ticks = SDL_GetTicks();
     while (this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
-        this->time += dt;
+        this->elapsed_time += dt;
         this->_pump_events();
 
         this->renderer->begin_frame();
-        this->scene->process_frame(dt);
+        this->_scene->process_frame(dt);
         this->renderer->end_frame();
 
-        if (this->next_scene != nullptr) {
+        if (this->_next_scene != nullptr) {
             this->_swap_scenes();
         }
     }
-    this->scene->on_exit();
-    auto prev_scene = this->scene;
-    this->scene = nullptr;
-    prev_scene->on_detach();
-
     log("Engine stopped.");
 }
 
@@ -107,7 +101,11 @@ void
 Engine::change_scene(Scene* scene)
 {
     scene->on_attach();
-    this->next_scene = scene;
+    auto prev_scene = this->_next_scene;
+    this->_next_scene = scene;
+    if (prev_scene) {
+        prev_scene->on_detach();
+    }
 }
 
 void
@@ -185,12 +183,19 @@ Engine::_create_renderer()
 void
 Engine::_swap_scenes()
 {
-    this->scene->on_exit();
-    this->next_scene->on_enter();
-    auto prev_scene = this->scene;
-    this->scene = this->next_scene;
-    prev_scene->on_detach();
-    this->next_scene = nullptr;
+    auto prev_scene = this->_scene;
+    if (prev_scene) {
+        prev_scene->on_exit();
+    }
+
+    this->_next_scene->on_enter();
+    this->_scene = this->_next_scene;
+
+    if (prev_scene) {
+        prev_scene->on_detach();
+    }
+
+    this->_next_scene = nullptr;
 }
 
 void
@@ -212,6 +217,23 @@ Engine::_pump_events()
             this->renderer->reset();
         }
         this->input_manager->push_event(event);
+    }
+}
+
+void
+Engine::_detach_scenes()
+{
+    auto prev_scene = this->_scene;
+    this->_scene = nullptr;
+    if (prev_scene) {
+        prev_scene->on_exit();
+        prev_scene->on_detach();
+    }
+
+    prev_scene = this->_next_scene;
+    this->_next_scene = nullptr;
+    if (prev_scene) {
+        prev_scene->on_detach();
     }
 }
 
