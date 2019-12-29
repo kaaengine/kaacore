@@ -45,10 +45,19 @@ operator==(const uint32_t& event_num, const EventType& event_type)
     return static_cast<uint32_t>(event_type) == event_num;
 }
 
-uint32_t
+EventType
+_sdl_to_kaacore_type(const SDL_Event& sdl_event)
+{
+    if (sdl_event.type == SDL_WINDOWEVENT) {
+        return static_cast<EventType>(sdl_event.window.event);
+    }
+    return static_cast<EventType>(sdl_event.type);
+}
+
+EventType
 BaseEvent::type() const
 {
-    return this->sdl_event.type;
+    return _sdl_to_kaacore_type(this->sdl_event);
 }
 
 uint32_t
@@ -60,85 +69,85 @@ BaseEvent::timestamp() const
 bool
 SystemEvent::quit() const
 {
-    return this->type() == SDL_QUIT;
+    return this->type() == EventType::quit;
 }
 
 bool
 SystemEvent::clipboard_updated() const
 {
-    return this->type() == SDL_CLIPBOARDUPDATE;
+    return this->type() == EventType::clipboard_updated;
 }
 
 bool
 WindowEvent::shown() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_SHOWN;
+    return this->type() == EventType::window_shown;
 }
 
 bool
 WindowEvent::exposed() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_EXPOSED;
+    return this->type() == EventType::window_exposed;
 }
 
 bool
 WindowEvent::moved() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_MOVED;
+    return this->type() == EventType::window_moved;
 }
 
 bool
 WindowEvent::resized() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_RESIZED;
+    return this->type() == EventType::window_resized;
 }
 
 bool
 WindowEvent::minimized() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_MINIMIZED;
+    return this->type() == EventType::window_minimized;
 }
 
 bool
 WindowEvent::maximized() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_MAXIMIZED;
+    return this->type() == EventType::window_maximized;
 }
 
 bool
 WindowEvent::restored() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_RESTORED;
+    return this->type() == EventType::window_restored;
 }
 
 bool
 WindowEvent::enter() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_ENTER;
+    return this->type() == EventType::window_enter;
 }
 
 bool
 WindowEvent::leave() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_LEAVE;
+    return this->type() == EventType::window_leave;
 }
 
 bool
 WindowEvent::focus_gained() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED;
+    return this->type() == EventType::window_focus_gained;
 }
 
 bool
 WindowEvent::focus_lost() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_LOST;
+    return this->type() == EventType::window_focus_lost;
 }
 
 bool
 WindowEvent::close() const
 {
-    return this->sdl_event.window.event == SDL_WINDOWEVENT_CLOSE;
+    return this->type() == EventType::window_close;
 }
 
 glm::dvec2
@@ -164,27 +173,27 @@ WindowEvent::position() const
 bool
 KeyboardEvent::key() const
 {
-    return this->sdl_event.type == SDL_KEYDOWN or
-           this->sdl_event.type == SDL_KEYUP;
+    auto type = this->type();
+    return type == EventType::key_down or type == EventType::key_up;
 }
 
 bool
 KeyboardEvent::text_input() const
 {
-    return this->sdl_event.type == SDL_TEXTINPUT;
+    return this->type() == EventType::text_input;
 }
 
 bool
 KeyboardEvent::is_pressing(Keycode kc) const
 {
-    return this->sdl_event.type == SDL_KEYDOWN and
+    return this->type() == EventType::key_down and
            this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc);
 }
 
 bool
 KeyboardEvent::is_releasing(Keycode kc) const
 {
-    return this->sdl_event.type == SDL_KEYUP and
+    return this->type() == EventType::key_up and
            this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc);
 }
 
@@ -201,33 +210,34 @@ KeyboardEvent::text() const
 bool
 MouseEvent::button() const
 {
-    return this->type() == SDL_MOUSEBUTTONDOWN or
-           this->type() == SDL_MOUSEBUTTONUP;
+    auto type = this->type();
+    return type == EventType::mouse_button_down or
+           type == EventType::mouse_button_up;
 }
 
 bool
 MouseEvent::motion() const
 {
-    return this->type() == SDL_MOUSEMOTION;
+    return this->type() == EventType::mouse_motion;
 }
 
 bool
 MouseEvent::wheel() const
 {
-    return this->type() == SDL_MOUSEWHEEL;
+    return this->type() == EventType::mouse_wheel;
 }
 
 bool
 MouseEvent::is_pressing(const MouseButton mb) const
 {
-    return this->sdl_event.type == SDL_MOUSEBUTTONDOWN and
+    return this->type() == EventType::mouse_button_down and
            this->sdl_event.button.button == static_cast<uint8_t>(mb);
 }
 
 bool
 MouseEvent::is_releasing(const MouseButton mb) const
 {
-    return this->sdl_event.type == SDL_MOUSEBUTTONUP and
+    return this->type() == EventType::mouse_button_up and
            this->sdl_event.button.button == static_cast<uint8_t>(mb);
 }
 
@@ -266,32 +276,33 @@ MouseEvent::scroll() const
 bool
 ControllerEvent::button() const
 {
-    return this->type() == SDL_CONTROLLERBUTTONDOWN or
-           this->type() == SDL_CONTROLLERBUTTONUP;
+    auto type = this->type();
+    return type == EventType::controller_button_down or
+           type == EventType::controller_button_up;
 }
 
 bool
 ControllerEvent::axis() const
 {
-    return this->type() == SDL_CONTROLLERAXISMOTION;
+    return this->type() == EventType::controller_axis_motion;
 }
 
 bool
 ControllerEvent::added() const
 {
-    return this->type() == SDL_CONTROLLERDEVICEADDED;
+    return this->type() == EventType::controller_added;
 }
 
 bool
 ControllerEvent::removed() const
 {
-    return this->type() == SDL_CONTROLLERDEVICEREMOVED;
+    return this->type() == EventType::controller_removed;
 }
 
 bool
 ControllerEvent::remapped() const
 {
-    return this->type() == SDL_CONTROLLERDEVICEREMAPPED;
+    return this->type() == EventType::controller_removed;
 }
 
 bool
@@ -347,7 +358,7 @@ Event::Event(SDL_Event sdl_event)
 EventType
 Event::type() const
 {
-    return static_cast<EventType>(this->common.type());
+    return this->common.type();
 }
 
 uint32_t
@@ -360,7 +371,7 @@ const SystemEvent* const
 Event::system() const
 {
     auto type = this->type();
-    if (type == SDL_QUIT or type == SDL_CLIPBOARDUPDATE) {
+    if (type == EventType::quit or type == EventType::clipboard_updated) {
         return &this->_system;
     }
     return nullptr;
@@ -369,7 +380,7 @@ Event::system() const
 const WindowEvent* const
 Event::window() const
 {
-    if (this->type() == SDL_WINDOWEVENT) {
+    if (this->common.sdl_event.type == SDL_WINDOWEVENT) {
         return &this->_window;
     }
     return nullptr;
@@ -379,7 +390,8 @@ const KeyboardEvent* const
 Event::keyboard() const
 {
     auto type = this->type();
-    if (type == SDL_KEYUP or type == SDL_KEYDOWN or type == SDL_TEXTINPUT) {
+    if (type == EventType::key_up or type == EventType::key_down or
+        type == EventType::text_input) {
         return &this->_keyboard;
     }
     return nullptr;
@@ -389,8 +401,9 @@ const MouseEvent* const
 Event::mouse() const
 {
     auto type = this->common.type();
-    if (type == SDL_MOUSEBUTTONUP or type == SDL_MOUSEBUTTONDOWN or
-        type == SDL_MOUSEMOTION or type == SDL_MOUSEWHEEL) {
+    if (type == EventType::mouse_button_up or
+        type == EventType::mouse_button_down or
+        type == EventType::mouse_motion or type == EventType::mouse_wheel) {
         return &this->_mouse;
     }
     return nullptr;
@@ -400,10 +413,12 @@ const ControllerEvent* const
 Event::controller() const
 {
     auto type = this->common.type();
-    if (type == SDL_CONTROLLERBUTTONDOWN or type == SDL_CONTROLLERBUTTONUP or
-        type == SDL_CONTROLLERAXISMOTION or type == SDL_CONTROLLERDEVICEADDED or
-        type == SDL_CONTROLLERDEVICEREMOVED or
-        type == SDL_CONTROLLERDEVICEREMAPPED) {
+    if (type == EventType::controller_button_up or
+        type == EventType::controller_button_down or
+        type == EventType::controller_axis_motion or
+        type == EventType::controller_added or
+        type == EventType::controller_removed or
+        type == EventType::controller_remapped) {
         return &this->_controller;
     }
     return nullptr;
@@ -627,18 +642,19 @@ InputManager::register_callback(EventType event_type, EventCallback callback)
 void
 InputManager::push_event(SDL_Event sdl_event)
 {
-    if (not _is_event_supported(sdl_event.type)) {
+    auto type = _sdl_to_kaacore_type(sdl_event);
+    if (not _is_event_supported(type)) {
         return;
     }
 
-    switch (sdl_event.type) {
-        case static_cast<SDL_EventType>(EventType::controller_added):
+    switch (type) {
+        case EventType::controller_added:
             sdl_event.cdevice.which =
                 this->controller.connect(sdl_event.cdevice.which);
             log<LogLevel::debug>("Controller conneced.");
             break;
 
-        case static_cast<SDL_EventType>(EventType::controller_removed):
+        case EventType::controller_removed:
             this->controller.disconnect(sdl_event.cdevice.which);
             log<LogLevel::debug>("Controller disconnected.");
             break;
