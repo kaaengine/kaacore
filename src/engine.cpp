@@ -87,10 +87,10 @@ Engine::run(Scene* scene)
         this->_pump_events();
 
         this->renderer->begin_frame();
-        this->_scene->process_frame(dt);
+        this->scene->process_frame(dt);
         this->renderer->end_frame();
 
-        if (this->_next_scene != nullptr) {
+        if (this->next_scene != nullptr) {
             this->_swap_scenes();
         }
     }
@@ -101,8 +101,8 @@ void
 Engine::change_scene(Scene* scene)
 {
     scene->on_attach();
-    auto prev_scene = this->_next_scene;
-    this->_next_scene = scene;
+    auto prev_scene = this->next_scene;
+    this->next_scene = scene;
     if (prev_scene) {
         prev_scene->on_detach();
     }
@@ -186,19 +186,19 @@ Engine::_create_renderer()
 void
 Engine::_swap_scenes()
 {
-    auto prev_scene = this->_scene;
+    auto prev_scene = this->scene;
     if (prev_scene) {
         prev_scene->on_exit();
     }
 
-    this->_next_scene->on_enter();
-    this->_scene = this->_next_scene;
+    this->next_scene->on_enter();
+    this->scene = this->next_scene;
 
     if (prev_scene) {
         prev_scene->on_detach();
     }
 
-    this->_next_scene = nullptr;
+    this->next_scene = nullptr;
 }
 
 void
@@ -226,15 +226,15 @@ Engine::_pump_events()
 void
 Engine::_detach_scenes()
 {
-    auto prev_scene = this->_scene;
-    this->_scene = nullptr;
+    auto prev_scene = this->scene;
+    this->scene = nullptr;
     if (prev_scene) {
         prev_scene->on_exit();
         prev_scene->on_detach();
     }
 
-    prev_scene = this->_next_scene;
-    this->_next_scene = nullptr;
+    prev_scene = this->next_scene;
+    this->next_scene = nullptr;
     if (prev_scene) {
         prev_scene->on_detach();
     }

@@ -636,7 +636,7 @@ InputManager::ControllerManager::disconnect(ControllerID id)
 void
 InputManager::register_callback(EventType event_type, EventCallback callback)
 {
-    this->_registered_callbacks[event_type] = callback;
+    this->_registered_callbacks[event_type] = std::move(callback);
 }
 
 void
@@ -661,9 +661,9 @@ InputManager::push_event(SDL_Event sdl_event)
     }
 
     Event event(sdl_event);
-    auto it = this->_registered_callbacks.find(event.type());
+    auto it = this->_registered_callbacks.find(type);
     if (it != this->_registered_callbacks.end()) {
-        auto callback = it->second;
+        EventCallback& callback = it->second;
         if (not callback(event)) {
             return;
         }
