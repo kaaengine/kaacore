@@ -148,4 +148,26 @@ Shape::Freeform(
     return Shape(ShapeType::freeform, {}, 0., indices, vertices);
 }
 
+Shape
+Shape::transform(const Transformation& transformation)
+{
+    auto points = this->points;
+    for (auto& pt : points) {
+        pt = transformation * pt;
+    }
+
+    // TODO radius
+    auto radius = this->radius;
+
+    auto vertices = this->vertices;
+    for (auto& vt : vertices) {
+        auto tmp_pt = glm::dvec2(vt.xyz.x, vt.xyz.y);
+        tmp_pt = transformation * tmp_pt;
+        vt.xyz.x = tmp_pt.x;
+        vt.xyz.y = tmp_pt.y;
+    }
+
+    return Shape(this->type, points, radius, this->indices, vertices);
+}
+
 } // namespace kaacore

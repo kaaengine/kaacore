@@ -4,12 +4,60 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include "kaacore/exceptions.h"
 
 #include "kaacore/geometry.h"
 
 namespace kaacore {
+
+Transformation::Transformation() : Transformation(glm::dmat4(1.)) {}
+
+Transformation::Transformation(const glm::dmat4& matrix) : _matrix(matrix) {}
+
+Transformation
+Transformation::translate(const glm::dvec2& tr)
+{
+    return Transformation{glm::translate(glm::dvec3(tr.x, tr.y, 0.))};
+}
+
+Transformation
+Transformation::scale(const glm::dvec2& sc)
+{
+    return Transformation{glm::scale(glm::dvec3(sc.x, sc.y, 1.))};
+}
+
+Transformation
+Transformation::rotate(const double& r)
+{
+    return Transformation{glm::rotate(r, glm::dvec3(0., 0., 1.))};
+}
+
+Transformation
+Transformation::inverse() const
+{
+    return Transformation{glm::inverse(this->_matrix)};
+}
+
+Transformation Transformation::operator*(
+    const Transformation& transformation) const
+{
+    return Transformation{this->_matrix * transformation._matrix};
+}
+
+glm::dvec2 Transformation::operator*(const glm::dvec2& position) const
+{
+    return this->_matrix * glm::dvec4(position, 0., 1.);
+}
+
+const glm::dmat3x2
+Transformation::matrix_abcd_txy() const
+{
+    return {{this->_matrix[0][0], this->_matrix[0][1]},
+            {this->_matrix[1][0], this->_matrix[1][1]},
+            {this->_matrix[3][0], this->_matrix[3][1]}};
+}
 
 int8_t
 compare_points(const glm::dvec2 p, const glm::dvec2 q)

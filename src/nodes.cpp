@@ -350,6 +350,27 @@ Node::scale(const glm::dvec2& scale)
     }
 }
 
+Transformation
+Node::absolute_transformation()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+    return Transformation{this->_model_matrix.value};
+}
+
+Transformation
+Node::get_relative_transformation(const Node* const ancestor)
+{
+    if (ancestor == nullptr) {
+        return this->absolute_transformation();
+    } else if (ancestor == this) {
+        return Transformation{glm::dmat4(1.)};
+    }
+
+    return Transformation{this->_compute_model_matrix_cumulative(ancestor)};
+}
+
 int16_t
 Node::z_index()
 {

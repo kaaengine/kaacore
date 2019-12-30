@@ -38,6 +38,25 @@ inline constexpr uint8_t operator&(const Alignment alignment, uint8_t mask)
     return uint8_t(alignment) & mask;
 }
 
+class Transformation {
+    glm::dmat4 _matrix;
+
+  public:
+    Transformation();
+    Transformation(const glm::dmat4& matrix);
+
+    static Transformation translate(const glm::dvec2& tr);
+    static Transformation scale(const glm::dvec2& sc);
+    static Transformation rotate(const double& r);
+
+    Transformation inverse() const;
+
+    Transformation operator*(const Transformation& transformation) const;
+    glm::dvec2 operator*(const glm::dvec2& position) const;
+
+    const glm::dmat3x2 matrix_abcd_txy() const;
+};
+
 template<typename T>
 struct BoundingBox {
     T min_x, min_y, max_x, max_y;
