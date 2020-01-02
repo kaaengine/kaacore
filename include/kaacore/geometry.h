@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace kaacore {
 
@@ -38,6 +39,21 @@ inline constexpr uint8_t operator&(const Alignment alignment, uint8_t mask)
     return uint8_t(alignment) & mask;
 }
 
+template<typename T>
+struct DecomposedTransformation {
+    glm::tvec3<T> scale;
+    glm::tquat<T> rotation;
+    glm::tvec3<T> translation;
+    glm::tvec3<T> skew;
+    glm::tvec4<T> perspective;
+
+    DecomposedTransformation(const glm::tmat4x4<T>& matrix)
+    {
+        glm::decompose(matrix, this->scale, this->rotation, this->translation,
+                       this->skew, this->perspective);
+    }
+};
+
 class Transformation {
     glm::dmat4 _matrix;
 
@@ -55,6 +71,7 @@ class Transformation {
     glm::dvec2 operator*(const glm::dvec2& position) const;
 
     const glm::dmat3x2 matrix_abcd_txy() const;
+    const DecomposedTransformation<double> decompose() const;
 };
 
 template<typename T>

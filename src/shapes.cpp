@@ -156,8 +156,16 @@ Shape::transform(const Transformation& transformation)
         pt = transformation * pt;
     }
 
-    // TODO radius
     auto radius = this->radius;
+    if (radius != 0.) {
+        glm::dvec2 scale_ratio = glm::abs(transformation.decompose().scale);
+        if (scale_ratio.x != scale_ratio.y) {
+            throw kaacore::exception(
+                "Cannot transform shape radius by non-equal scale"
+            );
+        }
+        radius *= scale_ratio.x;
+    }
 
     auto vertices = this->vertices;
     for (auto& vt : vertices) {

@@ -59,6 +59,12 @@ Transformation::matrix_abcd_txy() const
             {this->_matrix[3][0], this->_matrix[3][1]}};
 }
 
+const DecomposedTransformation<double>
+Transformation::decompose() const
+{
+    return DecomposedTransformation<double>{this->_matrix};
+}
+
 int8_t
 compare_points(const glm::dvec2 p, const glm::dvec2 q)
 {
