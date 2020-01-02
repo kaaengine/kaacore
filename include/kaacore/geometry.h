@@ -49,8 +49,9 @@ struct DecomposedTransformation {
 
     DecomposedTransformation(const glm::tmat4x4<T>& matrix)
     {
-        glm::decompose(matrix, this->scale, this->rotation, this->translation,
-                       this->skew, this->perspective);
+        glm::decompose(
+            matrix, this->scale, this->rotation, this->translation, this->skew,
+            this->perspective);
     }
 };
 

@@ -161,8 +161,7 @@ Shape::transform(const Transformation& transformation)
         glm::dvec2 scale_ratio = glm::abs(transformation.decompose().scale);
         if (scale_ratio.x != scale_ratio.y) {
             throw kaacore::exception(
-                "Cannot transform shape radius by non-equal scale"
-            );
+                "Cannot transform shape radius by non-equal scale");
         }
         radius *= scale_ratio.x;
     }
