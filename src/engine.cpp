@@ -78,11 +78,11 @@ Engine::run(Scene* scene)
         this->_run(scene);
     } catch (...) {
         this->_detach_scenes();
-        this->is_running = False;
+        this->is_running = false;
         throw;
     }
     this->_detach_scenes();
-    this->is_running = False;
+    this->is_running = false;
 }
 
 void
