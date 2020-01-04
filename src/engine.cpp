@@ -74,37 +74,52 @@ void
 Engine::run(Scene* scene)
 {
     this->is_running = true;
+    try {
+        this->_run(scene);
+    } catch (...) {
+        this->_detach_scenes();
+        this->is_running = False;
+        throw;
+    }
+    this->_detach_scenes();
+    this->is_running = False;
+}
+
+void
+Engine::_run(Scene* scene)
+{
     log("Engine is running.");
-
-    this->scene = scene;
+    this->_scene = scene;
+    this->_scene->on_enter();
     uint32_t ticks = SDL_GetTicks();
-
-    this->scene->on_enter();
     while (this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
-        this->time += dt;
-        this->_pump_events();
+        this->elapsed_time += dt;
 
-        if (this->next_scene != nullptr) {
+        this->_pump_events();
+        if (this->_next_scene) {
             this->_swap_scenes();
         }
-
         this->renderer->begin_frame();
-        this->scene->process_frame(dt);
+        this->_scene->process_frame(dt);
         this->renderer->end_frame();
     }
-    this->scene->on_exit();
-    this->scene = nullptr;
-
+    this->_scene->on_exit();
     log("Engine stopped.");
 }
 
 void
 Engine::change_scene(Scene* scene)
 {
-    this->next_scene = scene;
+    this->_next_scene = scene;
+}
+
+Scene*
+Engine::current_scene()
+{
+    return this->_scene.data();
 }
 
 void
@@ -185,10 +200,16 @@ Engine::_create_renderer()
 void
 Engine::_swap_scenes()
 {
-    this->scene->on_exit();
-    this->next_scene->on_enter();
-    this->scene = this->next_scene;
-    this->next_scene = nullptr;
+    this->_scene->on_exit();
+    this->_next_scene->on_enter();
+    this->_scene = std::move(this->_next_scene);
+}
+
+void
+Engine::_detach_scenes()
+{
+    this->_scene.detach();
+    this->_next_scene.detach();
 }
 
 void
@@ -211,6 +232,63 @@ Engine::_pump_events()
         }
         this->input_manager->push_event(event);
     }
+}
+
+Engine::_ScenePointerWrapper::_ScenePointerWrapper() : _scene_ptr(nullptr) {}
+
+Engine::_ScenePointerWrapper::operator bool() const
+{
+    return this->_scene_ptr != nullptr;
+}
+
+Scene* Engine::_ScenePointerWrapper::operator->() const
+{
+    return this->_scene_ptr;
+}
+
+Engine::_ScenePointerWrapper&
+Engine::_ScenePointerWrapper::operator=(Scene* const scene)
+{
+    if (scene == this->_scene_ptr) {
+        return *this;
+    }
+
+    if (scene) {
+        scene->on_attach();
+    }
+
+    this->detach();
+    this->_scene_ptr = scene;
+    return *this;
+}
+
+Engine::_ScenePointerWrapper&
+Engine::_ScenePointerWrapper::operator=(_ScenePointerWrapper&& other)
+{
+    if (this == &other) {
+        return *this;
+    }
+
+    auto tmp = this->_scene_ptr;
+    this->_scene_ptr = other._scene_ptr;
+    other._scene_ptr = tmp;
+    other.detach();
+}
+
+void
+Engine::_ScenePointerWrapper::detach()
+{
+    auto prev_scene = this->_scene_ptr;
+    this->_scene_ptr = nullptr;
+    if (prev_scene) {
+        prev_scene->on_detach();
+    }
+}
+
+Scene*
+Engine::_ScenePointerWrapper::data()
+{
+    return this->_scene_ptr;
 }
 
 } // namespace kaacore

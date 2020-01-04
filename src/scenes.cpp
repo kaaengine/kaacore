@@ -10,7 +10,6 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/log.h"
 
 #include "kaacore/scenes.h"
 
@@ -23,13 +22,6 @@ Scene::Scene()
 
 Scene::~Scene()
 {
-    auto engine = get_engine(false);
-    if (engine && (this == engine->scene || this == engine->next_scene)) {
-        log<LogLevel::critical, LogCategory::engine>(
-            "An attempt to delete current scene detected. Aborting.");
-        std::terminate();
-    }
-
     while (not this->root_node._children.empty()) {
         delete this->root_node._children[0];
     }
@@ -126,7 +118,6 @@ Scene::process_nodes_drawing(uint32_t dt)
 void
 Scene::process_frame(uint32_t dt)
 {
-    this->time += dt;
     this->process_nodes(dt);
     this->update(dt);
     this->camera.refresh();
@@ -135,6 +126,10 @@ Scene::process_frame(uint32_t dt)
         glm::value_ptr(get_engine()->renderer->projection_matrix));
     this->process_nodes_drawing(dt);
 }
+
+void
+Scene::on_attach()
+{}
 
 void
 Scene::on_enter()
@@ -146,6 +141,10 @@ Scene::update(uint32_t dt)
 
 void
 Scene::on_exit()
+{}
+
+void
+Scene::on_detach()
 {}
 
 void
