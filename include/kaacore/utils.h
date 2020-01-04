@@ -20,15 +20,17 @@ container_of(const M* ptr, const M T::*member)
         reinterpret_cast<intptr_t>(ptr) - offset_of(member));
 }
 
+
+std::default_random_engine& get_random_engine();
+
+
 template<typename T>
 T
 random_uid()
 {
-    static std::random_device rd;
-    static std::default_random_engine generator{rd()};
     static std::uniform_int_distribution<T> distribution{
         std::numeric_limits<T>::min() + 1, std::numeric_limits<T>::max()};
-    return distribution(generator);
+    return distribution(get_random_engine());
 }
 
 } // namespace kaacore
