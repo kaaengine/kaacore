@@ -53,7 +53,7 @@ class Sound {
 class SoundPlayback {
     Sound _sound;
     double _volume = 1.;
-    uint16_t _channel_id;
+    ChannelId _channel_id;
     uint64_t _playback_uid;
 
   public:
@@ -69,7 +69,7 @@ class SoundPlayback {
 
     AudioState state() const;
     bool is_playing() const;
-    void play(double volume_factor = 1.);
+    void play();
 
     bool is_paused() const;
     bool pause();
@@ -164,6 +164,8 @@ class AudioManager {
     void _pause_channel(const ChannelId& channel_id);
     void _resume_channel(const ChannelId& channel_id);
     void _stop_channel(const ChannelId& channel_id);
+    void _update_channel_volume(
+        const ChannelId& channel_id, const double volume);
 
     void _pause_music();
     void _resume_music();
@@ -171,10 +173,10 @@ class AudioManager {
 
     void _recalc_music_volume();
     void _recalc_channels_volume();
-    void _recalc_channel_volume(uint16_t channel_id);
+    void _recalc_channel_volume(ChannelId channel_id);
 
     void _handle_music_finished();
-    void _handle_channel_finished(uint16_t channel_id);
+    void _handle_channel_finished(ChannelId channel_id);
 
   public:
     AudioManager();

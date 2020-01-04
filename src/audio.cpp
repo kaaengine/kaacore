@@ -92,6 +92,10 @@ void
 SoundPlayback::volume(const double vol)
 {
     this->_volume = vol;
+    if (this->state() != AudioState::stopped) {
+        get_engine()->audio_manager->_update_channel_volume(
+            this->_channel_id, this->_volume * this->_sound.volume());
+    }
 }
 
 AudioState
@@ -112,14 +116,14 @@ SoundPlayback::is_playing() const
 }
 
 void
-SoundPlayback::play(double volume_factor)
+SoundPlayback::play()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->state() != AudioState::stopped) {
         this->stop();
     }
     auto [channel_id, playback_uid] = get_engine()->audio_manager->play_sound(
-        this->_sound, this->_volume * this->_sound.volume() * volume_factor);
+        this->_sound, this->_volume * this->_sound.volume());
     this->_channel_id = channel_id;
     this->_playback_uid = playback_uid;
 }
@@ -523,6 +527,18 @@ AudioManager::_stop_channel(const ChannelId& channel_id)
 }
 
 void
+AudioManager::_update_channel_volume(
+    const ChannelId& channel_id, const double volume)
+{
+    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    auto& channel_state = this->_channels_state[channel_id];
+    if (channel_state.current_sound) {
+        channel_state.requested_volume = volume;
+        this->_recalc_channel_volume(channel_id);
+    }
+}
+
+void
 AudioManager::_pause_music()
 {
     Mix_PauseMusic();
@@ -560,7 +576,7 @@ AudioManager::_recalc_channels_volume()
 }
 
 void
-AudioManager::_recalc_channel_volume(uint16_t channel_id)
+AudioManager::_recalc_channel_volume(ChannelId channel_id)
 {
     KAACORE_ASSERT(channel_id < this->_channels_state.size());
     KAACORE_ASSERT(this->_channels_state[channel_id].current_sound);
@@ -578,7 +594,7 @@ AudioManager::_handle_music_finished()
 }
 
 void
-AudioManager::_handle_channel_finished(uint16_t channel_id)
+AudioManager::_handle_channel_finished(ChannelId channel_id)
 {
     log<LogLevel::debug>("Sound channel #%u finished playback", channel_id);
     if (channel_id < this->_channels_state.size()) {

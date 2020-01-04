@@ -20,9 +20,8 @@ container_of(const M* ptr, const M T::*member)
         reinterpret_cast<intptr_t>(ptr) - offset_of(member));
 }
 
-
-std::default_random_engine& get_random_engine();
-
+std::default_random_engine&
+get_random_engine();
 
 template<typename T>
 T
