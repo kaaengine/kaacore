@@ -7,13 +7,14 @@ option(KAACORE_SHARED "Build kaacore-shared" OFF)
 option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
 
 add_subdirectory(third_party/bgfx)
+target_compile_options(bgfx PUBLIC -DBGFX_CONFIG_MULTITHREADED=0)
 if (TARGET astc-codec)
     set_target_properties(astc-codec PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 set(SDL_STATIC OFF CACHE BOOL "")
 add_subdirectory(third_party/sdl2)
-target_compile_options(SDL2 PUBLIC -D SDL_DISABLE_ANALYZE_MACROS)
+target_compile_options(SDL2 PUBLIC -DSDL_DISABLE_ANALYZE_MACROS)
 
 set(SDL_MIXER_SHARED OFF CACHE BOOL "")
 add_subdirectory(third_party/sdl_mixer)

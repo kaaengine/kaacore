@@ -11,6 +11,13 @@
 
 namespace kaacore {
 
+bool
+_handle_quit(const Event& event)
+{
+    get_engine()->quit();
+    return false;
+}
+
 glm::dvec2
 _naive_screen_position_to_virtual(int32_t x, int32_t y)
 {
@@ -444,6 +451,8 @@ InputManager::InputManager()
         KAACORE_CHECK_TERMINATE(first_event == SDL_USEREVENT);
     }
     this->_custom_events_registered = true;
+
+    this->register_callback(EventType::quit, _handle_quit);
 }
 
 std::string
@@ -636,7 +645,11 @@ InputManager::ControllerManager::disconnect(ControllerID id)
 void
 InputManager::register_callback(EventType event_type, EventCallback callback)
 {
-    this->_registered_callbacks[event_type] = std::move(callback);
+    if (callback != nullptr) {
+        this->_registered_callbacks[event_type] = std::move(callback);
+    } else {
+        this->_registered_callbacks.erase(event_type);
+    }
 }
 
 void

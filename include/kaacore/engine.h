@@ -27,8 +27,6 @@ enum struct VirtualResolutionMode {
 class Engine {
   public:
     uint64_t elapsed_time = 0;
-    Scene* scene = nullptr;
-    Scene* next_scene = nullptr;
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
@@ -50,6 +48,7 @@ class Engine {
     std::vector<Display> get_displays();
     void run(Scene* scene);
     void change_scene(Scene* scene);
+    Scene* current_scene();
     void quit();
 
     glm::uvec2 virtual_resolution() const;
@@ -59,11 +58,32 @@ class Engine {
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
   private:
+    class _ScenePointerWrapper {
+      public:
+        _ScenePointerWrapper();
+        _ScenePointerWrapper(const _ScenePointerWrapper&) = delete;
+        _ScenePointerWrapper(const _ScenePointerWrapper&&) = delete;
+        _ScenePointerWrapper& operator=(const _ScenePointerWrapper&) = delete;
+        _ScenePointerWrapper& operator=(Scene* const scene);
+        _ScenePointerWrapper& operator=(_ScenePointerWrapper&& other);
+        operator bool() const;
+        Scene* operator->() const;
+        void detach();
+        Scene* data();
+
+      private:
+        Scene* _scene_ptr;
+    };
+
+    _ScenePointerWrapper _scene;
+    _ScenePointerWrapper _next_scene;
+
     std::unique_ptr<Window> _create_window();
     std::unique_ptr<Renderer> _create_renderer();
+    void _run(Scene* scene);
     void _swap_scenes();
-    void _pump_events();
     void _detach_scenes();
+    void _pump_events();
 };
 
 extern Engine* engine;
