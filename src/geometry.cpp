@@ -40,29 +40,44 @@ Transformation::inverse() const
     return Transformation{glm::inverse(this->_matrix)};
 }
 
-Transformation Transformation::operator*(
-    const Transformation& transformation) const
+double
+Transformation::at(const size_t col, const size_t row) const
 {
-    return Transformation{this->_matrix * transformation._matrix};
-}
-
-glm::dvec2 Transformation::operator*(const glm::dvec2& position) const
-{
-    return this->_matrix * glm::dvec4(position, 0., 1.);
-}
-
-const glm::dmat3x2
-Transformation::matrix_abcd_txy() const
-{
-    return {{this->_matrix[0][0], this->_matrix[0][1]},
-            {this->_matrix[1][0], this->_matrix[1][1]},
-            {this->_matrix[3][0], this->_matrix[3][1]}};
+    KAACORE_ASSERT(col < 4 and col >= 0);
+    KAACORE_ASSERT(row < 4 and row >= 0);
+    return this->_matrix[col][row];
 }
 
 const DecomposedTransformation<double>
 Transformation::decompose() const
 {
     return DecomposedTransformation<double>{this->_matrix};
+}
+
+Transformation
+operator|(const Transformation& left, const Transformation& right)
+{
+    return Transformation{right._matrix * left._matrix};
+}
+
+glm::dvec2
+operator|(const glm::dvec2& position, const Transformation& transformation)
+{
+    return transformation._matrix * glm::dvec4(position, 0., 1.);
+}
+
+Transformation&
+operator|=(Transformation& transformation, const Transformation& other)
+{
+    transformation = Transformation{other._matrix * transformation._matrix};
+    return transformation;
+}
+
+glm::dvec2&
+operator|=(glm::dvec2& position, const Transformation& transformation)
+{
+    position = transformation._matrix * glm::dvec4(position, 0., 1.);
+    return position;
 }
 
 int8_t

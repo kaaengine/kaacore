@@ -153,7 +153,7 @@ Shape::transform(const Transformation& transformation)
 {
     auto points = this->points;
     for (auto& pt : points) {
-        pt = transformation * pt;
+        pt = pt | transformation;
     }
 
     auto radius = this->radius;
@@ -169,7 +169,7 @@ Shape::transform(const Transformation& transformation)
     auto vertices = this->vertices;
     for (auto& vt : vertices) {
         auto tmp_pt = glm::dvec2(vt.xyz.x, vt.xyz.y);
-        tmp_pt = transformation * tmp_pt;
+        tmp_pt |= transformation;
         vt.xyz.x = tmp_pt.x;
         vt.xyz.y = tmp_pt.y;
     }

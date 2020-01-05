@@ -44,18 +44,27 @@ struct DecomposedTransformation {
     glm::tvec3<T> scale;
     glm::tquat<T> rotation;
     glm::tvec3<T> translation;
-    glm::tvec3<T> skew;
-    glm::tvec4<T> perspective;
 
     DecomposedTransformation(const glm::tmat4x4<T>& matrix)
     {
+        glm::tvec3<T> _skew;
+        glm::tvec4<T> _perspective;
         glm::decompose(
-            matrix, this->scale, this->rotation, this->translation, this->skew,
-            this->perspective);
+            matrix, this->scale, this->rotation, this->translation, _skew,
+            _perspective);
     }
 };
 
 class Transformation {
+    friend Transformation operator|(
+        const Transformation& left, const Transformation& right);
+    friend glm::dvec2 operator|(
+        const glm::dvec2& position, const Transformation& transformation);
+    friend Transformation& operator|=(
+        Transformation& left, const Transformation& right);
+    friend glm::dvec2& operator|=(
+        glm::dvec2& position, const Transformation& transformation);
+
     glm::dmat4 _matrix;
 
   public:
@@ -68,12 +77,19 @@ class Transformation {
 
     Transformation inverse() const;
 
-    Transformation operator*(const Transformation& transformation) const;
-    glm::dvec2 operator*(const glm::dvec2& position) const;
-
-    const glm::dmat3x2 matrix_abcd_txy() const;
+    double at(const size_t col, const size_t row) const;
     const DecomposedTransformation<double> decompose() const;
 };
+
+Transformation
+operator|(const Transformation& left, const Transformation& right);
+glm::dvec2
+operator|(const glm::dvec2& position, const Transformation& transformation);
+
+Transformation&
+operator|=(Transformation& left, const Transformation& right);
+glm::dvec2&
+operator|=(glm::dvec2& position, const Transformation& transformation);
 
 template<typename T>
 struct BoundingBox {
