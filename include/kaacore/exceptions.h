@@ -35,18 +35,22 @@
 
 #if (KAACORE_PROTECT_ASSERTS)
 #define KAACORE_ASSERT(condition) KAACORE_THROW_IF_NOT_PASSED(condition)
-#define KAACORE_ASSERT_TERMINATE(condition) KAACORE_TERMINATE_IF_NOT_PASSED(condition)
+#define KAACORE_ASSERT_TERMINATE(condition)                                    \
+    KAACORE_TERMINATE_IF_NOT_PASSED(condition)
 #else
 #define KAACORE_ASSERT(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
-#define KAACORE_ASSERT_TERMINATE(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
+#define KAACORE_ASSERT_TERMINATE(condition)                                    \
+    KAACORE_IGNORE_IF_NOT_PASSED(condition)
 #endif
 
 #if (KAACORE_PROTECT_CHECKS)
 #define KAACORE_CHECK(condition) KAACORE_THROW_IF_NOT_PASSED(condition)
-#define KAACORE_CHECK_TERMINATE(condition) KAACORE_TERMINATE_IF_NOT_PASSED(condition)
+#define KAACORE_CHECK_TERMINATE(condition)                                     \
+    KAACORE_TERMINATE_IF_NOT_PASSED(condition)
 #else
 #define KAACORE_CHECK(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
-#define KAACORE_CHECK_TERMINATE(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
+#define KAACORE_CHECK_TERMINATE(condition)                                     \
+    KAACORE_IGNORE_IF_NOT_PASSED(condition)
 #endif
 
 namespace kaacore {
