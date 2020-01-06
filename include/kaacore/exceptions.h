@@ -11,7 +11,7 @@
 #define KAACORE_TRACE_STRING(s)                                                \
     __FILE__ ":" KAACORE_STRINGIFY(__LINE__) " !(" #s ")"
 
-#define KAACORE_CHECK(condition)                                               \
+#define KAACORE_THROW_IF_NOT_PASSED(condition)                                 \
     do {                                                                       \
         if (not(condition)) {                                                  \
             kaacore::log<kaacore::LogLevel::error>(                            \
@@ -20,15 +20,7 @@
         }                                                                      \
     } while (0)
 
-#ifdef NDEBUG
-#define KAACORE_ASSERT(condition)                                              \
-    do {                                                                       \
-    } while (0)
-#else
-#define KAACORE_ASSERT(condition) KAACORE_CHECK(condition)
-#endif
-
-#define KAACORE_CHECK_TERMINATE(condition)                                     \
+#define KAACORE_TERMINATE_IF_NOT_PASSED(condition)                             \
     do {                                                                       \
         if (not(condition)) {                                                  \
             kaacore::log<kaacore::LogLevel::critical>(                         \
@@ -37,12 +29,24 @@
         }                                                                      \
     } while (0)
 
-#ifdef NDEBUG
-#define KAACORE_ASSERT_TERMINATE(condition)                                    \
+#define KAACORE_IGNORE_IF_NOT_PASSED(condition)                                \
     do {                                                                       \
     } while (0)
+
+#if (KAACORE_PROTECT_ASSERTS)
+#define KAACORE_ASSERT(condition) KAACORE_THROW_IF_NOT_PASSED(condition)
+#define KAACORE_ASSERT_TERMINATE(condition) KAACORE_TERMINATE_IF_NOT_PASSED(condition)
 #else
-#define KAACORE_ASSERT_TERMINATE(condition) KAACORE_CHECK_TERMINATE(condition)
+#define KAACORE_ASSERT(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
+#define KAACORE_ASSERT_TERMINATE(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
+#endif
+
+#if (KAACORE_PROTECT_CHECKS)
+#define KAACORE_CHECK(condition) KAACORE_THROW_IF_NOT_PASSED(condition)
+#define KAACORE_CHECK_TERMINATE(condition) KAACORE_TERMINATE_IF_NOT_PASSED(condition)
+#else
+#define KAACORE_CHECK(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
+#define KAACORE_CHECK_TERMINATE(condition) KAACORE_IGNORE_IF_NOT_PASSED(condition)
 #endif
 
 namespace kaacore {
