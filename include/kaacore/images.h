@@ -23,27 +23,27 @@ load_raw_image(
 
 bgfx::TextureHandle
 make_texture(
-    const bimg::ImageContainer* const image_container,
+    bimg::ImageContainer* const image_container,
     const uint64_t flags = BGFX_SAMPLER_NONE);
 
-struct Image {
+class Image : public Resource {
+  public:
+    const uint64_t flags = BGFX_SAMPLER_NONE;
     bgfx::TextureHandle texture_handle;
     bimg::ImageContainer* image_container;
 
-    Image(const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
-    Image(
-        bgfx::TextureHandle texture_handle,
-        bimg::ImageContainer* image_container);
+    Image(bimg::ImageContainer* image_container);
+    Image(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
     ~Image();
-
     glm::uvec2 get_dimensions();
 
-    // TODO hashmap with existing resources
-    static Resource<Image> load(
-        const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
-    static Resource<Image> load(
-        bgfx::TextureHandle texture_handle,
-        bimg::ImageContainer* image_container);
+    static ResourceReference<Image> load(
+        const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
+    static ResourceReference<Image> load(bimg::ImageContainer* image_container);
+
+  protected:
+    virtual void _initialize() override;
+    virtual void _uninitialize() override;
 };
 
 } // namespace kaacore

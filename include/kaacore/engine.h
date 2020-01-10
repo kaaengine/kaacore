@@ -10,6 +10,7 @@
 #include "kaacore/audio.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
+#include "kaacore/resources.h"
 #include "kaacore/window.h"
 
 namespace kaacore {
@@ -38,6 +39,7 @@ class Engine {
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
     std::unique_ptr<AudioManager> audio_manager;
+    std::unique_ptr<ResourceManager> resource_manager;
 
     Engine(
         const glm::uvec2& virtual_resolution,
@@ -88,10 +90,16 @@ class Engine {
 
 extern Engine* engine;
 
+inline bool
+is_engine_initialized()
+{
+    return engine != nullptr;
+}
+
 inline Engine*
 get_engine()
 {
-    KAACORE_CHECK(engine != nullptr);
+    KAACORE_CHECK(is_engine_initialized());
     return engine;
 }
 

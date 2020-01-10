@@ -14,7 +14,7 @@ using std::atoi;
 
 struct SpritesDemoScene : Scene {
     Node* animating_node;
-    Resource<Image> image_file;
+    ResourceReference<Image> image_file;
 
     SpritesDemoScene(
         const char* filepath, int crop_x, int crop_y, int frame_w, int frame_h)

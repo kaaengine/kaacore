@@ -43,27 +43,29 @@ struct FontRenderGlyph {
     static Shape make_shape(const std::vector<FontRenderGlyph>& render_glyphs);
 };
 
-struct FontData {
-    Resource<Image> baked_texture;
+class FontData : public Resource {
+  public:
+    ResourceReference<Image> baked_texture;
     BakedFontData baked_font;
 
-    FontData(
-        const Resource<Image> baked_texture, const BakedFontData baked_font);
-
-    static Resource<FontData> load(const std::string& font_filepath);
-
+    FontData(const std::string& path);
+    ~FontData();
+    static ResourceReference<FontData> load(const std::string& path);
     Shape generate_text_shape(
         const std::string& text, double size, double indent, double max_width);
-
     std::vector<FontRenderGlyph> generate_render_glyphs(
         const std::string& text, const double scale_factor);
+
+  protected:
+    virtual void _initialize() override;
+    virtual void _uninitialize() override;
 };
 
 struct Font {
-    Resource<FontData> _font_data;
+    ResourceReference<FontData> _font_data;
 
     Font();
-    Font(const Resource<FontData>& font_data);
+    Font(const ResourceReference<FontData>& font_data);
 
     static Font load(const std::string& font_filepath);
 };
