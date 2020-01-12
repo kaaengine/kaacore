@@ -27,16 +27,16 @@ struct Scene {
     Node root_node;
     Camera camera;
 
-    uint64_t time = 0;
-
     std::set<Node*> simulations_registry;
 
     Scene();
     virtual ~Scene();
 
+    virtual void on_attach();
     virtual void on_enter();
     virtual void update(uint32_t dt);
     virtual void on_exit();
+    virtual void on_detach();
 
     void process_frame(uint32_t dt);
     void process_nodes(uint32_t dt);
