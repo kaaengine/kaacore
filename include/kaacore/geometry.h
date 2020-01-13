@@ -41,17 +41,22 @@ inline constexpr uint8_t operator&(const Alignment alignment, uint8_t mask)
 
 template<typename T>
 struct DecomposedTransformation {
-    glm::tvec3<T> scale;
-    glm::tquat<T> rotation;
-    glm::tvec3<T> translation;
+    glm::tvec2<T> scale;
+    double rotation;
+    glm::tvec2<T> translation;
 
     DecomposedTransformation(const glm::tmat4x4<T>& matrix)
     {
+        glm::tvec3<T> _scale;
+        glm::tvec3<T> _translation;
+        glm::tquat<T> _rotation_quat;
         glm::tvec3<T> _skew;
         glm::tvec4<T> _perspective;
         glm::decompose(
-            matrix, this->scale, this->rotation, this->translation, _skew,
-            _perspective);
+            matrix, _scale, _rotation_quat, _translation, _skew, _perspective);
+        this->scale = _scale;
+        this->rotation = glm::eulerAngles(_rotation_quat).z;
+        this->translation = _translation;
     }
 };
 

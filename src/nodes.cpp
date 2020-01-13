@@ -3,10 +3,10 @@
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/geometry.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
@@ -286,15 +286,7 @@ Node::absolute_rotation()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    glm::vec3 _scale;
-    glm::quat rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(
-        this->_model_matrix.value, _scale, rotation, _translation, _skew,
-        _perspective);
-    return glm::eulerAngles(rotation).z;
+    return DecomposedTransformation(this->_model_matrix.value).rotation;
 }
 
 void
@@ -321,15 +313,7 @@ Node::absolute_scale()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    glm::vec3 scale;
-    glm::quat _rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(
-        this->_model_matrix.value, scale, _rotation, _translation, _skew,
-        _perspective);
-    return {scale[0], scale[1]};
+    return DecomposedTransformation(this->_model_matrix.value).scale;
 }
 
 void
