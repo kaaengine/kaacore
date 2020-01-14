@@ -137,7 +137,7 @@ struct DemoScene : Scene {
 
     void update(uint32_t dt) override
     {
-        log<LogLevel::debug>("DemoScene update %lu/%llu", dt, this->time);
+        log<LogLevel::debug>("DemoScene update %lu.", dt);
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {

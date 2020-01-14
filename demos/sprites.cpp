@@ -34,7 +34,7 @@ struct SpritesDemoScene : Scene {
 
     void update(uint32_t dt) override
     {
-        log<LogLevel::debug>("DemoScene update %lu/%llu", dt, this->time);
+        log<LogLevel::debug>("DemoScene update %lu.", dt);
 
         for (auto const& event : this->get_events()) {
             auto system = event.system();
