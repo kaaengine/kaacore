@@ -1,3 +1,4 @@
+#include <cstring>
 #include <memory>
 #include <vector>
 
@@ -41,6 +42,12 @@ uninitialize_fonts()
 std::pair<bimg::ImageContainer*, BakedFontData>
 bake_font_texture(const uint8_t* font_file_content, const size_t size)
 {
+    if (memcmp(
+            font_file_content, "\x00\x01\x00\x00\x00", size >= 5 ? 5 : size) !=
+        0) {
+        throw kaacore::exception(
+            "Provided file is not TTF - magic number mismatched.");
+    }
     std::vector<uint8_t> pixels_single;
     pixels_single.resize(font_baker_texture_size * font_baker_texture_size);
     stbtt_pack_context pack_ctx;
