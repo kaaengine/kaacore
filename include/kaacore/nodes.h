@@ -111,6 +111,9 @@ class Node {
     glm::dvec2 absolute_scale();
     void scale(const glm::dvec2& scale);
 
+    Transformation absolute_transformation();
+    Transformation get_relative_transformation(const Node* const ancestor);
+
     int16_t z_index();
     void z_index(const int16_t& z_index);
 
