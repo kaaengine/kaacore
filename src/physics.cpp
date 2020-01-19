@@ -1,6 +1,12 @@
 #include <type_traits>
 
 #include <chipmunk/chipmunk.h>
+
+extern "C" {
+// this header does not have 'extern "C"' on it's own
+#include <chipmunk/chipmunk_private.h>
+}
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/exceptions.h"
@@ -161,13 +167,31 @@ SpaceNode::SpaceNode()
     this->_time_acc = 0;
 }
 
+void _release_cp_collision_handler_callback(cpCollisionHandler* cp_collision_handler)
+{
+    KAACORE_ASSERT_TERMINATE(cp_collision_handler->userData != nullptr);
+    auto collision_handler_func = static_cast<CollisionHandlerFunc*>(cp_collision_handler->userData);
+    delete collision_handler_func;
+}
+
 SpaceNode::~SpaceNode()
 {
     log<LogLevel::debug>(
         "Destroying space node %p (cpSpace: %p)", container_node(this),
         this->_cp_space);
-    cpSpaceDestroy(this->_cp_space);
-    // TODO destroy collision handlers?
+
+    KAACORE_ASSERT_TERMINATE(this->_cp_space != nullptr);
+
+    // deleting allocated collision handlers
+    cpHashSetEach(this->_cp_space->collisionHandlers, [](void* elt, void* data) {
+        auto cp_handler = static_cast<cpCollisionHandler*>(elt);
+        // we assume that every collision handler is created by kaacore
+        // since we blindly cast void* to CollisionHandlerFunc*
+        _release_cp_collision_handler_callback(cp_handler);
+    }, nullptr);
+
+    cpSpaceFree(this->_cp_space);
+    this->_cp_space = nullptr;
 }
 
 void
@@ -258,7 +282,7 @@ SpaceNode::set_collision_handler(
         static_cast<cpCollisionType>(trigger_b));
 
     if (cp_handler->userData != nullptr) {
-        // TODO handle existing
+        _release_cp_collision_handler_callback(cp_handler);
     }
     CollisionHandlerFunc* func = new CollisionHandlerFunc();
     *func = handler;

@@ -218,7 +218,13 @@ NodeTransitionsSequence::process_time_point(
 struct _NodeTransitionsParallelSubState : _NodeTransitionsGroupSubState {
     bool sleeping;
 
-    using _NodeTransitionsGroupSubState::_NodeTransitionsGroupSubState;
+    _NodeTransitionsParallelSubState(
+        const NodeTransitionHandle& transition_handle,
+        const double starting_abs_t, const double ending_abs_t)
+    : _NodeTransitionsGroupSubState(transition_handle, starting_abs_t, ending_abs_t),
+    sleeping(false)
+    {
+    }
 };
 
 struct _NodeTransitionsParallelState : TransitionStateBase {
