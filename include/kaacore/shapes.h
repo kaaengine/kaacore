@@ -42,6 +42,8 @@ struct Shape {
     static Shape Freeform(
         const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices);
+
+    Shape transform(const Transformation& transformation);
 };
 
 } // namespace kaacore

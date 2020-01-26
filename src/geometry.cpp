@@ -4,12 +4,81 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include "kaacore/exceptions.h"
 
 #include "kaacore/geometry.h"
 
 namespace kaacore {
+
+Transformation::Transformation() : Transformation(glm::dmat4(1.)) {}
+
+Transformation::Transformation(const glm::dmat4& matrix) : _matrix(matrix) {}
+
+Transformation
+Transformation::translate(const glm::dvec2& tr)
+{
+    return Transformation{glm::translate(glm::dvec3(tr.x, tr.y, 0.))};
+}
+
+Transformation
+Transformation::scale(const glm::dvec2& sc)
+{
+    return Transformation{glm::scale(glm::dvec3(sc.x, sc.y, 1.))};
+}
+
+Transformation
+Transformation::rotate(const double& r)
+{
+    return Transformation{glm::rotate(r, glm::dvec3(0., 0., 1.))};
+}
+
+Transformation
+Transformation::inverse() const
+{
+    return Transformation{glm::inverse(this->_matrix)};
+}
+
+double
+Transformation::at(const size_t col, const size_t row) const
+{
+    KAACORE_ASSERT(col < 4 and col >= 0);
+    KAACORE_ASSERT(row < 4 and row >= 0);
+    return this->_matrix[col][row];
+}
+
+const DecomposedTransformation<double>
+Transformation::decompose() const
+{
+    return DecomposedTransformation<double>{this->_matrix};
+}
+
+Transformation
+operator|(const Transformation& left, const Transformation& right)
+{
+    return Transformation{right._matrix * left._matrix};
+}
+
+glm::dvec2
+operator|(const glm::dvec2& position, const Transformation& transformation)
+{
+    return transformation._matrix * glm::dvec4(position, 0., 1.);
+}
+
+Transformation&
+operator|=(Transformation& transformation, const Transformation& other)
+{
+    transformation = Transformation{other._matrix * transformation._matrix};
+    return transformation;
+}
+
+glm::dvec2&
+operator|=(glm::dvec2& position, const Transformation& transformation)
+{
+    position = transformation._matrix * glm::dvec4(position, 0., 1.);
+    return position;
+}
 
 int8_t
 compare_points(const glm::dvec2 p, const glm::dvec2 q)
