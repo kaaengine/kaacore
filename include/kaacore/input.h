@@ -469,10 +469,11 @@ struct ControllerButtonEvent : public BaseControllerEvent {
 };
 
 struct ControllerAxisEvent : public BaseControllerEvent {
-    double axis_motion(const ControllerAxis ca) const;
+    ControllerAxis axis() const;
+    double motion() const;
 };
 
-struct ControllerLinkEvent : public BaseControllerEvent {
+struct ControllerDeviceEvent : public BaseControllerEvent {
     bool is_added() const;
     bool is_removed() const;
 };
@@ -494,7 +495,7 @@ struct Event {
         MouseWheelEvent _mouse_wheel;
         ControllerButtonEvent _controller_button;
         ControllerAxisEvent _controller_axis;
-        ControllerLinkEvent _controller_link;
+        ControllerDeviceEvent _controller_device;
         AudioEvent _audio;
     };
 
@@ -513,7 +514,7 @@ struct Event {
     const MouseWheelEvent* const mouse_wheel() const;
     const ControllerButtonEvent* const controller_button() const;
     const ControllerAxisEvent* const controller_axis() const;
-    const ControllerLinkEvent* const controller_link() const;
+    const ControllerDeviceEvent* const controller_device() const;
     const AudioEvent* const audio() const;
 };
 

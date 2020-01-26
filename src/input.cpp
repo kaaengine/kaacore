@@ -236,7 +236,7 @@ BaseControllerEvent::id() const
 ControllerButton
 ControllerButtonEvent::button() const
 {
-    static_cast<ControllerButton>(this->sdl_event.cbutton.button);
+    return static_cast<ControllerButton>(this->sdl_event.cbutton.button);
 }
 
 bool
@@ -251,12 +251,15 @@ ControllerButtonEvent::is_button_up() const
     return this->type() == EventType::controller_button_up;
 }
 
-double
-ControllerAxisEvent::axis_motion(const ControllerAxis ca) const
+ControllerAxis
+ControllerAxisEvent::axis() const
 {
-    if (this->sdl_event.caxis.axis != static_cast<uint8_t>(ca)) {
-        return 0;
-    }
+    return static_cast<ControllerAxis>(this->sdl_event.caxis.axis);
+}
+
+double
+ControllerAxisEvent::motion() const
+{
     return _normalize_controller_axis(this->sdl_event.caxis.value);
 }
 
@@ -374,24 +377,24 @@ Event::controller_axis() const
 }
 
 bool
-ControllerLinkEvent::is_added() const
+ControllerDeviceEvent::is_added() const
 {
     return this->type() == EventType::controller_added;
 }
 
 bool
-ControllerLinkEvent::is_removed() const
+ControllerDeviceEvent::is_removed() const
 {
     return this->type() == EventType::controller_removed;
 }
 
-const ControllerLinkEvent* const
-Event::controller_link() const
+const ControllerDeviceEvent* const
+Event::controller_device() const
 {
     auto type = this->type();
     if (type == EventType::controller_added or
         type == EventType::controller_removed) {
-        return &this->_controller_link;
+        return &this->_controller_device;
     }
     return nullptr;
 }

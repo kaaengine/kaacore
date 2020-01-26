@@ -16,7 +16,8 @@ struct DemoScene : Scene {
                 break;
             }
 
-            if (auto controller_button = event.controller_button()) {
+            auto controller_button = event.controller_button();
+            if (controller_button && controller_button->is_button_up()) {
                 switch (controller_button->button()) {
                     case ControllerButton::a:
                         log<LogLevel::info>("A button pressed.");
@@ -64,34 +65,47 @@ struct DemoScene : Scene {
                         log<LogLevel::info>("Guide button pressed.");
                         break;
                 }
-            }
+            } else if (auto controller_motion = event.controller_axis()) {
+                switch (controller_motion->axis()) {
+                    case ControllerAxis::left_x:
+                        log<LogLevel::info>(
+                            "Left stick motion: %f, 0.0",
+                            controller_motion->motion());
+                        break;
+                    case ControllerAxis::left_y:
+                        log<LogLevel::info>(
+                            "Left stick motion: 0.0, %f",
+                            controller_motion->motion());
+                        break;
+                    case ControllerAxis::right_x:
+                        log<LogLevel::info>(
+                            "Right stick motion: %f, 0.0",
+                            controller_motion->motion());
+                        break;
+                    case ControllerAxis::right_y:
+                        log<LogLevel::info>(
+                            "Right stick motion: 0.0, %f",
+                            controller_motion->motion());
+                        break;
+                    case ControllerAxis::trigger_left:
+                        log<LogLevel::info>(
+                            "Right trigger motion: %f, 0.0",
+                            controller_motion->motion());
+                        break;
+                    case ControllerAxis::trigger_right:
+                        log<LogLevel::info>(
+                            "Right trigger motion: 0.0, %f",
+                            controller_motion->motion());
+                        break;
+                }
+            } else if (auto controller_device = event.controller_device()) {
+                if (controller_device->is_added()) {
+                    log<LogLevel::info>(
+                        "Controller added: %d", controller_device->id());
 
-            if (auto controller_motion = event.controller_axis()) {
-                auto left_x =
-                    controller_motion->axis_motion(ControllerAxis::left_x);
-                auto left_y =
-                    controller_motion->axis_motion(ControllerAxis::left_y);
-                auto right_x =
-                    controller_motion->axis_motion(ControllerAxis::right_x);
-                auto right_y =
-                    controller_motion->axis_motion(ControllerAxis::right_y);
-                auto trigger_left = controller_motion->axis_motion(
-                    ControllerAxis::trigger_left);
-                auto trigger_right = controller_motion->axis_motion(
-                    ControllerAxis::trigger_right);
-
-                if (left_x or left_y) {
+                } else if (controller_device->is_removed()) {
                     log<LogLevel::info>(
-                        "Left stick motion: %f, %f", left_x, left_y);
-                } else if (right_x or right_y) {
-                    log<LogLevel::info>(
-                        "Right stick motion: %f, %f", right_x, right_y);
-                } else if (trigger_left) {
-                    log<LogLevel::info>(
-                        "Left trigger motion: %f", trigger_left);
-                } else if (trigger_right) {
-                    log<LogLevel::info>(
-                        "Right trigger motion: %f", trigger_right);
+                        "Controller removed: %d", controller_device->id());
                 }
             }
         }
