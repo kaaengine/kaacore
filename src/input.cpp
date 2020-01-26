@@ -374,24 +374,24 @@ Event::controller_axis() const
 }
 
 bool
-ControllerEvent::is_added() const
+ControllerLinkEvent::is_added() const
 {
     return this->type() == EventType::controller_added;
 }
 
 bool
-ControllerEvent::is_removed() const
+ControllerLinkEvent::is_removed() const
 {
     return this->type() == EventType::controller_removed;
 }
 
-const ControllerEvent* const
-Event::controller() const
+const ControllerLinkEvent* const
+Event::controller_link() const
 {
     auto type = this->type();
     if (type == EventType::controller_added or
         type == EventType::controller_removed) {
-        return &this->_controller;
+        return &this->_controller_link;
     }
     return nullptr;
 }
