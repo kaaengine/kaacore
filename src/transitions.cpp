@@ -172,6 +172,10 @@ NodeTransitionsSequence::process_time_point(
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         if (not it->state_prepared) {
+            log<LogLevel::debug, LogCategory::misc>(
+                "NodeTransitionsSequence(%p)::process_time_point - preparing "
+                "state",
+                this);
             it->state = it->handle->prepare_state(node);
             it->state_prepared = true;
         }
@@ -181,12 +185,21 @@ NodeTransitionsSequence::process_time_point(
         const TransitionTimePoint sub_tp =
             TransitionTimePoint{sub_abs_t, is_backing};
 
+        log<LogLevel::debug, LogCategory::misc>(
+            "NodeTransitionsSequence(%p)::process_time_point - processing "
+            "sub-transition, "
+            "sub_abs_t: %lf",
+            this, sub_abs_t);
         it->handle->process_time_point(it->state.get(), node, sub_tp);
 
         if (cur_cycle_index == warped_tp.cycle_index and
             is_backing == warped_tp.is_backing and
             it->starting_abs_t <= warped_tp.abs_t and
-            it->ending_abs_t >= warped_tp.abs_t) {
+            it->ending_abs_t > warped_tp.abs_t) {
+            log<LogLevel::debug, LogCategory::misc>(
+                "NodeTransitionsSequence(%p)::process_time_point - met "
+                "breaking condition",
+                this);
             break;
         }
 
@@ -371,6 +384,10 @@ void
 NodeTransitionCallback::process_time_point(
     TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
 {
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionCallback(%p)::process_time_point - node: %p, abs_t: "
+        "%lf",
+        this, node, tp.abs_t);
     KAACORE_ASSERT(this->callback_func);
     this->callback_func(node);
 }
