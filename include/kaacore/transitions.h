@@ -14,7 +14,9 @@ struct Node;
 class NodeTransitionBase;
 typedef std::shared_ptr<const NodeTransitionBase> NodeTransitionHandle;
 
-struct TransitionStateBase {};
+struct TransitionStateBase {
+    virtual ~TransitionStateBase() = default;
+};
 
 struct TransitionTimePoint {
     double abs_t;

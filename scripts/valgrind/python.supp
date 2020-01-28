@@ -1,0 +1,66 @@
+{
+   python
+   Memcheck:Addr4
+   fun:address_in_range
+   fun:_PyObject_Free
+   ...
+}
+
+{
+   python
+   Memcheck:Value8
+   fun:address_in_range
+   fun:_PyObject_Free
+   ...
+}
+
+{
+   python
+   Memcheck:Cond
+   fun:address_in_range
+   fun:_PyObject_Free
+   ...
+}
+
+{
+   python
+   Memcheck:Addr4
+   fun:address_in_range
+   fun:_PyObject_Realloc
+   ...
+}
+
+{
+   python
+   Memcheck:Value8
+   fun:address_in_range
+   fun:_PyObject_Realloc
+   ...
+}
+
+{
+   python
+   Memcheck:Cond
+   fun:address_in_range
+   fun:_PyObject_Realloc
+   ...
+}
+
+{
+   python
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:_PyObject_Alloc.isra.2
+   ...
+}
+
+{
+   python
+   Memcheck:Cond
+   fun:__wcsnlen_sse4_1
+   fun:wcsrtombs
+   fun:wcstombs
+   fun:Py_EncodeLocale
+   ...
+}
