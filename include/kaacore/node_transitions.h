@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/node_ptr.h"
 #include "kaacore/nodes.h"
 #include "kaacore/transitions.h"
 
@@ -55,19 +56,20 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
               value_advance, AttributeTransitionMethod::set, duration, warping)
     {}
 
-    std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const
+    std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
     {
         return std::make_unique<NodeAttributeTransitionState<T>>(
-            (node->*F_getter)(), this->_value_advance, this->_advance_method);
+            ((node.get())->*F_getter)(), this->_value_advance,
+            this->_advance_method);
     }
 
     void evaluate(
-        TransitionStateBase* state_b, Node* node, const double t) const
+        TransitionStateBase* state_b, NodePtr node, const double t) const
     {
         auto state = static_cast<NodeAttributeTransitionState<T>*>(state_b);
         T new_value =
             glm::mix(state->origin_value, state->destination_value, t);
-        (node->*F_setter)(new_value);
+        ((node.get())->*F_setter)(new_value);
     }
 };
 
@@ -96,19 +98,19 @@ class SpecializedNodeAttributeTransition : public NodeTransitionCustomizable {
               value_advance, AttributeTransitionMethod::set, duration, warping)
     {}
 
-    std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const
+    std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
     {
-        N* spec_node = &(node->*N_member);
+        N* spec_node = &((node.get())->*N_member);
         return std::make_unique<NodeAttributeTransitionState<T>>(
             (spec_node->*F_getter)(), this->_value_advance,
             this->_advance_method);
     }
 
     void evaluate(
-        TransitionStateBase* state_b, Node* node, const double t) const
+        TransitionStateBase* state_b, NodePtr node, const double t) const
     {
         auto state = static_cast<NodeAttributeTransitionState<T>*>(state_b);
-        N* spec_node = &(node->*N_member);
+        N* spec_node = &((node.get())->*N_member);
         T new_value =
             glm::mix(state->origin_value, state->destination_value, t);
         (spec_node->*F_setter)(new_value);

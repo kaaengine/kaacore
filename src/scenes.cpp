@@ -44,6 +44,11 @@ Scene::process_nodes(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
+        if (node->_marked_to_delete) {
+            delete node;
+            continue;
+        }
+
         if (node->_lifetime) {
             if (node->_lifetime <= dt) {
                 delete node;

@@ -7,9 +7,9 @@
 
 #include <glm/glm.hpp>
 
-namespace kaacore {
+#include "kaacore/node_ptr.h"
 
-struct Node;
+namespace kaacore {
 
 class NodeTransitionBase;
 typedef std::shared_ptr<const NodeTransitionBase> NodeTransitionHandle;
@@ -49,9 +49,9 @@ class NodeTransitionBase {
         const TransitionWarping& warping = TransitionWarping());
 
     virtual std::unique_ptr<TransitionStateBase> prepare_state(
-        Node* node) const;
+        NodePtr node) const;
     virtual void process_time_point(
-        TransitionStateBase* state, Node* node,
+        TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const = 0;
 };
 
@@ -60,10 +60,10 @@ class NodeTransitionCustomizable : public NodeTransitionBase {
     using NodeTransitionBase::NodeTransitionBase;
 
     virtual void process_time_point(
-        TransitionStateBase* state, Node* node,
+        TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
     virtual void evaluate(
-        TransitionStateBase* state, Node* node, const double t) const = 0;
+        TransitionStateBase* state, NodePtr node, const double t) const = 0;
 };
 
 class NodeTransitionsGroupBase : public NodeTransitionBase {
@@ -90,9 +90,9 @@ class NodeTransitionsSequence : public NodeTransitionsGroupBase {
     NodeTransitionsSequence(
         const std::vector<NodeTransitionHandle>& transitions,
         const TransitionWarping& warping = TransitionWarping()) noexcept(false);
-    std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
+    std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const;
     void process_time_point(
-        TransitionStateBase* state, Node* node,
+        TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
 };
 
@@ -101,9 +101,9 @@ class NodeTransitionsParallel : public NodeTransitionsGroupBase {
     NodeTransitionsParallel(
         const std::vector<NodeTransitionHandle>& transitions,
         const TransitionWarping& warping = TransitionWarping()) noexcept(false);
-    std::unique_ptr<TransitionStateBase> prepare_state(Node* node) const;
+    std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const;
     void process_time_point(
-        TransitionStateBase* state, Node* node,
+        TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
 };
 
@@ -111,11 +111,11 @@ class NodeTransitionDelay : public NodeTransitionBase {
   public:
     NodeTransitionDelay(const double duration);
     void process_time_point(
-        TransitionStateBase* state, Node* node,
+        TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
 };
 
-typedef std::function<void(Node*)> NodeTransitionCallbackFunc;
+typedef std::function<void(NodePtr)> NodeTransitionCallbackFunc;
 
 class NodeTransitionCallback : public NodeTransitionBase {
     NodeTransitionCallbackFunc callback_func;
@@ -123,7 +123,7 @@ class NodeTransitionCallback : public NodeTransitionBase {
   public:
     NodeTransitionCallback(const NodeTransitionCallbackFunc& func);
     void process_time_point(
-        TransitionStateBase* state, Node* node,
+        TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
 };
 
@@ -135,7 +135,7 @@ struct NodeTransitionRunner {
     uint64_t current_time = 0;
 
     void setup(const NodeTransitionHandle& transition);
-    void step(Node* node, const uint32_t dt);
+    void step(NodePtr node, const uint32_t dt);
     operator bool() const;
 };
 

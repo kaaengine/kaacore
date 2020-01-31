@@ -15,21 +15,21 @@ using namespace kaacore;
 
 struct DemoScene : Scene {
     double box_size = 4.;
-    Node* container;
-    Node* box;
-    Node* wall_l;
-    Node* wall_t;
-    Node* wall_r;
-    Node* wall_b;
+    NodeOwnerPtr container;
+    NodeOwnerPtr box;
+    NodeOwnerPtr wall_l;
+    NodeOwnerPtr wall_t;
+    NodeOwnerPtr wall_r;
+    NodeOwnerPtr wall_b;
 
-    std::vector<Node*> balls;
+    std::vector<NodePtr> balls;
 
     bool delete_on_collision = false;
     bool change_shape_on_collision = false;
 
-    Node* init_wall(const glm::dvec2& a, const glm::dvec2& b)
+    NodeOwnerPtr init_wall(const glm::dvec2& a, const glm::dvec2& b)
     {
-        Node* wall_hitbox = new Node(NodeType::hitbox);
+        NodeOwnerPtr wall_hitbox = make_node(NodeType::hitbox);
         wall_hitbox->shape(Shape::Segment(a, b));
         wall_hitbox->color({1., 0.0, 0.6, 0.4});
         wall_hitbox->scale({1.5, 1.5});
@@ -47,10 +47,10 @@ struct DemoScene : Scene {
             Shape::Polygon({{0.3, 0}, {0, 0.3}, {-0.3, 0}, {0, -0.7}});
         Shape circle_shape = Shape::Circle(0.3);
 
-        this->container = new Node(NodeType::space);
+        this->container = make_node(NodeType::space);
         this->root_node.add_child(this->container);
 
-        this->box = new Node(NodeType::body);
+        this->box = make_node(NodeType::body);
         this->box->body.body_type(BodyNodeType::kinematic);
 
         this->wall_l =
@@ -70,7 +70,7 @@ struct DemoScene : Scene {
         this->container->add_child(this->box);
 
         for (int i = 0; i < 10; i++) {
-            Node* ball = new Node(NodeType::body);
+            NodeOwnerPtr ball = make_node(NodeType::body);
             ball->body.body_type(BodyNodeType::dynamic);
 
             Shape& chosen_shape =
@@ -83,7 +83,7 @@ struct DemoScene : Scene {
             ball->color({1., 1., 0., 1.});
             ball->body.moment(10.);
 
-            Node* ball_hitbox = new Node(NodeType::hitbox);
+            NodeOwnerPtr ball_hitbox = make_node(NodeType::hitbox);
             ball_hitbox->shape(chosen_shape);
             ball_hitbox->scale({1.5, 1.5});
             ball_hitbox->hitbox.trigger_id(120);
@@ -98,11 +98,11 @@ struct DemoScene : Scene {
         this->container->space.set_collision_handler(
             120, 120,
             [&, circle_shape, polygon_shape](
-                const Arbiter arbiter, const CollisionPair pair_a,
-                const CollisionPair pair_b) -> uint8_t {
+                const Arbiter arbiter, CollisionPair pair_a,
+                CollisionPair pair_b) -> uint8_t {
                 std::cout << "Collision! " << int(arbiter.phase) << std::endl;
                 if (this->delete_on_collision) {
-                    delete pair_a.body_node;
+                    pair_a.body_node.destroy();
                 } else if (
                     arbiter.phase == CollisionPhase::separate and
                     this->change_shape_on_collision) {
@@ -151,18 +151,21 @@ struct DemoScene : Scene {
                     this->container->position(
                         this->container->position() + glm::dvec2(0.1, 0.));
                 } else if (keyboard_key->key() == Keycode::r) {
-                    delete this->box;
+                    this->box.destroy();
                 } else if (keyboard_key->key() == Keycode::t) {
-                    delete this->container;
+                    this->container.destroy();
                 } else if (keyboard_key->key() == Keycode::x) {
                     if (not this->balls.empty()) {
-                        delete this->balls.back();
+                        this->balls.back().destroy();
                         this->balls.pop_back();
                     }
                 } else if (keyboard_key->key() == Keycode::l) {
                     std::cout << "Setting objects lifetime" << std::endl;
-                    for (const auto node : this->balls) {
-                        node->lifetime(5000);
+                    if (not this->balls.empty()) {
+                        for (const auto node : this->balls) {
+                            node->lifetime(5000);
+                        }
+                        this->balls.clear();
                     }
                 } else if (keyboard_key->key() == Keycode::num_1) {
                     std::cout << "Enabling delete_on_collision" << std::endl;

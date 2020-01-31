@@ -14,7 +14,7 @@ using namespace kaacore;
 
 struct PolygonTesterDemoScene : Scene {
     std::vector<glm::dvec2> points;
-    Node* shape_repr;
+    NodeOwnerPtr shape_repr;
     Engine* engine;
 
     PolygonTesterDemoScene()
@@ -22,18 +22,18 @@ struct PolygonTesterDemoScene : Scene {
         this->engine = get_engine();
         this->camera.position = {0., 0.};
 
-        this->shape_repr = new Node();
+        this->shape_repr = make_node();
         this->shape_repr->position({0, 0});
         this->shape_repr->shape(Shape::Box({3, 3}));
         this->root_node.add_child(this->shape_repr);
     }
 
-    void add_point(const glm::dvec2& p)
+    void add_point(const glm::dvec2 p)
     {
         if (not this->points.empty() and this->points.back() == p) {
             return;
         }
-        Node* point_node = new Node();
+        NodeOwnerPtr point_node = make_node();
         point_node->position(p);
         point_node->shape(Shape::Circle(1.));
         this->root_node.add_child(point_node);
@@ -44,9 +44,9 @@ struct PolygonTesterDemoScene : Scene {
         this->points.push_back(p);
     }
 
-    void add_segment(const glm::dvec2& a, const glm::dvec2& b)
+    void add_segment(const glm::dvec2 a, const glm::dvec2 b)
     {
-        Node* segment_node = new Node();
+        NodeOwnerPtr segment_node = make_node();
         segment_node->position(a);
         segment_node->shape(Shape::Segment({0, 0}, b - a));
         this->root_node.add_child(segment_node);
