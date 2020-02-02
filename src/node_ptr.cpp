@@ -51,13 +51,24 @@ NodePtr::NodePtr(Node* node) : _NodePtrBase(node) {}
 
 NodeOwnerPtr::NodeOwnerPtr(Node* node)
     : _NodePtrBase(node), _ownership_transferred(false)
-{}
+{
+    if (node) {
+        log<LogLevel::debug, LogCategory::nodes>(
+            "Created/moved ownership of node (%p).", this->_node);
+    }
+}
 
 NodeOwnerPtr::~NodeOwnerPtr()
 {
     if (this->_node != nullptr and not this->_ownership_transferred) {
+        log<LogLevel::debug, LogCategory::nodes>(
+            "Ownership of node (%p) destroyed it.", this->_node);
         delete this->_node;
         this->_node = nullptr;
+    } else if (this->_node != nullptr) {
+        log<LogLevel::debug, LogCategory::nodes>(
+            "Ownership of node (%p) released without destroying it.",
+            this->_node);
     }
 }
 

@@ -167,6 +167,10 @@ Node::add_child(NodeOwnerPtr& child_node)
     child_node._ownership_transferred = true;
     this->_children.push_back(child_node.get());
 
+    if (child_node->_node_wrapper) {
+        child_node->_node_wrapper->on_add_to_parent();
+    }
+
     // TODO set root
     // TODO optimize (replace with iterator?)
     std::function<void(Node*)> initialize_node;

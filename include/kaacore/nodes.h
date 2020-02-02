@@ -27,6 +27,8 @@ enum struct NodeType {
 struct ForeignNodeWrapper {
     ForeignNodeWrapper() = default;
     virtual ~ForeignNodeWrapper() = default;
+
+    virtual void on_add_to_parent() = 0;
 };
 
 struct Scene;
