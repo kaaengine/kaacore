@@ -73,6 +73,12 @@ NodeTransitionCustomizable::process_time_point(
     KAACORE_ASSERT(this->duration >= 0.);
     const TransitionTimePoint local_tp =
         this->warping.warp_time(tp, this->internal_duration);
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionCustomizable(%p)::process_time_point - node: %p, abs_t: "
+        "%lf, local_abs_t: %lf, internal_duration: %lf",
+        this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
+
     const double warped_t = local_tp.abs_t / this->internal_duration;
     this->evaluate(state, node, warped_t);
 }
