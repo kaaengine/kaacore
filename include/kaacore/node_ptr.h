@@ -34,8 +34,10 @@ class NodeOwnerPtr : public _NodePtrBase {
     explicit NodeOwnerPtr(Node* node = nullptr);
 
     ~NodeOwnerPtr();
+    NodeOwnerPtr(const NodeOwnerPtr&) = delete;
     NodeOwnerPtr(NodeOwnerPtr&&);
 
+    NodeOwnerPtr& operator=(const NodeOwnerPtr&) = delete;
     NodeOwnerPtr& operator=(NodeOwnerPtr&&);
 
     operator NodePtr() const;

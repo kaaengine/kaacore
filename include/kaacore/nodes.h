@@ -71,7 +71,7 @@ class Node {
         bool is_dirty = true;
     } _render_data;
 
-    bool _marked_to_delete = false;
+    bool _marked_to_deletion = false;
 
     void _mark_dirty();
     void _mark_to_delete();
@@ -153,7 +153,7 @@ template<class... Args>
 NodeOwnerPtr
 make_node(Args&&... args)
 {
-    return std::move(NodeOwnerPtr{new Node(std::forward<Args>(args)...)});
+    return NodeOwnerPtr{new Node(std::forward<Args>(args)...)};
 }
 
 } // namespace kaacore
