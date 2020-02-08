@@ -35,13 +35,13 @@ void
 _NodePtrBase::destroy()
 {
     if (this->_node == nullptr) {
-        throw kaacore::exception("Cannot destroy empty NodePtr");
+        throw kaacore::exception("Cannot destroy empty NodePtr.");
     }
     if (this->_node->_scene == nullptr) {
-        throw kaacore::exception("Cannot destroy not-in-tree node");
+        throw kaacore::exception("Cannot destroy not-in-tree node.");
     }
     if (this->_node->_marked_to_deletion) {
-        throw kaacore::exception("Node was already marked to delete");
+        throw kaacore::exception("Node was already marked to deletion.");
     }
 
     this->_node->_mark_to_delete();
