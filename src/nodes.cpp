@@ -402,8 +402,8 @@ Node::shape(const Shape& shape)
     this->_render_data.is_dirty = true;
 }
 
-Sprite&
-Node::sprite_ref()
+Sprite
+Node::sprite()
 {
     return this->_sprite;
 }
