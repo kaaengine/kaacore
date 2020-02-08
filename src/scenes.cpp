@@ -44,7 +44,7 @@ Scene::process_nodes(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
-        if (node->_marked_to_deletion) {
+        if (node->_marked_to_delete) {
             delete node;
             continue;
         }

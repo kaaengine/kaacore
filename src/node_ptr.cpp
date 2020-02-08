@@ -27,7 +27,7 @@ _NodePtrBase::get() const
 Node* _NodePtrBase::operator->() const
 {
     KAACORE_CHECK(this->_node != nullptr);
-    KAACORE_CHECK(not this->_node->_marked_to_deletion);
+    KAACORE_CHECK(not this->_node->_marked_to_delete);
     return this->_node;
 }
 
@@ -40,7 +40,7 @@ _NodePtrBase::destroy()
     if (this->_node->_scene == nullptr) {
         throw kaacore::exception("Cannot destroy not-in-tree node.");
     }
-    if (this->_node->_marked_to_deletion) {
+    if (this->_node->_marked_to_delete) {
         throw kaacore::exception("Node was already marked to deletion.");
     }
 

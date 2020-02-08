@@ -73,9 +73,9 @@ Node::_mark_dirty()
 void
 Node::_mark_to_delete()
 {
-    this->_marked_to_deletion = true;
+    this->_marked_to_delete = true;
     for (auto child : this->_children) {
-        if (not child->_marked_to_deletion) {
+        if (not child->_marked_to_delete) {
             child->_mark_to_delete();
         }
     }
