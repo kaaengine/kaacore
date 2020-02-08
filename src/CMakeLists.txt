@@ -68,6 +68,7 @@ configure_file(
 
 set(SRC_CXX_FILES
     nodes.cpp
+    node_ptr.cpp
     engine.cpp
     files.cpp
     log.cpp
@@ -90,6 +91,7 @@ set(SRC_CXX_FILES
 
 set(SRC_H_FILES
     ../include/kaacore/nodes.h
+    ../include/kaacore/node_ptr.h
     ../include/kaacore/engine.h
     ../include/kaacore/files.h
     ../include/kaacore/log.h

@@ -13,7 +13,7 @@ using namespace kaacore;
 using std::atoi;
 
 struct SpritesDemoScene : Scene {
-    Node* animating_node;
+    NodeOwnerPtr animating_node;
     Resource<Image> image_file;
 
     SpritesDemoScene(
@@ -26,7 +26,7 @@ struct SpritesDemoScene : Scene {
         sprite.animation_frame_duration = 30;
         sprite.animation_loop = true;
 
-        this->animating_node = new Node();
+        this->animating_node = make_node();
         this->animating_node->shape(Shape::Box({3, 3}));
         this->animating_node->sprite(sprite);
         this->root_node.add_child(this->animating_node);

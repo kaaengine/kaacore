@@ -13,10 +13,10 @@
 using namespace kaacore;
 
 struct DemoScene : Scene {
-    Node* background;
-    Node* node1;
-    Node* node2;
-    Node* container_node;
+    NodeOwnerPtr background;
+    NodeOwnerPtr node1;
+    NodeOwnerPtr node2;
+    NodeOwnerPtr container_node;
     Shape specific_shape;
     Shape polygon_shape;
 
@@ -36,14 +36,14 @@ struct DemoScene : Scene {
         this->polygon_shape =
             Shape::Polygon({{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}});
 
-        this->background = new Node();
+        this->background = make_node();
         this->background->shape(Shape::Box({1e4, 1e4}));
         this->background->color({0.5, 0.5, 0.5, 0.25});
         this->background->z_index(-100);
 
         this->root_node.add_child(this->background);
 
-        this->node1 = new Node();
+        this->node1 = make_node();
         this->node1->position({3., 3.});
         this->node1->rotation(1.);
         this->node1->scale({
@@ -58,7 +58,7 @@ struct DemoScene : Scene {
 
         this->root_node.add_child(this->node1);
 
-        this->node2 = new Node();
+        this->node2 = make_node();
         this->node2->position({-3., 3.});
         this->node2->rotation(10.);
         this->node2->scale({1., 1.});
@@ -75,14 +75,14 @@ struct DemoScene : Scene {
                                              {-2., 0.},  {0., 0.},  {2., 0.},
                                              {-2., 2.},  {0., 2.},  {2., 2.}};
 
-        this->container_node = new Node();
+        this->container_node = make_node();
         this->container_node->position({0., 0.});
         this->container_node->shape(Shape::Box({9., 9.}));
         this->container_node->recalculate_model_matrix();
         this->container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
-            Node* inner_node = new Node();
+            NodeOwnerPtr inner_node = make_node();
             inner_node->position(p);
             inner_node->color({0., 0., 1., 1});
             inner_node->scale({0.5, 0.5});

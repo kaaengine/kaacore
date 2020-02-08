@@ -7,6 +7,7 @@
 
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"
+#include "kaacore/node_ptr.h"
 #include "kaacore/physics.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shapes.h"
@@ -26,16 +27,16 @@ enum struct NodeType {
 struct ForeignNodeWrapper {
     ForeignNodeWrapper() = default;
     virtual ~ForeignNodeWrapper() = default;
-};
 
-struct MyForeignWrapper : ForeignNodeWrapper {
-    MyForeignWrapper();
-    ~MyForeignWrapper();
+    virtual void on_add_to_parent() = 0;
 };
 
 struct Scene;
 
 class Node {
+    friend class _NodePtrBase;
+    friend class NodePtr;
+    friend class NodeOwnerPtr;
     friend struct Scene;
     friend struct SpaceNode;
     friend struct BodyNode;
@@ -70,7 +71,10 @@ class Node {
         bool is_dirty = true;
     } _render_data;
 
+    bool _marked_to_deletion = false;
+
     void _mark_dirty();
+    void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(
         const Node* const ancestor = nullptr) const;
@@ -90,7 +94,7 @@ class Node {
     Node(NodeType type = NodeType::basic);
     ~Node();
 
-    void add_child(Node* const child_node);
+    void add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
     void recalculate_render_data();
 
@@ -139,10 +143,17 @@ class Node {
     void transition(const NodeTransitionHandle& transition);
 
     Scene* const scene() const;
-    Node* const parent() const;
+    NodePtr parent() const;
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
 };
+
+template<class... Args>
+NodeOwnerPtr
+make_node(Args&&... args)
+{
+    return NodeOwnerPtr{new Node(std::forward<Args>(args)...)};
+}
 
 } // namespace kaacore

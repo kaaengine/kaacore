@@ -24,9 +24,9 @@ static const std::string txt_lorem_ipsum =
     "amet tortor porttitor lobortis.";
 
 struct DemoFontsScene : Scene {
-    Node* background;
-    Node* node_text_raw;
-    Node* node_text;
+    NodeOwnerPtr background;
+    NodeOwnerPtr node_text_raw;
+    NodeOwnerPtr node_text;
 
     DemoFontsScene()
     {
@@ -36,19 +36,19 @@ struct DemoFontsScene : Scene {
         FontRenderGlyph::arrange_glyphs(render_glyphs, 15., 35., 120.);
         auto text_shape = FontRenderGlyph::make_shape(render_glyphs);
 
-        this->background = new Node();
+        this->background = make_node();
         this->background->shape(Shape::Box({700, 570}));
         this->background->color({0.5, 0.5, 0.5, 1.});
         this->background->z_index(-10);
         this->root_node.add_child(this->background);
 
-        this->node_text_raw = new Node();
+        this->node_text_raw = make_node();
         this->node_text_raw->position({-125., 0.});
         this->node_text_raw->shape(text_shape);
         this->node_text_raw->sprite(font._font_data->baked_texture);
         this->root_node.add_child(this->node_text_raw);
 
-        this->node_text = new Node(NodeType::text);
+        this->node_text = make_node(NodeType::text);
         this->node_text->position({200., 0.});
         this->node_text->text.font(font);
         this->node_text->text.content(txt_lorem_ipsum);
@@ -65,9 +65,11 @@ struct DemoFontsScene : Scene {
                  make_node_transition<NodePositionTransition>(
                      glm::dvec2(0., 300.), 2000.),
                  make_node_transition<NodeScaleTransition>(
-                     glm::dvec2(1., 1.), 500.),
+                     glm::dvec2(1.5, 1.5), 1500.),
                  make_node_transition<NodePositionTransition>(
-                     glm::dvec2(-200., -500.), 8000.)}),
+                     glm::dvec2(0., -0.), 2000.),
+                 make_node_transition<NodeTransitionCallback>(
+                     [](NodePtr node) { node.destroy(); })}),
             make_node_transition<NodeColorTransition>(
                 glm::dvec4(1., 1., 1., 0.5), 10000.),
         }));

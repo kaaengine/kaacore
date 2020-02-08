@@ -70,6 +70,17 @@ Node::_mark_dirty()
     }
 }
 
+void
+Node::_mark_to_delete()
+{
+    this->_marked_to_deletion = true;
+    for (auto child : this->_children) {
+        if (not child->_marked_to_deletion) {
+            child->_mark_to_delete();
+        }
+    }
+}
+
 glm::fmat4
 Node::_compute_model_matrix(const glm::fmat4& parent_matrix) const
 {
@@ -147,11 +158,18 @@ Node::_set_rotation(const double rotation)
 }
 
 void
-Node::add_child(Node* const child_node)
+Node::add_child(NodeOwnerPtr& child_node)
 {
     KAACORE_CHECK(child_node->_parent == nullptr);
+    KAACORE_CHECK(child_node._ownership_transferred == false);
+
     child_node->_parent = this;
-    this->_children.push_back(child_node);
+    child_node._ownership_transferred = true;
+    this->_children.push_back(child_node.get());
+
+    if (child_node->_node_wrapper) {
+        child_node->_node_wrapper->on_add_to_parent();
+    }
 
     // TODO set root
     // TODO optimize (replace with iterator?)
@@ -169,7 +187,7 @@ Node::add_child(Node* const child_node)
         std::for_each(
             n->_children.begin(), n->_children.end(), initialize_node);
     };
-    initialize_node(child_node);
+    initialize_node(child_node.get());
 }
 
 void
@@ -476,7 +494,7 @@ Node::scene() const
     return this->_scene;
 }
 
-Node* const
+NodePtr
 Node::parent() const
 {
     return this->_parent;
@@ -493,16 +511,6 @@ ForeignNodeWrapper*
 Node::wrapper_ptr() const
 {
     return this->_node_wrapper.get();
-}
-
-MyForeignWrapper::MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper ctor!" << std::endl;
-}
-
-MyForeignWrapper::~MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper dtor!" << std::endl;
 }
 
 } // namespace kaacore
