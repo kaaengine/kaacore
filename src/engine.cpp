@@ -31,7 +31,7 @@ Engine::Engine(
     SDL_Init(SDL_INIT_EVERYTHING);
     engine = this;
 
-    this->window = this->_create_window();
+    this->window = std::make_unique<Window>(this->_virtual_resolution);
     this->renderer = this->_create_renderer();
     this->input_manager = std::make_unique<InputManager>();
     this->audio_manager = std::make_unique<AudioManager>();
@@ -153,13 +153,6 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
     this->renderer->reset();
-}
-
-std::unique_ptr<Window>
-Engine::_create_window()
-{
-    Display display = this->get_displays().at(0);
-    return std::make_unique<Window>(display.size * 2u / 3u);
 }
 
 std::unique_ptr<Renderer>

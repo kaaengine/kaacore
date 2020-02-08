@@ -304,7 +304,7 @@ Node::absolute_rotation()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    return DecomposedTransformation(this->_model_matrix.value).rotation;
+    return DecomposedTransformation<float>(this->_model_matrix.value).rotation;
 }
 
 void
@@ -331,7 +331,7 @@ Node::absolute_scale()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    return DecomposedTransformation(this->_model_matrix.value).scale;
+    return DecomposedTransformation<float>(this->_model_matrix.value).scale;
 }
 
 void
