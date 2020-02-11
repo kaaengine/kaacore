@@ -70,7 +70,8 @@ class ResourcesRegistry {
     void unregister_resource(const Key_T& key) { this->_registry.erase(key); }
 
   private:
-    static inline std::unordered_map<Key_T, std::weak_ptr<Resource_T>> _registry;
+    static inline std::unordered_map<Key_T, std::weak_ptr<Resource_T>>
+        _registry;
 };
 
 } // namespace kaacore
