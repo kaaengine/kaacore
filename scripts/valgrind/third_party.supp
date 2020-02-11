@@ -1,0 +1,110 @@
+{
+   gl_context_create
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:_ZN4bgfx2gl9GlContext6createEjj
+   ...
+}
+
+{
+   gl_context_create
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:_ZN4bgfx2gl9GlContext6createEjj
+   ...
+}
+
+{
+   bgfx_sorting
+   Memcheck:Value8
+   fun:_ZN2bx9radixSortItEEvPmS1_PT_S3_j
+   fun:_ZN4bgfx5Frame4sortEv
+   fun:_ZN4bgfx2gl17RendererContextGL6submitEPNS_5FrameERNS_9ClearQuadERNS_19TextVideoMemBlitterE
+   fun:_ZN4bgfx7Context11renderFrameEi
+   fun:_ZN4bgfx7Context4swapEv
+   ...
+}
+
+{
+   bgfx_sorting
+   Memcheck:Value8
+   fun:_ZN2bx9radixSortItEEvPmS1_PT_S3_j
+   fun:_ZN4bgfx5Frame4sortEv
+   fun:_ZN4bgfx2gl17RendererContextGL6submitEPNS_5FrameERNS_9ClearQuadERNS_19TextVideoMemBlitterE
+   fun:_ZN4bgfx7Context11renderFrameEi
+   fun:_ZN4bgfx11renderFrameEi
+   ...
+}
+
+{
+   bgfx_sorting
+   Memcheck:Cond
+   fun:_ZN2bx9radixSortItEEvPmS1_PT_S3_j
+   fun:_ZN4bgfx5Frame4sortEv
+   fun:_ZN4bgfx2gl17RendererContextGL6submitEPNS_5FrameERNS_9ClearQuadERNS_19TextVideoMemBlitterE
+   fun:_ZN4bgfx7Context11renderFrameEi
+   fun:_ZN4bgfx7Context4swapEv
+   ...
+}
+
+{
+   bgfx_sorting
+   Memcheck:Cond
+   fun:_ZN2bx9radixSortItEEvPmS1_PT_S3_j
+   fun:_ZN4bgfx5Frame4sortEv
+   fun:_ZN4bgfx2gl17RendererContextGL6submitEPNS_5FrameERNS_9ClearQuadERNS_19TextVideoMemBlitterE
+   fun:_ZN4bgfx7Context11renderFrameEi
+   fun:_ZN4bgfx11renderFrameEi
+   ...
+}
+
+{
+   sdl_x11
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:X11_GL_GetVisual
+   fun:X11_GL_LoadLibrary
+   fun:SDL_CreateWindow_REAL
+}
+
+{
+   sdl_x11
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   ...
+   fun:X11_GL_GetVisual
+   fun:X11_GL_InitExtensions
+   fun:X11_GL_LoadLibrary
+}
+
+{
+   sdl_x11
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}
+
+{
+   sdl_x11
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}
+
+{
+   sdl_x11
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:/usr/lib/x86_64-linux-gnu/libX11.so.*
+   ...
+}

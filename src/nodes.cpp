@@ -3,10 +3,10 @@
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/geometry.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
@@ -66,6 +66,17 @@ Node::_mark_dirty()
     for (auto child : this->_children) {
         if (not child->_model_matrix.is_dirty) {
             child->_mark_dirty();
+        }
+    }
+}
+
+void
+Node::_mark_to_delete()
+{
+    this->_marked_to_delete = true;
+    for (auto child : this->_children) {
+        if (not child->_marked_to_delete) {
+            child->_mark_to_delete();
         }
     }
 }
@@ -147,11 +158,18 @@ Node::_set_rotation(const double rotation)
 }
 
 void
-Node::add_child(Node* const child_node)
+Node::add_child(NodeOwnerPtr& child_node)
 {
     KAACORE_CHECK(child_node->_parent == nullptr);
+    KAACORE_CHECK(child_node._ownership_transferred == false);
+
     child_node->_parent = this;
-    this->_children.push_back(child_node);
+    child_node._ownership_transferred = true;
+    this->_children.push_back(child_node.get());
+
+    if (child_node->_node_wrapper) {
+        child_node->_node_wrapper->on_add_to_parent();
+    }
 
     // TODO set root
     // TODO optimize (replace with iterator?)
@@ -169,7 +187,7 @@ Node::add_child(Node* const child_node)
         std::for_each(
             n->_children.begin(), n->_children.end(), initialize_node);
     };
-    initialize_node(child_node);
+    initialize_node(child_node.get());
 }
 
 void
@@ -286,15 +304,7 @@ Node::absolute_rotation()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    glm::vec3 _scale;
-    glm::quat rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(
-        this->_model_matrix.value, _scale, rotation, _translation, _skew,
-        _perspective);
-    return glm::eulerAngles(rotation).z;
+    return DecomposedTransformation<float>(this->_model_matrix.value).rotation;
 }
 
 void
@@ -321,15 +331,7 @@ Node::absolute_scale()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    glm::vec3 scale;
-    glm::quat _rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(
-        this->_model_matrix.value, scale, _rotation, _translation, _skew,
-        _perspective);
-    return {scale[0], scale[1]};
+    return DecomposedTransformation<float>(this->_model_matrix.value).scale;
 }
 
 void
@@ -348,6 +350,27 @@ Node::scale(const glm::dvec2& scale)
     } else if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
+}
+
+Transformation
+Node::absolute_transformation()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+    return Transformation{this->_model_matrix.value};
+}
+
+Transformation
+Node::get_relative_transformation(const Node* const ancestor)
+{
+    if (ancestor == nullptr) {
+        return this->absolute_transformation();
+    } else if (ancestor == this) {
+        return Transformation{glm::dmat4(1.)};
+    }
+
+    return Transformation{this->_compute_model_matrix_cumulative(ancestor)};
 }
 
 int16_t
@@ -471,7 +494,7 @@ Node::scene() const
     return this->_scene;
 }
 
-Node* const
+NodePtr
 Node::parent() const
 {
     return this->_parent;
@@ -488,16 +511,6 @@ ForeignNodeWrapper*
 Node::wrapper_ptr() const
 {
     return this->_node_wrapper.get();
-}
-
-MyForeignWrapper::MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper ctor!" << std::endl;
-}
-
-MyForeignWrapper::~MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper dtor!" << std::endl;
 }
 
 } // namespace kaacore

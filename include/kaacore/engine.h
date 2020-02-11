@@ -81,7 +81,6 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
-    std::unique_ptr<Window> _create_window();
     std::unique_ptr<Renderer> _create_renderer();
     void _run(Scene* scene);
     void _swap_scenes();

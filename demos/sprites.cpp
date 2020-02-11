@@ -13,7 +13,7 @@ using namespace kaacore;
 using std::atoi;
 
 struct SpritesDemoScene : Scene {
-    Node* animating_node;
+    NodeOwnerPtr animating_node;
     ResourceReference<Image> image_file;
 
     SpritesDemoScene(
@@ -26,7 +26,7 @@ struct SpritesDemoScene : Scene {
         sprite.animation_frame_duration = 30;
         sprite.animation_loop = true;
 
-        this->animating_node = new Node();
+        this->animating_node = make_node();
         this->animating_node->shape(Shape::Box({3, 3}));
         this->animating_node->sprite(sprite);
         this->root_node.add_child(this->animating_node);
@@ -37,28 +37,22 @@ struct SpritesDemoScene : Scene {
         log<LogLevel::debug>("DemoScene update %lu.", dt);
 
         for (auto const& event : this->get_events()) {
-            auto system = event.system();
-            if (system and system->quit()) {
-                get_engine()->quit();
-                break;
-            }
-
-            if (auto keyboard = event.keyboard()) {
-                if (keyboard->is_pressing(Keycode::q)) {
+            if (auto keyboard_key = event.keyboard_key()) {
+                if (keyboard_key->key() == Keycode::q) {
                     get_engine()->quit();
                     break;
-                } else if (keyboard->is_pressing(Keycode::w)) {
+                } else if (keyboard_key->key() == Keycode::w) {
                     this->animating_node->position(
                         this->animating_node->position() +
                         glm::dvec2(0., -0.1));
-                } else if (keyboard->is_pressing(Keycode::a)) {
+                } else if (keyboard_key->key() == Keycode::a) {
                     this->animating_node->position(
                         this->animating_node->position() +
                         glm::dvec2(-0.1, 0.));
-                } else if (keyboard->is_pressing(Keycode::s)) {
+                } else if (keyboard_key->key() == Keycode::s) {
                     this->animating_node->position(
                         this->animating_node->position() + glm::dvec2(0., 0.1));
-                } else if (keyboard->is_pressing(Keycode::d)) {
+                } else if (keyboard_key->key() == Keycode::d) {
                     this->animating_node->position(
                         this->animating_node->position() + glm::dvec2(0.1, 0.));
                 }

@@ -13,10 +13,10 @@
 using namespace kaacore;
 
 struct DemoScene : Scene {
-    Node* background;
-    Node* node1;
-    Node* node2;
-    Node* container_node;
+    NodeOwnerPtr background;
+    NodeOwnerPtr node1;
+    NodeOwnerPtr node2;
+    NodeOwnerPtr container_node;
     Shape specific_shape;
     Shape polygon_shape;
 
@@ -36,14 +36,14 @@ struct DemoScene : Scene {
         this->polygon_shape =
             Shape::Polygon({{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}});
 
-        this->background = new Node();
+        this->background = make_node();
         this->background->shape(Shape::Box({1e4, 1e4}));
         this->background->color({0.5, 0.5, 0.5, 0.25});
         this->background->z_index(-100);
 
         this->root_node.add_child(this->background);
 
-        this->node1 = new Node();
+        this->node1 = make_node();
         this->node1->position({3., 3.});
         this->node1->rotation(1.);
         this->node1->scale({
@@ -58,7 +58,7 @@ struct DemoScene : Scene {
 
         this->root_node.add_child(this->node1);
 
-        this->node2 = new Node();
+        this->node2 = make_node();
         this->node2->position({-3., 3.});
         this->node2->rotation(10.);
         this->node2->scale({1., 1.});
@@ -75,14 +75,14 @@ struct DemoScene : Scene {
                                              {-2., 0.},  {0., 0.},  {2., 0.},
                                              {-2., 2.},  {0., 2.},  {2., 2.}};
 
-        this->container_node = new Node();
+        this->container_node = make_node();
         this->container_node->position({0., 0.});
         this->container_node->shape(Shape::Box({9., 9.}));
         this->container_node->recalculate_model_matrix();
         this->container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
-            Node* inner_node = new Node();
+            NodeOwnerPtr inner_node = make_node();
             inner_node->position(p);
             inner_node->color({0., 0., 1., 1});
             inner_node->scale({0.5, 0.5});
@@ -105,57 +105,51 @@ struct DemoScene : Scene {
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
-            auto system = event.system();
-            if (system and system->quit()) {
-                get_engine()->quit();
-                break;
-            }
-
-            if (auto keyboard = event.keyboard()) {
-                if (keyboard->is_pressing(Keycode::q)) {
+            if (auto keyboard_key = event.keyboard_key()) {
+                if (keyboard_key->key() == Keycode::q) {
                     get_engine()->quit();
                     break;
-                } else if (keyboard->is_pressing(Keycode::w)) {
+                } else if (keyboard_key->key() == Keycode::w) {
                     this->camera.position += glm::dvec2(0., -0.05);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::a)) {
+                } else if (keyboard_key->key() == Keycode::a) {
                     this->camera.position += glm::dvec2(-0.05, 0.);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::s)) {
+                } else if (keyboard_key->key() == Keycode::s) {
                     this->camera.position += glm::dvec2(0., 0.05);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::d)) {
+                } else if (keyboard_key->key() == Keycode::d) {
                     this->camera.position += glm::dvec2(0.05, 0.);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::i)) {
+                } else if (keyboard_key->key() == Keycode::i) {
                     this->camera.scale += glm::dvec2(0.1, 0.1);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::o)) {
+                } else if (keyboard_key->key() == Keycode::o) {
                     this->camera.scale -= glm::dvec2(0.1, 0.1);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::r)) {
+                } else if (keyboard_key->key() == Keycode::r) {
                     this->camera.rotation += 0.2;
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::m)) {
+                } else if (keyboard_key->key() == Keycode::m) {
                     this->node1->rotation(this->node1->rotation() + 0.2);
                     this->node1->position(
                         this->node1->position() + glm::dvec2(1., 0.));
                     log("Node position: %lf %lf", this->node1->position().x,
                         this->node1->position().y);
-                } else if (keyboard->is_pressing(Keycode::n)) {
+                } else if (keyboard_key->key() == Keycode::n) {
                     this->root_node.position(
                         this->root_node.position() + glm::dvec2(-1., -2.));
                     log("World position: %lf %lf", this->root_node.position().x,
                         this->root_node.position().y);
-                } else if (keyboard->is_pressing(Keycode::c)) {
+                } else if (keyboard_key->key() == Keycode::c) {
                     this->camera.position = this->node1->absolute_position();
                     this->camera.refresh();
                     log("Camera position: %lf %lf", this->camera.position.x,
                         this->camera.position.y);
-                } else if (keyboard->is_pressing(Keycode::f)) {
+                } else if (keyboard_key->key() == Keycode::f) {
                     get_engine()->window->fullscreen(
                         !get_engine()->window->fullscreen());
-                } else if (keyboard->is_pressing(Keycode::g)) {
+                } else if (keyboard_key->key() == Keycode::g) {
                     auto size = get_engine()->window->size();
                     log("Current size: %u x %u", size.x, size.y);
                 }

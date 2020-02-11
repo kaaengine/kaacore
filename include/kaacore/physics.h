@@ -6,6 +6,8 @@
 #include <chipmunk/chipmunk.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/node_ptr.h"
+
 namespace kaacore {
 
 typedef size_t CollisionTriggerId;
@@ -30,7 +32,7 @@ enum struct CollisionPhase {
 struct Arbiter {
     cpArbiter* cp_arbiter;
     CollisionPhase phase;
-    Node* space;
+    NodePtr space;
 
     Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
 };
@@ -43,14 +45,13 @@ uint8_t operator&(CollisionPhase phase, uint8_t other);
 uint8_t operator&(CollisionPhase phase, CollisionPhase other);
 
 struct CollisionPair {
-    Node* body_node;
-    Node* hitbox_node;
+    NodePtr body_node;
+    NodePtr hitbox_node;
 
     CollisionPair(BodyNode* body, HitboxNode* hitbox);
 };
 
-typedef std::function<uint8_t(
-    const Arbiter, const CollisionPair, const CollisionPair)>
+typedef std::function<uint8_t(const Arbiter, CollisionPair, CollisionPair)>
     CollisionHandlerFunc;
 
 typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;

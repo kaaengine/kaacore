@@ -60,14 +60,15 @@ NodeTransitionBase::NodeTransitionBase(
 {}
 
 std::unique_ptr<TransitionStateBase>
-NodeTransitionBase::prepare_state(Node* node) const
+NodeTransitionBase::prepare_state(NodePtr node) const
 {
     return nullptr;
 }
 
 void
 NodeTransitionCustomizable::process_time_point(
-    TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node,
+    const TransitionTimePoint& tp) const
 {
     KAACORE_ASSERT(this->duration >= 0.);
     const TransitionTimePoint local_tp =
@@ -139,7 +140,7 @@ NodeTransitionsSequence::NodeTransitionsSequence(
 }
 
 std::unique_ptr<TransitionStateBase>
-NodeTransitionsSequence::prepare_state(Node* node) const
+NodeTransitionsSequence::prepare_state(NodePtr node) const
 {
     auto sequence_state = std::make_unique<_NodeTransitionsSequenceState>();
     for (const auto& sub_tr : this->_sub_transitions) {
@@ -153,7 +154,7 @@ NodeTransitionsSequence::prepare_state(Node* node) const
 
 void
 NodeTransitionsSequence::process_time_point(
-    TransitionStateBase* state_b, Node* node,
+    TransitionStateBase* state_b, NodePtr node,
     const TransitionTimePoint& tp) const
 {
     const TransitionTimePoint warped_tp =
@@ -168,10 +169,14 @@ NodeTransitionsSequence::process_time_point(
     log<LogLevel::debug, LogCategory::misc>(
         "NodeTransitionsSequence(%p)::process_time_point - node: %p, abs_t: "
         "%lf, warped_abs_t: %lf",
-        this, node, tp.abs_t, warped_tp.abs_t);
+        this, node.get(), tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         if (not it->state_prepared) {
+            log<LogLevel::debug, LogCategory::misc>(
+                "NodeTransitionsSequence(%p)::process_time_point - preparing "
+                "state",
+                this);
             it->state = it->handle->prepare_state(node);
             it->state_prepared = true;
         }
@@ -181,12 +186,21 @@ NodeTransitionsSequence::process_time_point(
         const TransitionTimePoint sub_tp =
             TransitionTimePoint{sub_abs_t, is_backing};
 
+        log<LogLevel::debug, LogCategory::misc>(
+            "NodeTransitionsSequence(%p)::process_time_point - processing "
+            "sub-transition, "
+            "sub_abs_t: %lf",
+            this, sub_abs_t);
         it->handle->process_time_point(it->state.get(), node, sub_tp);
 
         if (cur_cycle_index == warped_tp.cycle_index and
             is_backing == warped_tp.is_backing and
             it->starting_abs_t <= warped_tp.abs_t and
-            it->ending_abs_t >= warped_tp.abs_t) {
+            it->ending_abs_t > warped_tp.abs_t) {
+            log<LogLevel::debug, LogCategory::misc>(
+                "NodeTransitionsSequence(%p)::process_time_point - met "
+                "breaking condition",
+                this);
             break;
         }
 
@@ -218,7 +232,13 @@ NodeTransitionsSequence::process_time_point(
 struct _NodeTransitionsParallelSubState : _NodeTransitionsGroupSubState {
     bool sleeping;
 
-    using _NodeTransitionsGroupSubState::_NodeTransitionsGroupSubState;
+    _NodeTransitionsParallelSubState(
+        const NodeTransitionHandle& transition_handle,
+        const double starting_abs_t, const double ending_abs_t)
+        : _NodeTransitionsGroupSubState(
+              transition_handle, starting_abs_t, ending_abs_t),
+          sleeping(false)
+    {}
 };
 
 struct _NodeTransitionsParallelState : TransitionStateBase {
@@ -264,7 +284,7 @@ NodeTransitionsParallel::NodeTransitionsParallel(
 }
 
 std::unique_ptr<TransitionStateBase>
-NodeTransitionsParallel::prepare_state(Node* node) const
+NodeTransitionsParallel::prepare_state(NodePtr node) const
 {
     auto sequence_state = std::make_unique<_NodeTransitionsParallelState>();
     for (const auto& sub_tr : this->_sub_transitions) {
@@ -277,7 +297,7 @@ NodeTransitionsParallel::prepare_state(Node* node) const
 
 void
 NodeTransitionsParallel::process_time_point(
-    TransitionStateBase* state_b, Node* node,
+    TransitionStateBase* state_b, NodePtr node,
     const TransitionTimePoint& tp) const
 {
     auto state = static_cast<_NodeTransitionsParallelState*>(state_b);
@@ -291,7 +311,7 @@ NodeTransitionsParallel::process_time_point(
     log<LogLevel::debug, LogCategory::misc>(
         "NodeTransitionsParallel(%p)::process_time_point - node: %p, abs_t: "
         "%lf, warped_abs_t: %lf",
-        this, node, tp.abs_t, warped_tp.abs_t);
+        this, node.get(), tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         for (auto& sub_state : state->sub_states) {
@@ -359,7 +379,8 @@ NodeTransitionDelay::NodeTransitionDelay(const double duration)
 
 void
 NodeTransitionDelay::process_time_point(
-    TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node,
+    const TransitionTimePoint& tp) const
 {}
 
 NodeTransitionCallback::NodeTransitionCallback(
@@ -369,8 +390,13 @@ NodeTransitionCallback::NodeTransitionCallback(
 
 void
 NodeTransitionCallback::process_time_point(
-    TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node,
+    const TransitionTimePoint& tp) const
 {
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionCallback(%p)::process_time_point - node: %p, abs_t: "
+        "%lf",
+        this, node.get(), tp.abs_t);
     KAACORE_ASSERT(this->callback_func);
     this->callback_func(node);
 }
@@ -386,7 +412,7 @@ NodeTransitionRunner::setup(const NodeTransitionHandle& transition)
 }
 
 void
-NodeTransitionRunner::step(Node* node, const uint32_t dt)
+NodeTransitionRunner::step(NodePtr node, const uint32_t dt)
 {
     KAACORE_ASSERT(bool(*this));
     if (this->finished) {

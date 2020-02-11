@@ -24,20 +24,20 @@ static const std::string txt_lorem_ipsum =
     "amet tortor porttitor lobortis.";
 
 struct DemoFontsScene : Scene {
-    Node* background;
-    Node* node_text;
+    NodeOwnerPtr background;
+    NodeOwnerPtr node_text;
 
     DemoFontsScene()
     {
         auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
 
-        this->background = new Node();
+        this->background = make_node();
         this->background->shape(Shape::Box({700, 570}));
         this->background->color({0.5, 0.5, 0.5, 1.});
         this->background->z_index(-10);
         this->root_node.add_child(this->background);
 
-        this->node_text = new Node(NodeType::text);
+        this->node_text = make_node(NodeType::text);
         this->node_text->position({200., 0.});
         this->node_text->text.font(font);
         this->node_text->text.content(txt_lorem_ipsum);
@@ -54,9 +54,11 @@ struct DemoFontsScene : Scene {
                  make_node_transition<NodePositionTransition>(
                      glm::dvec2(0., 300.), 2000.),
                  make_node_transition<NodeScaleTransition>(
-                     glm::dvec2(1., 1.), 500.),
+                     glm::dvec2(1.5, 1.5), 1500.),
                  make_node_transition<NodePositionTransition>(
-                     glm::dvec2(-200., -500.), 8000.)}),
+                     glm::dvec2(0., -0.), 2000.),
+                 make_node_transition<NodeTransitionCallback>(
+                     [](NodePtr node) { node.destroy(); })}),
             make_node_transition<NodeColorTransition>(
                 glm::dvec4(1., 1., 1., 0.5), 10000.),
         }));
@@ -65,38 +67,32 @@ struct DemoFontsScene : Scene {
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-            auto system = event.system();
-            if (system and system->quit()) {
-                get_engine()->quit();
-                break;
-            }
-
-            if (auto keyboard = event.keyboard()) {
-                if (keyboard->is_pressing(Keycode::q)) {
+            if (auto keyboard_key = event.keyboard_key()) {
+                if (keyboard_key->key() == Keycode::q) {
                     get_engine()->quit();
                     break;
-                } else if (keyboard->is_pressing(Keycode::w)) {
+                } else if (keyboard_key->key() == Keycode::w) {
                     this->camera.position += glm::dvec2(0., -2.5);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::a)) {
+                } else if (keyboard_key->key() == Keycode::a) {
                     this->camera.position += glm::dvec2(-2.5, 0.);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::s)) {
+                } else if (keyboard_key->key() == Keycode::s) {
                     this->camera.position += glm::dvec2(0., 2.5);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::d)) {
+                } else if (keyboard_key->key() == Keycode::d) {
                     this->camera.position += glm::dvec2(2.5, 0.);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::i)) {
+                } else if (keyboard_key->key() == Keycode::i) {
                     this->camera.scale += glm::dvec2(0.1, 0.1);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::o)) {
+                } else if (keyboard_key->key() == Keycode::o) {
                     this->camera.scale -= glm::dvec2(0.1, 0.1);
                     this->camera.refresh();
-                } else if (keyboard->is_pressing(Keycode::l)) {
+                } else if (keyboard_key->key() == Keycode::l) {
                     this->node_text->text.content(
                         this->node_text->text.content() + "x");
-                } else if (keyboard->is_pressing(Keycode::k)) {
+                } else if (keyboard_key->key() == Keycode::k) {
                     this->node_text->text.content(
                         this->node_text->text.content() + " ");
                 }
