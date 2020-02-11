@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -13,6 +14,11 @@
 #include "kaacore/shapes.h"
 
 namespace kaacore {
+
+void
+initialize_font_resources();
+void
+uninitialize_font_resources();
 
 typedef std::vector<stbtt_packedchar> BakedFontData;
 
@@ -45,10 +51,10 @@ struct FontRenderGlyph {
 
 class FontData : public Resource {
   public:
-    ResourceReference<Image> baked_texture;
+    const std::string path;
     BakedFontData baked_font;
+    ResourceReference<Image> baked_texture;
 
-    FontData(const std::string& path);
     ~FontData();
     static ResourceReference<FontData> load(const std::string& path);
     Shape generate_text_shape(
@@ -56,18 +62,27 @@ class FontData : public Resource {
     std::vector<FontRenderGlyph> generate_render_glyphs(
         const std::string& text, const double scale_factor);
 
-  protected:
+  private:
+    FontData(const std::string& path);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, FontData>;
 };
 
-struct Font {
+class TextNode;
+
+class Font {
+  public:
+    Font();
+    static Font load(const std::string& font_filepath);
+
+  private:
     ResourceReference<FontData> _font_data;
 
-    Font();
     Font(const ResourceReference<FontData>& font_data);
 
-    static Font load(const std::string& font_filepath);
+    friend class TextNode;
 };
 
 class TextNode {

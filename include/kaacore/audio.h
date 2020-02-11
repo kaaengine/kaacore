@@ -9,16 +9,24 @@
 
 namespace kaacore {
 
+void
+initialize_audio_resources();
+void
+uninitialize_audio_resources();
+
 struct SoundData : public Resource {
+    const std::string path;
     Mix_Chunk* _raw_sound;
 
-    SoundData(const std::string& path);
     ~SoundData();
     static ResourceReference<SoundData> load(const std::string& path);
 
-  protected:
+  private:
+    SoundData(const std::string& path);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, SoundData>;
 };
 
 class Sound {
@@ -49,23 +57,26 @@ enum struct MusicState {
 };
 
 struct MusicData : public Resource {
+    const std::string path;
     Mix_Music* _raw_music;
 
-    MusicData(const std::string& path);
     ~MusicData();
 
     static ResourceReference<MusicData> load(const std::string& path);
 
-  protected:
+  private:
+    MusicData(const std::string& path);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, MusicData>;
 };
 
 class Music {
     friend class AudioManager;
 
-    ResourceReference<MusicData> _music_data;
     double _volume;
+    ResourceReference<MusicData> _music_data;
 
     Music(ResourceReference<MusicData> effect_data, double volume = 1.);
 

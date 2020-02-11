@@ -1,4 +1,4 @@
-#include <memory>
+#include <string>
 
 #include "SDL_mixer.h"
 
@@ -12,8 +12,24 @@
 namespace kaacore {
 
 const uint16_t default_mixing_channels_count = 32;
+ResourcesRegistry<std::string, SoundData> _sound_registry;
+ResourcesRegistry<std::string, MusicData> _music_registry;
 
-SoundData::SoundData(const std::string& path) : Resource(path)
+void
+initialize_audio_resources()
+{
+    _sound_registry.initialze();
+    _music_registry.initialze();
+}
+
+void
+uninitialize_audio_resources()
+{
+    _sound_registry.uninitialze();
+    _music_registry.uninitialze();
+}
+
+SoundData::SoundData(const std::string& path) : path(path)
 {
     if (is_engine_initialized()) {
         this->_initialize();
@@ -30,13 +46,13 @@ SoundData::~SoundData()
 ResourceReference<SoundData>
 SoundData::load(const std::string& path)
 {
-    auto resource = get_registered_resource(path);
-    if (resource) {
-        return std::dynamic_pointer_cast<SoundData>(resource);
+    std::shared_ptr<SoundData> sound_data;
+    if (sound_data = _sound_registry.get_resource(path)) {
+        return sound_data;
     }
 
-    auto sound_data = std::make_shared<SoundData>(path);
-    register_resource(path, sound_data);
+    sound_data = std::shared_ptr<SoundData>(new SoundData(path));
+    _sound_registry.register_resource(path, sound_data);
     return sound_data;
 }
 
@@ -44,19 +60,19 @@ void
 SoundData::_initialize()
 {
     this->_raw_sound =
-        get_engine()->audio_manager->load_raw_sound(this->key.c_str());
+        get_engine()->audio_manager->load_raw_sound(this->path.c_str());
     this->is_initialized = true;
 }
 
 void
 SoundData::_uninitialize()
 {
-    if (this->is_initialized) {
-        if (this->_raw_sound) {
-            Mix_FreeChunk(this->_raw_sound);
-        }
-        this->is_initialized = false;
+    if (this->_raw_sound) {
+        Mix_FreeChunk(this->_raw_sound);
+        this->_raw_sound = nullptr;
     }
+    _sound_registry.unregister_resource(this->path);
+    this->is_initialized = false;
 }
 
 Sound::Sound() : _volume(1.) {}
@@ -102,7 +118,7 @@ Sound::play(double volume_factor)
         *this, this->_volume * volume_factor);
 }
 
-MusicData::MusicData(const std::string& path) : Resource(path)
+MusicData::MusicData(const std::string& path) : path(path)
 {
     if (is_engine_initialized()) {
         this->_initialize();
@@ -119,13 +135,13 @@ MusicData::~MusicData()
 ResourceReference<MusicData>
 MusicData::load(const std::string& path)
 {
-    auto resource = get_registered_resource(path);
-    if (resource) {
-        return std::dynamic_pointer_cast<MusicData>(resource);
+    std::shared_ptr<MusicData> music_data;
+    if (music_data = _music_registry.get_resource(path)) {
+        return music_data;
     }
 
-    auto music_data = std::make_shared<MusicData>(path);
-    register_resource(path, music_data);
+    music_data = std::shared_ptr<MusicData>(new MusicData(path));
+    _music_registry.register_resource(path, music_data);
     return music_data;
 }
 
@@ -133,19 +149,19 @@ void
 MusicData::_initialize()
 {
     this->_raw_music =
-        get_engine()->audio_manager->load_raw_music(this->key.c_str());
+        get_engine()->audio_manager->load_raw_music(this->path.c_str());
     this->is_initialized = true;
 }
 
 void
 MusicData::_uninitialize()
 {
-    if (this->is_initialized) {
-        if (this->_raw_music) {
-            Mix_FreeMusic(this->_raw_music);
-        }
-        this->is_initialized = false;
+    if (this->_raw_music) {
+        Mix_FreeMusic(this->_raw_music);
+        this->_raw_music = nullptr;
     }
+    _music_registry.unregister_resource(this->path);
+    this->is_initialized = false;
 }
 
 Music::Music() : _volume(1.) {}

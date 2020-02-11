@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <bgfx/bgfx.h>
@@ -11,6 +12,11 @@
 #include "kaacore/resources.h"
 
 namespace kaacore {
+
+void
+initialize_image_resources();
+void
+uninitialize_image_resources();
 
 bimg::ImageContainer*
 load_image(const uint8_t* data, size_t size);
@@ -28,12 +34,12 @@ make_texture(
 
 class Image : public Resource {
   public:
+    const std::string path;
     const uint64_t flags = BGFX_SAMPLER_NONE;
     bgfx::TextureHandle texture_handle;
     bimg::ImageContainer* image_container;
 
-    Image(bimg::ImageContainer* image_container);
-    Image(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
+    Image();
     ~Image();
     glm::uvec2 get_dimensions();
 
@@ -41,9 +47,14 @@ class Image : public Resource {
         const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
     static ResourceReference<Image> load(bimg::ImageContainer* image_container);
 
-  protected:
+  private:
+    Image(bimg::ImageContainer* image_container);
+    Image(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, Image>;
+    friend std::unique_ptr<Image> load_default_image();
 };
 
 } // namespace kaacore

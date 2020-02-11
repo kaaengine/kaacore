@@ -8,33 +8,15 @@
 
 namespace kaacore {
 
-class Resource;
-
-void
-register_resource(
-    const std::string& key, const std::shared_ptr<Resource>& resource);
-
-std::shared_ptr<Resource>
-get_registered_resource(const std::string& key);
-
-void
-deregiser_resource(const std::string& key);
-
-class ResourceManager;
 class Resource {
   public:
-    const std::string key;
     bool is_initialized = false;
 
-    virtual ~Resource();
+    virtual ~Resource() = 0;
 
   protected:
-    Resource();
-    Resource(const std::string& key);
     virtual void _initialize() = 0;
     virtual void _uninitialize() = 0;
-
-    friend class ResourceManager;
 };
 
 template<typename T>
@@ -48,23 +30,47 @@ struct ResourceReference {
     {
         auto ptr = this->res_ptr;
         if (ptr and not ptr->is_initialized) {
-            throw exception(
-                std::string(
-                    "Detected access to uninitialized resource. (key=") +
-                ptr->key + ")");
+            throw exception("Detected access to uninitialized resource.");
         }
         return ptr.get();
     }
 };
 
-class ResourceManager {
+template<typename Key_T, typename Resource_T>
+class ResourcesRegistry {
   public:
-    ResourceManager();
-    ~ResourceManager();
+    void initialze()
+    {
+        for (auto it = this->_registry.begin(); it != this->_registry.end();
+             ++it) {
+            it->second.lock()->_initialize();
+        }
+    }
+    void uninitialze()
+    {
+        for (auto it = this->_registry.begin(); it != this->_registry.end();
+             ++it) {
+            it->second.lock()->_uninitialize();
+        }
+    }
+    void register_resource(
+        const Key_T& key, const std::weak_ptr<Resource_T> resource)
+    {
+        KAACORE_ASSERT(this->_registry.find(key) == _registry.end());
+        this->_registry[key] = resource;
+    }
+    std::shared_ptr<Resource_T> get_resource(const Key_T& key)
+    {
+        auto it = this->_registry.find(key);
+        if (it == this->_registry.end()) {
+            return nullptr;
+        }
+        return it->second.lock();
+    }
+    void unregister_resource(const Key_T& key) { this->_registry.erase(key); }
 
   private:
-    void _initialize_resources();
-    void _uninitialize_resources();
+    static inline std::unordered_map<Key_T, std::weak_ptr<Resource_T>> _registry;
 };
 
 } // namespace kaacore

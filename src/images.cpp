@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include <bgfx/bgfx.h>
 #include <bimg/decode.h>
@@ -14,6 +15,19 @@
 namespace kaacore {
 
 static bx::DefaultAllocator texture_image_allocator;
+ResourcesRegistry<std::string, Image> _images_registry;
+
+void
+initialize_image_resources()
+{
+    _images_registry.initialze();
+}
+
+void
+uninitialize_image_resources()
+{
+    _images_registry.uninitialze();
+}
 
 bimg::ImageContainer*
 load_image(const uint8_t* data, size_t size)
@@ -76,10 +90,9 @@ make_texture(bimg::ImageContainer* const image_container, const uint64_t flags)
         bgfx::TextureFormat::Enum(image_container->m_format), flags, mem);
 }
 
-Image::Image(const std::string& path, uint64_t flags)
-    : Resource(path), flags(flags)
+Image::Image(const std::string& path, uint64_t flags) : path(path), flags(flags)
 {
-    if (is_engine_initialized) {
+    if (is_engine_initialized()) {
         this->_initialize();
     }
 }
@@ -93,7 +106,7 @@ Image::Image(bimg::ImageContainer* image_container)
 
 Image::~Image()
 {
-    if (is_initialized) {
+    if (this->is_initialized) {
         this->_uninitialize();
     }
 }
@@ -101,19 +114,19 @@ Image::~Image()
 ResourceReference<Image>
 Image::load(const std::string& path, uint64_t flags)
 {
-    auto resource = get_registered_resource(path);
-    if (resource) {
-        return std::dynamic_pointer_cast<Image>(resource);
+    std::shared_ptr<Image> image;
+    if (image = _images_registry.get_resource(path)) {
+        return image;
     }
-    auto image = std::make_shared<Image>(path, flags);
-    register_resource(path, image);
+    image = std::shared_ptr<Image>(new Image(path, flags));
+    _images_registry.register_resource(path, image);
     return image;
 }
 
 ResourceReference<Image>
 Image::load(bimg::ImageContainer* image_container)
 {
-    return std::make_shared<Image>(image_container);
+    return std::shared_ptr<Image>(new Image(image_container));
 }
 
 glm::uvec2
@@ -126,7 +139,8 @@ Image::get_dimensions()
 void
 Image::_initialize()
 {
-    auto raw_path = this->key.c_str();
+    printf("@@@@@@@@@@@@@ INIT @@@@@@@\n");
+    auto raw_path = this->path.c_str();
     this->image_container = load_image(raw_path);
     this->texture_handle = make_texture(this->image_container, flags);
     bgfx::setName(this->texture_handle, raw_path);
@@ -136,12 +150,11 @@ Image::_initialize()
 void
 Image::_uninitialize()
 {
-    if (this->is_initialized) {
-        if (bgfx::isValid(this->texture_handle)) {
-            bgfx::destroy(this->texture_handle);
-        }
-        this->is_initialized = false;
+    if (bgfx::isValid(this->texture_handle)) {
+        bgfx::destroy(this->texture_handle);
     }
+    _images_registry.unregister_resource(this->path);
+    this->is_initialized = false;
 }
 
 } // namespace kaacore

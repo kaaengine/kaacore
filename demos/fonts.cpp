@@ -25,28 +25,17 @@ static const std::string txt_lorem_ipsum =
 
 struct DemoFontsScene : Scene {
     Node* background;
-    Node* node_text_raw;
     Node* node_text;
 
     DemoFontsScene()
     {
         auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
-        auto render_glyphs = font._font_data->generate_render_glyphs(
-            "Hello World \n\n\nFooBar FooBar", 30.);
-        FontRenderGlyph::arrange_glyphs(render_glyphs, 15., 35., 120.);
-        auto text_shape = FontRenderGlyph::make_shape(render_glyphs);
 
         this->background = new Node();
         this->background->shape(Shape::Box({700, 570}));
         this->background->color({0.5, 0.5, 0.5, 1.});
         this->background->z_index(-10);
         this->root_node.add_child(this->background);
-
-        this->node_text_raw = new Node();
-        this->node_text_raw->position({-125., 0.});
-        this->node_text_raw->shape(text_shape);
-        this->node_text_raw->sprite(font._font_data->baked_texture);
-        this->root_node.add_child(this->node_text_raw);
 
         this->node_text = new Node(NodeType::text);
         this->node_text->position({200., 0.});
@@ -110,35 +99,6 @@ struct DemoFontsScene : Scene {
                 } else if (keyboard->is_pressing(Keycode::k)) {
                     this->node_text->text.content(
                         this->node_text->text.content() + " ");
-                } else if (keyboard->is_pressing(Keycode::kp_7)) {
-                    this->background->origin_alignment(Alignment::top_left);
-                    this->node_text_raw->origin_alignment(Alignment::top_left);
-                } else if (keyboard->is_pressing(Keycode::kp_8)) {
-                    this->background->origin_alignment(Alignment::top);
-                    this->node_text_raw->origin_alignment(Alignment::top);
-                } else if (keyboard->is_pressing(Keycode::kp_9)) {
-                    this->background->origin_alignment(Alignment::top_right);
-                    this->node_text_raw->origin_alignment(Alignment::top_right);
-                } else if (keyboard->is_pressing(Keycode::kp_4)) {
-                    this->background->origin_alignment(Alignment::left);
-                    this->node_text_raw->origin_alignment(Alignment::left);
-                } else if (keyboard->is_pressing(Keycode::kp_5)) {
-                    this->background->origin_alignment(Alignment::center);
-                    this->node_text_raw->origin_alignment(Alignment::center);
-                } else if (keyboard->is_pressing(Keycode::kp_6)) {
-                    this->background->origin_alignment(Alignment::right);
-                    this->node_text_raw->origin_alignment(Alignment::right);
-                } else if (keyboard->is_pressing(Keycode::kp_1)) {
-                    this->background->origin_alignment(Alignment::bottom_left);
-                    this->node_text_raw->origin_alignment(
-                        Alignment::bottom_left);
-                } else if (keyboard->is_pressing(Keycode::kp_2)) {
-                    this->background->origin_alignment(Alignment::bottom);
-                    this->node_text_raw->origin_alignment(Alignment::bottom);
-                } else if (keyboard->is_pressing(Keycode::kp_3)) {
-                    this->background->origin_alignment(Alignment::bottom_right);
-                    this->node_text_raw->origin_alignment(
-                        Alignment::bottom_right);
                 }
             }
         }

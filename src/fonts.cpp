@@ -13,6 +13,20 @@
 
 namespace kaacore {
 
+ResourcesRegistry<std::string, FontData> _fonts_registry;
+
+void
+initialize_font_resources()
+{
+    _fonts_registry.initialze();
+}
+
+void
+uninitialize_font_resources()
+{
+    _fonts_registry.uninitialze();
+}
+
 std::pair<bimg::ImageContainer*, BakedFontData>
 bake_font_texture(const RawFile& font_file)
 {
@@ -164,7 +178,7 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
     return Shape::Freeform(indices, vertices);
 }
 
-FontData::FontData(const std::string& path) : Resource(path)
+FontData::FontData(const std::string& path) : path(path)
 {
     if (is_engine_initialized()) {
         this->_initialize();
@@ -174,13 +188,13 @@ FontData::FontData(const std::string& path) : Resource(path)
 ResourceReference<FontData>
 FontData::load(const std::string& path)
 {
-    auto resource = get_registered_resource(path);
-    if (resource) {
-        return std::dynamic_pointer_cast<FontData>(resource);
+    std::shared_ptr<FontData> font_data;
+    if (font_data = _fonts_registry.get_resource(path)) {
+        return font_data;
     }
 
-    auto font_data = std::make_shared<FontData>(path);
-    register_resource(path, font_data);
+    font_data = std::shared_ptr<FontData>(new FontData(path));
+    _fonts_registry.register_resource(path, font_data);
     return font_data;
 }
 
@@ -227,7 +241,7 @@ FontData::generate_render_glyphs(
 void
 FontData::_initialize()
 {
-    RawFile file(this->key);
+    RawFile file(this->path);
     bimg::ImageContainer* baked_font_image;
     std::tie(baked_font_image, this->baked_font) = bake_font_texture(file);
     this->baked_texture = Image::load(baked_font_image);
@@ -237,10 +251,9 @@ FontData::_initialize()
 void
 FontData::_uninitialize()
 {
-    if (this->is_initialized) {
-        this->baked_texture.res_ptr.reset();
-        this->is_initialized = false;
-    }
+    this->baked_texture.res_ptr.reset();
+    _fonts_registry.unregister_resource(this->path);
+    this->is_initialized = false;
 }
 
 Font::Font() {}
