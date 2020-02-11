@@ -98,10 +98,11 @@ Image::Image(const std::string& path, uint64_t flags) : path(path), flags(flags)
 }
 
 Image::Image(bimg::ImageContainer* image_container)
+    : image_container(image_container)
 {
-    this->texture_handle = make_texture(image_container);
-    this->image_container = image_container;
-    this->is_initialized = true;
+    if (is_engine_initialized()) {
+        this->_initialize();
+    }
 }
 
 Image::~Image()
@@ -139,11 +140,13 @@ Image::get_dimensions()
 void
 Image::_initialize()
 {
-    printf("@@@@@@@@@@@@@ INIT @@@@@@@\n");
-    auto raw_path = this->path.c_str();
-    this->image_container = load_image(raw_path);
+    if (not this->image_container) {
+        this->image_container = load_image(this->path.c_str());
+    }
     this->texture_handle = make_texture(this->image_container, flags);
-    bgfx::setName(this->texture_handle, raw_path);
+    if (not this->path.empty()) {
+        bgfx::setName(this->texture_handle, this->path.c_str());
+    }
     this->is_initialized = true;
 }
 
