@@ -35,7 +35,7 @@ class Engine {
     VirtualResolutionMode _virtual_resolution_mode =
         VirtualResolutionMode::adaptive_stretch;
 
-    // use pointer so we can have more controll over destruction order
+    // use pointers so we can have more controll over destruction order
     std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;

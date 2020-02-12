@@ -27,11 +27,6 @@ load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,
     const std::vector<uint8_t>& data);
 
-bgfx::TextureHandle
-make_texture(
-    bimg::ImageContainer* const image_container,
-    const uint64_t flags = BGFX_SAMPLER_NONE);
-
 class Image : public Resource {
   public:
     const std::string path;
@@ -52,6 +47,7 @@ class Image : public Resource {
     Image(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+    bgfx::TextureHandle _make_texture();
 
     friend class ResourcesRegistry<std::string, Image>;
     friend std::unique_ptr<Image> load_default_image();

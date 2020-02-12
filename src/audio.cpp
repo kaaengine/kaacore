@@ -67,11 +67,11 @@ SoundData::_initialize()
 void
 SoundData::_uninitialize()
 {
+    _sound_registry.unregister_resource(this->path);
     if (this->_raw_sound) {
         Mix_FreeChunk(this->_raw_sound);
         this->_raw_sound = nullptr;
     }
-    _sound_registry.unregister_resource(this->path);
     this->is_initialized = false;
 }
 
@@ -156,11 +156,11 @@ MusicData::_initialize()
 void
 MusicData::_uninitialize()
 {
+    _music_registry.unregister_resource(this->path);
     if (this->_raw_music) {
         Mix_FreeMusic(this->_raw_music);
         this->_raw_music = nullptr;
     }
-    _music_registry.unregister_resource(this->path);
     this->is_initialized = false;
 }
 

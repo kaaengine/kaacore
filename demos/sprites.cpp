@@ -71,6 +71,8 @@ main(int argc, char* argv[])
     }
 
     Engine eng({5, 5});
+    eng.window->size({800, 600});
+    eng.window->center();
     eng.window->show();
     SpritesDemoScene scene{argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
                            atoi(argv[5])};

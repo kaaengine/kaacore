@@ -251,8 +251,8 @@ FontData::_initialize()
 void
 FontData::_uninitialize()
 {
-    this->baked_texture.res_ptr.reset();
     _fonts_registry.unregister_resource(this->path);
+    this->baked_texture.res_ptr.reset();
     this->is_initialized = false;
 }
 
