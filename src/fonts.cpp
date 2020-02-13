@@ -4,15 +4,28 @@
 #include "stb_rect_pack.h"
 #include "stb_truetype.h"
 
+#include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/fonts.h"
 #include "kaacore/images.h"
 #include "kaacore/nodes.h"
 #include "kaacore/utils.h"
 
-#include "kaacore/fonts.h"
-
 namespace kaacore {
+
+ResourcesRegistry<std::string, FontData> _fonts_registry;
+
+void
+initialize_font_resources()
+{
+    _fonts_registry.initialze();
+}
+
+void
+uninitialize_font_resources()
+{
+    _fonts_registry.uninitialze();
+}
 
 std::pair<bimg::ImageContainer*, BakedFontData>
 bake_font_texture(const RawFile& font_file)
@@ -165,23 +178,31 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
     return Shape::Freeform(indices, vertices);
 }
 
-FontData::FontData(
-    const Resource<Image> baked_texture, const BakedFontData baked_font)
-    : baked_texture(baked_texture), baked_font(baked_font)
-{}
-
-Resource<FontData>
-FontData::load(const std::string& font_filepath)
+FontData::FontData(const std::string& path) : path(path)
 {
-    RawFile file(font_filepath);
-    bimg::ImageContainer* baked_font_image;
-    BakedFontData baked_font_data;
+    if (is_engine_initialized()) {
+        this->_initialize();
+    }
+}
 
-    std::tie(baked_font_image, baked_font_data) = bake_font_texture(file);
-    bgfx::TextureHandle texture = make_texture(baked_font_image);
+ResourceReference<FontData>
+FontData::load(const std::string& path)
+{
+    std::shared_ptr<FontData> font_data;
+    if ((font_data = _fonts_registry.get_resource(path))) {
+        return font_data;
+    }
 
-    return std::make_shared<FontData>(
-        Image::load(texture, baked_font_image), baked_font_data);
+    font_data = std::shared_ptr<FontData>(new FontData(path));
+    _fonts_registry.register_resource(path, font_data);
+    return font_data;
+}
+
+FontData::~FontData()
+{
+    if (this->is_initialized) {
+        this->_uninitialize();
+    }
 }
 
 std::vector<FontRenderGlyph>
@@ -217,9 +238,28 @@ FontData::generate_render_glyphs(
     return render_glyphs;
 }
 
+void
+FontData::_initialize()
+{
+    RawFile file(this->path);
+    bimg::ImageContainer* baked_font_image;
+    std::tie(baked_font_image, this->baked_font) = bake_font_texture(file);
+    this->baked_texture = Image::load(baked_font_image);
+    this->is_initialized = true;
+}
+
+void
+FontData::_uninitialize()
+{
+    _fonts_registry.unregister_resource(this->path);
+    this->baked_texture.res_ptr.reset();
+    this->is_initialized = false;
+}
+
 Font::Font() {}
 
-Font::Font(const Resource<FontData>& font_data) : _font_data(font_data) {}
+Font::Font(const ResourceReference<FontData>& font_data) : _font_data(font_data)
+{}
 
 Font
 Font::load(const std::string& font_filepath)

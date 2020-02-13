@@ -80,6 +80,7 @@ set(SRC_CXX_FILES
     shapes.cpp
     physics.cpp
     resources.cpp
+    resources_manager.cpp
     sprites.cpp
     window.cpp
     geometry.cpp
@@ -103,6 +104,7 @@ set(SRC_H_FILES
     ../include/kaacore/shapes.h
     ../include/kaacore/physics.h
     ../include/kaacore/resources.h
+    ../include/kaacore/resources_manager.h
     ../include/kaacore/sprites.h
     ../include/kaacore/window.h
     ../include/kaacore/geometry.h

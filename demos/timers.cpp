@@ -38,11 +38,15 @@ struct DemoScene : Scene {
     {
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {
-                if (keyboard_key->key() == Keycode::s) {
-                    if (this->timer.is_running()) {
-                        this->timer.stop();
-                    } else {
-                        this->timer.start();
+                if (keyboard_key->is_key_down()) {
+                    if (keyboard_key->key() == Keycode::q) {
+                        get_engine()->quit();
+                    } else if (keyboard_key->key() == Keycode::s) {
+                        if (this->timer.is_running()) {
+                            this->timer.stop();
+                        } else {
+                            this->timer.start();
+                        }
                     }
                 }
             }

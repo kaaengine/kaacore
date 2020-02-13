@@ -8,7 +8,7 @@
 namespace kaacore {
 
 struct Sprite {
-    Resource<Image> texture;
+    ResourceReference<Image> texture;
     // we assume that image contains it's width and height
 
     // origin points and dimensions
@@ -29,7 +29,7 @@ struct Sprite {
     bool auto_animate = true;
 
     Sprite();
-    Sprite(Resource<Image> texture);
+    Sprite(ResourceReference<Image> texture);
 
     static Sprite load(const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
 

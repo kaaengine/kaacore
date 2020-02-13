@@ -35,6 +35,7 @@ Engine::Engine(
     this->renderer = this->_create_renderer();
     this->input_manager = std::make_unique<InputManager>();
     this->audio_manager = std::make_unique<AudioManager>();
+    this->resources_manager = std::make_unique<ResourcesManager>();
 }
 
 Engine::~Engine()
@@ -44,6 +45,7 @@ Engine::~Engine()
     log<LogLevel::info>("Shutting down Kaacore.");
     this->audio_manager.reset();
     this->input_manager.reset();
+    this->resources_manager.reset();
     this->renderer.reset();
     bgfx::shutdown();
     this->window.reset();
