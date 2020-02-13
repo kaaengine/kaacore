@@ -47,12 +47,6 @@ Sound::volume() const
     return this->_volume;
 }
 
-void
-Sound::volume(const double vol)
-{
-    this->_volume = vol;
-}
-
 Sound::operator bool() const
 {
     return bool(this->_sound_data);
@@ -116,14 +110,14 @@ SoundPlayback::is_playing() const
 }
 
 void
-SoundPlayback::play()
+SoundPlayback::play(const int loops)
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->state() != AudioState::stopped) {
         this->stop();
     }
     auto [channel_id, playback_uid] = get_engine()->audio_manager->play_sound(
-        this->_sound, this->_volume * this->_sound.volume());
+        this->_sound, this->_volume * this->_sound.volume(), loops);
     this->_channel_id = channel_id;
     this->_playback_uid = playback_uid;
 }
@@ -210,12 +204,6 @@ double
 Music::volume() const
 {
     return this->_volume;
-}
-
-void
-Music::volume(const double vol)
-{
-    this->_volume = vol;
 }
 
 Music::operator bool() const
@@ -366,11 +354,16 @@ AudioManager::load_raw_music(const char* path)
 }
 
 std::pair<ChannelId, PlaybackUid>
-AudioManager::play_sound(const Sound& sound, const double volume_factor)
+AudioManager::play_sound(
+    const Sound& sound, const double volume_factor, const int loops)
 {
     KAACORE_ASSERT(bool(sound));
     if (sound._sound_data->_raw_sound) {
-        auto channel = Mix_PlayChannel(-1, sound._sound_data->_raw_sound, 0);
+        // SDL_mixer loops meaning are different, -1 is infinite, 0 is once, 1
+        // is twice, ...
+        auto mixer_loops = loops - 1;
+        auto channel =
+            Mix_PlayChannel(-1, sound._sound_data->_raw_sound, mixer_loops);
         if (channel >= 0) {
             KAACORE_ASSERT(channel < this->_channels_state.size());
             this->_channels_state[channel].current_sound = sound;

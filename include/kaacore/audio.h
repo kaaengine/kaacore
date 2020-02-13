@@ -45,7 +45,6 @@ class Sound {
     bool operator==(const Sound& other) const;
 
     double volume() const;
-    void volume(const double vol);
 
     void play(double volume_factor = 1.);
 };
@@ -60,7 +59,10 @@ class SoundPlayback {
     SoundPlayback(const Sound& sound, const double volume = 1.);
     ~SoundPlayback() = default;
     SoundPlayback(const SoundPlayback&) = delete;
+    SoundPlayback(SoundPlayback&&) = delete;
+
     SoundPlayback& operator=(const SoundPlayback&) = delete;
+    SoundPlayback& operator=(SoundPlayback&&) = delete;
 
     Sound sound() const;
 
@@ -69,7 +71,7 @@ class SoundPlayback {
 
     AudioState state() const;
     bool is_playing() const;
-    void play();
+    void play(const int loops = 1);
 
     bool is_paused() const;
     bool pause();
@@ -92,7 +94,7 @@ class Music {
     Resource<MusicData> _music_data;
     double _volume;
 
-    Music(Resource<MusicData> effect_data, double volume = 1.);
+    Music(Resource<MusicData> music_data, double volume = 1.);
 
   public:
     Music();
@@ -104,7 +106,6 @@ class Music {
     bool operator==(const Music& other) const;
 
     double volume() const;
-    void volume(const double vol);
 
     bool is_playing() const;
     void play(double volume_factor = 1.);
@@ -154,7 +155,8 @@ class AudioManager {
     Mix_Music* load_raw_music(const char* path);
 
     std::pair<ChannelId, PlaybackUid> play_sound(
-        const Sound& sound, const double volume_factor = 1.);
+        const Sound& sound, const double volume_factor = 1.,
+        const int loops = 1);
     void play_music(const Music& music, const double volume_factor = 1.);
     AudioState music_state();
 
