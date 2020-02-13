@@ -41,16 +41,14 @@ class ResourcesRegistry {
   public:
     void initialze()
     {
-        for (auto it = this->_registry.begin(); it != this->_registry.end();
-             ++it) {
-            it->second.lock()->_initialize();
+        for (auto& it : this->_registry) {
+            it.second.lock()->_initialize();
         }
     }
     void uninitialze()
     {
-        for (auto it = this->_registry.begin(); it != this->_registry.end();
-             ++it) {
-            it->second.lock()->_uninitialize();
+        for (auto& it : this->_registry) {
+            it.second.lock()->_uninitialize();
         }
     }
     void register_resource(

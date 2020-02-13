@@ -61,7 +61,6 @@ struct MusicData : public Resource {
     Mix_Music* _raw_music;
 
     ~MusicData();
-
     static ResourceReference<MusicData> load(const std::string& path);
 
   private:

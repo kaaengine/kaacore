@@ -189,7 +189,7 @@ ResourceReference<FontData>
 FontData::load(const std::string& path)
 {
     std::shared_ptr<FontData> font_data;
-    if (font_data = _fonts_registry.get_resource(path)) {
+    if ((font_data = _fonts_registry.get_resource(path))) {
         return font_data;
     }
 

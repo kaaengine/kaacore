@@ -47,7 +47,7 @@ ResourceReference<SoundData>
 SoundData::load(const std::string& path)
 {
     std::shared_ptr<SoundData> sound_data;
-    if (sound_data = _sound_registry.get_resource(path)) {
+    if ((sound_data = _sound_registry.get_resource(path))) {
         return sound_data;
     }
 
@@ -136,7 +136,7 @@ ResourceReference<MusicData>
 MusicData::load(const std::string& path)
 {
     std::shared_ptr<MusicData> music_data;
-    if (music_data = _music_registry.get_resource(path)) {
+    if ((music_data = _music_registry.get_resource(path))) {
         return music_data;
     }
 

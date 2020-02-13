@@ -98,7 +98,7 @@ ResourceReference<Image>
 Image::load(const std::string& path, uint64_t flags)
 {
     std::shared_ptr<Image> image;
-    if (image = _images_registry.get_resource(path)) {
+    if ((image = _images_registry.get_resource(path))) {
         return image;
     }
     image = std::shared_ptr<Image>(new Image(path, flags));
