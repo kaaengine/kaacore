@@ -200,6 +200,7 @@ FontData::load(const std::string& path)
 
 FontData::~FontData()
 {
+    _fonts_registry.unregister_resource(this->path);
     if (this->is_initialized) {
         this->_uninitialize();
     }
@@ -251,7 +252,6 @@ FontData::_initialize()
 void
 FontData::_uninitialize()
 {
-    _fonts_registry.unregister_resource(this->path);
     this->baked_texture.res_ptr.reset();
     this->is_initialized = false;
 }

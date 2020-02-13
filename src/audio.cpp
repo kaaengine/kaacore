@@ -38,6 +38,7 @@ SoundData::SoundData(const std::string& path) : path(path)
 
 SoundData::~SoundData()
 {
+    _sound_registry.unregister_resource(this->path);
     if (this->is_initialized) {
         this->_uninitialize();
     }
@@ -67,7 +68,6 @@ SoundData::_initialize()
 void
 SoundData::_uninitialize()
 {
-    _sound_registry.unregister_resource(this->path);
     if (this->_raw_sound) {
         Mix_FreeChunk(this->_raw_sound);
         this->_raw_sound = nullptr;
@@ -127,6 +127,7 @@ MusicData::MusicData(const std::string& path) : path(path)
 
 MusicData::~MusicData()
 {
+    _music_registry.unregister_resource(this->path);
     if (this->is_initialized) {
         this->_uninitialize();
     }
@@ -156,7 +157,6 @@ MusicData::_initialize()
 void
 MusicData::_uninitialize()
 {
-    _music_registry.unregister_resource(this->path);
     if (this->_raw_music) {
         Mix_FreeMusic(this->_raw_music);
         this->_raw_music = nullptr;

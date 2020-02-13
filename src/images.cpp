@@ -89,6 +89,8 @@ Image::Image(bimg::ImageContainer* image_container)
 
 Image::~Image()
 {
+    _images_registry.unregister_resource(this->path);
+    bimg::imageFree(this->image_container);
     if (this->is_initialized) {
         this->_uninitialize();
     }
@@ -133,11 +135,9 @@ Image::_initialize()
 void
 Image::_uninitialize()
 {
-    _images_registry.unregister_resource(this->path);
     if (bgfx::isValid(this->texture_handle)) {
         bgfx::destroy(this->texture_handle);
     }
-    bimg::imageFree(this->image_container);
     this->is_initialized = false;
 }
 
