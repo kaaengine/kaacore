@@ -4,9 +4,11 @@
 #include "kaacore/engine.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/node_transitions.h"
 #include "kaacore/nodes.h"
 #include "kaacore/resources.h"
 #include "kaacore/scenes.h"
+#include "kaacore/transitions.h"
 
 using namespace kaacore;
 
@@ -17,18 +19,19 @@ struct SpritesDemoScene : Scene {
     ResourceReference<Image> image_file;
 
     SpritesDemoScene(
-        const char* filepath, int crop_x, int crop_y, int frame_w, int frame_h)
+        const char* filepath, int frame_w, int frame_h, int padding_x,
+        int padding_y)
     {
         this->image_file = Image::load(filepath);
         Sprite sprite{this->image_file};
-        sprite.dimensions = {crop_x, crop_y};
-        sprite.frame_dimensions = {frame_w, frame_h};
-        sprite.animation_frame_duration = 30;
-        sprite.animation_loop = true;
+        auto frames = split_spritesheet(
+            sprite, {frame_w, frame_h}, 0, 0, {padding_x, padding_y});
 
         this->animating_node = make_node();
         this->animating_node->shape(Shape::Box({3, 3}));
-        this->animating_node->sprite(sprite);
+        this->animating_node->transition(
+            make_node_transition<NodeSpriteTransition>(
+                frames, 5000., TransitionWarping(0, true)));
         this->root_node.add_child(this->animating_node);
     }
 
@@ -65,8 +68,9 @@ extern "C" int
 main(int argc, char* argv[])
 {
     if (argc != 6) {
-        std::cout << "Usage: <image_path> <crop_x> <crop_y> <frame_w> <frame_h>"
-                  << std::endl;
+        std::cout
+            << "Usage: <image_path> <frame_w> <frame_h> <padding_x> <padding_y>"
+            << std::endl;
         return 1;
     }
 

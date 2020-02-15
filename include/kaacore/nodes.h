@@ -124,7 +124,7 @@ class Node {
     Shape shape();
     void shape(const Shape& shape);
 
-    Sprite& sprite_ref();
+    Sprite sprite();
     void sprite(const Sprite& sprite);
 
     glm::dvec4 color();
