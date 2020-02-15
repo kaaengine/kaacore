@@ -8,7 +8,7 @@ namespace kaacore {
 
 Sprite::Sprite() : texture(), origin(0, 0), dimensions(0, 0) {}
 
-Sprite::Sprite(Resource<Image> texture)
+Sprite::Sprite(ResourceReference<Image> texture)
     : texture(texture), origin(0, 0), dimensions(texture->get_dimensions())
 {}
 

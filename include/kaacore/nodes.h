@@ -71,7 +71,7 @@ class Node {
         bool is_dirty = true;
     } _render_data;
 
-    bool _marked_to_deletion = false;
+    bool _marked_to_delete = false;
 
     void _mark_dirty();
     void _mark_to_delete();

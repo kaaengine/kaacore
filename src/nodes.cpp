@@ -73,9 +73,9 @@ Node::_mark_dirty()
 void
 Node::_mark_to_delete()
 {
-    this->_marked_to_deletion = true;
+    this->_marked_to_delete = true;
     for (auto child : this->_children) {
-        if (not child->_marked_to_deletion) {
+        if (not child->_marked_to_delete) {
             child->_mark_to_delete();
         }
     }
@@ -304,7 +304,7 @@ Node::absolute_rotation()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    return DecomposedTransformation(this->_model_matrix.value).rotation;
+    return DecomposedTransformation<float>(this->_model_matrix.value).rotation;
 }
 
 void
@@ -331,7 +331,7 @@ Node::absolute_scale()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    return DecomposedTransformation(this->_model_matrix.value).scale;
+    return DecomposedTransformation<float>(this->_model_matrix.value).scale;
 }
 
 void

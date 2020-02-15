@@ -1,3 +1,7 @@
 #include "kaacore/resources.h"
 
-namespace kaacore {} // namespace kaacore
+namespace kaacore {
+
+Resource::~Resource() {}
+
+} // namespace kaacore
