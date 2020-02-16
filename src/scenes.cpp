@@ -64,8 +64,8 @@ Scene::process_nodes(uint32_t dt)
             node->body.sync_simulation_rotation();
         }
 
-        if (node->_transition) {
-            node->_transition.step(node, dt);
+        if (node->_transitions_manager) {
+            node->_transitions_manager.step(node, dt);
         }
 
         for (const auto child_node : node->_children) {

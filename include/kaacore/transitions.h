@@ -3,6 +3,8 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -10,6 +12,8 @@
 #include "kaacore/node_ptr.h"
 
 namespace kaacore {
+
+const std::string default_transition_name = "__default__";
 
 class NodeTransitionBase;
 typedef std::shared_ptr<const NodeTransitionBase> NodeTransitionHandle;
@@ -131,11 +135,35 @@ struct NodeTransitionRunner {
     NodeTransitionHandle transition_handle;
     std::unique_ptr<TransitionStateBase> transition_state;
     bool transition_state_prepared = false;
-    bool finished = false;
     uint64_t current_time = 0;
 
+    NodeTransitionRunner(const NodeTransitionHandle& transition);
+    ~NodeTransitionRunner() = default;
+    NodeTransitionRunner(const NodeTransitionRunner&) = delete;
+    NodeTransitionRunner(NodeTransitionRunner&&) = delete;
+
+    NodeTransitionRunner& operator=(const NodeTransitionRunner&) = delete;
+    NodeTransitionRunner& operator=(NodeTransitionRunner&&) = delete;
+
+    NodeTransitionRunner& operator=(const NodeTransitionHandle& transition);
+
     void setup(const NodeTransitionHandle& transition);
+    bool step(NodePtr node, const uint32_t dt);
+    operator bool() const;
+};
+
+class NodeTransitionsManager {
+    friend class Scene;
+
+    std::unordered_map<std::string, NodeTransitionRunner> _transitions_map;
+    std::vector<std::pair<std::string, NodeTransitionHandle>> _enqueued_updates;
+    bool _is_processing = false;
+
     void step(NodePtr node, const uint32_t dt);
+
+  public:
+    NodeTransitionHandle get(const std::string& name);
+    void set(const std::string& name, const NodeTransitionHandle& transition);
     operator bool() const;
 };
 
