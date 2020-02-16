@@ -1,4 +1,4 @@
-#include <memory>
+#include <string>
 
 #include "SDL_mixer.h"
 
@@ -12,26 +12,72 @@
 namespace kaacore {
 
 const uint16_t default_mixing_channels_count = 32;
+ResourcesRegistry<std::string, SoundData> _sound_registry;
+ResourcesRegistry<std::string, MusicData> _music_registry;
 
-SoundData::SoundData(Mix_Chunk* raw_sound) : _raw_sound(raw_sound) {}
-
-SoundData::~SoundData()
+void
+initialize_audio_resources()
 {
-    if (this->_raw_sound) {
-        Mix_FreeChunk(this->_raw_sound);
+    _sound_registry.initialze();
+    _music_registry.initialze();
+}
+
+void
+uninitialize_audio_resources()
+{
+    _sound_registry.uninitialze();
+    _music_registry.uninitialze();
+}
+
+SoundData::SoundData(const std::string& path) : path(path)
+{
+    if (is_engine_initialized()) {
+        this->_initialize();
     }
 }
 
-Resource<SoundData>
-SoundData::load(const char* path)
+SoundData::~SoundData()
 {
-    auto raw_sound = get_engine()->audio_manager->load_raw_sound(path);
-    return std::make_shared<SoundData>(raw_sound);
+    _sound_registry.unregister_resource(this->path);
+    if (this->is_initialized) {
+        this->_uninitialize();
+    }
+}
+
+ResourceReference<SoundData>
+SoundData::load(const std::string& path)
+{
+    std::shared_ptr<SoundData> sound_data;
+    if ((sound_data = _sound_registry.get_resource(path))) {
+        return sound_data;
+    }
+
+    sound_data = std::shared_ptr<SoundData>(new SoundData(path));
+    _sound_registry.register_resource(path, sound_data);
+    return sound_data;
+}
+
+void
+SoundData::_initialize()
+{
+    this->_raw_sound =
+        get_engine()->audio_manager->load_raw_sound(this->path.c_str());
+    this->is_initialized = true;
+}
+
+void
+SoundData::_uninitialize()
+{
+    if (this->_raw_sound) {
+        Mix_FreeChunk(this->_raw_sound);
+        this->_raw_sound = nullptr;
+    }
+    this->is_initialized = false;
 }
 
 Sound::Sound() : _volume(1.) {}
 
-Sound::Sound(Resource<SoundData> sound_data, double volume)
+Sound::Sound(ResourceReference<SoundData> sound_data, double volume)
     : _sound_data(sound_data), _volume(volume)
 {}
 
@@ -158,25 +204,55 @@ SoundPlayback::stop()
     return false;
 }
 
-MusicData::MusicData(Mix_Music* raw_music) : _raw_music(raw_music) {}
-
-MusicData::~MusicData()
+MusicData::MusicData(const std::string& path) : path(path)
 {
-    if (this->_raw_music) {
-        Mix_FreeMusic(this->_raw_music);
+    if (is_engine_initialized()) {
+        this->_initialize();
     }
 }
 
-Resource<MusicData>
-MusicData::load(const char* path)
+MusicData::~MusicData()
 {
-    auto raw_music = get_engine()->audio_manager->load_raw_music(path);
-    return std::make_shared<MusicData>(raw_music);
+    _music_registry.unregister_resource(this->path);
+    if (this->is_initialized) {
+        this->_uninitialize();
+    }
+}
+
+ResourceReference<MusicData>
+MusicData::load(const std::string& path)
+{
+    std::shared_ptr<MusicData> music_data;
+    if ((music_data = _music_registry.get_resource(path))) {
+        return music_data;
+    }
+
+    music_data = std::shared_ptr<MusicData>(new MusicData(path));
+    _music_registry.register_resource(path, music_data);
+    return music_data;
+}
+
+void
+MusicData::_initialize()
+{
+    this->_raw_music =
+        get_engine()->audio_manager->load_raw_music(this->path.c_str());
+    this->is_initialized = true;
+}
+
+void
+MusicData::_uninitialize()
+{
+    if (this->_raw_music) {
+        Mix_FreeMusic(this->_raw_music);
+        this->_raw_music = nullptr;
+    }
+    this->is_initialized = false;
 }
 
 Music::Music() : _volume(1.) {}
 
-Music::Music(Resource<MusicData> music_data, double volume)
+Music::Music(ResourceReference<MusicData> music_data, double volume)
     : _music_data(music_data), _volume(volume)
 {}
 
@@ -354,8 +430,7 @@ AudioManager::load_raw_music(const char* path)
 }
 
 std::pair<ChannelId, PlaybackUid>
-AudioManager::play_sound(
-    const Sound& sound, const double volume_factor, const int loops)
+AudioManager::play_sound(const Sound& sound, const double volume_factor, const int loops)
 {
     KAACORE_ASSERT(bool(sound));
     if (sound._sound_data->_raw_sound) {

@@ -21,7 +21,7 @@ main(int argc, char* argv[])
     bool running = true;
 
     bgfx::TextureHandle texture;
-    Resource<Image> res;
+    ResourceReference<Image> res;
     if (argc < 2) {
         texture = eng.renderer->default_texture;
     } else {

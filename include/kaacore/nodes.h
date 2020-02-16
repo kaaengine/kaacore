@@ -53,7 +53,7 @@ class Node {
     bool _visible = true;
     Alignment _origin_alignment = Alignment::none;
     uint32_t _lifetime = 0;
-    NodeTransitionRunner _transition;
+    NodeTransitionsManager _transitions_manager;
 
     Scene* _scene = nullptr;
     Node* _parent = nullptr;
@@ -124,7 +124,7 @@ class Node {
     Shape shape();
     void shape(const Shape& shape);
 
-    Sprite& sprite_ref();
+    Sprite sprite();
     void sprite(const Sprite& sprite);
 
     glm::dvec4 color();
@@ -141,6 +141,8 @@ class Node {
 
     NodeTransitionHandle transition();
     void transition(const NodeTransitionHandle& transition);
+
+    NodeTransitionsManager& transitions_manager();
 
     Scene* const scene() const;
     NodePtr parent() const;

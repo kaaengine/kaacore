@@ -64,19 +64,8 @@ Scene::process_nodes(uint32_t dt)
             node->body.sync_simulation_rotation();
         }
 
-        if (node->_transition) {
-            node->_transition.step(node, dt);
-        }
-
-        if (node->_sprite and node->_sprite.auto_animate) {
-            // TODO
-            // current animation system is poorly compatible with node's
-            // is_dirty logic this check will be removed after Sprite rework
-            auto _initial_frame_current = node->_sprite.frame_current;
-            node->_sprite.animation_time_step(dt);
-            if (_initial_frame_current != node->_sprite.frame_current) {
-                node->_render_data.is_dirty = true;
-            }
+        if (node->_transitions_manager) {
+            node->_transitions_manager.step(node, dt);
         }
 
         for (const auto child_node : node->_children) {

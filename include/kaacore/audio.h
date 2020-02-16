@@ -14,28 +14,39 @@ namespace kaacore {
 typedef uint16_t ChannelId;
 typedef uint64_t PlaybackUid;
 
+void
+initialize_audio_resources();
+void
+uninitialize_audio_resources();
+
 enum struct AudioState {
     stopped = 1,
     paused = 2,
     playing = 3,
 };
 
-struct SoundData {
+struct SoundData : public Resource {
+    const std::string path;
     Mix_Chunk* _raw_sound;
 
-    SoundData(Mix_Chunk* raw_sound);
     ~SoundData();
+    static ResourceReference<SoundData> load(const std::string& path);
 
-    static Resource<SoundData> load(const char* path);
+  private:
+    SoundData(const std::string& path);
+    virtual void _initialize() override;
+    virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, SoundData>;
 };
 
 class Sound {
     friend class AudioManager;
 
-    Resource<SoundData> _sound_data;
+    ResourceReference<SoundData> _sound_data;
     double _volume;
 
-    Sound(Resource<SoundData> sound_data, double volume = 1.);
+    Sound(ResourceReference<SoundData> sound_data, double volume = 1.);
 
   public:
     Sound();
@@ -79,22 +90,28 @@ class SoundPlayback {
     bool stop();
 };
 
-struct MusicData {
+struct MusicData : public Resource {
+    const std::string path;
     Mix_Music* _raw_music;
 
-    MusicData(Mix_Music* raw_music);
     ~MusicData();
+    static ResourceReference<MusicData> load(const std::string& path);
 
-    static Resource<MusicData> load(const char* path);
+  private:
+    MusicData(const std::string& path);
+    virtual void _initialize() override;
+    virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, MusicData>;
 };
 
 class Music {
     friend class AudioManager;
 
-    Resource<MusicData> _music_data;
     double _volume;
+    ResourceReference<MusicData> _music_data;
 
-    Music(Resource<MusicData> music_data, double volume = 1.);
+    Music(ResourceReference<MusicData> effect_data, double volume = 1.);
 
   public:
     Music();
@@ -116,7 +133,7 @@ class Music {
     bool stop();
 };
 
-struct _AudioState {
+struct _MusicState {
     double requested_volume;
     Music current_music;
 };
@@ -139,8 +156,8 @@ struct _ChannelState {
 class AudioManager {
     friend class Engine;
     friend class Sound;
-    friend class SoundPlayback;
     friend struct SoundData;
+    friend class SoundPlayback;
     friend class Music;
     friend struct MusicData;
 
@@ -148,7 +165,7 @@ class AudioManager {
     double _master_sound_volume;
     double _master_music_volume;
 
-    _AudioState _music_state;
+    _MusicState _music_state;
     std::vector<_ChannelState> _channels_state;
 
     Mix_Chunk* load_raw_sound(const char* path);

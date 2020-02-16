@@ -2,11 +2,18 @@
 
 #include <chipmunk/chipmunk.h>
 
+#ifndef _MSC_VER
 extern "C"
 {
+#endif
+
 // this header does not have 'extern "C"' on it's own
+// but on Visual Studio it's built as C++
 #include <chipmunk/chipmunk_private.h>
+
+#ifndef _MSC_VER
 }
+#endif
 
 #include <glm/gtc/matrix_transform.hpp>
 

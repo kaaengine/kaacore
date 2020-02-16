@@ -402,8 +402,8 @@ Node::shape(const Shape& shape)
     this->_render_data.is_dirty = true;
 }
 
-Sprite&
-Node::sprite_ref()
+Sprite
+Node::sprite()
 {
     return this->_sprite;
 }
@@ -467,13 +467,13 @@ Node::origin_alignment(const Alignment& alignment)
 NodeTransitionHandle
 Node::transition()
 {
-    return this->_transition.transition_handle;
+    return this->_transitions_manager.get(default_transition_name);
 }
 
 void
 Node::transition(const NodeTransitionHandle& transition)
 {
-    this->_transition.setup(transition);
+    this->_transitions_manager.set(default_transition_name, transition);
 }
 
 uint32_t
@@ -486,6 +486,12 @@ void
 Node::lifetime(const uint32_t& lifetime)
 {
     this->_lifetime = lifetime;
+}
+
+NodeTransitionsManager&
+Node::transitions_manager()
+{
+    return this->_transitions_manager;
 }
 
 Scene* const

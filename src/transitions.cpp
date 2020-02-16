@@ -73,6 +73,12 @@ NodeTransitionCustomizable::process_time_point(
     KAACORE_ASSERT(this->duration >= 0.);
     const TransitionTimePoint local_tp =
         this->warping.warp_time(tp, this->internal_duration);
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionCustomizable(%p)::process_time_point - node: %p, abs_t: "
+        "%lf, local_abs_t: %lf, internal_duration: %lf",
+        this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
+
     const double warped_t = local_tp.abs_t / this->internal_duration;
     this->evaluate(state, node, warped_t);
 }
@@ -401,23 +407,32 @@ NodeTransitionCallback::process_time_point(
     this->callback_func(node);
 }
 
+NodeTransitionRunner::NodeTransitionRunner(
+    const NodeTransitionHandle& transition)
+{
+    this->setup(transition);
+}
+
+NodeTransitionRunner&
+NodeTransitionRunner::operator=(const NodeTransitionHandle& transition)
+{
+    this->setup(transition);
+    return *this;
+}
+
 void
 NodeTransitionRunner::setup(const NodeTransitionHandle& transition)
 {
     this->transition_handle = transition;
     this->transition_state.reset();
     this->transition_state_prepared = false;
-    this->finished = false;
     this->current_time = 0;
 }
 
-void
+bool
 NodeTransitionRunner::step(NodePtr node, const uint32_t dt)
 {
     KAACORE_ASSERT(bool(*this));
-    if (this->finished) {
-        return;
-    }
 
     if (not this->transition_state_prepared) {
         this->transition_state = this->transition_handle->prepare_state(node);
@@ -429,13 +444,83 @@ NodeTransitionRunner::step(NodePtr node, const uint32_t dt)
         this->transition_state.get(), node,
         TransitionTimePoint{double(this->current_time)});
     if (this->current_time >= this->transition_handle->duration) {
-        this->finished = true;
+        return true;
     }
+    return false;
 }
 
 NodeTransitionRunner::operator bool() const
 {
     return bool(this->transition_handle);
+}
+
+NodeTransitionHandle
+NodeTransitionsManager::get(const std::string& name)
+{
+    if (not this->_enqueued_updates.empty()) {
+        for (auto it = this->_enqueued_updates.rbegin();
+             it != this->_enqueued_updates.rend(); it++) {
+            const auto& [q_name, q_transition] = *it;
+            if (name == q_name) {
+                return q_transition;
+            }
+        }
+    }
+
+    const auto it = this->_transitions_map.find(name);
+    if (it != this->_transitions_map.end()) {
+        return std::get<NodeTransitionRunner>(*it).transition_handle;
+    }
+    return NodeTransitionHandle();
+}
+
+void
+NodeTransitionsManager::set(
+    const std::string& name, const NodeTransitionHandle& transition)
+{
+    if (not this->_is_processing) {
+        if (transition) {
+            this->_transitions_map.insert_or_assign(name, transition);
+        } else {
+            this->_transitions_map.erase(name);
+        }
+    } else {
+        this->_enqueued_updates.emplace_back(name, transition);
+    }
+}
+
+void
+NodeTransitionsManager::step(NodePtr node, const uint32_t dt)
+{
+    KAACORE_ASSERT(this->_is_processing == false);
+    this->_is_processing = true;
+    for (auto& [name, runner] : this->_transitions_map) {
+        bool finished = runner.step(node, dt);
+        if (finished) {
+            // if transition is finished destroy it's runner,
+            // use `_enqueued_updates` to not break for iteration.
+            this->_enqueued_updates.emplace(
+                this->_enqueued_updates.begin(), name, NodeTransitionHandle());
+        }
+    }
+
+    if (not this->_enqueued_updates.empty()) {
+        for (const auto& [name, transition] : this->_enqueued_updates) {
+            if (transition) {
+                this->_transitions_map.insert_or_assign(name, transition);
+            } else {
+                this->_transitions_map.erase(name);
+            }
+        }
+        this->_enqueued_updates.clear();
+    }
+    this->_is_processing = false;
+}
+
+NodeTransitionsManager::operator bool() const
+{
+    return not(
+        this->_transitions_map.empty() and this->_enqueued_updates.empty());
 }
 
 } // namespace kaacore

@@ -8,7 +8,7 @@ namespace kaacore {
 
 Sprite::Sprite() : texture(), origin(0, 0), dimensions(0, 0) {}
 
-Sprite::Sprite(Resource<Image> texture)
+Sprite::Sprite(ResourceReference<Image> texture)
     : texture(texture), origin(0, 0), dimensions(texture->get_dimensions())
 {}
 
@@ -53,82 +53,87 @@ std::pair<glm::dvec2, glm::dvec2>
 Sprite::get_display_rect() const
 {
     auto texture_dimensions = this->texture->get_dimensions();
-    double x, y, w, h;
-    if (this->frame_dimensions != glm::dvec2(0., 0.)) {
-        uint16_t frame_columns = this->dimensions.x / this->frame_dimensions.x;
-        x = this->origin.x +
-            ((this->frame_offset + this->frame_current) % frame_columns) *
-                this->frame_dimensions.x;
-        y = this->origin.y +
-            ((this->frame_offset + this->frame_current) / frame_columns) *
-                this->frame_dimensions.y;
-        w = this->frame_dimensions.x;
-        h = this->frame_dimensions.y;
-    } else {
-        x = this->origin.x;
-        y = this->origin.y;
-        w = this->dimensions.x;
-        h = this->dimensions.y;
-    }
-
     return std::make_pair(
-        glm::dvec2(x / texture_dimensions.x, y / texture_dimensions.y),
         glm::dvec2(
-            (x + w) / texture_dimensions.x, (y + h) / texture_dimensions.y));
-}
-
-void
-Sprite::animation_time_step(uint16_t time_step_size)
-{
-    if (this->frame_dimensions == glm::dvec2(0., 0.) or
-        this->animation_frame_duration == 0) {
-        return;
-    }
-
-    this->animation_time_acc += time_step_size;
-    uint16_t step_size =
-        this->animation_time_acc / this->animation_frame_duration;
-    this->animation_time_acc =
-        this->animation_time_acc % this->animation_frame_duration;
-
-    this->animation_step(step_size);
-}
-
-void
-Sprite::animation_step(uint16_t step_size)
-{
-    if (this->frame_dimensions == glm::dvec2(0., 0.)) {
-        return;
-    }
-
-    uint16_t effective_frame_count;
-    if (this->frame_count > 0) {
-        effective_frame_count = this->frame_count;
-    } else {
-        effective_frame_count =
-            (uint16_t(this->dimensions.x / this->frame_dimensions.x) *
-                 uint16_t(this->dimensions.y / this->frame_dimensions.y) -
-             this->frame_offset);
-    }
-
-    this->frame_current += step_size;
-    if (this->frame_current >= effective_frame_count) {
-        if (this->animation_loop) {
-            this->frame_current = this->frame_current % effective_frame_count;
-        } else {
-            this->frame_current = effective_frame_count - 1;
-        }
-    }
+            this->origin.x / texture_dimensions.x,
+            this->origin.y / texture_dimensions.y),
+        glm::dvec2(
+            (this->origin.x + this->dimensions.x) / texture_dimensions.x,
+            (this->origin.y + this->dimensions.y) / texture_dimensions.y));
 }
 
 glm::dvec2
 Sprite::get_size() const
 {
-    if (this->frame_dimensions != glm::dvec2(0., 0.)) {
-        return this->frame_dimensions;
+    return this->dimensions;
+}
+
+std::vector<Sprite>
+split_spritesheet(
+    const Sprite& spritesheet, const glm::dvec2 frame_dimensions,
+    const size_t frames_offset, const size_t frames_count,
+    const glm::dvec2 frame_padding)
+{
+    KAACORE_CHECK(spritesheet.has_texture());
+    KAACORE_CHECK(frame_dimensions.x > 0 and frame_dimensions.y > 0);
+    std::vector<Sprite> frames;
+
+    glm::dvec2 spritesheet_dimensions = spritesheet.get_size();
+    uint32_t columns_count =
+        spritesheet_dimensions.x / (frame_dimensions.x + 2 * frame_padding.x);
+    uint32_t rows_count =
+        spritesheet_dimensions.y / (frame_dimensions.y + 2 * frame_padding.y);
+    uint32_t max_frames_count = columns_count * rows_count;
+
+    KAACORE_CHECK(frames_offset < max_frames_count);
+    KAACORE_CHECK(frames_offset + frames_count < max_frames_count);
+
+    uint32_t starting_col = frames_offset % columns_count;
+    uint32_t starting_row = frames_offset / columns_count;
+    uint32_t ending_col;
+    uint32_t ending_row;
+
+    if (frames_count > 0) {
+        ending_col = (frames_offset + frames_count) % columns_count;
+        ending_row = (frames_offset + frames_count) / columns_count;
+        frames.reserve(frames_count);
     } else {
-        return this->dimensions;
+        ending_col = columns_count - 1;
+        ending_row = rows_count - 1;
+        frames.reserve(max_frames_count - frames_offset);
     }
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "Starting grid spritesheet splitter, columns_count: %lu, rows_count: "
+        "%lu, "
+        "starting_pos: %lux%lu, ending_pos: %lux%lu.",
+        columns_count, rows_count, starting_col, starting_row, ending_col,
+        ending_row);
+
+    size_t row = starting_row;
+    size_t col = starting_col;
+    while (true) {
+        glm::dvec2 crop_point = {
+            (frame_dimensions.x + 2 * frame_padding.x) * col + frame_padding.x,
+            (frame_dimensions.y + 2 * frame_padding.y) * row + frame_padding.y};
+        frames.push_back(
+            std::move(spritesheet.crop(crop_point, frame_dimensions)));
+        log<LogLevel::debug, LogCategory::misc>(
+            "Cropped spritesheet frame %llu [%llux%llu] (%lf, %lf).",
+            frames.size() - 1, col, row, crop_point.x, crop_point.y);
+
+        if (row == ending_row and col == ending_col) {
+            break;
+        }
+
+        col++;
+        if (col >= columns_count) {
+            col = 0;
+            row++;
+        }
+    }
+
+    return frames;
 }
 
 } // namespace kaacore

@@ -138,4 +138,18 @@ typedef SpecializedNodeAttributeTransition<
     &BodyNode::angular_velocity>
     BodyNodeAngularVelocityTransition;
 
+class NodeSpriteTransition : public NodeTransitionCustomizable {
+    std::vector<Sprite> _frames;
+    size_t _frames_count;
+
+  public:
+    NodeSpriteTransition(
+        const std::vector<Sprite>& frames, const double duration,
+        const TransitionWarping& warping = TransitionWarping());
+
+    std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const;
+    void evaluate(
+        TransitionStateBase* state_b, NodePtr node, const double t) const;
+};
+
 } // namespace kaacore
