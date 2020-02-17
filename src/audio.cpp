@@ -132,34 +132,34 @@ void
 SoundPlayback::volume(const double vol)
 {
     this->_volume = vol;
-    if (this->state() != AudioState::stopped) {
+    if (this->status() != AudioStatus::stopped) {
         get_engine()->audio_manager->_update_channel_volume(
             this->_channel_id, this->_volume * this->_sound.volume());
     }
 }
 
-AudioState
-SoundPlayback::state() const
+AudioStatus
+SoundPlayback::status() const
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->_playback_uid > 0) {
         return get_engine()->audio_manager->_check_playback(
             this->_channel_id, this->_playback_uid);
     }
-    return AudioState::stopped;
+    return AudioStatus::stopped;
 }
 
 bool
 SoundPlayback::is_playing() const
 {
-    return this->state() == AudioState::playing;
+    return this->status() == AudioStatus::playing;
 }
 
 void
 SoundPlayback::play(const int loops)
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
-    if (this->state() != AudioState::stopped) {
+    if (this->status() != AudioStatus::stopped) {
         this->stop();
     }
     auto [channel_id, playback_uid] = get_engine()->audio_manager->play_sound(
@@ -171,13 +171,13 @@ SoundPlayback::play(const int loops)
 bool
 SoundPlayback::is_paused() const
 {
-    return this->state() == AudioState::paused;
+    return this->status() == AudioStatus::paused;
 }
 
 bool
 SoundPlayback::pause()
 {
-    if (this->state() == AudioState::playing) {
+    if (this->status() == AudioStatus::playing) {
         get_engine()->audio_manager->_pause_channel(this->_channel_id);
         return true;
     }
@@ -187,7 +187,7 @@ SoundPlayback::pause()
 bool
 SoundPlayback::resume()
 {
-    if (this->state() == AudioState::paused) {
+    if (this->status() == AudioStatus::paused) {
         get_engine()->audio_manager->_resume_channel(this->_channel_id);
         return true;
     }
@@ -197,7 +197,7 @@ SoundPlayback::resume()
 bool
 SoundPlayback::stop()
 {
-    if (this->state() != AudioState::stopped) {
+    if (this->status() != AudioStatus::stopped) {
         get_engine()->audio_manager->_stop_channel(this->_channel_id);
         return true;
     }
@@ -269,13 +269,6 @@ Music::get_current()
     return get_engine()->audio_manager->_music_state.current_music;
 }
 
-AudioState
-Music::get_state()
-{
-    KAACORE_ASSERT(get_engine()->audio_manager);
-    return get_engine()->audio_manager->music_state();
-}
-
 double
 Music::volume() const
 {
@@ -293,12 +286,19 @@ Music::operator==(const Music& other) const
     return this->_music_data == other._music_data;
 }
 
+AudioStatus
+Music::status() const
+{
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    return get_engine()->audio_manager->music_state();
+}
+
 bool
 Music::is_playing() const
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     return *this == this->get_current() and
-           this->get_state() == AudioState::playing;
+           this->get_current().status() == AudioStatus::playing;
 }
 
 void
@@ -314,7 +314,7 @@ Music::is_paused() const
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
-        this->get_state() == AudioState::paused) {
+        this->get_current().status() == AudioStatus::paused) {
         return true;
     }
     return false;
@@ -325,7 +325,7 @@ Music::pause()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
-        this->get_state() == AudioState::playing) {
+        this->get_current().status() == AudioStatus::playing) {
         get_engine()->audio_manager->_pause_music();
         return true;
     }
@@ -337,7 +337,7 @@ Music::resume()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
-        this->get_state() == AudioState::paused) {
+        this->get_current().status() == AudioStatus::paused) {
         get_engine()->audio_manager->_resume_music();
         return true;
     }
@@ -348,9 +348,9 @@ bool
 Music::stop()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
-    auto state = this->get_state();
+    auto status = this->get_current().status();
     if (this->get_current() == *this and
-        (state == AudioState::paused or state == AudioState::playing)) {
+        (status == AudioStatus::paused or status == AudioStatus::playing)) {
         get_engine()->audio_manager->_stop_music();
         return true;
     }
@@ -477,17 +477,17 @@ AudioManager::play_music(const Music& music, const double volume_factor)
     }
 }
 
-AudioState
+AudioStatus
 AudioManager::music_state()
 {
     if (Mix_PlayingMusic()) {
         if (Mix_PausedMusic()) {
-            return AudioState::paused;
+            return AudioStatus::paused;
         } else {
-            return AudioState::playing;
+            return AudioStatus::playing;
         }
     } else {
-        return AudioState::stopped;
+        return AudioStatus::stopped;
     }
 }
 
@@ -544,7 +544,7 @@ AudioManager::master_music_volume(const double vol)
     this->_recalc_music_volume();
 }
 
-AudioState
+AudioStatus
 AudioManager::_check_playback(
     const ChannelId& channel_id, const PlaybackUid& playback_uid)
 {
@@ -552,12 +552,12 @@ AudioManager::_check_playback(
         const auto& channel_state = this->_channels_state[channel_id];
         if (channel_state.playback_uid == playback_uid) {
             if (channel_state.paused) {
-                return AudioState::paused;
+                return AudioStatus::paused;
             }
-            return AudioState::playing;
+            return AudioStatus::playing;
         }
     }
-    return AudioState::stopped;
+    return AudioStatus::stopped;
 }
 
 void

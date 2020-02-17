@@ -19,7 +19,7 @@ initialize_audio_resources();
 void
 uninitialize_audio_resources();
 
-enum struct AudioState {
+enum struct AudioStatus {
     stopped = 1,
     paused = 2,
     playing = 3,
@@ -80,7 +80,7 @@ class SoundPlayback {
     double volume() const;
     void volume(const double vol);
 
-    AudioState state() const;
+    AudioStatus status() const;
     bool is_playing() const;
     void play(const int loops = 1);
 
@@ -117,13 +117,13 @@ class Music {
     Music();
     static Music load(const char* path, double volume = 1.);
     static Music get_current();
-    static AudioState get_state();
 
     operator bool() const;
     bool operator==(const Music& other) const;
 
     double volume() const;
 
+    AudioStatus status() const;
     bool is_playing() const;
     void play(double volume_factor = 1.);
 
@@ -175,9 +175,9 @@ class AudioManager {
         const Sound& sound, const double volume_factor = 1.,
         const int loops = 1);
     void play_music(const Music& music, const double volume_factor = 1.);
-    AudioState music_state();
+    AudioStatus music_state();
 
-    AudioState _check_playback(
+    AudioStatus _check_playback(
         const ChannelId& channel_id, const PlaybackUid& playback_uid);
 
     void _pause_channel(const ChannelId& channel_id);
