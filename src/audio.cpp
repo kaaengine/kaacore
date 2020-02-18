@@ -430,7 +430,8 @@ AudioManager::load_raw_music(const char* path)
 }
 
 std::pair<ChannelId, PlaybackUid>
-AudioManager::play_sound(const Sound& sound, const double volume_factor, const int loops)
+AudioManager::play_sound(
+    const Sound& sound, const double volume_factor, const int loops)
 {
     KAACORE_ASSERT(bool(sound));
     if (sound._sound_data->_raw_sound) {

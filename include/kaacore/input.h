@@ -478,8 +478,7 @@ struct ControllerDeviceEvent : public BaseControllerEvent {
     bool is_removed() const;
 };
 
-struct MusicFinishedEvent : public BaseEvent {
-};
+struct MusicFinishedEvent : public BaseEvent {};
 
 struct Event {
     union {
