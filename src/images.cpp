@@ -23,7 +23,7 @@ ResourcesRegistry<std::string, Image> _images_registry;
  * Helper class that takes care of images being loaded to bgfx.
  *
  * Since the memory that is used to load texture to bgfx should be available
- * at least for two frames, we bump up its ref count by storing it in a set.
+ * for at least two frames, we bump up its ref count by storing it in a set.
  */
 struct _Limbo {
     void add(std::shared_ptr<Image> ref) { this->_used_images.insert(ref); }
