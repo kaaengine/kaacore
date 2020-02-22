@@ -1,3 +1,4 @@
+#include <deque>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -17,19 +18,61 @@ namespace kaacore {
 
 static bx::DefaultAllocator texture_image_allocator;
 ResourcesRegistry<std::string, Image> _images_registry;
-// bump up Image's ref count while it's being used by bgfx,
-// this may take up to 2 frames
-std::unordered_set<std::shared_ptr<Image>> _used_images;
+
+/*
+ * Helper class that takes care of images being loaded to bgfx.
+ *
+ * Since the memory that is used to load texture to bgfx should be available
+ * at least for two frames, we bump up its ref count by storing it in a set.
+ */
+struct _Limbo {
+    void add(std::shared_ptr<Image> ref) { this->_used_images.insert(ref); }
+
+    void enqueue_to_remove(Image* ptr) { _enqueued_to_remove.push_front(ptr); }
+
+    void process()
+    {
+        while (this->_enqueued_to_remove.size()) {
+            auto image_ptr = this->_enqueued_to_remove.back();
+            // Images are stored as raw pointers to save time for
+            // incrementing/decrementing ref count while are passed around,
+            // but at this point we have to construct shared_ptr.
+            // Use aliasing constructor to create non-owning ptr that we will
+            // use as a key
+            std::shared_ptr<Image> key(
+                std::shared_ptr<Image>(), static_cast<Image*>(image_ptr));
+            this->_used_images.erase(key);
+            this->_enqueued_to_remove.pop_back();
+        }
+    }
+
+    void clear()
+    {
+        this->process();
+        this->_used_images.clear();
+    }
+
+  private:
+    std::deque<Image*> _enqueued_to_remove;
+    std::unordered_set<std::shared_ptr<Image>> _used_images;
+} _limbo;
 
 void
-initialize_image_resources()
+initialize_images()
 {
     _images_registry.initialze();
 }
 
 void
-uninitialize_image_resources()
+images_on_frame()
 {
+    _limbo.process();
+}
+
+void
+uninitialize_images()
+{
+    _limbo.clear();
     _images_registry.uninitialze();
 }
 
@@ -89,7 +132,6 @@ Image::Image(bimg::ImageContainer* image_container)
 
 Image::~Image()
 {
-    _images_registry.unregister_resource(this->path);
     bimg::imageFree(this->image_container);
     if (this->is_initialized) {
         this->_uninitialize();
@@ -105,7 +147,7 @@ Image::load(const std::string& path, uint64_t flags)
     }
     image = std::shared_ptr<Image>(new Image(path, flags));
     _images_registry.register_resource(path, image);
-    _used_images.insert(image);
+    _limbo.add(image);
     return image;
 }
 
@@ -113,7 +155,7 @@ ResourceReference<Image>
 Image::load(bimg::ImageContainer* image_container)
 {
     auto image = std::shared_ptr<Image>(new Image(image_container));
-    _used_images.insert(image);
+    _limbo.add(image);
     return image;
 }
 
@@ -144,11 +186,10 @@ Image::_uninitialize()
 void
 _cleanup_used_image(void* _data, void* image)
 {
-    // use aliasing constructor in order to create non-owning ptr
-    // that we will use as a key
-    std::shared_ptr<Image> key(
-        std::shared_ptr<Image>(), static_cast<Image*>(image));
-    _used_images.erase(key);
+    // due to internal bgfx restrictions we are not allowed to destroy
+    // texture from this callback, bypass this by queuing pointer
+    // for later deletion
+    _limbo.enqueue_to_remove(static_cast<Image*>(image));
 }
 
 bgfx::TextureHandle

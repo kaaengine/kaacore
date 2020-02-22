@@ -16,13 +16,13 @@ namespace kaacore {
 ResourcesRegistry<std::string, FontData> _fonts_registry;
 
 void
-initialize_font_resources()
+initialize_fonts()
 {
     _fonts_registry.initialze();
 }
 
 void
-uninitialize_font_resources()
+uninitialize_fonts()
 {
     _fonts_registry.uninitialze();
 }
@@ -200,7 +200,6 @@ FontData::load(const std::string& path)
 
 FontData::~FontData()
 {
-    _fonts_registry.unregister_resource(this->path);
     if (this->is_initialized) {
         this->_uninitialize();
     }

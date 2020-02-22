@@ -17,9 +17,9 @@
 namespace kaacore {
 
 void
-initialize_font_resources();
+initialize_fonts();
 void
-uninitialize_font_resources();
+uninitialize_fonts();
 
 typedef std::vector<stbtt_packedchar> BakedFontData;
 

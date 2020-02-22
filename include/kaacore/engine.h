@@ -83,6 +83,8 @@ class Engine {
 
     std::unique_ptr<Renderer> _create_renderer();
     void _run(Scene* scene);
+    void _begin_frame();
+    void _end_frame();
     void _swap_scenes();
     void _detach_scenes();
     void _pump_events();

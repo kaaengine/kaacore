@@ -7,6 +7,8 @@ class ResourcesManager {
     ResourcesManager();
     ~ResourcesManager();
 
+    void on_frame();
+
   private:
     void _initialize_resources();
     void _uninitialize_resources();

@@ -14,9 +14,11 @@
 namespace kaacore {
 
 void
-initialize_image_resources();
+initialize_images();
 void
-uninitialize_image_resources();
+images_on_frame();
+void
+uninitialize_images();
 
 bimg::ImageContainer*
 load_image(const uint8_t* data, size_t size);

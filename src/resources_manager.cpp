@@ -16,19 +16,25 @@ ResourcesManager::~ResourcesManager()
 }
 
 void
+ResourcesManager::on_frame()
+{
+    images_on_frame();
+}
+
+void
 ResourcesManager::_initialize_resources()
 {
-    initialize_image_resources();
-    initialize_audio_resources();
-    initialize_font_resources();
+    initialize_audio();
+    initialize_images();
+    initialize_fonts();
 }
 
 void
 ResourcesManager::_uninitialize_resources()
 {
-    uninitialize_image_resources();
-    uninitialize_audio_resources();
-    uninitialize_font_resources();
+    uninitialize_audio();
+    uninitialize_images();
+    uninitialize_fonts();
 }
 
 } // namespace kaacore

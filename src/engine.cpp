@@ -104,12 +104,25 @@ Engine::_run(Scene* scene)
         if (this->_next_scene) {
             this->_swap_scenes();
         }
-        this->renderer->begin_frame();
+        this->_begin_frame();
         this->_scene->process_frame(dt);
-        this->renderer->end_frame();
+        this->_end_frame();
     }
     this->_scene->on_exit();
     log("Engine stopped.");
+}
+
+void
+Engine::_begin_frame()
+{
+    this->resources_manager->on_frame();
+    this->renderer->begin_frame();
+}
+
+void
+Engine::_end_frame()
+{
+    this->renderer->end_frame();
 }
 
 void

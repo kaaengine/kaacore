@@ -16,14 +16,14 @@ ResourcesRegistry<std::string, SoundData> _sound_registry;
 ResourcesRegistry<std::string, MusicData> _music_registry;
 
 void
-initialize_audio_resources()
+initialize_audio()
 {
     _sound_registry.initialze();
     _music_registry.initialze();
 }
 
 void
-uninitialize_audio_resources()
+uninitialize_audio()
 {
     _sound_registry.uninitialze();
     _music_registry.uninitialze();
@@ -38,7 +38,6 @@ SoundData::SoundData(const std::string& path) : path(path)
 
 SoundData::~SoundData()
 {
-    _sound_registry.unregister_resource(this->path);
     if (this->is_initialized) {
         this->_uninitialize();
     }
@@ -213,7 +212,6 @@ MusicData::MusicData(const std::string& path) : path(path)
 
 MusicData::~MusicData()
 {
-    _music_registry.unregister_resource(this->path);
     if (this->is_initialized) {
         this->_uninitialize();
     }
