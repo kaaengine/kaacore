@@ -93,12 +93,6 @@ Sound::volume() const
     return this->_volume;
 }
 
-void
-Sound::volume(const double vol)
-{
-    this->_volume = vol;
-}
-
 Sound::operator bool() const
 {
     return bool(this->_sound_data);
@@ -116,6 +110,98 @@ Sound::play(double volume_factor)
     KAACORE_ASSERT(get_engine()->audio_manager);
     get_engine()->audio_manager->play_sound(
         *this, this->_volume * volume_factor);
+}
+
+SoundPlayback::SoundPlayback(const Sound& sound, const double volume)
+    : _sound(sound), _volume(volume), _playback_uid(0)
+{}
+
+Sound
+SoundPlayback::sound() const
+{
+    return this->_sound;
+}
+
+double
+SoundPlayback::volume() const
+{
+    return this->_volume;
+}
+
+void
+SoundPlayback::volume(const double vol)
+{
+    this->_volume = vol;
+    if (this->status() != AudioStatus::stopped) {
+        get_engine()->audio_manager->_update_channel_volume(
+            this->_channel_id, this->_volume * this->_sound.volume());
+    }
+}
+
+AudioStatus
+SoundPlayback::status() const
+{
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    if (this->_playback_uid > 0) {
+        return get_engine()->audio_manager->_check_playback(
+            this->_channel_id, this->_playback_uid);
+    }
+    return AudioStatus::stopped;
+}
+
+bool
+SoundPlayback::is_playing() const
+{
+    return this->status() == AudioStatus::playing;
+}
+
+void
+SoundPlayback::play(const int loops)
+{
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    if (this->status() != AudioStatus::stopped) {
+        this->stop();
+    }
+    auto [channel_id, playback_uid] = get_engine()->audio_manager->play_sound(
+        this->_sound, this->_volume * this->_sound.volume(), loops);
+    this->_channel_id = channel_id;
+    this->_playback_uid = playback_uid;
+}
+
+bool
+SoundPlayback::is_paused() const
+{
+    return this->status() == AudioStatus::paused;
+}
+
+bool
+SoundPlayback::pause()
+{
+    if (this->status() == AudioStatus::playing) {
+        get_engine()->audio_manager->_pause_channel(this->_channel_id);
+        return true;
+    }
+    return false;
+}
+
+bool
+SoundPlayback::resume()
+{
+    if (this->status() == AudioStatus::paused) {
+        get_engine()->audio_manager->_resume_channel(this->_channel_id);
+        return true;
+    }
+    return false;
+}
+
+bool
+SoundPlayback::stop()
+{
+    if (this->status() != AudioStatus::stopped) {
+        get_engine()->audio_manager->_stop_channel(this->_channel_id);
+        return true;
+    }
+    return false;
 }
 
 MusicData::MusicData(const std::string& path) : path(path)
@@ -183,23 +269,10 @@ Music::get_current()
     return get_engine()->audio_manager->_music_state.current_music;
 }
 
-MusicState
-Music::get_state()
-{
-    KAACORE_ASSERT(get_engine()->audio_manager);
-    return get_engine()->audio_manager->music_state();
-}
-
 double
 Music::volume() const
 {
     return this->_volume;
-}
-
-void
-Music::volume(const double vol)
-{
-    this->_volume = vol;
 }
 
 Music::operator bool() const
@@ -213,12 +286,19 @@ Music::operator==(const Music& other) const
     return this->_music_data == other._music_data;
 }
 
+AudioStatus
+Music::status() const
+{
+    KAACORE_ASSERT(get_engine()->audio_manager);
+    return get_engine()->audio_manager->music_state();
+}
+
 bool
 Music::is_playing() const
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     return *this == this->get_current() and
-           this->get_state() == MusicState::playing;
+           this->get_current().status() == AudioStatus::playing;
 }
 
 void
@@ -234,7 +314,7 @@ Music::is_paused() const
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
-        this->get_state() == MusicState::paused) {
+        this->get_current().status() == AudioStatus::paused) {
         return true;
     }
     return false;
@@ -245,7 +325,7 @@ Music::pause()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
-        this->get_state() == MusicState::playing) {
+        this->get_current().status() == AudioStatus::playing) {
         get_engine()->audio_manager->_pause_music();
         return true;
     }
@@ -257,7 +337,7 @@ Music::resume()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
-        this->get_state() == MusicState::paused) {
+        this->get_current().status() == AudioStatus::paused) {
         get_engine()->audio_manager->_resume_music();
         return true;
     }
@@ -268,13 +348,21 @@ bool
 Music::stop()
 {
     KAACORE_ASSERT(get_engine()->audio_manager);
-    auto state = this->get_state();
+    auto status = this->get_current().status();
     if (this->get_current() == *this and
-        (state == MusicState::paused or state == MusicState::playing)) {
+        (status == AudioStatus::paused or status == AudioStatus::playing)) {
         get_engine()->audio_manager->_stop_music();
         return true;
     }
     return false;
+}
+
+void
+_ChannelState::reset()
+{
+    this->current_sound = Sound();
+    this->playback_uid = 0;
+    this->paused = false;
 }
 
 void
@@ -341,23 +429,35 @@ AudioManager::load_raw_music(const char* path)
     return raw_music;
 }
 
-void
-AudioManager::play_sound(const Sound& sound, const double volume_factor)
+std::pair<ChannelId, PlaybackUid>
+AudioManager::play_sound(
+    const Sound& sound, const double volume_factor, const int loops)
 {
     KAACORE_ASSERT(bool(sound));
     if (sound._sound_data->_raw_sound) {
-        auto channel = Mix_PlayChannel(-1, sound._sound_data->_raw_sound, 0);
-        if (channel < 0) {
+        // SDL_mixer loops meaning are different, -1 is infinite, 0 is once, 1
+        // is twice, ...
+        auto mixer_loops = loops - 1;
+        auto channel =
+            Mix_PlayChannel(-1, sound._sound_data->_raw_sound, mixer_loops);
+        if (channel >= 0) {
+            KAACORE_ASSERT(channel < this->_channels_state.size());
+            this->_channels_state[channel].current_sound = sound;
+            this->_channels_state[channel].requested_volume = volume_factor;
+            auto playback_uid = random_uid<PlaybackUid>();
+            this->_channels_state[channel].playback_uid = playback_uid;
+            this->_recalc_channel_volume(channel);
+            log<LogLevel::debug, LogCategory::audio>(
+                "Playing sound at channel %u, uid: %llx", channel,
+                playback_uid);
+            return {channel, playback_uid};
+        } else {
             log<LogLevel::error>("Failed to play sound (%s)", Mix_GetError());
-            return;
         }
-        KAACORE_ASSERT(channel < this->_channels_state.size());
-        this->_channels_state[channel].current_sound = sound;
-        this->_channels_state[channel].requested_volume = volume_factor;
-        this->_recalc_channel_volume(channel);
     } else {
         log<LogLevel::error>("Failed to played incorrectly loaded sound");
     }
+    return {-1, 0};
 }
 
 void
@@ -378,17 +478,17 @@ AudioManager::play_music(const Music& music, const double volume_factor)
     }
 }
 
-MusicState
+AudioStatus
 AudioManager::music_state()
 {
     if (Mix_PlayingMusic()) {
         if (Mix_PausedMusic()) {
-            return MusicState::paused;
+            return AudioStatus::paused;
         } else {
-            return MusicState::playing;
+            return AudioStatus::playing;
         }
     } else {
-        return MusicState::stopped;
+        return AudioStatus::stopped;
     }
 }
 
@@ -445,6 +545,68 @@ AudioManager::master_music_volume(const double vol)
     this->_recalc_music_volume();
 }
 
+AudioStatus
+AudioManager::_check_playback(
+    const ChannelId& channel_id, const PlaybackUid& playback_uid)
+{
+    if (channel_id < this->_channels_state.size()) {
+        const auto& channel_state = this->_channels_state[channel_id];
+        if (channel_state.playback_uid == playback_uid) {
+            if (channel_state.paused) {
+                return AudioStatus::paused;
+            }
+            return AudioStatus::playing;
+        }
+    }
+    return AudioStatus::stopped;
+}
+
+void
+AudioManager::_pause_channel(const ChannelId& channel_id)
+{
+    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    auto& channel_state = this->_channels_state[channel_id];
+    if (channel_state.current_sound) {
+        channel_state.paused = true;
+        Mix_Pause(channel_id);
+    }
+}
+
+void
+AudioManager::_resume_channel(const ChannelId& channel_id)
+{
+    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    auto& channel_state = this->_channels_state[channel_id];
+    if (channel_state.current_sound) {
+        channel_state.paused = false;
+        Mix_Resume(channel_id);
+    }
+}
+
+void
+AudioManager::_stop_channel(const ChannelId& channel_id)
+{
+    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    auto& channel_state = this->_channels_state[channel_id];
+    if (channel_state.current_sound) {
+        Mix_HaltChannel(channel_id);
+        channel_state.reset();
+        channel_state._manually_stopped = true;
+    }
+}
+
+void
+AudioManager::_update_channel_volume(
+    const ChannelId& channel_id, const double volume)
+{
+    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    auto& channel_state = this->_channels_state[channel_id];
+    if (channel_state.current_sound) {
+        channel_state.requested_volume = volume;
+        this->_recalc_channel_volume(channel_id);
+    }
+}
+
 void
 AudioManager::_pause_music()
 {
@@ -483,7 +645,7 @@ AudioManager::_recalc_channels_volume()
 }
 
 void
-AudioManager::_recalc_channel_volume(uint16_t channel_id)
+AudioManager::_recalc_channel_volume(ChannelId channel_id)
 {
     KAACORE_ASSERT(channel_id < this->_channels_state.size());
     KAACORE_ASSERT(this->_channels_state[channel_id].current_sound);
@@ -501,12 +663,16 @@ AudioManager::_handle_music_finished()
 }
 
 void
-AudioManager::_handle_channel_finished(uint16_t channel_id)
+AudioManager::_handle_channel_finished(ChannelId channel_id)
 {
     log<LogLevel::debug>("Sound channel #%u finished playback", channel_id);
     if (channel_id < this->_channels_state.size()) {
-        this->_channels_state[channel_id].current_sound =
-            Sound(); // empty sound
+        auto& channel_state = this->_channels_state[channel_id];
+        if (not channel_state._manually_stopped) {
+            channel_state.reset();
+        } else {
+            channel_state._manually_stopped = false;
+        }
     }
 }
 

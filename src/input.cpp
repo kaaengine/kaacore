@@ -263,12 +263,6 @@ ControllerAxisEvent::motion() const
     return _normalize_controller_axis(this->sdl_event.caxis.value);
 }
 
-bool
-AudioEvent::is_music_finished() const
-{
-    return this->type() == EventType::music_finished;
-}
-
 Event::Event() {}
 Event::Event(SDL_Event sdl_event)
 {
@@ -399,11 +393,11 @@ Event::controller_device() const
     return nullptr;
 }
 
-const AudioEvent* const
-Event::audio() const
+const MusicFinishedEvent* const
+Event::music_finished() const
 {
     if (this->common.type() == EventType::music_finished) {
-        return &this->_audio;
+        return &this->_music_finished;
     }
     return nullptr;
 }

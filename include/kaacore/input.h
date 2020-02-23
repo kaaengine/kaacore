@@ -478,9 +478,7 @@ struct ControllerDeviceEvent : public BaseControllerEvent {
     bool is_removed() const;
 };
 
-struct AudioEvent : public BaseEvent {
-    bool is_music_finished() const;
-};
+struct MusicFinishedEvent : public BaseEvent {};
 
 struct Event {
     union {
@@ -496,7 +494,7 @@ struct Event {
         ControllerButtonEvent _controller_button;
         ControllerAxisEvent _controller_axis;
         ControllerDeviceEvent _controller_device;
-        AudioEvent _audio;
+        MusicFinishedEvent _music_finished;
     };
 
     Event();
@@ -515,7 +513,7 @@ struct Event {
     const ControllerButtonEvent* const controller_button() const;
     const ControllerAxisEvent* const controller_axis() const;
     const ControllerDeviceEvent* const controller_device() const;
-    const AudioEvent* const audio() const;
+    const MusicFinishedEvent* const music_finished() const;
 };
 
 struct InputManager {

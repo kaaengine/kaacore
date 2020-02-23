@@ -1,18 +1,29 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include <SDL.h>
 #include <SDL_mixer.h>
 
 #include "kaacore/resources.h"
+#include "kaacore/utils.h"
 
 namespace kaacore {
+
+typedef uint16_t ChannelId;
+typedef uint64_t PlaybackUid;
 
 void
 initialize_audio_resources();
 void
 uninitialize_audio_resources();
+
+enum struct AudioStatus {
+    stopped = 1,
+    paused = 2,
+    playing = 3,
+};
 
 struct SoundData : public Resource {
     const std::string path;
@@ -45,15 +56,38 @@ class Sound {
     bool operator==(const Sound& other) const;
 
     double volume() const;
-    void volume(const double vol);
 
     void play(double volume_factor = 1.);
 };
 
-enum struct MusicState {
-    stopped = 1,
-    paused = 2,
-    playing = 3,
+class SoundPlayback {
+    Sound _sound;
+    double _volume = 1.;
+    ChannelId _channel_id;
+    uint64_t _playback_uid;
+
+  public:
+    SoundPlayback(const Sound& sound, const double volume = 1.);
+    ~SoundPlayback() = default;
+    SoundPlayback(const SoundPlayback&) = delete;
+    SoundPlayback(SoundPlayback&&) = delete;
+
+    SoundPlayback& operator=(const SoundPlayback&) = delete;
+    SoundPlayback& operator=(SoundPlayback&&) = delete;
+
+    Sound sound() const;
+
+    double volume() const;
+    void volume(const double vol);
+
+    AudioStatus status() const;
+    bool is_playing() const;
+    void play(const int loops = 1);
+
+    bool is_paused() const;
+    bool pause();
+    bool resume();
+    bool stop();
 };
 
 struct MusicData : public Resource {
@@ -83,14 +117,13 @@ class Music {
     Music();
     static Music load(const char* path, double volume = 1.);
     static Music get_current();
-    static MusicState get_state();
 
     operator bool() const;
     bool operator==(const Music& other) const;
 
     double volume() const;
-    void volume(const double vol);
 
+    AudioStatus status() const;
     bool is_playing() const;
     void play(double volume_factor = 1.);
 
@@ -108,12 +141,23 @@ struct _MusicState {
 struct _ChannelState {
     double requested_volume;
     Sound current_sound;
+    PlaybackUid playback_uid;
+    bool paused;
+
+    // we keep track if channel was stopped manually, since
+    // there is a possibility that manually stopped channel
+    // will be immediately reused, and later cleared up
+    // by the channel hook
+    bool _manually_stopped;
+
+    void reset();
 };
 
 class AudioManager {
     friend class Engine;
     friend class Sound;
     friend struct SoundData;
+    friend class SoundPlayback;
     friend class Music;
     friend struct MusicData;
 
@@ -127,9 +171,20 @@ class AudioManager {
     Mix_Chunk* load_raw_sound(const char* path);
     Mix_Music* load_raw_music(const char* path);
 
-    void play_sound(const Sound& sound, const double volume_factor = 1.);
+    std::pair<ChannelId, PlaybackUid> play_sound(
+        const Sound& sound, const double volume_factor = 1.,
+        const int loops = 1);
     void play_music(const Music& music, const double volume_factor = 1.);
-    MusicState music_state();
+    AudioStatus music_state();
+
+    AudioStatus _check_playback(
+        const ChannelId& channel_id, const PlaybackUid& playback_uid);
+
+    void _pause_channel(const ChannelId& channel_id);
+    void _resume_channel(const ChannelId& channel_id);
+    void _stop_channel(const ChannelId& channel_id);
+    void _update_channel_volume(
+        const ChannelId& channel_id, const double volume);
 
     void _pause_music();
     void _resume_music();
@@ -137,10 +192,10 @@ class AudioManager {
 
     void _recalc_music_volume();
     void _recalc_channels_volume();
-    void _recalc_channel_volume(uint16_t channel_id);
+    void _recalc_channel_volume(ChannelId channel_id);
 
     void _handle_music_finished();
-    void _handle_channel_finished(uint16_t channel_id);
+    void _handle_channel_finished(ChannelId channel_id);
 
   public:
     AudioManager();
