@@ -79,6 +79,15 @@ Node::_mark_to_delete()
             child->_mark_to_delete();
         }
     }
+
+    // Physics have side effect if we don't perform
+    // deletion immediately, so we give it special
+    // treatment here by dettaching them from simulation.
+    if (this->_type == NodeType::body) {
+        this->body.detach_from_simulation();
+    } else if (this->_type == NodeType::hitbox) {
+        this->hitbox.detach_from_simulation();
+    }
 }
 
 glm::fmat4

@@ -114,6 +114,7 @@ class BodyNode {
     ~BodyNode();
 
     void attach_to_simulation();
+    void detach_from_simulation();
 
     void override_simulation_position();
     void sync_simulation_position() const;
@@ -159,6 +160,7 @@ class HitboxNode {
 
     void update_physics_shape();
     void attach_to_simulation();
+    void detach_from_simulation();
 
   public:
     SpaceNode* space() const;

@@ -404,23 +404,7 @@ BodyNode::BodyNode()
 
 BodyNode::~BodyNode()
 {
-    if (this->_cp_body != nullptr) {
-        log<LogLevel::debug>(
-            "Destroying body node %p (cpBody: %p)", container_node(this),
-            this->_cp_body);
-        cpBodySetUserData(this->_cp_body, nullptr);
-        space_safe_call(
-            this->space(),
-            [body_ptr = this->_cp_body](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying cpBody %p", body_ptr);
-                if (space_node_phys) {
-                    cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
-                }
-                cpBodyFree(body_ptr);
-            });
-        this->_cp_body = nullptr;
-    }
+    this->detach_from_simulation();
 }
 
 void
@@ -441,6 +425,28 @@ BodyNode::attach_to_simulation()
                 "Simulation callback: attaching cpBody %p", this->_cp_body);
             cpSpaceAddBody(space_node_phys->_cp_space, this->_cp_body);
         });
+    }
+}
+
+void
+BodyNode::detach_from_simulation()
+{
+    if (this->_cp_body != nullptr) {
+        log<LogLevel::debug>(
+            "Destroying body node %p (cpBody: %p)", container_node(this),
+            this->_cp_body);
+        cpBodySetUserData(this->_cp_body, nullptr);
+        space_safe_call(
+            this->space(),
+            [body_ptr = this->_cp_body](const SpaceNode* space_node_phys) {
+                log<LogLevel::debug>(
+                    "Simulation callback: destroying cpBody %p", body_ptr);
+                if (space_node_phys) {
+                    cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
+                }
+                cpBodyFree(body_ptr);
+            });
+        this->_cp_body = nullptr;
     }
 }
 
@@ -615,23 +621,7 @@ HitboxNode::HitboxNode() {}
 
 HitboxNode::~HitboxNode()
 {
-    if (this->_cp_shape != nullptr) {
-        log<LogLevel::debug>(
-            "Destroying hitbox node %p (cpShape: %p)", container_node(this),
-            this->_cp_shape);
-        cpShapeSetUserData(this->_cp_shape, nullptr);
-        space_safe_call(
-            this->space(),
-            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying cpShape %p", shape_ptr);
-                if (space_node_phys) {
-                    cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
-                }
-                cpShapeFree(shape_ptr);
-            });
-        this->_cp_shape = nullptr;
-    }
+    this->detach_from_simulation();
 }
 
 SpaceNode*
@@ -754,6 +744,28 @@ HitboxNode::attach_to_simulation()
                     shape_ptr, space_node_phys->_cp_space);
                 cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
             });
+    }
+}
+
+void
+HitboxNode::detach_from_simulation()
+{
+    if (this->_cp_shape != nullptr) {
+        log<LogLevel::debug>(
+            "Destroying hitbox node %p (cpShape: %p)", container_node(this),
+            this->_cp_shape);
+        cpShapeSetUserData(this->_cp_shape, nullptr);
+        space_safe_call(
+            this->space(),
+            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
+                log<LogLevel::debug>(
+                    "Simulation callback: destroying cpShape %p", shape_ptr);
+                if (space_node_phys) {
+                    cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
+                }
+                cpShapeFree(shape_ptr);
+            });
+        this->_cp_shape = nullptr;
     }
 }
 
