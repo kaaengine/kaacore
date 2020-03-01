@@ -86,7 +86,7 @@ split_spritesheet(
     uint32_t max_frames_count = columns_count * rows_count;
 
     KAACORE_CHECK(frames_offset < max_frames_count);
-    KAACORE_CHECK(frames_offset + frames_count < max_frames_count);
+    KAACORE_CHECK(frames_offset + frames_count <= max_frames_count);
 
     uint32_t starting_col = frames_offset % columns_count;
     uint32_t starting_row = frames_offset / columns_count;
