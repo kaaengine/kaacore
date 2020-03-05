@@ -18,6 +18,14 @@ Sprite::load(const char* path, uint64_t flags)
     return Sprite(Image::load(path, flags));
 }
 
+bool
+Sprite::operator==(const Sprite& other)
+{
+    return (
+        this->texture == other.texture and this->origin == other.origin and
+        this->dimensions == other.dimensions);
+}
+
 Sprite
 Sprite::crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const
 {

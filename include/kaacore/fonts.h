@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -77,12 +78,15 @@ class Font {
     Font();
     static Font load(const std::string& font_filepath);
 
+    bool operator==(const Font& other);
+
   private:
     ResourceReference<FontData> _font_data;
 
     Font(const ResourceReference<FontData>& font_data);
 
     friend class TextNode;
+    friend std::hash<Font>;
 };
 
 class TextNode {
@@ -121,3 +125,16 @@ class TextNode {
 };
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::Font;
+using kaacore::FontData;
+
+template<>
+struct hash<kaacore::Font> {
+    size_t operator()(const Font& font) const
+    {
+        return std::hash<ResourceReference<FontData>>{}(font._font_data);
+    }
+};
+}

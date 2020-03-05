@@ -3,9 +3,11 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include "kaacore/images.h"
 #include "kaacore/resources.h"
+#include "kaacore/utils.h"
 
 namespace kaacore {
 
@@ -24,6 +26,7 @@ struct Sprite {
 
     inline bool has_texture() const { return bool(this->texture); }
     inline operator bool() const { return this->has_texture(); }
+    bool operator==(const Sprite& other);
 
     Sprite crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const;
     Sprite crop(glm::dvec2 new_origin) const;
@@ -38,3 +41,16 @@ split_spritesheet(
     const glm::dvec2 frame_padding = {0., 0.});
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::hash_combined;
+using kaacore::Sprite;
+
+template<>
+struct hash<Sprite> {
+    size_t operator()(const Sprite& sprite) const
+    {
+        return hash_combined(sprite.texture, sprite.origin, sprite.dimensions);
+    }
+};
+}

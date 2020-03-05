@@ -6,10 +6,12 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include "kaacore/files.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/utils.h"
 
 namespace kaacore {
 
@@ -36,6 +38,13 @@ struct StandardVertexData {
         float x, float y, float u, float v, float m, float n)
     {
         return StandardVertexData(x, y, 0., u, v, m, n);
+    }
+
+    inline bool operator==(const StandardVertexData& other) const
+    {
+        return (
+            this->xyz == other.xyz and this->uv == other.uv and
+            this->mn == other.mn and this->rgba == other.rgba);
     }
 };
 
@@ -76,3 +85,16 @@ struct Renderer {
 };
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::hash_combined;
+using kaacore::StandardVertexData;
+
+template<>
+struct hash<StandardVertexData> {
+    size_t operator()(const StandardVertexData& svd) const
+    {
+        return hash_combined(svd.xyz, svd.uv, svd.mn, svd.rgba);
+    }
+};
+}
