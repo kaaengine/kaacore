@@ -11,7 +11,7 @@
 using namespace kaacore;
 
 struct TransitionsDemoScene : Scene {
-    std::vector<Node*> objects;
+    std::vector<NodeOwnerPtr> objects;
 
     TransitionsDemoScene()
     {
@@ -55,25 +55,23 @@ struct TransitionsDemoScene : Scene {
             TransitionWarping(0, true));
 
         for (int i = 0; i < 625; i++) {
-            Node* node = new Node();
+            NodeOwnerPtr node = make_node();
 
             node->shape(Shape::Circle(2.5));
             node->position({-90. + (i / 25) * 10, -90. + (i % 25) * 10});
             node->color({1., 1., 1., 1.});
             node->transition(movement_transitions_par);
 
-            this->objects.push_back(node);
             this->root_node.add_child(node);
+            this->objects.push_back(std::move(node));
         }
     }
 
     void update(uint32_t dt) override
     {
         for (auto const& event : this->get_events()) {
-            auto system = event.system();
-            auto keyboard = event.keyboard();
-            if ((keyboard and keyboard->is_pressing(Keycode::q)) or
-                (system and system->quit())) {
+            auto keyboard_key = event.keyboard_key();
+            if (keyboard_key and keyboard_key->key() == Keycode::q) {
                 get_engine()->quit();
                 break;
             }

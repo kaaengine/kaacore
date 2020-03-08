@@ -10,6 +10,7 @@
 #include "kaacore/audio.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
+#include "kaacore/resources_manager.h"
 #include "kaacore/window.h"
 
 namespace kaacore {
@@ -34,10 +35,12 @@ class Engine {
     VirtualResolutionMode _virtual_resolution_mode =
         VirtualResolutionMode::adaptive_stretch;
 
+    // use pointers so we can have more controll over destruction order
     std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<InputManager> input_manager;
     std::unique_ptr<AudioManager> audio_manager;
+    std::unique_ptr<ResourcesManager> resources_manager;
 
     Engine(
         const glm::uvec2& virtual_resolution,
@@ -78,7 +81,6 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
-    std::unique_ptr<Window> _create_window();
     std::unique_ptr<Renderer> _create_renderer();
     void _run(Scene* scene);
     void _swap_scenes();
@@ -88,10 +90,16 @@ class Engine {
 
 extern Engine* engine;
 
+inline bool
+is_engine_initialized()
+{
+    return engine != nullptr;
+}
+
 inline Engine*
 get_engine()
 {
-    KAACORE_CHECK(engine != nullptr);
+    KAACORE_CHECK(is_engine_initialized());
     return engine;
 }
 

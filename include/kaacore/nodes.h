@@ -7,6 +7,7 @@
 
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"
+#include "kaacore/node_ptr.h"
 #include "kaacore/physics.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shapes.h"
@@ -26,16 +27,16 @@ enum struct NodeType {
 struct ForeignNodeWrapper {
     ForeignNodeWrapper() = default;
     virtual ~ForeignNodeWrapper() = default;
-};
 
-struct MyForeignWrapper : ForeignNodeWrapper {
-    MyForeignWrapper();
-    ~MyForeignWrapper();
+    virtual void on_add_to_parent() = 0;
 };
 
 struct Scene;
 
 class Node {
+    friend class _NodePtrBase;
+    friend class NodePtr;
+    friend class NodeOwnerPtr;
     friend struct Scene;
     friend struct SpaceNode;
     friend struct BodyNode;
@@ -52,7 +53,7 @@ class Node {
     bool _visible = true;
     Alignment _origin_alignment = Alignment::none;
     uint32_t _lifetime = 0;
-    NodeTransitionRunner _transition;
+    NodeTransitionsManager _transitions_manager;
 
     Scene* _scene = nullptr;
     Node* _parent = nullptr;
@@ -70,7 +71,10 @@ class Node {
         bool is_dirty = true;
     } _render_data;
 
+    bool _marked_to_delete = false;
+
     void _mark_dirty();
+    void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(
         const Node* const ancestor = nullptr) const;
@@ -90,7 +94,7 @@ class Node {
     Node(NodeType type = NodeType::basic);
     ~Node();
 
-    void add_child(Node* const child_node);
+    void add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
     void recalculate_render_data();
 
@@ -120,7 +124,7 @@ class Node {
     Shape shape();
     void shape(const Shape& shape);
 
-    Sprite& sprite_ref();
+    Sprite sprite();
     void sprite(const Sprite& sprite);
 
     glm::dvec4 color();
@@ -138,11 +142,20 @@ class Node {
     NodeTransitionHandle transition();
     void transition(const NodeTransitionHandle& transition);
 
+    NodeTransitionsManager& transitions_manager();
+
     Scene* const scene() const;
-    Node* const parent() const;
+    NodePtr parent() const;
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
 };
+
+template<class... Args>
+NodeOwnerPtr
+make_node(Args&&... args)
+{
+    return NodeOwnerPtr{new Node(std::forward<Args>(args)...)};
+}
 
 } // namespace kaacore

@@ -70,6 +70,26 @@ Node::_mark_dirty()
     }
 }
 
+void
+Node::_mark_to_delete()
+{
+    this->_marked_to_delete = true;
+    for (auto child : this->_children) {
+        if (not child->_marked_to_delete) {
+            child->_mark_to_delete();
+        }
+    }
+
+    // Physics have side effect if we don't perform
+    // deletion immediately, so we give it special
+    // treatment here by dettaching them from simulation.
+    if (this->_type == NodeType::body) {
+        this->body.detach_from_simulation();
+    } else if (this->_type == NodeType::hitbox) {
+        this->hitbox.detach_from_simulation();
+    }
+}
+
 glm::fmat4
 Node::_compute_model_matrix(const glm::fmat4& parent_matrix) const
 {
@@ -147,11 +167,18 @@ Node::_set_rotation(const double rotation)
 }
 
 void
-Node::add_child(Node* const child_node)
+Node::add_child(NodeOwnerPtr& child_node)
 {
     KAACORE_CHECK(child_node->_parent == nullptr);
+    KAACORE_CHECK(child_node._ownership_transferred == false);
+
     child_node->_parent = this;
-    this->_children.push_back(child_node);
+    child_node._ownership_transferred = true;
+    this->_children.push_back(child_node.get());
+
+    if (child_node->_node_wrapper) {
+        child_node->_node_wrapper->on_add_to_parent();
+    }
 
     // TODO set root
     // TODO optimize (replace with iterator?)
@@ -169,7 +196,7 @@ Node::add_child(Node* const child_node)
         std::for_each(
             n->_children.begin(), n->_children.end(), initialize_node);
     };
-    initialize_node(child_node);
+    initialize_node(child_node.get());
 }
 
 void
@@ -286,7 +313,7 @@ Node::absolute_rotation()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    return DecomposedTransformation(this->_model_matrix.value).rotation;
+    return DecomposedTransformation<float>(this->_model_matrix.value).rotation;
 }
 
 void
@@ -313,7 +340,7 @@ Node::absolute_scale()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    return DecomposedTransformation(this->_model_matrix.value).scale;
+    return DecomposedTransformation<float>(this->_model_matrix.value).scale;
 }
 
 void
@@ -384,8 +411,8 @@ Node::shape(const Shape& shape)
     this->_render_data.is_dirty = true;
 }
 
-Sprite&
-Node::sprite_ref()
+Sprite
+Node::sprite()
 {
     return this->_sprite;
 }
@@ -449,13 +476,13 @@ Node::origin_alignment(const Alignment& alignment)
 NodeTransitionHandle
 Node::transition()
 {
-    return this->_transition.transition_handle;
+    return this->_transitions_manager.get(default_transition_name);
 }
 
 void
 Node::transition(const NodeTransitionHandle& transition)
 {
-    this->_transition.setup(transition);
+    this->_transitions_manager.set(default_transition_name, transition);
 }
 
 uint32_t
@@ -470,13 +497,19 @@ Node::lifetime(const uint32_t& lifetime)
     this->_lifetime = lifetime;
 }
 
+NodeTransitionsManager&
+Node::transitions_manager()
+{
+    return this->_transitions_manager;
+}
+
 Scene* const
 Node::scene() const
 {
     return this->_scene;
 }
 
-Node* const
+NodePtr
 Node::parent() const
 {
     return this->_parent;
@@ -493,16 +526,6 @@ ForeignNodeWrapper*
 Node::wrapper_ptr() const
 {
     return this->_node_wrapper.get();
-}
-
-MyForeignWrapper::MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper ctor!" << std::endl;
-}
-
-MyForeignWrapper::~MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper dtor!" << std::endl;
 }
 
 } // namespace kaacore

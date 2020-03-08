@@ -74,201 +74,148 @@ BaseEvent::timestamp() const
 }
 
 bool
-SystemEvent::quit() const
+SystemEvent::is_quit() const
 {
     return this->type() == EventType::quit;
 }
 
 bool
-SystemEvent::clipboard_updated() const
+SystemEvent::is_clipboard_updated() const
 {
     return this->type() == EventType::clipboard_updated;
 }
 
 bool
-WindowEvent::shown() const
+WindowEvent::is_shown() const
 {
     return this->type() == EventType::window_shown;
 }
 
 bool
-WindowEvent::exposed() const
+WindowEvent::is_exposed() const
 {
     return this->type() == EventType::window_exposed;
 }
 
 bool
-WindowEvent::moved() const
+WindowEvent::is_moved() const
 {
     return this->type() == EventType::window_moved;
 }
 
 bool
-WindowEvent::resized() const
+WindowEvent::is_resized() const
 {
     return this->type() == EventType::window_resized;
 }
 
 bool
-WindowEvent::minimized() const
+WindowEvent::is_minimized() const
 {
     return this->type() == EventType::window_minimized;
 }
 
 bool
-WindowEvent::maximized() const
+WindowEvent::is_maximized() const
 {
     return this->type() == EventType::window_maximized;
 }
 
 bool
-WindowEvent::restored() const
+WindowEvent::is_restored() const
 {
     return this->type() == EventType::window_restored;
 }
 
 bool
-WindowEvent::enter() const
+WindowEvent::is_enter() const
 {
     return this->type() == EventType::window_enter;
 }
 
 bool
-WindowEvent::leave() const
+WindowEvent::is_leave() const
 {
     return this->type() == EventType::window_leave;
 }
 
 bool
-WindowEvent::focus_gained() const
+WindowEvent::is_focus_gained() const
 {
     return this->type() == EventType::window_focus_gained;
 }
 
 bool
-WindowEvent::focus_lost() const
+WindowEvent::is_focus_lost() const
 {
     return this->type() == EventType::window_focus_lost;
 }
 
 bool
-WindowEvent::close() const
+WindowEvent::is_close() const
 {
     return this->type() == EventType::window_close;
 }
 
-glm::dvec2
-WindowEvent::size() const
+Keycode
+KeyboardKeyEvent::key() const
 {
-    if (not this->resized()) {
-        return {0, 0};
-    }
-
-    return {this->sdl_event.window.data1, this->sdl_event.window.data2};
-}
-
-glm::dvec2
-WindowEvent::position() const
-{
-    if (not this->moved()) {
-        return {0, 0};
-    }
-
-    return {this->sdl_event.window.data1, this->sdl_event.window.data2};
+    return static_cast<Keycode>(this->sdl_event.key.keysym.sym);
 }
 
 bool
-KeyboardEvent::key() const
+KeyboardKeyEvent::is_key_down() const
 {
-    auto type = this->type();
-    return type == EventType::key_down or type == EventType::key_up;
+    return this->type() == EventType::key_down;
 }
 
 bool
-KeyboardEvent::text_input() const
+KeyboardKeyEvent::is_key_up() const
 {
-    return this->type() == EventType::text_input;
-}
-
-bool
-KeyboardEvent::is_pressing(Keycode kc) const
-{
-    return this->type() == EventType::key_down and
-           this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc);
-}
-
-bool
-KeyboardEvent::is_releasing(Keycode kc) const
-{
-    return this->type() == EventType::key_up and
-           this->sdl_event.key.keysym.sym == static_cast<SDL_Keycode>(kc);
+    return this->type() == EventType::key_up;
 }
 
 std::string
-KeyboardEvent::text() const
+KeyboardTextEvent::text() const
 {
-    if (not this->text_input()) {
-        return "";
-    }
-
     return this->sdl_event.text.text;
 }
 
-bool
-MouseEvent::button() const
+MouseButton
+MouseButtonEvent::button() const
 {
-    auto type = this->type();
-    return type == EventType::mouse_button_down or
-           type == EventType::mouse_button_up;
+    return static_cast<MouseButton>(this->sdl_event.button.button);
 }
 
 bool
-MouseEvent::motion() const
+MouseButtonEvent::is_button_down() const
 {
-    return this->type() == EventType::mouse_motion;
+    return this->type() == EventType::mouse_button_down;
 }
 
 bool
-MouseEvent::wheel() const
+MouseButtonEvent::is_button_up() const
 {
-    return this->type() == EventType::mouse_wheel;
-}
-
-bool
-MouseEvent::is_pressing(const MouseButton mb) const
-{
-    return this->type() == EventType::mouse_button_down and
-           this->sdl_event.button.button == static_cast<uint8_t>(mb);
-}
-
-bool
-MouseEvent::is_releasing(const MouseButton mb) const
-{
-    return this->type() == EventType::mouse_button_up and
-           this->sdl_event.button.button == static_cast<uint8_t>(mb);
+    return this->type() == EventType::mouse_button_up;
 }
 
 glm::dvec2
-MouseEvent::position() const
+MouseButtonEvent::position() const
 {
-    if (this->button()) {
-        return _naive_screen_position_to_virtual(
-            this->sdl_event.button.x, this->sdl_event.button.y);
-    } else if (this->motion()) {
-        return _naive_screen_position_to_virtual(
-            this->sdl_event.motion.x, this->sdl_event.motion.y);
-    }
-
-    return {0, 0};
+    return _naive_screen_position_to_virtual(
+        this->sdl_event.button.x, this->sdl_event.button.y);
 }
 
 glm::dvec2
-MouseEvent::scroll() const
+MouseMotionEvent::position() const
 {
-    if (not this->wheel()) {
-        return {0, 0};
-    }
+    return _naive_screen_position_to_virtual(
+        this->sdl_event.motion.x, this->sdl_event.motion.y);
+}
 
+glm::dvec2
+MouseWheelEvent::scroll() const
+{
     auto direction =
         glm::dvec2(this->sdl_event.wheel.x, this->sdl_event.wheel.y);
     // positive Y axis goes down
@@ -280,78 +227,40 @@ MouseEvent::scroll() const
     return direction;
 }
 
-bool
-ControllerEvent::button() const
-{
-    auto type = this->type();
-    return type == EventType::controller_button_down or
-           type == EventType::controller_button_up;
-}
-
-bool
-ControllerEvent::axis() const
-{
-    return this->type() == EventType::controller_axis_motion;
-}
-
-bool
-ControllerEvent::added() const
-{
-    return this->type() == EventType::controller_added;
-}
-
-bool
-ControllerEvent::removed() const
-{
-    return this->type() == EventType::controller_removed;
-}
-
-bool
-ControllerEvent::remapped() const
-{
-    return this->type() == EventType::controller_removed;
-}
-
-bool
-ControllerEvent::is_pressing(const ControllerButton cb) const
-{
-    if (not this->button()) {
-        return false;
-    }
-    return this->sdl_event.cbutton.state == SDL_PRESSED and
-           this->sdl_event.cbutton.button == static_cast<uint8_t>(cb);
-}
-
-bool
-ControllerEvent::is_releasing(const ControllerButton cb) const
-{
-    if (not this->button()) {
-        return false;
-    }
-    return this->sdl_event.cbutton.state == SDL_RELEASED and
-           this->sdl_event.cbutton.button == static_cast<uint8_t>(cb);
-}
-
-double
-ControllerEvent::axis_motion(const ControllerAxis ca) const
-{
-    if (not this->axis() or
-        this->sdl_event.caxis.axis != static_cast<uint8_t>(ca)) {
-        return 0;
-    }
-    return _normalize_controller_axis(this->sdl_event.caxis.value);
-}
-
 ControllerID
-ControllerEvent::id() const
+BaseControllerEvent::id() const
 {
     return this->sdl_event.cdevice.which;
 }
 
-bool
-AudioEvent::music_finished() const
+ControllerButton
+ControllerButtonEvent::button() const
 {
-    return this->type() == EventType::music_finished;
+    return static_cast<ControllerButton>(this->sdl_event.cbutton.button);
+}
+
+bool
+ControllerButtonEvent::is_button_down() const
+{
+    return this->type() == EventType::controller_button_down;
+}
+
+bool
+ControllerButtonEvent::is_button_up() const
+{
+    return this->type() == EventType::controller_button_up;
+}
+
+ControllerAxis
+ControllerAxisEvent::axis() const
+{
+    return static_cast<ControllerAxis>(this->sdl_event.caxis.axis);
+}
+
+double
+ControllerAxisEvent::motion() const
+{
+    return _normalize_controller_axis(this->sdl_event.caxis.value);
 }
 
 Event::Event() {}
@@ -393,49 +302,102 @@ Event::window() const
     return nullptr;
 }
 
-const KeyboardEvent* const
-Event::keyboard() const
+const KeyboardKeyEvent* const
+Event::keyboard_key() const
 {
     auto type = this->type();
-    if (type == EventType::key_up or type == EventType::key_down or
-        type == EventType::text_input) {
-        return &this->_keyboard;
+    if (type == EventType::key_up or type == EventType::key_down) {
+        return &this->_keyboard_key;
     }
     return nullptr;
 }
 
-const MouseEvent* const
-Event::mouse() const
+const KeyboardTextEvent* const
+Event::keyboard_text() const
+{
+    if (this->type() == EventType::text_input) {
+        return &this->_keyboard_text;
+    }
+    return nullptr;
+}
+
+const MouseButtonEvent* const
+Event::mouse_button() const
 {
     auto type = this->common.type();
     if (type == EventType::mouse_button_up or
-        type == EventType::mouse_button_down or
-        type == EventType::mouse_motion or type == EventType::mouse_wheel) {
-        return &this->_mouse;
+        type == EventType::mouse_button_down) {
+        return &this->_mouse_button;
     }
     return nullptr;
 }
 
-const ControllerEvent* const
-Event::controller() const
+const MouseMotionEvent* const
+Event::mouse_motion() const
+{
+    if (this->type() == EventType::mouse_motion) {
+        return &this->_mouse_motion;
+    }
+    return nullptr;
+}
+
+const MouseWheelEvent* const
+Event::mouse_wheel() const
+{
+    if (this->type() == EventType::mouse_wheel) {
+        return &this->_mouse_wheel;
+    }
+    return nullptr;
+}
+
+const ControllerButtonEvent* const
+Event::controller_button() const
 {
     auto type = this->common.type();
     if (type == EventType::controller_button_up or
-        type == EventType::controller_button_down or
-        type == EventType::controller_axis_motion or
-        type == EventType::controller_added or
-        type == EventType::controller_removed or
-        type == EventType::controller_remapped) {
-        return &this->_controller;
+        type == EventType::controller_button_down) {
+        return &this->_controller_button;
     }
     return nullptr;
 }
 
-const AudioEvent* const
-Event::audio() const
+const ControllerAxisEvent* const
+Event::controller_axis() const
+{
+    if (this->type() == EventType::controller_axis_motion) {
+        return &this->_controller_axis;
+    }
+    return nullptr;
+}
+
+bool
+ControllerDeviceEvent::is_added() const
+{
+    return this->type() == EventType::controller_added;
+}
+
+bool
+ControllerDeviceEvent::is_removed() const
+{
+    return this->type() == EventType::controller_removed;
+}
+
+const ControllerDeviceEvent* const
+Event::controller_device() const
+{
+    auto type = this->type();
+    if (type == EventType::controller_added or
+        type == EventType::controller_removed) {
+        return &this->_controller_device;
+    }
+    return nullptr;
+}
+
+const MusicFinishedEvent* const
+Event::music_finished() const
 {
     if (this->common.type() == EventType::music_finished) {
-        return &this->_audio;
+        return &this->_music_finished;
     }
     return nullptr;
 }
@@ -671,6 +633,10 @@ InputManager::push_event(SDL_Event sdl_event)
             this->controller.disconnect(sdl_event.cdevice.which);
             log<LogLevel::debug>("Controller disconnected.");
             break;
+        case EventType::key_down:
+            if (sdl_event.key.repeat) {
+                return;
+            }
     }
 
     Event event(sdl_event);

@@ -44,6 +44,11 @@ Scene::process_nodes(uint32_t dt)
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
+        if (node->_marked_to_delete) {
+            delete node;
+            continue;
+        }
+
         if (node->_lifetime) {
             if (node->_lifetime <= dt) {
                 delete node;
@@ -59,12 +64,8 @@ Scene::process_nodes(uint32_t dt)
             node->body.sync_simulation_rotation();
         }
 
-        if (node->_transition) {
-            node->_transition.step(node, dt);
-        }
-
-        if (node->_sprite and node->_sprite.auto_animate) {
-            node->_sprite.animation_time_step(dt);
+        if (node->_transitions_manager) {
+            node->_transitions_manager.step(node, dt);
         }
 
         for (const auto child_node : node->_children) {

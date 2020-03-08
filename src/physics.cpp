@@ -1,9 +1,24 @@
 #include <type_traits>
 
 #include <chipmunk/chipmunk.h>
+
+#ifndef _MSC_VER
+extern "C"
+{
+#endif
+
+// this header does not have 'extern "C"' on it's own
+// but on Visual Studio it's built as C++
+#include <chipmunk/chipmunk_private.h>
+
+#ifndef _MSC_VER
+}
+#endif
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/exceptions.h"
+#include "kaacore/geometry.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
 #include "kaacore/utils.h"
@@ -57,42 +72,6 @@ convert_contact_points(const cpContactPointSet* const cp_contact_points)
     }
 
     return contact_points;
-}
-
-HitboxTransform::HitboxTransform()
-    : HitboxTransform(glm::dvec2{0., 0.}, 0., glm::dvec2{1., 1.})
-{}
-
-HitboxTransform::HitboxTransform(
-    const glm::dvec2& tr, const double& r, const glm::dvec2& sc)
-    : translation(tr), scale(sc), rotation(r)
-{
-    this->_transform = cpTransformMult(
-        cpTransformTranslate(convert_vector(this->translation)),
-        cpTransformMult(
-            cpTransformRotate(this->rotation),
-            cpTransformScale(this->scale.x, this->scale.y)));
-}
-
-std::vector<cpVect>
-HitboxTransform::transform_points(const std::vector<glm::dvec2>& points) const
-{
-    std::vector<cpVect> cp_points;
-    cp_points.reserve(points.size());
-
-    for (const auto& pt : points) {
-        cp_points.emplace_back(
-            cpTransformPoint(this->_transform, convert_vector(pt)));
-    }
-
-    return cp_points;
-}
-
-double
-HitboxTransform::flat_radius() const
-{
-    KAACORE_CHECK(this->scale.x == this->scale.y);
-    return this->scale.x;
 }
 
 inline constexpr Node*
@@ -174,13 +153,36 @@ SpaceNode::SpaceNode()
     this->_time_acc = 0;
 }
 
+void
+_release_cp_collision_handler_callback(cpCollisionHandler* cp_collision_handler)
+{
+    KAACORE_ASSERT_TERMINATE(cp_collision_handler->userData != nullptr);
+    auto collision_handler_func =
+        static_cast<CollisionHandlerFunc*>(cp_collision_handler->userData);
+    delete collision_handler_func;
+}
+
 SpaceNode::~SpaceNode()
 {
     log<LogLevel::debug>(
         "Destroying space node %p (cpSpace: %p)", container_node(this),
         this->_cp_space);
-    cpSpaceDestroy(this->_cp_space);
-    // TODO destroy collision handlers?
+
+    KAACORE_ASSERT_TERMINATE(this->_cp_space != nullptr);
+
+    // deleting allocated collision handlers
+    cpHashSetEach(
+        this->_cp_space->collisionHandlers,
+        [](void* elt, void* data) {
+            auto cp_handler = static_cast<cpCollisionHandler*>(elt);
+            // we assume that every collision handler is created by kaacore
+            // since we blindly cast void* to CollisionHandlerFunc*
+            _release_cp_collision_handler_callback(cp_handler);
+        },
+        nullptr);
+
+    cpSpaceFree(this->_cp_space);
+    this->_cp_space = nullptr;
 }
 
 void
@@ -273,7 +275,7 @@ SpaceNode::set_collision_handler(
         static_cast<cpCollisionType>(trigger_b));
 
     if (cp_handler->userData != nullptr) {
-        // TODO handle existing
+        _release_cp_collision_handler_callback(cp_handler);
     }
     CollisionHandlerFunc* func = new CollisionHandlerFunc();
     *func = handler;
@@ -351,7 +353,7 @@ SpaceNode::query_shape_overlaps(const Shape& shape, const glm::dvec2& position)
 {
     std::vector<ShapeQueryResult> results;
     auto shape_uptr =
-        prepare_hitbox_shape(shape, HitboxTransform(position, 0., {1., 1.}));
+        prepare_hitbox_shape(shape, Transformation::translate(position));
 
     // shapes are created without BB set up, cpShapeUpdate refreshes it
     cpShapeUpdate(shape_uptr.get(), cpTransformIdentity);
@@ -424,23 +426,7 @@ BodyNode::BodyNode()
 
 BodyNode::~BodyNode()
 {
-    if (this->_cp_body != nullptr) {
-        log<LogLevel::debug>(
-            "Destroying body node %p (cpBody: %p)", container_node(this),
-            this->_cp_body);
-        cpBodySetUserData(this->_cp_body, nullptr);
-        space_safe_call(
-            this->space(),
-            [body_ptr = this->_cp_body](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying cpBody %p", body_ptr);
-                if (space_node_phys) {
-                    cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
-                }
-                cpBodyFree(body_ptr);
-            });
-        this->_cp_body = nullptr;
-    }
+    this->detach_from_simulation();
 }
 
 void
@@ -461,6 +447,28 @@ BodyNode::attach_to_simulation()
                 "Simulation callback: attaching cpBody %p", this->_cp_body);
             cpSpaceAddBody(space_node_phys->_cp_space, this->_cp_body);
         });
+    }
+}
+
+void
+BodyNode::detach_from_simulation()
+{
+    if (this->_cp_body != nullptr) {
+        log<LogLevel::debug>(
+            "Destroying body node %p (cpBody: %p)", container_node(this),
+            this->_cp_body);
+        cpBodySetUserData(this->_cp_body, nullptr);
+        space_safe_call(
+            this->space(),
+            [body_ptr = this->_cp_body](const SpaceNode* space_node_phys) {
+                log<LogLevel::debug>(
+                    "Simulation callback: destroying cpBody %p", body_ptr);
+                if (space_node_phys) {
+                    cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
+                }
+                cpBodyFree(body_ptr);
+            });
+        this->_cp_body = nullptr;
     }
 }
 
@@ -632,30 +640,28 @@ BodyNode::sleeping(const bool& sleeping)
 }
 
 CpShapeUniquePtr
-prepare_hitbox_shape(const Shape& shape, const HitboxTransform& transform)
+prepare_hitbox_shape(const Shape& shape, const Transformation& transformation)
 {
     KAACORE_ASSERT(shape.type != ShapeType::none);
     KAACORE_ASSERT(shape.type != ShapeType::freeform);
 
-    log<LogLevel::debug, LogCategory::physics>(
-        "Preparing hitbox shape with transform +(%lf, %lf), *(%lf, %lf), %%%lf",
-        transform.translation.x, transform.translation.y, transform.scale.x,
-        transform.scale.y, transform.rotation);
+    auto transformed_shape = shape.transform(transformation);
 
     cpShape* shape_ptr = nullptr;
-    std::vector<cpVect> cp_points = transform.transform_points(shape.points);
+    const auto cp_points =
+        reinterpret_cast<const cpVect*>(transformed_shape.points.data());
+
     if (shape.type == ShapeType::segment) {
         KAACORE_ASSERT(shape.points.size() == 2);
         shape_ptr = cpSegmentShapeNew(
-            nullptr, cp_points[0], cp_points[1],
-            shape.radius * transform.flat_radius());
+            nullptr, cp_points[0], cp_points[1], transformed_shape.radius);
     } else if (shape.type == ShapeType::circle) {
         KAACORE_ASSERT(shape.points.size() == 1);
-        shape_ptr = cpCircleShapeNew(
-            nullptr, shape.radius * transform.flat_radius(), cp_points[0]);
+        shape_ptr =
+            cpCircleShapeNew(nullptr, transformed_shape.radius, cp_points[0]);
     } else if (shape.type == ShapeType::polygon) {
-        shape_ptr = cpPolyShapeNewRaw(
-            nullptr, shape.points.size(), cp_points.data(), 0.);
+        shape_ptr =
+            cpPolyShapeNewRaw(nullptr, shape.points.size(), cp_points, 0.);
     }
     KAACORE_ASSERT(shape_ptr != nullptr);
 
@@ -666,23 +672,7 @@ HitboxNode::HitboxNode() {}
 
 HitboxNode::~HitboxNode()
 {
-    if (this->_cp_shape != nullptr) {
-        log<LogLevel::debug>(
-            "Destroying hitbox node %p (cpShape: %p)", container_node(this),
-            this->_cp_shape);
-        cpShapeSetUserData(this->_cp_shape, nullptr);
-        space_safe_call(
-            this->space(),
-            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying cpShape %p", shape_ptr);
-                if (space_node_phys) {
-                    cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
-                }
-                cpShapeFree(shape_ptr);
-            });
-        this->_cp_shape = nullptr;
-    }
+    this->detach_from_simulation();
 }
 
 SpaceNode*
@@ -704,14 +694,14 @@ HitboxNode::update_physics_shape()
     Node* node = container_node(this);
     cpShape* new_cp_shape;
 
-    const HitboxTransform hitbox_transform(
-        node->_position, node->_rotation,
-        // include parent's (BodyNode) scale
-        node->_scale *
+    const auto transformation =
+        Transformation() | Transformation::translate(node->_position) |
+        Transformation::rotate(node->_rotation) |
+        Transformation::scale(
+            node->_scale *
             (node->_parent ? node->_parent->_scale : glm::dvec2(1.)));
 
-    new_cp_shape =
-        prepare_hitbox_shape(node->_shape, hitbox_transform).release();
+    new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
 
     log<LogLevel::debug>(
         "Updating hitbox node %p shape (cpShape: %p)", node, new_cp_shape);
@@ -789,6 +779,28 @@ HitboxNode::attach_to_simulation()
                     shape_ptr, space_node_phys->_cp_space);
                 cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
             });
+    }
+}
+
+void
+HitboxNode::detach_from_simulation()
+{
+    if (this->_cp_shape != nullptr) {
+        log<LogLevel::debug>(
+            "Destroying hitbox node %p (cpShape: %p)", container_node(this),
+            this->_cp_shape);
+        cpShapeSetUserData(this->_cp_shape, nullptr);
+        space_safe_call(
+            this->space(),
+            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
+                log<LogLevel::debug>(
+                    "Simulation callback: destroying cpShape %p", shape_ptr);
+                if (space_node_phys) {
+                    cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
+                }
+                cpShapeFree(shape_ptr);
+            });
+        this->_cp_shape = nullptr;
     }
 }
 

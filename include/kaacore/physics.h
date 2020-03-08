@@ -8,6 +8,8 @@
 #include <chipmunk/chipmunk.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/geometry.h"
+#include "kaacore/node_ptr.h"
 #include "kaacore/shapes.h"
 
 namespace kaacore {
@@ -36,7 +38,7 @@ enum struct CollisionPhase {
 struct Arbiter {
     cpArbiter* cp_arbiter;
     CollisionPhase phase;
-    Node* space;
+    NodePtr space;
 
     Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
 };
@@ -49,29 +51,13 @@ uint8_t operator&(CollisionPhase phase, uint8_t other);
 uint8_t operator&(CollisionPhase phase, CollisionPhase other);
 
 struct CollisionPair {
-    Node* body_node;
-    Node* hitbox_node;
+    NodePtr body_node;
+    NodePtr hitbox_node;
 
     CollisionPair(BodyNode* body, HitboxNode* hitbox);
 };
 
-struct HitboxTransform {
-    glm::dvec2 translation;
-    double rotation;
-    glm::dvec2 scale;
-
-    cpTransform _transform;
-
-    HitboxTransform();
-    HitboxTransform(
-        const glm::dvec2& tr, const double& r, const glm::dvec2& sc);
-    std::vector<cpVect> transform_points(
-        const std::vector<glm::dvec2>& points) const;
-    double flat_radius() const;
-};
-
-typedef std::function<uint8_t(
-    const Arbiter, const CollisionPair, const CollisionPair)>
+typedef std::function<uint8_t(const Arbiter, CollisionPair, CollisionPair)>
     CollisionHandlerFunc;
 
 typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
@@ -87,8 +73,8 @@ struct CollisionContactPoint {
 };
 
 struct ShapeQueryResult {
-    Node* body_node;
-    Node* hitbox_node;
+    NodePtr body_node;
+    NodePtr hitbox_node;
     std::vector<CollisionContactPoint> contact_points;
 };
 
@@ -149,6 +135,7 @@ class BodyNode {
     ~BodyNode();
 
     void attach_to_simulation();
+    void detach_from_simulation();
 
     void override_simulation_position();
     void sync_simulation_position() const;
@@ -185,7 +172,7 @@ class BodyNode {
 };
 
 CpShapeUniquePtr
-prepare_hitbox_shape(const Shape& shape, const HitboxTransform& transform);
+prepare_hitbox_shape(const Shape& shape, const Transformation& transformtion);
 
 class HitboxNode {
     friend class Node;
@@ -197,6 +184,7 @@ class HitboxNode {
 
     void update_physics_shape();
     void attach_to_simulation();
+    void detach_from_simulation();
 
   public:
     SpaceNode* space() const;

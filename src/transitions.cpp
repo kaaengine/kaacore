@@ -60,18 +60,25 @@ NodeTransitionBase::NodeTransitionBase(
 {}
 
 std::unique_ptr<TransitionStateBase>
-NodeTransitionBase::prepare_state(Node* node) const
+NodeTransitionBase::prepare_state(NodePtr node) const
 {
     return nullptr;
 }
 
 void
 NodeTransitionCustomizable::process_time_point(
-    TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node,
+    const TransitionTimePoint& tp) const
 {
     KAACORE_ASSERT(this->duration >= 0.);
     const TransitionTimePoint local_tp =
         this->warping.warp_time(tp, this->internal_duration);
+
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionCustomizable(%p)::process_time_point - node: %p, abs_t: "
+        "%lf, local_abs_t: %lf, internal_duration: %lf",
+        this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
+
     const double warped_t = local_tp.abs_t / this->internal_duration;
     this->evaluate(state, node, warped_t);
 }
@@ -139,7 +146,7 @@ NodeTransitionsSequence::NodeTransitionsSequence(
 }
 
 std::unique_ptr<TransitionStateBase>
-NodeTransitionsSequence::prepare_state(Node* node) const
+NodeTransitionsSequence::prepare_state(NodePtr node) const
 {
     auto sequence_state = std::make_unique<_NodeTransitionsSequenceState>();
     for (const auto& sub_tr : this->_sub_transitions) {
@@ -153,7 +160,7 @@ NodeTransitionsSequence::prepare_state(Node* node) const
 
 void
 NodeTransitionsSequence::process_time_point(
-    TransitionStateBase* state_b, Node* node,
+    TransitionStateBase* state_b, NodePtr node,
     const TransitionTimePoint& tp) const
 {
     const TransitionTimePoint warped_tp =
@@ -168,10 +175,14 @@ NodeTransitionsSequence::process_time_point(
     log<LogLevel::debug, LogCategory::misc>(
         "NodeTransitionsSequence(%p)::process_time_point - node: %p, abs_t: "
         "%lf, warped_abs_t: %lf",
-        this, node, tp.abs_t, warped_tp.abs_t);
+        this, node.get(), tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         if (not it->state_prepared) {
+            log<LogLevel::debug, LogCategory::misc>(
+                "NodeTransitionsSequence(%p)::process_time_point - preparing "
+                "state",
+                this);
             it->state = it->handle->prepare_state(node);
             it->state_prepared = true;
         }
@@ -181,12 +192,21 @@ NodeTransitionsSequence::process_time_point(
         const TransitionTimePoint sub_tp =
             TransitionTimePoint{sub_abs_t, is_backing};
 
+        log<LogLevel::debug, LogCategory::misc>(
+            "NodeTransitionsSequence(%p)::process_time_point - processing "
+            "sub-transition, "
+            "sub_abs_t: %lf",
+            this, sub_abs_t);
         it->handle->process_time_point(it->state.get(), node, sub_tp);
 
         if (cur_cycle_index == warped_tp.cycle_index and
             is_backing == warped_tp.is_backing and
             it->starting_abs_t <= warped_tp.abs_t and
-            it->ending_abs_t >= warped_tp.abs_t) {
+            it->ending_abs_t > warped_tp.abs_t) {
+            log<LogLevel::debug, LogCategory::misc>(
+                "NodeTransitionsSequence(%p)::process_time_point - met "
+                "breaking condition",
+                this);
             break;
         }
 
@@ -218,7 +238,13 @@ NodeTransitionsSequence::process_time_point(
 struct _NodeTransitionsParallelSubState : _NodeTransitionsGroupSubState {
     bool sleeping;
 
-    using _NodeTransitionsGroupSubState::_NodeTransitionsGroupSubState;
+    _NodeTransitionsParallelSubState(
+        const NodeTransitionHandle& transition_handle,
+        const double starting_abs_t, const double ending_abs_t)
+        : _NodeTransitionsGroupSubState(
+              transition_handle, starting_abs_t, ending_abs_t),
+          sleeping(false)
+    {}
 };
 
 struct _NodeTransitionsParallelState : TransitionStateBase {
@@ -264,7 +290,7 @@ NodeTransitionsParallel::NodeTransitionsParallel(
 }
 
 std::unique_ptr<TransitionStateBase>
-NodeTransitionsParallel::prepare_state(Node* node) const
+NodeTransitionsParallel::prepare_state(NodePtr node) const
 {
     auto sequence_state = std::make_unique<_NodeTransitionsParallelState>();
     for (const auto& sub_tr : this->_sub_transitions) {
@@ -277,7 +303,7 @@ NodeTransitionsParallel::prepare_state(Node* node) const
 
 void
 NodeTransitionsParallel::process_time_point(
-    TransitionStateBase* state_b, Node* node,
+    TransitionStateBase* state_b, NodePtr node,
     const TransitionTimePoint& tp) const
 {
     auto state = static_cast<_NodeTransitionsParallelState*>(state_b);
@@ -291,7 +317,7 @@ NodeTransitionsParallel::process_time_point(
     log<LogLevel::debug, LogCategory::misc>(
         "NodeTransitionsParallel(%p)::process_time_point - node: %p, abs_t: "
         "%lf, warped_abs_t: %lf",
-        this, node, tp.abs_t, warped_tp.abs_t);
+        this, node.get(), tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         for (auto& sub_state : state->sub_states) {
@@ -359,7 +385,8 @@ NodeTransitionDelay::NodeTransitionDelay(const double duration)
 
 void
 NodeTransitionDelay::process_time_point(
-    TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node,
+    const TransitionTimePoint& tp) const
 {}
 
 NodeTransitionCallback::NodeTransitionCallback(
@@ -369,10 +396,28 @@ NodeTransitionCallback::NodeTransitionCallback(
 
 void
 NodeTransitionCallback::process_time_point(
-    TransitionStateBase* state, Node* node, const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node,
+    const TransitionTimePoint& tp) const
 {
+    log<LogLevel::debug, LogCategory::misc>(
+        "NodeTransitionCallback(%p)::process_time_point - node: %p, abs_t: "
+        "%lf",
+        this, node.get(), tp.abs_t);
     KAACORE_ASSERT(this->callback_func);
     this->callback_func(node);
+}
+
+NodeTransitionRunner::NodeTransitionRunner(
+    const NodeTransitionHandle& transition)
+{
+    this->setup(transition);
+}
+
+NodeTransitionRunner&
+NodeTransitionRunner::operator=(const NodeTransitionHandle& transition)
+{
+    this->setup(transition);
+    return *this;
 }
 
 void
@@ -381,17 +426,13 @@ NodeTransitionRunner::setup(const NodeTransitionHandle& transition)
     this->transition_handle = transition;
     this->transition_state.reset();
     this->transition_state_prepared = false;
-    this->finished = false;
     this->current_time = 0;
 }
 
-void
-NodeTransitionRunner::step(Node* node, const uint32_t dt)
+bool
+NodeTransitionRunner::step(NodePtr node, const uint32_t dt)
 {
     KAACORE_ASSERT(bool(*this));
-    if (this->finished) {
-        return;
-    }
 
     if (not this->transition_state_prepared) {
         this->transition_state = this->transition_handle->prepare_state(node);
@@ -403,13 +444,83 @@ NodeTransitionRunner::step(Node* node, const uint32_t dt)
         this->transition_state.get(), node,
         TransitionTimePoint{double(this->current_time)});
     if (this->current_time >= this->transition_handle->duration) {
-        this->finished = true;
+        return true;
     }
+    return false;
 }
 
 NodeTransitionRunner::operator bool() const
 {
     return bool(this->transition_handle);
+}
+
+NodeTransitionHandle
+NodeTransitionsManager::get(const std::string& name)
+{
+    if (not this->_enqueued_updates.empty()) {
+        for (auto it = this->_enqueued_updates.rbegin();
+             it != this->_enqueued_updates.rend(); it++) {
+            const auto& [q_name, q_transition] = *it;
+            if (name == q_name) {
+                return q_transition;
+            }
+        }
+    }
+
+    const auto it = this->_transitions_map.find(name);
+    if (it != this->_transitions_map.end()) {
+        return std::get<NodeTransitionRunner>(*it).transition_handle;
+    }
+    return NodeTransitionHandle();
+}
+
+void
+NodeTransitionsManager::set(
+    const std::string& name, const NodeTransitionHandle& transition)
+{
+    if (not this->_is_processing) {
+        if (transition) {
+            this->_transitions_map.insert_or_assign(name, transition);
+        } else {
+            this->_transitions_map.erase(name);
+        }
+    } else {
+        this->_enqueued_updates.emplace_back(name, transition);
+    }
+}
+
+void
+NodeTransitionsManager::step(NodePtr node, const uint32_t dt)
+{
+    KAACORE_ASSERT(this->_is_processing == false);
+    this->_is_processing = true;
+    for (auto& [name, runner] : this->_transitions_map) {
+        bool finished = runner.step(node, dt);
+        if (finished) {
+            // if transition is finished destroy it's runner,
+            // use `_enqueued_updates` to not break for iteration.
+            this->_enqueued_updates.emplace(
+                this->_enqueued_updates.begin(), name, NodeTransitionHandle());
+        }
+    }
+
+    if (not this->_enqueued_updates.empty()) {
+        for (const auto& [name, transition] : this->_enqueued_updates) {
+            if (transition) {
+                this->_transitions_map.insert_or_assign(name, transition);
+            } else {
+                this->_transitions_map.erase(name);
+            }
+        }
+        this->_enqueued_updates.clear();
+    }
+    this->_is_processing = false;
+}
+
+NodeTransitionsManager::operator bool() const
+{
+    return not(
+        this->_transitions_map.empty() and this->_enqueued_updates.empty());
 }
 
 } // namespace kaacore
