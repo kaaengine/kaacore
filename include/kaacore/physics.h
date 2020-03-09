@@ -1,18 +1,24 @@
 #pragma once
 
 #include <functional>
+#include <memory>
+#include <set>
 #include <vector>
 
 #include <chipmunk/chipmunk.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/geometry.h"
 #include "kaacore/node_ptr.h"
+#include "kaacore/shapes.h"
 
 namespace kaacore {
 
 typedef size_t CollisionTriggerId;
 typedef size_t CollisionGroup;
 typedef cpBitmask CollisionBitmask;
+
+typedef std::unique_ptr<cpShape, void (*)(cpShape*)> CpShapeUniquePtr;
 
 constexpr uint32_t default_simulation_step_size = 10;
 
@@ -60,6 +66,18 @@ void
 cp_call_post_step_callbacks(
     cpSpace* cp_space, void* space_node_phys_ptr, void* data);
 
+struct CollisionContactPoint {
+    glm::dvec2 point_a;
+    glm::dvec2 point_b;
+    double distance;
+};
+
+struct ShapeQueryResult {
+    NodePtr body_node;
+    NodePtr hitbox_node;
+    std::vector<CollisionContactPoint> contact_points;
+};
+
 class SpaceNode {
     friend class Node;
     friend class BodyNode;
@@ -84,6 +102,9 @@ class SpaceNode {
         CollisionHandlerFunc handler,
         uint8_t phases_mask = uint8_t(CollisionPhase::any_phase),
         bool only_non_deleted_nodes = true);
+
+    const std::vector<ShapeQueryResult> query_shape_overlaps(
+        const Shape& shape, const glm::dvec2& position = {0., 0.});
 
     void gravity(const glm::dvec2& gravity);
     glm::dvec2 gravity();
@@ -149,6 +170,9 @@ class BodyNode {
     bool sleeping();
     void sleeping(const bool& sleeping);
 };
+
+CpShapeUniquePtr
+prepare_hitbox_shape(const Shape& shape, const Transformation& transformtion);
 
 class HitboxNode {
     friend class Node;
