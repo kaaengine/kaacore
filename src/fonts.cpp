@@ -267,6 +267,12 @@ Font::load(const std::string& font_filepath)
     return Font(FontData::load(font_filepath));
 }
 
+bool
+Font::operator==(const Font& other)
+{
+    return this->_font_data == other._font_data;
+}
+
 inline constexpr Node*
 container_node(const TextNode* text)
 {

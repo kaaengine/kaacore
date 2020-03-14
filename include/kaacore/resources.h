@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -26,6 +27,12 @@ struct ResourceReference {
     ResourceReference() : res_ptr(nullptr) {}
     ResourceReference(std::shared_ptr<T> ptr) : res_ptr(ptr) {}
     inline operator bool() const { return bool(this->res_ptr); }
+
+    bool operator==(const ResourceReference<T>& other)
+    {
+        return this->res_ptr == other.res_ptr;
+    }
+
     T* operator->() const
     {
         auto ptr = this->res_ptr;
@@ -73,3 +80,15 @@ class ResourcesRegistry {
 };
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::ResourceReference;
+
+template<typename T>
+struct hash<ResourceReference<T>> {
+    size_t operator()(const ResourceReference<T>& res_ref) const
+    {
+        return std::hash<T*>{}(res_ref.res_ptr.get());
+    }
+};
+}

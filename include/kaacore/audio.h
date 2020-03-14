@@ -42,6 +42,7 @@ struct SoundData : public Resource {
 
 class Sound {
     friend class AudioManager;
+    friend std::hash<Sound>;
 
     ResourceReference<SoundData> _sound_data;
     double _volume;
@@ -107,6 +108,7 @@ struct MusicData : public Resource {
 
 class Music {
     friend class AudioManager;
+    friend std::hash<Music>;
 
     double _volume;
     ResourceReference<MusicData> _music_data;
@@ -215,3 +217,26 @@ class AudioManager {
 };
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::Music;
+using kaacore::MusicData;
+using kaacore::Sound;
+using kaacore::SoundData;
+
+template<>
+struct hash<Sound> {
+    size_t operator()(const Sound& sound) const
+    {
+        return std::hash<ResourceReference<SoundData>>{}(sound._sound_data);
+    }
+};
+
+template<>
+struct hash<Music> {
+    size_t operator()(const Music& music) const
+    {
+        return std::hash<ResourceReference<MusicData>>{}(music._music_data);
+    }
+};
+}

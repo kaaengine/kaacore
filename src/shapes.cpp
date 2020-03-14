@@ -22,6 +22,15 @@ Shape::Shape(
     }
 };
 
+bool
+Shape::operator==(const Shape& other)
+{
+    return (
+        this->type == other.type and this->points == other.points and
+        this->radius == other.radius and this->indices == other.indices and
+        this->vertices == other.vertices);
+}
+
 Shape
 Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 {
