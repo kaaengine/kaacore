@@ -158,7 +158,7 @@ Shape::Freeform(
 }
 
 Shape
-Shape::transform(const Transformation& transformation)
+Shape::transform(const Transformation& transformation) const
 {
     auto points = this->points;
     for (auto& pt : points) {

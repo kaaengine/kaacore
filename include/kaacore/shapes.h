@@ -46,7 +46,7 @@ struct Shape {
         const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices);
 
-    Shape transform(const Transformation& transformation);
+    Shape transform(const Transformation& transformation) const;
 };
 
 } // namespace kaacore
