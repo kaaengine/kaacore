@@ -98,31 +98,17 @@ Engine::_run(Scene* scene)
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
-        this->elapsed_time += dt;
 
         this->_pump_events();
         if (this->_next_scene) {
             this->_swap_scenes();
         }
-        this->_begin_frame();
+        this->renderer->begin_frame();
         this->_scene->process_frame(dt);
-        this->_end_frame();
+        this->renderer->end_frame();
     }
     this->_scene->on_exit();
     log("Engine stopped.");
-}
-
-void
-Engine::_begin_frame()
-{
-    this->resources_manager->on_frame();
-    this->renderer->begin_frame();
-}
-
-void
-Engine::_end_frame()
-{
-    this->renderer->end_frame();
 }
 
 void

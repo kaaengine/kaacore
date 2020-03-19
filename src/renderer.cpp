@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iterator>
 #include <tuple>
+#include <unordered_set>
 
 #include <bgfx/bgfx.h>
 
@@ -14,6 +15,23 @@
 #include "kaacore/renderer.h"
 
 namespace kaacore {
+
+// Since the memory that is used to load texture to bgfx should be available
+// for at least two frames, we bump up its ref count by storing it in a set.
+std::unordered_set<std::shared_ptr<bimg::ImageContainer>> _used_containers;
+
+void
+_release_used_container(void* _data, void* image_container)
+{
+    // Image containers are passed as raw pointers because of void*
+    // but at this point we have to construct shared_ptr.
+    // Use aliasing constructor to create non-owning ptr that we will
+    // use as a key
+    std::shared_ptr<bimg::ImageContainer> key(
+        std::shared_ptr<Image>(),
+        static_cast<bimg::ImageContainer*>(image_container));
+    _used_containers.erase(key);
+}
 
 template<class T, size_t N>
 constexpr size_t array_size(T (&)[N])
@@ -116,6 +134,36 @@ Renderer::~Renderer()
     bgfx::destroy(this->default_program);
 }
 
+bgfx::TextureHandle
+Renderer::make_texture(
+    std::shared_ptr<bimg::ImageContainer> image_container,
+    const uint64_t flags) const
+{
+    assert(bgfx::isTextureValid(
+        0, false, image_container->m_numLayers,
+        bgfx::TextureFormat::Enum(image_container->m_format), flags));
+
+    const bgfx::Memory* memory = bgfx::makeRef(
+        image_container->m_data, image_container->m_size,
+        _release_used_container, image_container.get());
+
+    auto handle = bgfx::createTexture2D(
+        uint16_t(image_container->m_width), uint16_t(image_container->m_height),
+        1 < image_container->m_numMips, image_container->m_numLayers,
+        bgfx::TextureFormat::Enum(image_container->m_format), flags, memory);
+
+    _used_containers.insert(std::move(image_container));
+    return handle;
+}
+
+void
+Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
+{
+    if (bgfx::isValid(handle)) {
+        bgfx::destroy(handle);
+    }
+}
+
 void
 Renderer::clear_color(glm::dvec4 color)
 {
@@ -137,9 +185,7 @@ Renderer::clear_color()
 
 void
 Renderer::begin_frame()
-{
-    // TODO prepare buffers, etc.
-}
+{}
 
 void
 Renderer::end_frame()

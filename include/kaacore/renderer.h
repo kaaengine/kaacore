@@ -65,12 +65,14 @@ struct Renderer {
     Renderer(const glm::uvec2& window_size);
     ~Renderer();
 
+    bgfx::TextureHandle make_texture(
+        std::shared_ptr<bimg::ImageContainer> image_container,
+        const uint64_t flags) const;
+    void destroy_texture(const bgfx::TextureHandle& handle) const;
     void clear_color(glm::dvec4 color);
     glm::dvec4 clear_color();
-
     void begin_frame();
     void end_frame();
-
     void reset();
 
     void render_vertices(

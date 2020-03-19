@@ -16,12 +16,6 @@ ResourcesManager::~ResourcesManager()
 }
 
 void
-ResourcesManager::on_frame()
-{
-    images_on_frame();
-}
-
-void
 ResourcesManager::_initialize_resources()
 {
     initialize_audio();

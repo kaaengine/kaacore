@@ -16,8 +16,6 @@ namespace kaacore {
 void
 initialize_images();
 void
-images_on_frame();
-void
 uninitialize_images();
 
 bimg::ImageContainer*
@@ -34,7 +32,7 @@ class Image : public Resource {
     const std::string path;
     const uint64_t flags = BGFX_SAMPLER_NONE;
     bgfx::TextureHandle texture_handle;
-    bimg::ImageContainer* image_container;
+    std::shared_ptr<bimg::ImageContainer> image_container;
 
     Image();
     ~Image();
@@ -49,7 +47,6 @@ class Image : public Resource {
     Image(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
-    bgfx::TextureHandle _make_texture();
 
     friend class ResourcesRegistry<std::string, Image>;
     friend std::unique_ptr<Image> load_default_image();

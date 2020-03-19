@@ -86,8 +86,7 @@ class ResourcesRegistry {
     }
 
   private:
-    static inline std::unordered_map<Key_T, std::weak_ptr<Resource_T>>
-        _registry;
+    std::unordered_map<Key_T, std::weak_ptr<Resource_T>> _registry;
 };
 
 } // namespace kaacore

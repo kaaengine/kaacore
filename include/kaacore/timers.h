@@ -32,6 +32,7 @@ class Timer {
     TimerID _timer_id;
     uint32_t _interval;
     TimerCallback _callback;
+    static inline TimerID _last_timer_id = 0;
 
     void _start();
     void _stop();
