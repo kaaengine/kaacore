@@ -139,7 +139,7 @@ Renderer::make_texture(
     std::shared_ptr<bimg::ImageContainer> image_container,
     const uint64_t flags) const
 {
-    assert(bgfx::isTextureValid(
+    KAACORE_ASSERT(bgfx::isTextureValid(
         0, false, image_container->m_numLayers,
         bgfx::TextureFormat::Enum(image_container->m_format), flags));
 
