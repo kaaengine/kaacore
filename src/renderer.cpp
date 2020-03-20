@@ -152,6 +152,7 @@ Renderer::make_texture(
         1 < image_container->m_numMips, image_container->m_numLayers,
         bgfx::TextureFormat::Enum(image_container->m_format), flags, memory);
 
+    KAACORE_ASSERT(bgfx::isValid(handle));
     _used_containers.insert(std::move(image_container));
     return handle;
 }
@@ -159,9 +160,8 @@ Renderer::make_texture(
 void
 Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 {
-    if (bgfx::isValid(handle)) {
-        bgfx::destroy(handle);
-    }
+    KAACORE_ASSERT_TERMINATE(bgfx::isValid(handle));
+    bgfx::destroy(handle);
 }
 
 void
