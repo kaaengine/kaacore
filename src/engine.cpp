@@ -98,7 +98,6 @@ Engine::_run(Scene* scene)
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
-        this->elapsed_time += dt;
 
         this->_pump_events();
         if (this->_next_scene) {

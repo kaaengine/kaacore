@@ -15,9 +15,9 @@ typedef uint16_t ChannelId;
 typedef uint64_t PlaybackUid;
 
 void
-initialize_audio_resources();
+initialize_audio();
 void
-uninitialize_audio_resources();
+uninitialize_audio();
 
 enum struct AudioStatus {
     stopped = 1,

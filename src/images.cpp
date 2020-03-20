@@ -1,11 +1,4 @@
 #include <memory>
-#include <string>
-#include <unordered_set>
-
-#include <bgfx/bgfx.h>
-#include <bimg/decode.h>
-#include <bx/bx.h>
-#include <bx/file.h>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
@@ -17,20 +10,23 @@ namespace kaacore {
 
 static bx::DefaultAllocator texture_image_allocator;
 ResourcesRegistry<std::string, Image> _images_registry;
-// bump up Image's ref count while it's being used by bgfx,
-// this may take up to 2 frames
-std::unordered_set<std::shared_ptr<Image>> _used_images;
 
 void
-initialize_image_resources()
+initialize_images()
 {
     _images_registry.initialze();
 }
 
 void
-uninitialize_image_resources()
+uninitialize_images()
 {
     _images_registry.uninitialze();
+}
+
+void
+_destroy_image_container(bimg::ImageContainer* image_container)
+{
+    bimg::imageFree(image_container);
 }
 
 bimg::ImageContainer*
@@ -73,15 +69,17 @@ load_raw_image(
 
 Image::Image(const std::string& path, uint64_t flags) : path(path), flags(flags)
 {
-    this->image_container = load_image(path.c_str());
+    this->image_container = std::shared_ptr<bimg::ImageContainer>(
+        load_image(path.c_str()), _destroy_image_container);
     if (is_engine_initialized()) {
         this->_initialize();
     }
 }
 
 Image::Image(bimg::ImageContainer* image_container)
-    : image_container(image_container)
 {
+    this->image_container = std::shared_ptr<bimg::ImageContainer>(
+        image_container, _destroy_image_container);
     if (is_engine_initialized()) {
         this->_initialize();
     }
@@ -89,8 +87,6 @@ Image::Image(bimg::ImageContainer* image_container)
 
 Image::~Image()
 {
-    _images_registry.unregister_resource(this->path);
-    bimg::imageFree(this->image_container);
     if (this->is_initialized) {
         this->_uninitialize();
     }
@@ -105,16 +101,13 @@ Image::load(const std::string& path, uint64_t flags)
     }
     image = std::shared_ptr<Image>(new Image(path, flags));
     _images_registry.register_resource(path, image);
-    _used_images.insert(image);
     return image;
 }
 
 ResourceReference<Image>
 Image::load(bimg::ImageContainer* image_container)
 {
-    auto image = std::shared_ptr<Image>(new Image(image_container));
-    _used_images.insert(image);
-    return image;
+    return std::shared_ptr<Image>(new Image(image_container));
 }
 
 glm::uvec2
@@ -127,7 +120,8 @@ Image::get_dimensions()
 void
 Image::_initialize()
 {
-    this->texture_handle = this->_make_texture();
+    this->texture_handle = get_engine()->renderer->make_texture(
+        this->image_container, this->flags);
     bgfx::setName(this->texture_handle, this->path.c_str());
     this->is_initialized = true;
 }
@@ -135,41 +129,8 @@ Image::_initialize()
 void
 Image::_uninitialize()
 {
-    if (bgfx::isValid(this->texture_handle)) {
-        bgfx::destroy(this->texture_handle);
-    }
+    get_engine()->renderer->destroy_texture(this->texture_handle);
     this->is_initialized = false;
-}
-
-void
-_cleanup_used_image(void* _data, void* image)
-{
-    // use aliasing constructor in order to create non-owning ptr
-    // that we will use as a key
-    std::shared_ptr<Image> key(
-        std::shared_ptr<Image>(), static_cast<Image*>(image));
-    _used_images.erase(key);
-}
-
-bgfx::TextureHandle
-Image::_make_texture()
-{
-    assert(bgfx::isTextureValid(
-        0, false, this->image_container->m_numLayers,
-        bgfx::TextureFormat::Enum(this->image_container->m_format),
-        this->flags));
-
-    const bgfx::Memory* mem = bgfx::makeRef(
-        this->image_container->m_data, this->image_container->m_size,
-        _cleanup_used_image, this);
-
-    return bgfx::createTexture2D(
-        uint16_t(this->image_container->m_width),
-        uint16_t(this->image_container->m_height),
-        1 < this->image_container->m_numMips,
-        this->image_container->m_numLayers,
-        bgfx::TextureFormat::Enum(this->image_container->m_format), this->flags,
-        mem);
 }
 
 } // namespace kaacore
