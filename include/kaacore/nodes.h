@@ -48,6 +48,7 @@ class Node {
     glm::dvec2 _scale = {1., 1.};
     int16_t _z_index = 0;
     Shape _shape;
+    bool _auto_shape = true;
     Sprite _sprite;
     glm::dvec4 _color = {1., 1., 1., 1.};
     bool _visible = true;
@@ -122,7 +123,7 @@ class Node {
     void z_index(const int16_t& z_index);
 
     Shape shape();
-    void shape(const Shape& shape);
+    void shape(const Shape& shape, bool is_auto_shape = false);
 
     Sprite sprite();
     void sprite(const Sprite& sprite);
