@@ -251,6 +251,7 @@ FontData::_initialize()
 void
 FontData::_uninitialize()
 {
+    this->baked_texture->_uninitialize();
     this->baked_texture.res_ptr.reset();
     this->is_initialized = false;
 }

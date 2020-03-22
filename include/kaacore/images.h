@@ -27,6 +27,8 @@ load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,
     const std::vector<uint8_t>& data);
 
+class FontData;
+
 class Image : public Resource {
   public:
     const std::string path;
@@ -50,6 +52,7 @@ class Image : public Resource {
 
     friend class ResourcesRegistry<std::string, Image>;
     friend std::unique_ptr<Image> load_default_image();
+    friend class FontData;
 };
 
 } // namespace kaacore
