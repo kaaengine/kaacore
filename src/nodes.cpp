@@ -401,9 +401,15 @@ Node::shape()
 }
 
 void
-Node::shape(const Shape& shape)
+Node::shape(const Shape& shape, bool is_auto_shape)
 {
     this->_shape = shape;
+    if (not shape) {
+        this->_auto_shape = true;
+    } else {
+        this->_auto_shape = is_auto_shape;
+    }
+
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
@@ -421,8 +427,8 @@ void
 Node::sprite(const Sprite& sprite)
 {
     this->_sprite = sprite;
-    if (!this->_shape) {
-        this->shape(Shape::Box(sprite.get_size()));
+    if (this->_auto_shape) {
+        this->shape(Shape::Box(sprite.get_size()), true);
     }
     // TODO: check if we aren't setting the same sprite before marking it dirty
     this->_render_data.is_dirty = true;
