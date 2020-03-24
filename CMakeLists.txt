@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 cmake_policy(SET CMP0077 NEW)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+include(CMakeRC)
+
 project(kaacore)
 
 option(KAACORE_SHARED "Build kaacore-shared" OFF)
@@ -41,6 +44,21 @@ set_target_properties(
 )
 
 add_subdirectory(src)
+
+cmrc_add_resource_library(
+    kaacore_embedded_assets
+
+    shaders/binary/default_glsl_fragment_shader.bin
+    shaders/binary/default_glsl_vertex_shader.bin
+    shaders/binary/default_hlsl_d3d9_fragment_shader.bin
+    shaders/binary/default_hlsl_d3d9_vertex_shader.bin
+    shaders/binary/default_hlsl_d3d11_fragment_shader.bin
+    shaders/binary/default_hlsl_d3d11_vertex_shader.bin
+
+    embedded_resources/font_munro/munro.ttf
+)
+
+target_link_libraries(kaacore PUBLIC kaacore_embedded_assets)
 
 if (KAACORE_BUILD_DEMOS)
     add_subdirectory(demos)

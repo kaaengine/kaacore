@@ -51,6 +51,7 @@ class Image : public Resource {
     virtual void _uninitialize() override;
 
     friend class ResourcesRegistry<std::string, Image>;
+    friend class FontData;
     friend std::unique_ptr<Image> load_default_image();
     friend class FontData;
 };
