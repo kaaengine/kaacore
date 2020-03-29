@@ -29,8 +29,6 @@ struct DemoFontsScene : Scene {
 
     DemoFontsScene()
     {
-        auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
-
         this->background = make_node();
         this->background->shape(Shape::Box({700, 570}));
         this->background->color({0.5, 0.5, 0.5, 1.});
@@ -39,7 +37,6 @@ struct DemoFontsScene : Scene {
 
         this->node_text = make_node(NodeType::text);
         this->node_text->position({200., 0.});
-        // this->node_text->text.font(font);
         this->node_text->text.content(txt_lorem_ipsum);
         this->node_text->text.font_size(24.);
         this->node_text->text.line_width(270.);
