@@ -11,6 +11,7 @@
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
 #include "kaacore/shapes.h"
+#include "kaacore/views.h"
 
 namespace kaacore {
 
@@ -98,6 +99,7 @@ Node::_compute_model_matrix(const glm::fmat4& parent_matrix) const
             glm::translate(
                 parent_matrix,
                 glm::fvec3(this->_position.x, this->_position.y, 0.)),
+                // glm::fvec3(this->_position.x, this->_position.y, this->_z_index)),
             static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
         glm::fvec3(this->_scale.x, this->_scale.y, 1.));
 }
@@ -520,6 +522,32 @@ Node::parent() const
 {
     return this->_parent;
 }
+
+void
+Node::view(const int16_t z_index)
+{
+    KAACORE_CHECK(validate_view_z_index(z_index));
+    this->_views.clear();
+    this->_views.push_back(z_index);
+}
+
+ void
+ Node::views(const std::unordered_set<int16_t>& z_indices)
+ {
+     KAACORE_CHECK(z_indices.size() <= KAACORE_MAX_VIEWS);
+
+     this->_views.clear();
+     for (auto z_index: z_indices) {
+        KAACORE_CHECK(validate_view_z_index(z_index));
+        this->_views.push_back(z_index);
+     }
+ }
+ 
+ const std::vector<int16_t>&
+ Node::views() const
+ {
+     return this->_views;
+ }
 
 void
 Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)

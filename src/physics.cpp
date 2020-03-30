@@ -327,7 +327,7 @@ void
 _cp_space_query_shape_callback(
     cpShape* cp_shape, cpContactPointSet* points, void* data)
 {
-    log<LogLevel::info, LogCategory::physics>("Query callback! %p", cp_shape);
+    log<LogLevel::debug, LogCategory::physics>("Query callback! %p", cp_shape);
     auto results = reinterpret_cast<std::vector<ShapeQueryResult>*>(data);
     cpBody* cp_body = cpShapeGetBody(cp_shape);
 

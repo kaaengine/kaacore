@@ -66,38 +66,38 @@ struct DemoFontsScene : Scene {
 
     void update(uint32_t dt) override
     {
-        for (auto const& event : this->get_events()) {
-            if (auto keyboard_key = event.keyboard_key()) {
-                if (keyboard_key->key() == Keycode::q) {
-                    get_engine()->quit();
-                    break;
-                } else if (keyboard_key->key() == Keycode::w) {
-                    this->camera.position += glm::dvec2(0., -2.5);
-                    this->camera.refresh();
-                } else if (keyboard_key->key() == Keycode::a) {
-                    this->camera.position += glm::dvec2(-2.5, 0.);
-                    this->camera.refresh();
-                } else if (keyboard_key->key() == Keycode::s) {
-                    this->camera.position += glm::dvec2(0., 2.5);
-                    this->camera.refresh();
-                } else if (keyboard_key->key() == Keycode::d) {
-                    this->camera.position += glm::dvec2(2.5, 0.);
-                    this->camera.refresh();
-                } else if (keyboard_key->key() == Keycode::i) {
-                    this->camera.scale += glm::dvec2(0.1, 0.1);
-                    this->camera.refresh();
-                } else if (keyboard_key->key() == Keycode::o) {
-                    this->camera.scale -= glm::dvec2(0.1, 0.1);
-                    this->camera.refresh();
-                } else if (keyboard_key->key() == Keycode::l) {
-                    this->node_text->text.content(
-                        this->node_text->text.content() + "x");
-                } else if (keyboard_key->key() == Keycode::k) {
-                    this->node_text->text.content(
-                        this->node_text->text.content() + " ");
-                }
-            }
-        }
+        // for (auto const& event : this->get_events()) {
+        //     if (auto keyboard_key = event.keyboard_key()) {
+        //         if (keyboard_key->key() == Keycode::q) {
+        //             get_engine()->quit();
+        //             break;
+        //         } else if (keyboard_key->key() == Keycode::w) {
+        //             this->camera().position += glm::dvec2(0., -2.5);
+        //             this->camera().refresh();
+        //         } else if (keyboard_key->key() == Keycode::a) {
+        //             this->camera().position += glm::dvec2(-2.5, 0.);
+        //             this->camera().refresh();
+        //         } else if (keyboard_key->key() == Keycode::s) {
+        //             this->camera().position += glm::dvec2(0., 2.5);
+        //             this->camera().refresh();
+        //         } else if (keyboard_key->key() == Keycode::d) {
+        //             this->camera().position += glm::dvec2(2.5, 0.);
+        //             this->camera().refresh();
+        //         } else if (keyboard_key->key() == Keycode::i) {
+        //             this->camera().scale += glm::dvec2(0.1, 0.1);
+        //             this->camera().refresh();
+        //         } else if (keyboard_key->key() == Keycode::o) {
+        //             this->camera().scale -= glm::dvec2(0.1, 0.1);
+        //             this->camera().refresh();
+        //         } else if (keyboard_key->key() == Keycode::l) {
+        //             this->node_text->text.content(
+        //                 this->node_text->text.content() + "x");
+        //         } else if (keyboard_key->key() == Keycode::k) {
+        //             this->node_text->text.content(
+        //                 this->node_text->text.content() + " ");
+        //         }
+        //     }
+        // }
     }
 };
 
@@ -106,7 +106,7 @@ main(int argc, char* argv[])
 {
     Engine eng({800, 600});
     DemoFontsScene scene;
-    scene.camera.position = {0., 0.};
+    scene.camera().position({0., 0.});
     eng.window->show();
     eng.run(&scene);
 

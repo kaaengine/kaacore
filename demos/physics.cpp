@@ -107,7 +107,7 @@ struct DemoScene : Scene {
             [&, circle_shape, polygon_shape](
                 const Arbiter arbiter, CollisionPair pair_a,
                 CollisionPair pair_b) -> uint8_t {
-                std::cout << "Collision! " << int(arbiter.phase) << std::endl;
+                // std::cout << "Collision! " << int(arbiter.phase) << std::endl;
                 if (this->delete_on_collision) {
                     pair_a.body_node.destroy();
                 } else if (
@@ -196,10 +196,12 @@ struct DemoScene : Scene {
 extern "C" int
 main(int argc, char* argv[])
 {
-    Engine eng({15, 15});
+    Engine eng({20, 20});
+    eng.window->size({800, 600});
+    eng.window->center();
     eng.window->show();
     DemoScene scene;
-    scene.camera.position = {0., 0.};
+    scene.camera().position({0., 0.});
     eng.run(&scene);
 
     return 0;

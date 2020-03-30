@@ -197,6 +197,7 @@ Engine::_swap_scenes()
     this->_scene->on_exit();
     this->_next_scene->on_enter();
     this->_scene = std::move(this->_next_scene);
+    this->_scene->_refresh_views();
 }
 
 void
@@ -223,6 +224,7 @@ Engine::_pump_events()
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             this->renderer->reset();
+            this->_scene->_refresh_views();
         }
         this->input_manager->push_event(event);
     }
