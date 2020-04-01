@@ -13,6 +13,7 @@ class _NodePtrBase {
   public:
     operator bool() const;
     bool operator==(const Node*) const;
+    bool is_marked_to_delete() const;
 
     Node* get() const;
     Node* operator->() const;
