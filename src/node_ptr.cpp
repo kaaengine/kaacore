@@ -18,6 +18,13 @@ _NodePtrBase::operator==(const Node* node) const
     return this->_node == node;
 }
 
+bool
+_NodePtrBase::is_marked_to_delete() const
+{
+    KAACORE_ASSERT(this->_node != nullptr);
+    return this->_node->_marked_to_delete;
+}
+
 Node*
 _NodePtrBase::get() const
 {

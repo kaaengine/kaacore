@@ -199,6 +199,10 @@ NodeTransitionsSequence::process_time_point(
             this, sub_abs_t);
         it->handle->process_time_point(it->state.get(), node, sub_tp);
 
+        if (node.is_marked_to_delete()) {
+            return;
+        }
+
         if (cur_cycle_index == warped_tp.cycle_index and
             is_backing == warped_tp.is_backing and
             it->starting_abs_t <= warped_tp.abs_t and
@@ -360,6 +364,10 @@ NodeTransitionsParallel::process_time_point(
                     sub_state.sleeping = false;
                 }
             }
+
+            if (node.is_marked_to_delete()) {
+                return;
+            }
         }
 
         if (this->warping.back_and_forth) {
@@ -492,10 +500,14 @@ NodeTransitionsManager::set(
 void
 NodeTransitionsManager::step(NodePtr node, const uint32_t dt)
 {
+    KAACORE_ASSERT(not node.is_marked_to_delete());
     KAACORE_ASSERT(this->_is_processing == false);
     this->_is_processing = true;
     for (auto& [name, runner] : this->_transitions_map) {
         bool finished = runner.step(node, dt);
+        if (node.is_marked_to_delete()) {
+            return;
+        }
         if (finished) {
             // if transition is finished destroy it's runner,
             // use `_enqueued_updates` to not break for iteration.
