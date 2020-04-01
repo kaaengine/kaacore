@@ -11,8 +11,6 @@
 
 namespace kaacore {
 
-class Engine;
-
 class Scene {
   public:
     Node root_node;
@@ -23,6 +21,7 @@ class Scene {
     virtual ~Scene();
 
     Camera& camera();
+    void reset_views();
     void process_frame(uint32_t dt);
     void process_physics(uint32_t dt);
     void process_nodes(uint32_t dt);
@@ -37,11 +36,6 @@ class Scene {
     virtual void on_detach();
 
     const std::vector<Event>& get_events() const;
-
-  private:
-    void _refresh_views();
-
-    friend class Engine;
 };
 
 } // namespace kaacore

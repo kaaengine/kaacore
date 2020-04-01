@@ -104,57 +104,49 @@ struct DemoScene : Scene {
         log<LogLevel::debug>("DemoScene update %lu.", dt);
         auto texture = get_engine()->renderer->default_texture;
 
-        // for (auto const& event : this->get_events()) {
-        //     if (auto keyboard_key = event.keyboard_key()) {
-        //         if (keyboard_key->key() == Keycode::q) {
-        //             get_engine()->quit();
-        //             break;
-        //         } else if (keyboard_key->key() == Keycode::w) {
-        //             this->camera().position += glm::dvec2(0., -0.05);
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::a) {
-        //             this->camera().position += glm::dvec2(-0.05, 0.);
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::s) {
-        //             this->camera().position += glm::dvec2(0., 0.05);
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::d) {
-        //             this->camera().position += glm::dvec2(0.05, 0.);
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::i) {
-        //             this->camera().scale += glm::dvec2(0.1, 0.1);
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::o) {
-        //             this->camera().scale -= glm::dvec2(0.1, 0.1);
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::r) {
-        //             this->camera().rotation += 0.2;
-        //             this->camera().refresh();
-        //         } else if (keyboard_key->key() == Keycode::m) {
-        //             this->node1->rotation(this->node1->rotation() + 0.2);
-        //             this->node1->position(
-        //                 this->node1->position() + glm::dvec2(1., 0.));
-        //             log("Node position: %lf %lf", this->node1->position().x,
-        //                 this->node1->position().y);
-        //         } else if (keyboard_key->key() == Keycode::n) {
-        //             this->root_node.position(
-        //                 this->root_node.position() + glm::dvec2(-1., -2.));
-        //             log("World position: %lf %lf", this->root_node.position().x,
-        //                 this->root_node.position().y);
-        //         } else if (keyboard_key->key() == Keycode::c) {
-        //             this->camera().position = this->node1->absolute_position();
-        //             this->camera().refresh();
-        //             log("Camera position: %lf %lf", this->camera().position.x,
-        //                 this->camera().position.y);
-        //         } else if (keyboard_key->key() == Keycode::f) {
-        //             get_engine()->window->fullscreen(
-        //                 !get_engine()->window->fullscreen());
-        //         } else if (keyboard_key->key() == Keycode::g) {
-        //             auto size = get_engine()->window->size();
-        //             log("Current size: %u x %u", size.x, size.y);
-        //         }
-        //     }
-        // }
+        for (auto const& event : this->get_events()) {
+            if (auto keyboard_key = event.keyboard_key()) {
+                if (keyboard_key->key() == Keycode::q) {
+                    get_engine()->quit();
+                    break;
+                } else if (keyboard_key->key() == Keycode::w) {
+                    this->camera().position(this->camera().position() + glm::dvec2(0., -0.05));
+                } else if (keyboard_key->key() == Keycode::a) {
+                    this->camera().position(this->camera().position() + glm::dvec2(-0.05, 0.));
+                } else if (keyboard_key->key() == Keycode::s) {
+                    this->camera().position(this->camera().position() + glm::dvec2(0., 0.05));
+                } else if (keyboard_key->key() == Keycode::d) {
+                    this->camera().position(this->camera().position() + glm::dvec2(0.05, 0.));
+                } else if (keyboard_key->key() == Keycode::i) {
+                    this->camera().scale(this->camera().scale() + glm::dvec2(0.1, 0.1));
+                } else if (keyboard_key->key() == Keycode::o) {
+                    this->camera().scale(this->camera().scale() - glm::dvec2(0.1, 0.1));
+                } else if (keyboard_key->key() == Keycode::r) {
+                    this->camera().rotation(this->camera().rotation() + 0.2);
+                } else if (keyboard_key->key() == Keycode::m) {
+                    this->node1->rotation(this->node1->rotation() + 0.2);
+                    this->node1->position(
+                        this->node1->position() + glm::dvec2(1., 0.));
+                    log("Node position: %lf %lf", this->node1->position().x,
+                        this->node1->position().y);
+                } else if (keyboard_key->key() == Keycode::n) {
+                    this->root_node.position(
+                        this->root_node.position() + glm::dvec2(-1., -2.));
+                    log("World position: %lf %lf", this->root_node.position().x,
+                        this->root_node.position().y);
+                } else if (keyboard_key->key() == Keycode::c) {
+                    this->camera().position(this->node1->absolute_position());
+                    log("Camera position: %lf %lf", this->camera().position().x,
+                        this->camera().position().y);
+                } else if (keyboard_key->key() == Keycode::f) {
+                    get_engine()->window->fullscreen(
+                        !get_engine()->window->fullscreen());
+                } else if (keyboard_key->key() == Keycode::g) {
+                    auto size = get_engine()->window->size();
+                    log("Current size: %u x %u", size.x, size.y);
+                }
+            }
+        }
     }
 };
 

@@ -29,7 +29,6 @@ struct DemoScene : Scene {
             [this]() {
                 log("Timer callback called.");
                 this->node->visible(not this->node->visible());
-                printf("@@@@@@@@@ %d \n", this->node->visible());
             },
             false);
         this->timer.start();

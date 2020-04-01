@@ -107,7 +107,7 @@ struct DemoScene : Scene {
             [&, circle_shape, polygon_shape](
                 const Arbiter arbiter, CollisionPair pair_a,
                 CollisionPair pair_b) -> uint8_t {
-                // std::cout << "Collision! " << int(arbiter.phase) << std::endl;
+                std::cout << "Collision! " << int(arbiter.phase) << std::endl;
                 if (this->delete_on_collision) {
                     pair_a.body_node.destroy();
                 } else if (

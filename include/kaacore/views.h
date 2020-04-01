@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 
 #include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
@@ -49,16 +50,24 @@ class View {
     friend class ViewsManager;
 };
 
+class Scene;
+
 class ViewsManager {
   public:
     ViewsManager();
-    void mark_dirty();
     View& operator[](const int16_t z_index);
 
     size_t size();
+    void register_used_view(int16_t z_index);
 
   private:
+    void _touch();
+    void _mark_dirty();
+
     View _views[KAACORE_MAX_VIEWS];
+    std::unordered_set<uint16_t> _used_view_indices;
+
+    friend class Scene;
 };
 
 } // namespace kaacore

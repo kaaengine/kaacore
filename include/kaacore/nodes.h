@@ -98,7 +98,6 @@ class Node {
     NodePtr parent() const;
     const std::vector<Node*>& children();
 
-    void view(const int16_t z_index);
     void views(const std::unordered_set<int16_t>& z_indices);
     const std::vector<int16_t>& views() const;
 

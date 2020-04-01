@@ -1,7 +1,6 @@
 #include <cstring>
 #include <iterator>
 #include <tuple>
-#include <unordered_set>
 
 #include <bgfx/bgfx.h>
 
@@ -95,6 +94,8 @@ Renderer::Renderer(const glm::uvec2& window_size)
 
     this->texture_uniform =
         bgfx::createUniform("s_texture", bgfx::UniformType::Enum::Sampler, 1);
+
+    this->reset();
 
     this->default_image = load_default_image();
     this->default_texture = this->default_image->texture_handle;

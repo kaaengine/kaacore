@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_set>
 
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
@@ -58,7 +59,6 @@ struct Renderer {
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
-    // glm::fmat4 projection_matrix;
     glm::uvec2 view_size;
     glm::uvec2 border_size;
 

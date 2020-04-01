@@ -140,6 +140,8 @@ Scene::process_nodes_drawing()
                 node->_render_data.texture_handle);
         }
     }
+
+    this->views._touch();
 }
 
 void
@@ -190,9 +192,9 @@ Scene::get_events() const
 }
 
 void
-Scene::_refresh_views()
+Scene::reset_views()
 {
-    this->views.mark_dirty();
+    this->views._mark_dirty();
 }
 
 } // namespace kaacore

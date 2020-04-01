@@ -99,7 +99,6 @@ Node::_compute_model_matrix(const glm::fmat4& parent_matrix) const
             glm::translate(
                 parent_matrix,
                 glm::fvec3(this->_position.x, this->_position.y, 0.)),
-                // glm::fvec3(this->_position.x, this->_position.y, this->_z_index)),
             static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
         glm::fvec3(this->_scale.x, this->_scale.y, 1.));
 }
@@ -195,9 +194,16 @@ Node::add_child(NodeOwnerPtr& child_node)
             n->hitbox.update_physics_shape();
         }
 
+        if (n->_scene) {
+            for (auto view_z_index : n->_views) {
+                n->_scene->views.register_used_view(view_z_index);
+            }
+        }
+
         std::for_each(
             n->_children.begin(), n->_children.end(), initialize_node);
     };
+
     initialize_node(child_node.get());
 }
 
@@ -523,14 +529,6 @@ Node::parent() const
     return this->_parent;
 }
 
-void
-Node::view(const int16_t z_index)
-{
-    KAACORE_CHECK(validate_view_z_index(z_index));
-    this->_views.clear();
-    this->_views.push_back(z_index);
-}
-
  void
  Node::views(const std::unordered_set<int16_t>& z_indices)
  {
@@ -539,6 +537,9 @@ Node::view(const int16_t z_index)
      this->_views.clear();
      for (auto z_index: z_indices) {
         KAACORE_CHECK(validate_view_z_index(z_index));
+        if (this->_scene) {
+            this->_scene->views.register_used_view(z_index);
+        }
         this->_views.push_back(z_index);
      }
  }
