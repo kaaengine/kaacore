@@ -217,8 +217,7 @@ Renderer::reset()
 
 void
 Renderer::render_vertices(
-    const uint16_t view_index,
-    const std::vector<StandardVertexData>& vertices,
+    const uint16_t view_index, const std::vector<StandardVertexData>& vertices,
     const std::vector<VertexIndex>& indices,
     const bgfx::TextureHandle texture) const
 {

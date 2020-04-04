@@ -1,5 +1,5 @@
-#include "kaacore/engine.h"
 #include "kaacore/camera.h"
+#include "kaacore/engine.h"
 
 namespace kaacore {
 
@@ -7,7 +7,7 @@ Camera::Camera()
 {
     auto virtual_resolution = get_engine()->virtual_resolution();
     this->_position = {static_cast<double>(virtual_resolution.x) / 2,
-                      static_cast<double>(virtual_resolution.y) / 2};
+                       static_cast<double>(virtual_resolution.y) / 2};
     this->refresh();
 }
 
@@ -17,7 +17,7 @@ Camera::position() const
     return this->_position;
 }
 
-void 
+void
 Camera::position(const glm::dvec2& position)
 {
     if (this->_position != position) {
@@ -27,7 +27,7 @@ Camera::position(const glm::dvec2& position)
 }
 
 double
-Camera::rotation() const 
+Camera::rotation() const
 {
     return this->_rotation;
 }
@@ -62,7 +62,8 @@ Camera::refresh()
     this->_calculated_view = glm::translate(
         glm::rotate(
             glm::scale(
-                glm::fmat4(1.0), glm::fvec3(this->_scale.x, this->_scale.y, 1.)),
+                glm::fmat4(1.0),
+                glm::fvec3(this->_scale.x, this->_scale.y, 1.)),
             static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
         glm::fvec3(-this->_position.x, -this->_position.y, 0.));
     this->_is_dirty = false;

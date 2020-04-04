@@ -93,17 +93,23 @@ struct PolygonTesterDemoScene : Scene {
                     log("Finalizing polygon");
                     this->finalize_polygon();
                 } else if (keyboard_key->key() == Keycode::w) {
-                    this->camera().position(this->camera().position() + glm::dvec2(0., -2.5));
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., -2.5));
                 } else if (keyboard_key->key() == Keycode::a) {
-                    this->camera().position(this->camera().position() + glm::dvec2(-2.5, 0.));
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(-2.5, 0.));
                 } else if (keyboard_key->key() == Keycode::s) {
-                    this->camera().position(this->camera().position() + glm::dvec2(0., 2.5));
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., 2.5));
                 } else if (keyboard_key->key() == Keycode::d) {
-                    this->camera().position(this->camera().position() + glm::dvec2(2.5, 0.));
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(2.5, 0.));
                 } else if (keyboard_key->key() == Keycode::i) {
-                    this->camera().scale(this->camera().scale() + glm::dvec2(0.1, 0.1));
+                    this->camera().scale(
+                        this->camera().scale() + glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::o) {
-                    this->camera().scale(this->camera().scale() - glm::dvec2(0.1, 0.1));
+                    this->camera().scale(
+                        this->camera().scale() - glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::r) {
                     this->camera().rotation(this->camera().rotation() + 0.3);
                 }

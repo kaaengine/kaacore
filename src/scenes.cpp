@@ -134,10 +134,8 @@ Scene::process_nodes_drawing()
             }
 
             renderer->render_vertices(
-                view.index(),
-                node->_render_data.computed_vertices,
-                node->_shape.indices,
-                node->_render_data.texture_handle);
+                view.index(), node->_render_data.computed_vertices,
+                node->_shape.indices, node->_render_data.texture_handle);
         }
     }
 

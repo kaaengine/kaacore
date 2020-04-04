@@ -1,9 +1,9 @@
 #pragma once
 
-#include <unordered_set>
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 #include "kaacore/fonts.h"
@@ -103,7 +103,7 @@ class Node {
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
-  
+
   private:
     const NodeType _type = NodeType::basic;
     glm::dvec2 _position = {0., 0.};
@@ -155,7 +155,6 @@ class Node {
     friend struct SpaceNode;
     friend struct BodyNode;
     friend struct HitboxNode;
-
 };
 
 template<class... Args>

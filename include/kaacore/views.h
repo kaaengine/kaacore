@@ -3,12 +3,11 @@
 #include <string>
 #include <unordered_set>
 
-#include <glm/glm.hpp>
 #include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
 
-#include "kaacore/camera.h"
 #include "../third_party/bgfx/bgfx/src/config.h"
-
+#include "kaacore/camera.h"
 
 namespace kaacore {
 

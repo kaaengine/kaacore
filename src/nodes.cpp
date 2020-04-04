@@ -529,26 +529,26 @@ Node::parent() const
     return this->_parent;
 }
 
- void
- Node::views(const std::unordered_set<int16_t>& z_indices)
- {
-     KAACORE_CHECK(z_indices.size() <= KAACORE_MAX_VIEWS);
+void
+Node::views(const std::unordered_set<int16_t>& z_indices)
+{
+    KAACORE_CHECK(z_indices.size() <= KAACORE_MAX_VIEWS);
 
-     this->_views.clear();
-     for (auto z_index: z_indices) {
+    this->_views.clear();
+    for (auto z_index : z_indices) {
         KAACORE_CHECK(validate_view_z_index(z_index));
         if (this->_scene) {
             this->_scene->views.register_used_view(z_index);
         }
         this->_views.push_back(z_index);
-     }
- }
- 
- const std::vector<int16_t>&
- Node::views() const
- {
-     return this->_views;
- }
+    }
+}
+
+const std::vector<int16_t>&
+Node::views() const
+{
+    return this->_views;
+}
 
 void
 Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)

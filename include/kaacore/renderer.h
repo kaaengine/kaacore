@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>

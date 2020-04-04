@@ -8,7 +8,6 @@ class View;
 
 class Camera {
   public:
-
     Camera();
     void refresh();
     glm::dvec2 position() const;
@@ -18,7 +17,7 @@ class Camera {
     glm::dvec2 scale() const;
     void scale(const glm::dvec2& scale);
     glm::dvec2 unproject_position(const glm::dvec2& position);
-  
+
   private:
     bool _is_dirty;
     glm::dvec2 _position;
