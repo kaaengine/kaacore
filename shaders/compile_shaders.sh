@@ -6,7 +6,7 @@ cd `dirname $0`
 
 [[ -z ${SHADERC_BIN} ]] && SHADERC_BIN="shaderc"
 
-[[ ! -d out ]] && mkdir out
+[[ ! -d binary ]] && mkdir binary
 
 compile_shader()
 {
@@ -17,14 +17,14 @@ compile_vs()
 {
 	NAME=$1
 	shift
-	compile_shader --type vertex -f default.vs -o out/_${NAME}.h --bin2c ${NAME} $@
+	compile_shader --type vertex -f default.vs -o binary/${NAME}.bin ${NAME} $@
 }
 
 compile_fs()
 {
 	NAME=$1
 	shift
-	compile_shader --type fragment -f default.fs -o out/_${NAME}.h --bin2c ${NAME} $@
+	compile_shader --type fragment -f default.fs -o binary/${NAME}.bin ${NAME} $@
 }
 
 compile_vs "default_glsl_vertex_shader" --platform linux -p 120

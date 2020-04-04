@@ -89,6 +89,7 @@ set(SRC_CXX_FILES
     transitions.cpp
     node_transitions.cpp
     utils.cpp
+    embedded_data.cpp
 )
 
 set(SRC_H_FILES
