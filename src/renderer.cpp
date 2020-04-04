@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iterator>
+#include <unordered_set>
 #include <tuple>
 
 #include <bgfx/bgfx.h>

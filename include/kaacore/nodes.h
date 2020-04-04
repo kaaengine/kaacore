@@ -99,7 +99,7 @@ class Node {
     const std::vector<Node*>& children();
 
     void views(const std::unordered_set<int16_t>& z_indices);
-    const std::vector<int16_t>& views() const;
+    const std::vector<int16_t> views() const;
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;

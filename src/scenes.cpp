@@ -17,6 +17,7 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
+    // clear default views to black
     this->views[0].clear_color({0, 0, 0, 1});
 }
 

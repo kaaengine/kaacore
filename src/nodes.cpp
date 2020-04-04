@@ -544,7 +544,7 @@ Node::views(const std::unordered_set<int16_t>& z_indices)
     }
 }
 
-const std::vector<int16_t>&
+const std::vector<int16_t>
 Node::views() const
 {
     return this->_views;

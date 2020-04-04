@@ -198,7 +198,6 @@ Engine::_swap_scenes()
     this->_next_scene->on_enter();
     this->_scene = std::move(this->_next_scene);
     this->_scene->reset_views();
-    this->renderer;
 }
 
 void
