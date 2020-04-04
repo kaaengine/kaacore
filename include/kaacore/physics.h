@@ -18,6 +18,10 @@ typedef size_t CollisionTriggerId;
 typedef size_t CollisionGroup;
 typedef cpBitmask CollisionBitmask;
 
+constexpr CollisionGroup collision_group_none = CP_NO_GROUP;
+constexpr CollisionBitmask collision_bitmask_all = CP_ALL_CATEGORIES;
+constexpr CollisionBitmask collision_bitmask_none = ~CP_ALL_CATEGORIES;
+
 typedef std::unique_ptr<cpShape, void (*)(cpShape*)> CpShapeUniquePtr;
 
 constexpr uint32_t default_simulation_step_size = 10;
@@ -104,7 +108,10 @@ class SpaceNode {
         bool only_non_deleted_nodes = true);
 
     const std::vector<ShapeQueryResult> query_shape_overlaps(
-        const Shape& shape, const glm::dvec2& position = {0., 0.});
+        const Shape& shape, const glm::dvec2& position = {0., 0.},
+        const CollisionBitmask mask = collision_bitmask_all,
+        const CollisionBitmask collision_mask = collision_bitmask_all,
+        const CollisionGroup group = collision_group_none);
 
     void gravity(const glm::dvec2& gravity);
     glm::dvec2 gravity();

@@ -9,9 +9,13 @@
 #include "kaacore/input.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
+#include "kaacore/physics.h"
 #include "kaacore/scenes.h"
 
 using namespace kaacore;
+
+constexpr uint32_t mask_circle = 1 << 0;
+constexpr uint32_t mask_polygon = 1 << 1;
 
 struct DemoScene : Scene {
     double box_size = 4.;
@@ -96,6 +100,12 @@ struct DemoScene : Scene {
             ball_hitbox->hitbox.trigger_id(120);
             ball_hitbox->color(this->default_hitbox_color);
             ball_hitbox->z_index(ball->z_index() + 1);
+
+            if (chosen_shape == polygon_shape) {
+                ball_hitbox->hitbox.mask(mask_polygon);
+            } else {
+                ball_hitbox->hitbox.mask(mask_circle);
+            }
 
             this->balls.push_back(ball);
             container->add_child(ball);
@@ -185,8 +195,8 @@ struct DemoScene : Scene {
             }
         }
 
-        auto results =
-            this->container->space.query_shape_overlaps(this->query_shape);
+        auto results = this->container->space.query_shape_overlaps(
+            this->query_shape, {0., 0.}, collision_bitmask_all, mask_circle);
         for (auto& res : results) {
             res.hitbox_node->color(this->queried_hitbox_color);
         }

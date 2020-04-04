@@ -327,7 +327,6 @@ void
 _cp_space_query_shape_callback(
     cpShape* cp_shape, cpContactPointSet* points, void* data)
 {
-    log<LogLevel::debug, LogCategory::physics>("Query callback! %p", cp_shape);
     auto results = reinterpret_cast<std::vector<ShapeQueryResult>*>(data);
     cpBody* cp_body = cpShapeGetBody(cp_shape);
 
@@ -349,11 +348,18 @@ _cp_space_query_shape_callback(
 }
 
 const std::vector<ShapeQueryResult>
-SpaceNode::query_shape_overlaps(const Shape& shape, const glm::dvec2& position)
+SpaceNode::query_shape_overlaps(
+    const Shape& shape, const glm::dvec2& position, const CollisionBitmask mask,
+    const CollisionBitmask collision_mask, const CollisionGroup group)
 {
     std::vector<ShapeQueryResult> results;
     auto shape_uptr =
         prepare_hitbox_shape(shape, Transformation::translate(position));
+    auto filter = cpShapeGetFilter(shape_uptr.get());
+    filter.categories = mask;
+    filter.mask = collision_mask;
+    filter.group = group;
+    cpShapeSetFilter(shape_uptr.get(), filter);
 
     // shapes are created without BB set up, cpShapeUpdate refreshes it
     cpShapeUpdate(shape_uptr.get(), cpTransformIdentity);
