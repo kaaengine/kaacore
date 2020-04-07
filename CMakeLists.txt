@@ -58,6 +58,11 @@ cmrc_add_resource_library(
     embedded_resources/font_munro/munro.ttf
 )
 
+set_target_properties(
+    kaacore_embedded_assets
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+)
+
 target_link_libraries(kaacore PUBLIC kaacore_embedded_assets)
 
 if (KAACORE_BUILD_DEMOS)

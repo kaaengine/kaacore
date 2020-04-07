@@ -267,6 +267,7 @@ Engine::_ScenePointerWrapper::operator=(_ScenePointerWrapper&& other)
     this->_scene_ptr = other._scene_ptr;
     other._scene_ptr = tmp;
     other.detach();
+    return *this;
 }
 
 void
