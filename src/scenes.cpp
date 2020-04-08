@@ -17,8 +17,8 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
-    // clear default views to black
-    this->views[0].clear_color({0, 0, 0, 1});
+    auto size = this->views.size();
+    this->views[-size / 2].clear();
 }
 
 Scene::~Scene()
@@ -122,6 +122,10 @@ Scene::process_nodes_drawing()
 
     std::stable_sort(rendering_queue.begin(), rendering_queue.end());
 
+    for (auto& view : this->views) {
+        renderer->process_view(view);
+    }
+
     for (const auto& qn : rendering_queue) {
         auto node = std::get<Node*>(qn);
         if (node->_render_data.computed_vertices.empty()) {
@@ -130,17 +134,12 @@ Scene::process_nodes_drawing()
 
         for (auto z_index : node->_views) {
             auto& view = this->views[z_index];
-            if (view.is_dirty()) {
-                view.refresh();
-            }
 
             renderer->render_vertices(
                 view.index(), node->_render_data.computed_vertices,
                 node->_shape.indices, node->_render_data.texture_handle);
         }
     }
-
-    this->views._touch();
 }
 
 void

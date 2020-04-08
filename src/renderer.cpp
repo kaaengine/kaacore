@@ -1,9 +1,10 @@
 #include <cstring>
 #include <iterator>
-#include <unordered_set>
 #include <tuple>
+#include <unordered_set>
 
 #include <bgfx/bgfx.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "kaacore/embedded_data.h"
 #include "kaacore/engine.h"
@@ -170,6 +171,10 @@ Renderer::begin_frame()
 void
 Renderer::end_frame()
 {
+    // TODO: optimize !
+    for (int i = 0; i < KAACORE_MAX_VIEWS; ++i) {
+        bgfx::touch(i);
+    }
     bgfx::frame();
 }
 
@@ -214,6 +219,35 @@ Renderer::reset()
     }
     this->view_size = view_size;
     this->border_size = border_size;
+}
+
+void
+Renderer::process_view(View& view) const
+{
+    if (view._requires_clean) {
+        uint32_t r, g, b, a;
+        a = static_cast<uint32_t>(view._clear_color.a * 255.0 + 0.5);
+        b = static_cast<uint32_t>(view._clear_color.b * 255.0 + 0.5) << 8;
+        g = static_cast<uint32_t>(view._clear_color.g * 255.0 + 0.5) << 16;
+        r = static_cast<uint32_t>(view._clear_color.r * 255.0 + 0.5) << 24;
+        auto clear_color_hex = a + b + g + r;
+        bgfx::setViewClear(view._index, view._clear_flags, clear_color_hex);
+        view._requires_clean = false;
+    }
+
+    if (view._is_dirty) {
+        view._refresh();
+
+        bgfx::setViewRect(
+            view._index, static_cast<uint16_t>(view._view_rect.x),
+            static_cast<uint16_t>(view._view_rect.y),
+            static_cast<uint16_t>(view._view_rect.z),
+            static_cast<uint16_t>(view._view_rect.w));
+
+        bgfx::setViewTransform(
+            view._index, glm::value_ptr(view.camera._calculated_view),
+            glm::value_ptr(view._projection_matrix));
+    }
 }
 
 void

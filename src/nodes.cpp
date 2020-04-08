@@ -194,12 +194,6 @@ Node::add_child(NodeOwnerPtr& child_node)
             n->hitbox.update_physics_shape();
         }
 
-        if (n->_scene) {
-            for (auto view_z_index : n->_views) {
-                n->_scene->views.register_used_view(view_z_index);
-            }
-        }
-
         std::for_each(
             n->_children.begin(), n->_children.end(), initialize_node);
     };
@@ -537,9 +531,6 @@ Node::views(const std::unordered_set<int16_t>& z_indices)
     this->_views.clear();
     for (auto z_index : z_indices) {
         KAACORE_CHECK(validate_view_z_index(z_index));
-        if (this->_scene) {
-            this->_scene->views.register_used_view(z_index);
-        }
         this->_views.push_back(z_index);
     }
 }

@@ -12,6 +12,7 @@
 #include "kaacore/images.h"
 #include "kaacore/log.h"
 #include "kaacore/utils.h"
+#include "kaacore/views.h"
 
 namespace kaacore {
 
@@ -72,6 +73,7 @@ struct Renderer {
     void end_frame();
     void reset();
 
+    void process_view(View& view) const;
     void render_vertices(
         const uint16_t view_index,
         const std::vector<StandardVertexData>& vertices,

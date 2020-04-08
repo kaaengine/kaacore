@@ -5,6 +5,7 @@
 namespace kaacore {
 
 class View;
+class Renderer;
 
 class Camera {
   public:
@@ -26,6 +27,7 @@ class Camera {
     glm::fmat4 _calculated_view;
 
     friend class View;
+    friend class Renderer;
 };
 
 } // namespace kaacore
