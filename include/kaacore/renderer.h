@@ -72,7 +72,6 @@ struct Renderer {
     void begin_frame();
     void end_frame();
     void reset();
-
     void process_view(View& view) const;
     void render_vertices(
         const uint16_t view_index,

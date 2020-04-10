@@ -171,7 +171,7 @@ Renderer::begin_frame()
 void
 Renderer::end_frame()
 {
-    // TODO: optimize !
+    // TODO: optimize!
     for (int i = 0; i < KAACORE_MAX_VIEWS; ++i) {
         bgfx::touch(i);
     }
