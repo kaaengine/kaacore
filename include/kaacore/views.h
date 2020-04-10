@@ -44,12 +44,11 @@ class View {
     View& operator=(const View&) = delete;
 
     uint16_t index() const;
-    bool requires_clean() const;
     void view_rect(const glm::ivec2& origin, const glm::uvec2& dimensions);
     std::pair<glm::ivec2, glm::uvec2> view_rect() const;
     void clear(
         const glm::dvec4& color = {0, 0, 0, 1},
-        uint16_t flags = ClearFlag::color | ClearFlag::depth);
+        const uint16_t flags = ClearFlag::color | ClearFlag::depth);
 
   private:
     uint16_t _index;
