@@ -59,6 +59,7 @@ class View {
 
     uint16_t index() const;
     int16_t z_index() const;
+    bool is_dirty() const;
     glm::ivec2 origin() const;
     void origin(const glm::ivec2& origin);
     glm::uvec2 dimensions() const;

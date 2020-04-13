@@ -53,6 +53,12 @@ View::z_index() const
     return this->_index - (KAACORE_MAX_VIEWS / 2);
 }
 
+bool
+View::is_dirty() const
+{
+    return this->_is_dirty or this->camera._is_dirty;
+}
+
 glm::ivec2
 View::origin() const
 {

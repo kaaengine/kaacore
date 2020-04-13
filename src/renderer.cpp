@@ -236,7 +236,7 @@ Renderer::process_view(View& view) const
         view._requires_clean = false;
     }
 
-    if (view._is_dirty) {
+    if (view.is_dirty()) {
         view._refresh();
 
         bgfx::setViewRect(
