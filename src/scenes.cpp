@@ -17,8 +17,7 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
-    auto size = this->views.size();
-    this->views[-size / 2].clear();
+    this->views[-this->views.size() / 2].clear_color({0, 0, 0, 1});
 }
 
 Scene::~Scene()

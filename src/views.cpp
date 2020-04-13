@@ -1,18 +1,15 @@
 #include <bgfx/bgfx.h>
-#include <glm/gtx/string_cast.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/log.h"
 #include "kaacore/views.h"
 
 namespace kaacore {
 
 uint16_t
-_to_view_index(int16_t z_index)
+operator~(ClearFlag flag)
 {
-    KAACORE_CHECK(validate_view_z_index(z_index));
-    return z_index + (KAACORE_MAX_VIEWS / 2);
+    return ~static_cast<uint16_t>(flag);
 }
 
 uint16_t
@@ -27,6 +24,12 @@ operator|(ClearFlag left, uint16_t right)
     return static_cast<uint16_t>(left) | right;
 }
 
+uint16_t
+operator|=(uint16_t left, ClearFlag right)
+{
+    return left | static_cast<uint16_t>(right);
+}
+
 View::View()
     : _dimensions(get_engine()->virtual_resolution()), _is_dirty(true),
       _requires_clean(false)
@@ -38,37 +41,58 @@ View::index() const
     return this->_index;
 }
 
-void
-View::view_rect(const glm::ivec2& origin, const glm::uvec2& dimensions)
+glm::ivec2
+View::origin() const
 {
-    if (this->_origin == origin and this->_dimensions == dimensions) {
+    return this->_origin;
+}
+
+void
+View::origin(const glm::ivec2& origin)
+{
+    if (this->_origin == origin) {
         return;
     }
 
-    auto virtual_resilution = get_engine()->virtual_resolution();
-    if (glm::any(glm::greaterThan(dimensions, virtual_resilution))) {
-        log<LogLevel::warn, LogCategory::engine>(
-            "View size greater than virtual resolution! %s > %s.",
-            glm::to_string(dimensions).c_str(),
-            glm::to_string(virtual_resilution).c_str());
+    this->_origin = origin;
+    this->_is_dirty = true;
+}
+
+glm::uvec2
+View::dimensions() const
+{
+    return this->_dimensions;
+}
+
+void
+View::dimensions(const glm::uvec2& dimensions)
+{
+    if (this->_dimensions == dimensions) {
+        return;
     }
 
-    this->_origin = origin;
     this->_dimensions = dimensions;
     this->_is_dirty = true;
 }
 
-std::pair<glm::ivec2, glm::uvec2>
-View::view_rect() const
+glm::dvec4
+View::clear_color() const
 {
-    return {this->_origin, this->_dimensions};
+    return this->_clear_color;
 }
 
 void
-View::clear(const glm::dvec4& color, uint16_t flags)
+View::clear_color(const glm::dvec4& color)
 {
-    this->_clear_flags = flags;
     this->_clear_color = color;
+    this->_clear_flags |= ClearFlag::color;
+    this->_requires_clean = true;
+}
+
+void
+View::reset_clear_color()
+{
+    this->_clear_flags &= ~ClearFlag::color;
     this->_requires_clean = true;
 }
 
@@ -131,7 +155,15 @@ ViewsManager::ViewsManager()
 
 View& ViewsManager::operator[](const int16_t z_index)
 {
-    return this->_views[_to_view_index(z_index)];
+    KAACORE_CHECK(validate_view_z_index(z_index));
+    auto index = z_index + (this->size() / 2);
+    return this->_views[index];
+}
+
+View*
+ViewsManager::get(const int16_t z_index)
+{
+    return &this->operator[](z_index);
 }
 
 View*
