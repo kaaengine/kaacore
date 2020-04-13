@@ -41,6 +41,12 @@ View::index() const
     return this->_index;
 }
 
+int16_t
+View::z_index() const
+{
+    return this->_index - (KAACORE_MAX_VIEWS / 2);
+}
+
 glm::ivec2
 View::origin() const
 {
