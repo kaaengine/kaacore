@@ -58,6 +58,8 @@ class FontData : public Resource {
 
     ~FontData();
     static ResourceReference<FontData> load(const std::string& path);
+    static ResourceReference<FontData> load_from_memory(
+        const uint8_t* font_file_content, const size_t size);
     Shape generate_text_shape(
         const std::string& text, double size, double indent, double max_width);
     std::vector<FontRenderGlyph> generate_render_glyphs(
@@ -65,10 +67,15 @@ class FontData : public Resource {
 
   private:
     FontData(const std::string& path);
+    FontData(
+        const ResourceReference<Image> baked_texture,
+        const BakedFontData baked_font);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
     friend class ResourcesRegistry<std::string, FontData>;
+    friend void initialize_fonts();
+    friend void uninitialize_fonts();
 };
 
 class TextNode;
@@ -87,7 +94,13 @@ class Font {
 
     friend class TextNode;
     friend std::hash<Font>;
+    friend void initialize_fonts();
+    friend void uninitialize_fonts();
+    friend Font& get_default_font();
 };
+
+Font&
+get_default_font();
 
 class TextNode {
     std::string _content;

@@ -91,6 +91,7 @@ set(SRC_CXX_FILES
     camera.cpp
     views.cpp
     utils.cpp
+    embedded_data.cpp
 )
 
 set(SRC_H_FILES
