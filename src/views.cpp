@@ -25,9 +25,15 @@ operator|(ClearFlag left, uint16_t right)
 }
 
 uint16_t
-operator|=(uint16_t left, ClearFlag right)
+operator|(uint16_t left, ClearFlag right)
 {
     return left | static_cast<uint16_t>(right);
+}
+
+uint16_t
+operator|=(uint16_t& left, ClearFlag right)
+{
+    return left = left | static_cast<uint16_t>(right);
 }
 
 View::View()

@@ -38,9 +38,15 @@ enum class ClearFlag : uint16_t {
 };
 
 uint16_t
+operator~(ClearFlag flag);
+uint16_t
 operator|(ClearFlag left, ClearFlag right);
 uint16_t
 operator|(ClearFlag left, uint16_t right);
+uint16_t
+operator|(uint16_t left, ClearFlag right);
+uint16_t
+operator|=(uint16_t& left, ClearFlag right);
 
 class Renderer;
 class ViewsManager;
@@ -71,7 +77,8 @@ class View {
     glm::dvec4 _clear_color;
     glm::ivec2 _origin = {0, 0};
     glm::fmat4 _projection_matrix;
-    uint16_t _clear_flags = ClearFlag::none | ClearFlag::depth;
+    uint16_t _clear_flags =
+        ClearFlag::none | ClearFlag::depth | ClearFlag::color;
 
     View();
 
