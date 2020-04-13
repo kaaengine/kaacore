@@ -49,22 +49,21 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
     size_t fs_data_size;
     if (renderer_type == bgfx::RendererType::Enum::OpenGL) {
         log("Loading default OpenGL GLSL shaders.");
-        vs_data = default_glsl_vertex_shader;
-        fs_data = default_glsl_fragment_shader;
-        vs_data_size = array_size(default_glsl_vertex_shader);
-        fs_data_size = array_size(default_glsl_fragment_shader);
+        std::tie(fs_data, fs_data_size) = get_embedded_file_content(
+            "shaders/binary/default_glsl_fragment_shader.bin");
+        std::tie(vs_data, vs_data_size) = get_embedded_file_content(
+            "shaders/binary/default_glsl_vertex_shader.bin");
     } else if (renderer_type == bgfx::RendererType::Enum::Direct3D9) {
-        log("Loading default Direct3D9 HLSL shaders.");
-        vs_data = default_hlsl_d3d9_vertex_shader;
-        fs_data = default_hlsl_d3d9_fragment_shader;
-        vs_data_size = array_size(default_hlsl_d3d9_vertex_shader);
-        fs_data_size = array_size(default_hlsl_d3d9_fragment_shader);
+        std::tie(fs_data, fs_data_size) = get_embedded_file_content(
+            "shaders/binary/default_hlsl_d3d9_fragment_shader.bin");
+        std::tie(vs_data, vs_data_size) = get_embedded_file_content(
+            "shaders/binary/default_hlsl_d3d9_vertex_shader.bin");
     } else if (renderer_type == bgfx::RendererType::Enum::Direct3D11) {
         log("Loading default Direct3D11 HLSL shaders.");
-        vs_data = default_hlsl_d3d11_vertex_shader;
-        fs_data = default_hlsl_d3d11_fragment_shader;
-        vs_data_size = array_size(default_hlsl_d3d11_vertex_shader);
-        fs_data_size = array_size(default_hlsl_d3d11_fragment_shader);
+        std::tie(fs_data, fs_data_size) = get_embedded_file_content(
+            "shaders/binary/default_hlsl_d3d11_fragment_shader.bin");
+        std::tie(vs_data, vs_data_size) = get_embedded_file_content(
+            "shaders/binary/default_hlsl_d3d11_vertex_shader.bin");
     } else {
         log<LogLevel::warn>("No default shaders loaded");
         return std::make_tuple(false, nullptr, nullptr);
@@ -77,8 +76,10 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
 std::unique_ptr<Image>
 load_default_image()
 {
+    // 1x1 white texture
+    static const std::vector<uint8_t> image_content{0xFF, 0xFF, 0xFF, 0xFF};
     auto image_container =
-        load_image(default_texture, array_size(default_texture));
+        load_raw_image(bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
     auto image = std::unique_ptr<Image>(new Image(image_container));
     bgfx::setName(image->texture_handle, "DEFAULT TEXTURE");
     return image;
