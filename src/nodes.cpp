@@ -382,6 +382,21 @@ Node::get_relative_transformation(const Node* const ancestor)
     return Transformation{this->_compute_model_matrix_cumulative(ancestor)};
 }
 
+Transformation
+Node::transformation()
+{
+    return this->get_relative_transformation(this->_parent);
+}
+
+void
+Node::transformation(const Transformation& transformation)
+{
+    auto decomposed = transformation.decompose();
+    this->position(decomposed.translation);
+    this->rotation(decomposed.rotation);
+    this->scale(decomposed.scale);
+}
+
 int16_t
 Node::z_index()
 {

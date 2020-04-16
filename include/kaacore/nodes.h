@@ -119,6 +119,9 @@ class Node {
     Transformation absolute_transformation();
     Transformation get_relative_transformation(const Node* const ancestor);
 
+    Transformation transformation();
+    void transformation(const Transformation& transformation);
+
     int16_t z_index();
     void z_index(const int16_t& z_index);
 

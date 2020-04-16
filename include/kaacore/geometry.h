@@ -45,7 +45,8 @@ struct DecomposedTransformation {
     double rotation;
     glm::tvec2<T> translation;
 
-    DecomposedTransformation(const glm::tmat4x4<T>& matrix)
+    DecomposedTransformation(
+        const glm::tmat4x4<T>& matrix = glm::tmat4x4<T>(1.))
     {
         glm::tvec3<T> _scale;
         glm::tvec3<T> _translation;
