@@ -175,6 +175,12 @@ KeyboardKeyEvent::is_key_up() const
     return this->type() == EventType::key_up;
 }
 
+bool
+KeyboardKeyEvent::is_repeat() const
+{
+    return this->sdl_event.key.repeat;
+}
+
 std::string
 KeyboardTextEvent::text() const
 {
@@ -633,10 +639,6 @@ InputManager::push_event(SDL_Event sdl_event)
             this->controller.disconnect(sdl_event.cdevice.which);
             log<LogLevel::debug>("Controller disconnected.");
             break;
-        case EventType::key_down:
-            if (sdl_event.key.repeat) {
-                return;
-            }
     }
 
     Event event(sdl_event);
