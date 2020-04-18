@@ -17,7 +17,7 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
-    this->views[-this->views.size() / 2].clear_color({0, 0, 0, 1});
+    this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].clear_color({0, 0, 0, 1});
 }
 
 Scene::~Scene()
@@ -31,7 +31,7 @@ Scene::~Scene()
 Camera&
 Scene::camera()
 {
-    return this->views[0].camera;
+    return this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].camera;
 }
 
 void

@@ -8,14 +8,15 @@
 namespace kaacore {
 
 #define KAACORE_MAX_VIEWS BGFX_CONFIG_MAX_VIEWS
+#define KAACORE_VIEWS_MIN_Z_INDEX KAACORE_MAX_VIEWS / -2
+#define KAACORE_VIEWS_MAX_Z_INDEX (KAACORE_MAX_VIEWS / 2) - 1
+#define KAACORE_VIEWS_DEFAULT_Z_INDEX 0
 
 inline bool
 validate_view_z_index(int16_t z_index)
 {
-    int16_t min_z_index, max_z_index;
-    min_z_index = (KAACORE_MAX_VIEWS) / -2;
-    max_z_index = KAACORE_MAX_VIEWS + min_z_index - 1;
-    return (min_z_index <= z_index) and (z_index <= max_z_index);
+    return (KAACORE_VIEWS_MIN_Z_INDEX <= z_index) and
+           (z_index <= KAACORE_VIEWS_MAX_Z_INDEX);
 }
 
 enum class ClearFlag : uint16_t {
