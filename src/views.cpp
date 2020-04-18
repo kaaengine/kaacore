@@ -137,7 +137,7 @@ View::_refresh()
     // clip view when views_orgin < border_size
     auto clipped_view_dimensions =
         view_dimensions - clipped_view_origin + view_origin;
-    // clip view when vies_dimensions + views_orgin > drawable_area
+    // clip view when views_dimensions + views_orgin > drawable_area
     clipped_view_dimensions =
         glm::min(clipped_view_dimensions, drawable_area - clipped_view_origin);
     // since the view might be clipped, adjust projection so it's the same as it
