@@ -47,7 +47,7 @@ main(int argc, char* argv[])
                 break;
             }
         }
-        eng.renderer->render_vertices(vertices, indices, texture);
+        eng.renderer->render_vertices(0, vertices, indices, texture);
         bgfx::frame();
     }
 

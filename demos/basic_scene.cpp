@@ -110,26 +110,25 @@ struct DemoScene : Scene {
                     get_engine()->quit();
                     break;
                 } else if (keyboard_key->key() == Keycode::w) {
-                    this->camera.position += glm::dvec2(0., -0.05);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., -0.05));
                 } else if (keyboard_key->key() == Keycode::a) {
-                    this->camera.position += glm::dvec2(-0.05, 0.);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(-0.05, 0.));
                 } else if (keyboard_key->key() == Keycode::s) {
-                    this->camera.position += glm::dvec2(0., 0.05);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., 0.05));
                 } else if (keyboard_key->key() == Keycode::d) {
-                    this->camera.position += glm::dvec2(0.05, 0.);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0.05, 0.));
                 } else if (keyboard_key->key() == Keycode::i) {
-                    this->camera.scale += glm::dvec2(0.1, 0.1);
-                    this->camera.refresh();
+                    this->camera().scale(
+                        this->camera().scale() + glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::o) {
-                    this->camera.scale -= glm::dvec2(0.1, 0.1);
-                    this->camera.refresh();
+                    this->camera().scale(
+                        this->camera().scale() - glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::r) {
-                    this->camera.rotation += 0.2;
-                    this->camera.refresh();
+                    this->camera().rotation(this->camera().rotation() + 0.2);
                 } else if (keyboard_key->key() == Keycode::m) {
                     this->node1->rotation(this->node1->rotation() + 0.2);
                     this->node1->position(
@@ -142,10 +141,9 @@ struct DemoScene : Scene {
                     log("World position: %lf %lf", this->root_node.position().x,
                         this->root_node.position().y);
                 } else if (keyboard_key->key() == Keycode::c) {
-                    this->camera.position = this->node1->absolute_position();
-                    this->camera.refresh();
-                    log("Camera position: %lf %lf", this->camera.position.x,
-                        this->camera.position.y);
+                    this->camera().position(this->node1->absolute_position());
+                    log("Camera position: %lf %lf", this->camera().position().x,
+                        this->camera().position().y);
                 } else if (keyboard_key->key() == Keycode::f) {
                     get_engine()->window->fullscreen(
                         !get_engine()->window->fullscreen());

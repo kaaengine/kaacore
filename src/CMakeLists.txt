@@ -88,6 +88,8 @@ set(SRC_CXX_FILES
     timers.cpp
     transitions.cpp
     node_transitions.cpp
+    camera.cpp
+    views.cpp
     utils.cpp
     embedded_data.cpp
 )
@@ -115,9 +117,12 @@ set(SRC_H_FILES
     ../include/kaacore/timers.h
     ../include/kaacore/transitions.h
     ../include/kaacore/node_transitions.h
+    ../include/kaacore/camera.h
+    ../include/kaacore/views.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
+    ../third_party/bgfx/bgfx/src/config.h
 )
 
 set(SRC_FILES ${SRC_CXX_FILES} ${SRC_H_FILES})

@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include <bgfx/bgfx.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "kaacore/embedded_data.h"
 #include "kaacore/engine.h"
@@ -97,7 +98,6 @@ Renderer::Renderer(const glm::uvec2& window_size)
     this->texture_uniform =
         bgfx::createUniform("s_texture", bgfx::UniformType::Enum::Sampler, 1);
 
-    this->clear_color(this->_clear_color);
     this->reset();
 
     this->default_image = load_default_image();
@@ -166,32 +166,16 @@ Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 }
 
 void
-Renderer::clear_color(glm::dvec4 color)
-{
-    uint32_t r, g, b, a;
-    a = static_cast<uint32_t>(color.a * 255.0 + 0.5);
-    b = static_cast<uint32_t>(color.b * 255.0 + 0.5) << 8;
-    g = static_cast<uint32_t>(color.g * 255.0 + 0.5) << 16;
-    r = static_cast<uint32_t>(color.r * 255.0 + 0.5) << 24;
-    auto clear_color_hex = a + b + g + r;
-    bgfx::setViewClear(0, this->_clear_flags, clear_color_hex);
-    this->_clear_color = color;
-}
-
-glm::dvec4
-Renderer::clear_color()
-{
-    return this->_clear_color;
-}
-
-void
 Renderer::begin_frame()
 {}
 
 void
 Renderer::end_frame()
 {
-    bgfx::touch(0);
+    // TODO: optimize!
+    for (int i = 0; i < KAACORE_MAX_VIEWS; ++i) {
+        bgfx::touch(i);
+    }
     bgfx::frame();
 }
 
@@ -199,13 +183,12 @@ void
 Renderer::reset()
 {
     log<LogLevel::debug>("Calling Renderer::reset()");
-    auto virtual_resolution = get_engine()->virtual_resolution();
-    auto virtual_resolution_mode = get_engine()->_virtual_resolution_mode;
     auto window_size = get_engine()->window->size();
     bgfx::reset(window_size.x, window_size.y, this->_reset_flags);
 
-    glm::uvec2 view_size;
-    glm::uvec2 border_size;
+    glm::uvec2 view_size, border_size;
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    auto virtual_resolution_mode = get_engine()->_virtual_resolution_mode;
 
     if (virtual_resolution_mode == VirtualResolutionMode::adaptive_stretch) {
         double aspect_ratio =
@@ -235,21 +218,42 @@ Renderer::reset()
     } else {
         throw exception("Unrecognized virtual resolution");
     }
-
-    // TODO: add support for multiple views
-    bgfx::setViewRect(
-        0, border_size.x, border_size.y, view_size.x, view_size.y);
-
-    this->projection_matrix = glm::ortho(
-        -float(virtual_resolution.x) / 2, float(virtual_resolution.x) / 2,
-        float(virtual_resolution.y) / 2, -float(virtual_resolution.y) / 2);
     this->view_size = view_size;
     this->border_size = border_size;
 }
 
 void
+Renderer::process_view(View& view) const
+{
+    if (view._requires_clean) {
+        uint32_t r, g, b, a;
+        a = static_cast<uint32_t>(view._clear_color.a * 255.0 + 0.5);
+        b = static_cast<uint32_t>(view._clear_color.b * 255.0 + 0.5) << 8;
+        g = static_cast<uint32_t>(view._clear_color.g * 255.0 + 0.5) << 16;
+        r = static_cast<uint32_t>(view._clear_color.r * 255.0 + 0.5) << 24;
+        auto clear_color_hex = a + b + g + r;
+        bgfx::setViewClear(view._index, view._clear_flags, clear_color_hex);
+        view._requires_clean = false;
+    }
+
+    if (view.is_dirty()) {
+        view._refresh();
+
+        bgfx::setViewRect(
+            view._index, static_cast<uint16_t>(view._view_rect.x),
+            static_cast<uint16_t>(view._view_rect.y),
+            static_cast<uint16_t>(view._view_rect.z),
+            static_cast<uint16_t>(view._view_rect.w));
+
+        bgfx::setViewTransform(
+            view._index, glm::value_ptr(view.camera._calculated_view),
+            glm::value_ptr(view._projection_matrix));
+    }
+}
+
+void
 Renderer::render_vertices(
-    const std::vector<StandardVertexData>& vertices,
+    const uint16_t view_index, const std::vector<StandardVertexData>& vertices,
     const std::vector<VertexIndex>& indices,
     const bgfx::TextureHandle texture) const
 {
@@ -275,7 +279,7 @@ Renderer::render_vertices(
     bgfx::setIndexBuffer(&indices_buffer);
     bgfx::setTexture(0, this->texture_uniform, texture);
 
-    bgfx::submit(0, this->default_program, false);
+    bgfx::submit(view_index, this->default_program, false);
 }
 
 } // namespace kaacore

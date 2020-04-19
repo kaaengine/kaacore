@@ -118,7 +118,7 @@ main(int argc, char* argv[])
     Engine eng({800, 600});
     eng.window->show();
     DemoScene scene;
-    scene.camera.position = {0., 0.};
+    scene.camera().position({0., 0.});
     eng.run(&scene);
 
     return 0;

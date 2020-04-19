@@ -15,7 +15,7 @@ struct TransitionsDemoScene : Scene {
 
     TransitionsDemoScene()
     {
-        this->camera.position = {0., 0.};
+        this->camera().position({0., 0.});
 
         const double tr_time = 1500.;
 
@@ -83,6 +83,8 @@ extern "C" int
 main(int argc, char* argv[])
 {
     Engine eng({100, 100});
+    eng.window->size({800, 600});
+    eng.window->center();
     eng.window->show();
     TransitionsDemoScene scene;
     eng.run(&scene);
