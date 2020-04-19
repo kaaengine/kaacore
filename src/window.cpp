@@ -10,6 +10,7 @@ Window::Window(const glm::uvec2& size)
     this->_window = SDL_CreateWindow(
         "Kaa", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, size.x, size.y,
         flags);
+    this->size(size);
 }
 
 Window::~Window()

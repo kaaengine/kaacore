@@ -9,12 +9,15 @@ project(kaacore)
 option(KAACORE_SHARED "Build kaacore-shared" OFF)
 option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
 
+set(KAACORE_MAX_VIEWS 32)
+
 # force static bgfx build
 set(BUILD_SHARED_LIBS OFF)
 # force dynamic SDL build
 set(SDL_SHARED_ENABLED_BY_DEFAULT ON)
 
 add_subdirectory(third_party/bgfx)
+target_compile_options(bgfx PUBLIC -DBGFX_CONFIG_MAX_VIEWS=${KAACORE_MAX_VIEWS})
 target_compile_options(bgfx PUBLIC -DBGFX_CONFIG_MULTITHREADED=0)
 if (TARGET astc-codec)
     set_target_properties(astc-codec PROPERTIES POSITION_INDEPENDENT_CODE ON)

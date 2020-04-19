@@ -28,7 +28,7 @@ struct DemoScene : Scene {
             1000,
             [this]() {
                 log("Timer callback called.");
-                this->node->visible(!this->node->visible());
+                this->node->visible(not this->node->visible());
             },
             false);
         this->timer.start();
@@ -60,7 +60,7 @@ main(int argc, char* argv[])
     Engine eng({800, 600});
     eng.window->show();
     DemoScene scene;
-    scene.camera.position = {0., 0.};
+    scene.camera().position({0., 0.});
     eng.run(&scene);
 
     return 0;

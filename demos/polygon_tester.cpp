@@ -20,7 +20,7 @@ struct PolygonTesterDemoScene : Scene {
     PolygonTesterDemoScene()
     {
         this->engine = get_engine();
-        this->camera.position = {0., 0.};
+        this->camera().position({0., 0.});
 
         this->shape_repr = make_node();
         this->shape_repr->position({0, 0});
@@ -75,11 +75,11 @@ struct PolygonTesterDemoScene : Scene {
             if (auto mouse_button = event.mouse_button()) {
                 auto pos = mouse_button->position();
                 if (mouse_button->button() == MouseButton::left) {
-                    pos = this->camera.unproject_position(pos);
+                    pos = this->camera().unproject_position(pos);
                     log("Adding point: (%lf, %lf)", pos.x, pos.y);
                     this->add_point(pos);
                 } else if (mouse_button->button() == MouseButton::left) {
-                    pos = this->camera.unproject_position(pos);
+                    pos = this->camera().unproject_position(pos);
                     log("Adding point: (%lf, %lf)", pos.x, pos.y);
                     this->add_point(pos);
                 }
@@ -93,19 +93,25 @@ struct PolygonTesterDemoScene : Scene {
                     log("Finalizing polygon");
                     this->finalize_polygon();
                 } else if (keyboard_key->key() == Keycode::w) {
-                    this->camera.position += glm::dvec2(0., -2.5);
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., -2.5));
                 } else if (keyboard_key->key() == Keycode::a) {
-                    this->camera.position += glm::dvec2(-2.5, 0.);
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(-2.5, 0.));
                 } else if (keyboard_key->key() == Keycode::s) {
-                    this->camera.position += glm::dvec2(0., 2.5);
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., 2.5));
                 } else if (keyboard_key->key() == Keycode::d) {
-                    this->camera.position += glm::dvec2(2.5, 0.);
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(2.5, 0.));
                 } else if (keyboard_key->key() == Keycode::i) {
-                    this->camera.scale += glm::dvec2(0.1, 0.1);
+                    this->camera().scale(
+                        this->camera().scale() + glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::o) {
-                    this->camera.scale -= glm::dvec2(0.1, 0.1);
+                    this->camera().scale(
+                        this->camera().scale() - glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::r) {
-                    this->camera.rotation += 0.3;
+                    this->camera().rotation(this->camera().rotation() + 0.3);
                 }
             }
         }
