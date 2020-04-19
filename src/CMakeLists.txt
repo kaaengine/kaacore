@@ -122,7 +122,6 @@ set(SRC_H_FILES
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
-    ../third_party/bgfx/bgfx/src/config.h
 )
 
 set(SRC_FILES ${SRC_CXX_FILES} ${SRC_H_FILES})
