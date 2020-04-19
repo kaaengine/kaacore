@@ -176,7 +176,7 @@ KeyboardKeyEvent::is_key_up() const
 }
 
 bool
-KeyboardKeyEvent::is_repeat() const
+KeyboardKeyEvent::repeat() const
 {
     return this->sdl_event.key.repeat;
 }
