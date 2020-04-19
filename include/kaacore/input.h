@@ -437,6 +437,7 @@ struct KeyboardKeyEvent : public BaseEvent {
     Keycode key() const;
     bool is_key_down() const;
     bool is_key_up() const;
+    bool repeat() const;
 };
 
 struct KeyboardTextEvent : public BaseEvent {
