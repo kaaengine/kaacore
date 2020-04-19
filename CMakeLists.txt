@@ -15,6 +15,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(SDL_SHARED_ENABLED_BY_DEFAULT ON)
 
 add_subdirectory(third_party/bgfx)
+target_compile_options(bgfx PUBLIC -DBGFX_CONFIG_MAX_VIEWS=32)
 target_compile_options(bgfx PUBLIC -DBGFX_CONFIG_MULTITHREADED=0)
 if (TARGET astc-codec)
     set_target_properties(astc-codec PROPERTIES POSITION_INDEPENDENT_CODE ON)

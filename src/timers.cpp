@@ -67,7 +67,7 @@ resolve_timer(TimerID timer_id)
         return;
     }
 
-    _TimerData& timer_data = _timers_manager[timer_id];
+    auto& timer_data = _timers_manager[timer_id];
     timer_data.callback();
 
     if (timer_data.next_trigger_time == 0) {

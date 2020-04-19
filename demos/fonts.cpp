@@ -69,23 +69,23 @@ struct DemoFontsScene : Scene {
                     get_engine()->quit();
                     break;
                 } else if (keyboard_key->key() == Keycode::w) {
-                    this->camera.position += glm::dvec2(0., -2.5);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., -2.5));
                 } else if (keyboard_key->key() == Keycode::a) {
-                    this->camera.position += glm::dvec2(-2.5, 0.);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(-2.5, 0.));
                 } else if (keyboard_key->key() == Keycode::s) {
-                    this->camera.position += glm::dvec2(0., 2.5);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(0., 2.5));
                 } else if (keyboard_key->key() == Keycode::d) {
-                    this->camera.position += glm::dvec2(2.5, 0.);
-                    this->camera.refresh();
+                    this->camera().position(
+                        this->camera().position() + glm::dvec2(2.5, 0.));
                 } else if (keyboard_key->key() == Keycode::i) {
-                    this->camera.scale += glm::dvec2(0.1, 0.1);
-                    this->camera.refresh();
+                    this->camera().scale(
+                        this->camera().scale() + glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::o) {
-                    this->camera.scale -= glm::dvec2(0.1, 0.1);
-                    this->camera.refresh();
+                    this->camera().scale(
+                        this->camera().scale() - glm::dvec2(0.1, 0.1));
                 } else if (keyboard_key->key() == Keycode::l) {
                     this->node_text->text.content(
                         this->node_text->text.content() + "x");
@@ -103,7 +103,7 @@ main(int argc, char* argv[])
 {
     Engine eng({800, 600});
     DemoFontsScene scene;
-    scene.camera.position = {0., 0.};
+    scene.camera().position({0., 0.});
     eng.window->show();
     eng.run(&scene);
 

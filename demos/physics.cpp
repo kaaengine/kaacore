@@ -206,10 +206,12 @@ struct DemoScene : Scene {
 extern "C" int
 main(int argc, char* argv[])
 {
-    Engine eng({15, 15});
+    Engine eng({20, 20});
+    eng.window->size({800, 600});
+    eng.window->center();
     eng.window->show();
     DemoScene scene;
-    scene.camera.position = {0., 0.};
+    scene.camera().position({0., 0.});
     eng.run(&scene);
 
     return 0;
