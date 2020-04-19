@@ -122,7 +122,6 @@ extern "C" int
 main(int argc, char* argv[])
 {
     Engine eng({800, 600}, VirtualResolutionMode::aggresive_stretch);
-    eng.window->show();
     PolygonTesterDemoScene scene;
     eng.run(&scene);
 

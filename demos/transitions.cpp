@@ -85,7 +85,6 @@ main(int argc, char* argv[])
     Engine eng({100, 100});
     eng.window->size({800, 600});
     eng.window->center();
-    eng.window->show();
     TransitionsDemoScene scene;
     eng.run(&scene);
 
