@@ -1,15 +1,15 @@
 #pragma once
 
+#include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 
-#include "../third_party/bgfx/bgfx/src/config.h"
 #include "kaacore/camera.h"
+#include "kaacore/config.h"
 
 namespace kaacore {
 
-#define KAACORE_MAX_VIEWS BGFX_CONFIG_MAX_VIEWS
-#define KAACORE_VIEWS_MIN_Z_INDEX KAACORE_MAX_VIEWS / -2
-#define KAACORE_VIEWS_MAX_Z_INDEX (KAACORE_MAX_VIEWS / 2) - 1
+#define KAACORE_VIEWS_MIN_Z_INDEX (KAACORE_MAX_VIEWS / -2)
+#define KAACORE_VIEWS_MAX_Z_INDEX ((KAACORE_MAX_VIEWS / 2) - 1)
 #define KAACORE_VIEWS_DEFAULT_Z_INDEX 0
 
 inline bool
