@@ -160,7 +160,6 @@ extern "C" int
 main(int argc, char* argv[])
 {
     Engine eng{{800, 600}, VirtualResolutionMode::no_stretch};
-    eng.window->show();
     DemoScene scene;
     eng.run(&scene);
 

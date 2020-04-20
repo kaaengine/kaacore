@@ -36,6 +36,8 @@ Engine::Engine(
     this->input_manager = std::make_unique<InputManager>();
     this->audio_manager = std::make_unique<AudioManager>();
     this->resources_manager = std::make_unique<ResourcesManager>();
+
+    this->window->show();
 }
 
 Engine::~Engine()
@@ -76,6 +78,7 @@ void
 Engine::run(Scene* scene)
 {
     this->is_running = true;
+    this->window->_activate();
     try {
         this->_run(scene);
     } catch (...) {
@@ -84,6 +87,7 @@ Engine::run(Scene* scene)
         throw;
     }
     this->_detach_scenes();
+    this->window->_deactivate();
     this->is_running = false;
 }
 

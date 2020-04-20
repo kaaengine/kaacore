@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 cmake_policy(SET CMP0077 NEW)
 
-add_executable(demo-basic basic.cpp)
-list(APPEND DEMO_TARGETS demo-basic)
-
 add_executable(demo-basic-scene basic_scene.cpp)
 list(APPEND DEMO_TARGETS demo-basic-scene)
 
@@ -28,7 +25,6 @@ list(APPEND DEMO_TARGETS demo-transitions)
 add_executable(demo-controllers controllers.cpp)
 list(APPEND DEMO_TARGETS demo-controllers)
 
-target_link_libraries(demo-basic kaacore)
 target_link_libraries(demo-basic-scene kaacore)
 target_link_libraries(demo-physics kaacore)
 target_link_libraries(demo-sprites kaacore)

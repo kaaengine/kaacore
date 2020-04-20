@@ -21,42 +21,48 @@ Window::~Window()
 void
 Window::show()
 {
-    SDL_ShowWindow(this->_window);
+    if (this->_active) {
+        this->_show();
+    }
+    this->_is_shown = true;
 }
 
 void
 Window::hide()
 {
-    SDL_HideWindow(this->_window);
+    if (this->_active) {
+        SDL_HideWindow(this->_window);
+    }
+    this->_is_shown = false;
 }
 
 std::string
-Window::title()
+Window::title() const
 {
     return SDL_GetWindowTitle(this->_window);
 }
 
 void
-Window::title(const std::string& title)
+Window::title(const std::string& title) const
 {
     SDL_SetWindowTitle(this->_window, title.c_str());
 }
 
 bool
-Window::fullscreen()
+Window::fullscreen() const
 {
     return SDL_GetWindowFlags(this->_window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
 }
 
 void
-Window::fullscreen(bool fullscreen)
+Window::fullscreen(const bool fullscreen) const
 {
     int32_t value = fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0;
     SDL_SetWindowFullscreen(this->_window, value);
 }
 
 glm::uvec2
-Window::size()
+Window::size() const
 {
     glm::uvec2 vec;
     SDL_GetWindowSize(
@@ -66,31 +72,31 @@ Window::size()
 }
 
 void
-Window::size(const glm::uvec2& size)
+Window::size(const glm::uvec2& size) const
 {
     SDL_SetWindowSize(this->_window, size.x, size.y);
 }
 
 void
-Window::maximize()
+Window::maximize() const
 {
     SDL_MaximizeWindow(this->_window);
 }
 
 void
-Window::minimize()
+Window::minimize() const
 {
     SDL_MinimizeWindow(this->_window);
 }
 
 void
-Window::restore()
+Window::restore() const
 {
     SDL_RestoreWindow(this->_window);
 }
 
 glm::uvec2
-Window::position()
+Window::position() const
 {
     glm::uvec2 vec;
     SDL_GetWindowPosition(
@@ -100,15 +106,37 @@ Window::position()
 }
 
 void
-Window::position(const glm::uvec2& position)
+Window::position(const glm::uvec2& position) const
 {
     SDL_SetWindowPosition(this->_window, position.x, position.y);
 }
 
 void
-Window::center()
+Window::center() const
 {
     this->position(glm::ivec2(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED));
+}
+
+void
+Window::_show() const
+{
+    SDL_ShowWindow(this->_window);
+}
+
+void
+Window::_activate()
+{
+    this->_active = true;
+    if (this->_is_shown) {
+        this->_show();
+    }
+}
+
+void
+Window::_deactivate()
+{
+    this->hide();
+    this->_active = false;
 }
 
 } // namespace kaacore
