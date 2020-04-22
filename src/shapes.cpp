@@ -22,6 +22,15 @@ Shape::Shape(
     }
 };
 
+bool
+Shape::operator==(const Shape& other)
+{
+    return (
+        this->type == other.type and this->points == other.points and
+        this->radius == other.radius and this->indices == other.indices and
+        this->vertices == other.vertices);
+}
+
 Shape
 Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 {
@@ -146,6 +155,35 @@ Shape::Freeform(
     const std::vector<StandardVertexData>& vertices)
 {
     return Shape(ShapeType::freeform, {}, 0., indices, vertices);
+}
+
+Shape
+Shape::transform(const Transformation& transformation) const
+{
+    auto points = this->points;
+    for (auto& pt : points) {
+        pt = pt | transformation;
+    }
+
+    auto radius = this->radius;
+    if (radius != 0.) {
+        glm::dvec2 scale_ratio = glm::abs(transformation.decompose().scale);
+        if (scale_ratio.x != scale_ratio.y) {
+            throw kaacore::exception(
+                "Cannot transform shape radius by non-equal scale");
+        }
+        radius *= scale_ratio.x;
+    }
+
+    auto vertices = this->vertices;
+    for (auto& vt : vertices) {
+        auto tmp_pt = glm::dvec2(vt.xyz.x, vt.xyz.y);
+        tmp_pt |= transformation;
+        vt.xyz.x = tmp_pt.x;
+        vt.xyz.y = tmp_pt.y;
+    }
+
+    return Shape(this->type, points, radius, this->indices, vertices);
 }
 
 } // namespace kaacore

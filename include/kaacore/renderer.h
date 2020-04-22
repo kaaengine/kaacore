@@ -6,10 +6,13 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include "kaacore/files.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/utils.h"
+#include "kaacore/views.h"
 
 namespace kaacore {
 
@@ -37,6 +40,13 @@ struct StandardVertexData {
     {
         return StandardVertexData(x, y, 0., u, v, m, n);
     }
+
+    inline bool operator==(const StandardVertexData& other) const
+    {
+        return (
+            this->xyz == other.xyz and this->uv == other.uv and
+            this->mn == other.mn and this->rgba == other.rgba);
+    }
 };
 
 struct Renderer {
@@ -49,30 +59,41 @@ struct Renderer {
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
-    glm::fmat4 projection_matrix;
     glm::uvec2 view_size;
     glm::uvec2 border_size;
 
     Renderer(const glm::uvec2& window_size);
     ~Renderer();
 
-    void clear_color(glm::dvec4 color);
-    glm::dvec4 clear_color();
-
+    bgfx::TextureHandle make_texture(
+        std::shared_ptr<bimg::ImageContainer> image_container,
+        const uint64_t flags) const;
+    void destroy_texture(const bgfx::TextureHandle& handle) const;
     void begin_frame();
     void end_frame();
-
     void reset();
-
+    void process_view(View& view) const;
     void render_vertices(
+        const uint16_t view_index,
         const std::vector<StandardVertexData>& vertices,
         const std::vector<VertexIndex>& indices,
         const bgfx::TextureHandle texture) const;
 
   private:
-    glm::dvec4 _clear_color = {0, 0, 0, 1.};
-    uint32_t _clear_flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH;
     uint32_t _reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
 };
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::hash_combined;
+using kaacore::StandardVertexData;
+
+template<>
+struct hash<StandardVertexData> {
+    size_t operator()(const StandardVertexData& svd) const
+    {
+        return hash_combined(svd.xyz, svd.uv, svd.mn, svd.rgba);
+    }
+};
+}

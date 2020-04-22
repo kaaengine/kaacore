@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cmath>
+#include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -13,6 +15,11 @@
 #include "kaacore/shapes.h"
 
 namespace kaacore {
+
+void
+initialize_fonts();
+void
+uninitialize_fonts();
 
 typedef std::vector<stbtt_packedchar> BakedFontData;
 
@@ -43,30 +50,57 @@ struct FontRenderGlyph {
     static Shape make_shape(const std::vector<FontRenderGlyph>& render_glyphs);
 };
 
-struct FontData {
-    Resource<Image> baked_texture;
+class FontData : public Resource {
+  public:
+    const std::string path;
     BakedFontData baked_font;
+    ResourceReference<Image> baked_texture;
 
-    FontData(
-        const Resource<Image> baked_texture, const BakedFontData baked_font);
-
-    static Resource<FontData> load(const std::string& font_filepath);
-
+    ~FontData();
+    static ResourceReference<FontData> load(const std::string& path);
+    static ResourceReference<FontData> load_from_memory(
+        const uint8_t* font_file_content, const size_t size);
     Shape generate_text_shape(
         const std::string& text, double size, double indent, double max_width);
-
     std::vector<FontRenderGlyph> generate_render_glyphs(
         const std::string& text, const double scale_factor);
+
+  private:
+    FontData(const std::string& path);
+    FontData(
+        const ResourceReference<Image> baked_texture,
+        const BakedFontData baked_font);
+    virtual void _initialize() override;
+    virtual void _uninitialize() override;
+
+    friend class ResourcesRegistry<std::string, FontData>;
+    friend void initialize_fonts();
+    friend void uninitialize_fonts();
 };
 
-struct Font {
-    Resource<FontData> _font_data;
+class TextNode;
 
+class Font {
+  public:
     Font();
-    Font(const Resource<FontData>& font_data);
-
     static Font load(const std::string& font_filepath);
+
+    bool operator==(const Font& other);
+
+  private:
+    ResourceReference<FontData> _font_data;
+
+    Font(const ResourceReference<FontData>& font_data);
+
+    friend class TextNode;
+    friend std::hash<Font>;
+    friend void initialize_fonts();
+    friend void uninitialize_fonts();
+    friend Font& get_default_font();
 };
+
+Font&
+get_default_font();
 
 class TextNode {
     std::string _content;
@@ -104,3 +138,16 @@ class TextNode {
 };
 
 } // namespace kaacore
+
+namespace std {
+using kaacore::Font;
+using kaacore::FontData;
+
+template<>
+struct hash<kaacore::Font> {
+    size_t operator()(const Font& font) const
+    {
+        return std::hash<ResourceReference<FontData>>{}(font._font_data);
+    }
+};
+}

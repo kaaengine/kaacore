@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace kaacore {
 
@@ -37,6 +38,64 @@ inline constexpr uint8_t operator&(const Alignment alignment, uint8_t mask)
 {
     return uint8_t(alignment) & mask;
 }
+
+template<typename T>
+struct DecomposedTransformation {
+    glm::tvec2<T> scale;
+    double rotation;
+    glm::tvec2<T> translation;
+
+    DecomposedTransformation(
+        const glm::tmat4x4<T>& matrix = glm::tmat4x4<T>(1.))
+    {
+        glm::tvec3<T> _scale;
+        glm::tvec3<T> _translation;
+        glm::tquat<T> _rotation_quat;
+        glm::tvec3<T> _skew;
+        glm::tvec4<T> _perspective;
+        glm::decompose(
+            matrix, _scale, _rotation_quat, _translation, _skew, _perspective);
+        this->scale = _scale;
+        this->rotation = glm::eulerAngles(_rotation_quat).z;
+        this->translation = _translation;
+    }
+};
+
+class Transformation {
+    friend Transformation operator|(
+        const Transformation& left, const Transformation& right);
+    friend glm::dvec2 operator|(
+        const glm::dvec2& position, const Transformation& transformation);
+    friend Transformation& operator|=(
+        Transformation& left, const Transformation& right);
+    friend glm::dvec2& operator|=(
+        glm::dvec2& position, const Transformation& transformation);
+
+    glm::dmat4 _matrix;
+
+  public:
+    Transformation();
+    Transformation(const glm::dmat4& matrix);
+
+    static Transformation translate(const glm::dvec2& tr);
+    static Transformation scale(const glm::dvec2& sc);
+    static Transformation rotate(const double& r);
+
+    Transformation inverse() const;
+
+    double at(const size_t col, const size_t row) const;
+    const DecomposedTransformation<double> decompose() const;
+};
+
+Transformation
+operator|(const Transformation& left, const Transformation& right);
+glm::dvec2
+operator|(const glm::dvec2& position, const Transformation& transformation);
+
+Transformation&
+operator|=(Transformation& left, const Transformation& right);
+glm::dvec2&
+operator|=(glm::dvec2& position, const Transformation& transformation);
 
 template<typename T>
 struct BoundingBox {

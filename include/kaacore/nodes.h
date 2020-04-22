@@ -3,10 +3,12 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"
+#include "kaacore/node_ptr.h"
 #include "kaacore/physics.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shapes.h"
@@ -26,59 +28,13 @@ enum struct NodeType {
 struct ForeignNodeWrapper {
     ForeignNodeWrapper() = default;
     virtual ~ForeignNodeWrapper() = default;
-};
 
-struct MyForeignWrapper : ForeignNodeWrapper {
-    MyForeignWrapper();
-    ~MyForeignWrapper();
+    virtual void on_add_to_parent() = 0;
 };
 
 struct Scene;
 
 class Node {
-    friend struct Scene;
-    friend struct SpaceNode;
-    friend struct BodyNode;
-    friend struct HitboxNode;
-
-    const NodeType _type = NodeType::basic;
-    glm::dvec2 _position = {0., 0.};
-    double _rotation = 0.;
-    glm::dvec2 _scale = {1., 1.};
-    int16_t _z_index = 0;
-    Shape _shape;
-    Sprite _sprite;
-    glm::dvec4 _color = {1., 1., 1., 1.};
-    bool _visible = true;
-    Alignment _origin_alignment = Alignment::none;
-    uint32_t _lifetime = 0;
-    NodeTransitionRunner _transition;
-
-    Scene* _scene = nullptr;
-    Node* _parent = nullptr;
-    std::vector<Node*> _children;
-
-    std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
-
-    struct {
-        glm::fmat4 value;
-        bool is_dirty = true;
-    } _model_matrix;
-    struct {
-        std::vector<StandardVertexData> computed_vertices;
-        bgfx::TextureHandle texture_handle;
-        bool is_dirty = true;
-    } _render_data;
-
-    void _mark_dirty();
-    glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
-    glm::fmat4 _compute_model_matrix_cumulative(
-        const Node* const ancestor = nullptr) const;
-    void _recalculate_model_matrix();
-    void _recalculate_model_matrix_cumulative();
-    void _set_position(const glm::dvec2& position);
-    void _set_rotation(const double rotation);
-
   public:
     union {
         SpaceNode space;
@@ -90,13 +46,11 @@ class Node {
     Node(NodeType type = NodeType::basic);
     ~Node();
 
-    void add_child(Node* const child_node);
+    void add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
     void recalculate_render_data();
 
     const NodeType type() const;
-
-    const std::vector<Node*>& children();
 
     glm::dvec2 position();
     glm::dvec2 absolute_position();
@@ -111,13 +65,19 @@ class Node {
     glm::dvec2 absolute_scale();
     void scale(const glm::dvec2& scale);
 
+    Transformation absolute_transformation();
+    Transformation get_relative_transformation(const Node* const ancestor);
+
+    Transformation transformation();
+    void transformation(const Transformation& transformation);
+
     int16_t z_index();
     void z_index(const int16_t& z_index);
 
     Shape shape();
-    void shape(const Shape& shape);
+    void shape(const Shape& shape, bool is_auto_shape = false);
 
-    Sprite& sprite_ref();
+    Sprite sprite();
     void sprite(const Sprite& sprite);
 
     glm::dvec4 color();
@@ -135,11 +95,76 @@ class Node {
     NodeTransitionHandle transition();
     void transition(const NodeTransitionHandle& transition);
 
+    NodeTransitionsManager& transitions_manager();
+
     Scene* const scene() const;
-    Node* const parent() const;
+    NodePtr parent() const;
+    const std::vector<Node*>& children();
+
+    void views(const std::unordered_set<int16_t>& z_indices);
+    const std::vector<int16_t> views() const;
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
+
+  private:
+    const NodeType _type = NodeType::basic;
+    glm::dvec2 _position = {0., 0.};
+    double _rotation = 0.;
+    glm::dvec2 _scale = {1., 1.};
+    int16_t _z_index = 0;
+    Shape _shape;
+    bool _auto_shape = true;
+    Sprite _sprite;
+    glm::dvec4 _color = {1., 1., 1., 1.};
+    bool _visible = true;
+    Alignment _origin_alignment = Alignment::none;
+    uint32_t _lifetime = 0;
+    NodeTransitionsManager _transitions_manager;
+
+    Scene* _scene = nullptr;
+    Node* _parent = nullptr;
+    std::vector<Node*> _children;
+    std::vector<int16_t> _views = {0};
+
+    std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
+
+    struct {
+        glm::fmat4 value;
+        bool is_dirty = true;
+    } _model_matrix;
+    struct {
+        std::vector<StandardVertexData> computed_vertices;
+        bgfx::TextureHandle texture_handle;
+        bool is_dirty = true;
+    } _render_data;
+
+    bool _marked_to_delete = false;
+
+    void _mark_dirty();
+    void _mark_to_delete();
+    glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
+    glm::fmat4 _compute_model_matrix_cumulative(
+        const Node* const ancestor = nullptr) const;
+    void _recalculate_model_matrix();
+    void _recalculate_model_matrix_cumulative();
+    void _set_position(const glm::dvec2& position);
+    void _set_rotation(const double rotation);
+
+    friend class _NodePtrBase;
+    friend class NodePtr;
+    friend class NodeOwnerPtr;
+    friend struct Scene;
+    friend struct SpaceNode;
+    friend struct BodyNode;
+    friend struct HitboxNode;
 };
+
+template<class... Args>
+NodeOwnerPtr
+make_node(Args&&... args)
+{
+    return NodeOwnerPtr{new Node(std::forward<Args>(args)...)};
+}
 
 } // namespace kaacore

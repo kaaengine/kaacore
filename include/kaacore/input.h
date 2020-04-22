@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <initializer_list>
 #include <string>
 #include <unordered_map>
@@ -13,6 +14,8 @@
 namespace kaacore {
 
 typedef SDL_JoystickID ControllerID;
+struct Event;
+typedef std::function<bool(const Event&)> EventCallback;
 
 enum class Keycode {
     unknown = SDLK_UNKNOWN,
@@ -316,12 +319,26 @@ enum class ControllerAxis {
 
 enum class EventType {
     // Public SDL events
-    //
     quit = SDL_QUIT,
     clipboard_updated = SDL_CLIPBOARDUPDATE,
 
+    window_shown = SDL_WINDOWEVENT_SHOWN,
+    window_hidden = SDL_WINDOWEVENT_HIDDEN,
+    window_exposed = SDL_WINDOWEVENT_EXPOSED,
+    window_moved = SDL_WINDOWEVENT_MOVED,
+    window_resized = SDL_WINDOWEVENT_RESIZED,
+    window_minimized = SDL_WINDOWEVENT_MINIMIZED,
+    window_maximized = SDL_WINDOWEVENT_MAXIMIZED,
+    window_restored = SDL_WINDOWEVENT_RESTORED,
+    window_enter = SDL_WINDOWEVENT_ENTER,
+    window_leave = SDL_WINDOWEVENT_LEAVE,
+    window_focus_gained = SDL_WINDOWEVENT_FOCUS_GAINED,
+    window_focus_lost = SDL_WINDOWEVENT_FOCUS_LOST,
+    window_close = SDL_WINDOWEVENT_CLOSE,
+
     key_down = SDL_KEYDOWN,
     key_up = SDL_KEYUP,
+    text_input = SDL_TEXTINPUT,
 
     mouse_motion = SDL_MOUSEMOTION,
     mouse_button_down = SDL_MOUSEBUTTONDOWN,
@@ -336,12 +353,10 @@ enum class EventType {
     controller_remapped = SDL_CONTROLLERDEVICEREMAPPED,
 
     // Public custom events
-
     music_finished = SDL_USEREVENT,
     channel_finished,
 
     // Private custom events
-
     _timer_fired,
     _sentinel,
 };
@@ -350,22 +365,6 @@ bool
 operator==(const EventType& event_type, const uint32_t& event_num);
 bool
 operator==(const uint32_t& event_num, const EventType& event_type);
-
-enum class WindowEventType {
-    shown = SDL_WINDOWEVENT_SHOWN,
-    hidden = SDL_WINDOWEVENT_HIDDEN,
-    exposed = SDL_WINDOWEVENT_EXPOSED,
-    moved = SDL_WINDOWEVENT_MOVED,
-    resized = SDL_WINDOWEVENT_RESIZED,
-    minimized = SDL_WINDOWEVENT_MINIMIZED,
-    maximized = SDL_WINDOWEVENT_MAXIMIZED,
-    restored = SDL_WINDOWEVENT_RESTORED,
-    enter = SDL_WINDOWEVENT_ENTER,
-    leave = SDL_WINDOWEVENT_LEAVE,
-    focus_gained = SDL_WINDOWEVENT_FOCUS_GAINED,
-    focus_lost = SDL_WINDOWEVENT_FOCUS_LOST,
-    close = SDL_WINDOWEVENT_CLOSE
-};
 
 enum class CompoundEventType {
     window = SDL_WINDOWEVENT,
@@ -378,23 +377,30 @@ enum class CompoundEventType {
 enum class CompoundControllerAxis { left_stick, right_stick };
 
 static inline bool
-_is_event_supported(uint32_t type)
+_is_event_supported(EventType type)
 {
-    if (type == static_cast<uint32_t>(EventType::quit) or
-        type == static_cast<uint32_t>(EventType::clipboard_updated) or
-        type == static_cast<uint32_t>(EventType::key_down) or
-        type == static_cast<uint32_t>(EventType::key_up) or
-        type == static_cast<uint32_t>(EventType::mouse_motion) or
-        type == static_cast<uint32_t>(EventType::mouse_button_down) or
-        type == static_cast<uint32_t>(EventType::mouse_button_up) or
-        type == static_cast<uint32_t>(EventType::mouse_wheel) or
-        type == static_cast<uint32_t>(EventType::controller_axis_motion) or
-        type == static_cast<uint32_t>(EventType::controller_button_down) or
-        type == static_cast<uint32_t>(EventType::controller_button_up) or
-        type == static_cast<uint32_t>(EventType::controller_added) or
-        type == static_cast<uint32_t>(EventType::controller_removed) or
-        type == static_cast<uint32_t>(EventType::controller_remapped) or
-        type == static_cast<uint32_t>(EventType::music_finished)) {
+    if (type == EventType::quit or type == EventType::clipboard_updated or
+        type == EventType::window_shown or type == EventType::window_hidden or
+        type == EventType::window_exposed or type == EventType::window_moved or
+        type == EventType::window_resized or
+        type == EventType::window_minimized or
+        type == EventType::window_maximized or
+        type == EventType::window_restored or type == EventType::window_enter or
+        type == EventType::window_leave or
+        type == EventType::window_focus_gained or
+        type == EventType::window_focus_lost or
+        type == EventType::window_close or type == EventType::key_down or
+        type == EventType::key_up or type == EventType::text_input or
+        type == EventType::mouse_motion or
+        type == EventType::mouse_button_down or
+        type == EventType::mouse_button_up or type == EventType::mouse_wheel or
+        type == EventType::controller_axis_motion or
+        type == EventType::controller_button_down or
+        type == EventType::controller_button_up or
+        type == EventType::controller_added or
+        type == EventType::controller_removed or
+        type == EventType::controller_remapped or
+        type == EventType::music_finished) {
         return true;
     }
     return false;
@@ -403,65 +409,77 @@ _is_event_supported(uint32_t type)
 struct BaseEvent {
     SDL_Event sdl_event;
 
-    uint32_t type() const;
+    EventType type() const;
     uint32_t timestamp() const;
 };
 
 struct SystemEvent : public BaseEvent {
-    bool quit() const;
-    bool clipboard_updated() const;
+    bool is_quit() const;
+    bool is_clipboard_updated() const;
 };
 
 struct WindowEvent : public BaseEvent {
-    bool shown() const;
-    bool exposed() const;
-    bool moved() const;
-    bool resized() const;
-    bool minimized() const;
-    bool maximized() const;
-    bool restored() const;
-    bool enter() const;
-    bool leave() const;
-    bool focus_gained() const;
-    bool focus_lost() const;
-    bool close() const;
+    bool is_shown() const;
+    bool is_exposed() const;
+    bool is_moved() const;
+    bool is_resized() const;
+    bool is_minimized() const;
+    bool is_maximized() const;
+    bool is_restored() const;
+    bool is_enter() const;
+    bool is_leave() const;
+    bool is_focus_gained() const;
+    bool is_focus_lost() const;
+    bool is_close() const;
+};
 
-    glm::dvec2 size() const;
+struct KeyboardKeyEvent : public BaseEvent {
+    Keycode key() const;
+    bool is_key_down() const;
+    bool is_key_up() const;
+    bool repeat() const;
+};
+
+struct KeyboardTextEvent : public BaseEvent {
+    std::string text() const;
+};
+
+struct MouseButtonEvent : public BaseEvent {
+    MouseButton button() const;
+    bool is_button_down() const;
+    bool is_button_up() const;
     glm::dvec2 position() const;
 };
 
-struct KeyboardEvent : public BaseEvent {
-    bool is_pressing(const Keycode kc) const;
-    bool is_releasing(const Keycode kc) const;
+struct MouseMotionEvent : public BaseEvent {
+    glm::dvec2 position() const;
 };
 
-struct MouseEvent : public BaseEvent {
-    bool button() const;
-    bool motion() const;
-    bool wheel() const;
-
-    bool is_pressing(const MouseButton mb) const;
-    bool is_releasing(const MouseButton mb) const;
-    glm::dvec2 position() const;
+struct MouseWheelEvent : public BaseEvent {
     glm::dvec2 scroll() const;
 };
 
-struct ControllerEvent : public BaseEvent {
-    bool button() const;
-    bool axis() const;
-    bool added() const;
-    bool removed() const;
-    bool remapped() const;
-
+struct BaseControllerEvent : public BaseEvent {
     ControllerID id() const;
-    bool is_pressing(const ControllerButton cb) const;
-    bool is_releasing(const ControllerButton cb) const;
-    double axis_motion(const ControllerAxis ca) const;
 };
 
-struct AudioEvent : public BaseEvent {
-    bool music_finished() const;
+struct ControllerButtonEvent : public BaseControllerEvent {
+    ControllerButton button() const;
+    bool is_button_down() const;
+    bool is_button_up() const;
 };
+
+struct ControllerAxisEvent : public BaseControllerEvent {
+    ControllerAxis axis() const;
+    double motion() const;
+};
+
+struct ControllerDeviceEvent : public BaseControllerEvent {
+    bool is_added() const;
+    bool is_removed() const;
+};
+
+struct MusicFinishedEvent : public BaseEvent {};
 
 struct Event {
     union {
@@ -469,24 +487,34 @@ struct Event {
 
         SystemEvent _system;
         WindowEvent _window;
-        KeyboardEvent _keyboard;
-        MouseEvent _mouse;
-        ControllerEvent _controller;
-        AudioEvent _audio;
+        KeyboardKeyEvent _keyboard_key;
+        KeyboardTextEvent _keyboard_text;
+        MouseButtonEvent _mouse_button;
+        MouseMotionEvent _mouse_motion;
+        MouseWheelEvent _mouse_wheel;
+        ControllerButtonEvent _controller_button;
+        ControllerAxisEvent _controller_axis;
+        ControllerDeviceEvent _controller_device;
+        MusicFinishedEvent _music_finished;
     };
 
     Event();
     Event(const SDL_Event sdl_event);
 
-    uint32_t type() const;
+    EventType type() const;
     uint32_t timestamp() const;
 
     const SystemEvent* const system() const;
     const WindowEvent* const window() const;
-    const KeyboardEvent* const keyboard() const;
-    const MouseEvent* const mouse() const;
-    const ControllerEvent* const controller() const;
-    const AudioEvent* const audio() const;
+    const KeyboardKeyEvent* const keyboard_key() const;
+    const KeyboardTextEvent* const keyboard_text() const;
+    const MouseButtonEvent* const mouse_button() const;
+    const MouseMotionEvent* const mouse_motion() const;
+    const MouseWheelEvent* const mouse_wheel() const;
+    const ControllerButtonEvent* const controller_button() const;
+    const ControllerAxisEvent* const controller_axis() const;
+    const ControllerDeviceEvent* const controller_device() const;
+    const MusicFinishedEvent* const music_finished() const;
 };
 
 struct InputManager {
@@ -534,8 +562,12 @@ struct InputManager {
         std::unordered_map<ControllerID, SDL_GameController*> _connected_map;
     } controller;
 
+    void register_callback(EventType event_type, EventCallback callback);
     void push_event(SDL_Event sdl_event);
     void clear_events();
+
+  private:
+    std::unordered_map<EventType, EventCallback> _registered_callbacks;
 };
 
 } // namespace kaacore

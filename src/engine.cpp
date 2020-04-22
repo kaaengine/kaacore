@@ -31,10 +31,13 @@ Engine::Engine(
     SDL_Init(SDL_INIT_EVERYTHING);
     engine = this;
 
-    this->window = this->_create_window();
+    this->window = std::make_unique<Window>(this->_virtual_resolution);
     this->renderer = this->_create_renderer();
     this->input_manager = std::make_unique<InputManager>();
     this->audio_manager = std::make_unique<AudioManager>();
+    this->resources_manager = std::make_unique<ResourcesManager>();
+
+    this->window->show();
 }
 
 Engine::~Engine()
@@ -44,9 +47,10 @@ Engine::~Engine()
     log<LogLevel::info>("Shutting down Kaacore.");
     this->audio_manager.reset();
     this->input_manager.reset();
+    this->resources_manager.reset();
     this->renderer.reset();
-    this->window.reset();
     bgfx::shutdown();
+    this->window.reset();
     destroy_timers();
     SDL_Quit();
     engine = nullptr;
@@ -74,37 +78,53 @@ void
 Engine::run(Scene* scene)
 {
     this->is_running = true;
+    this->window->_activate();
+    try {
+        this->_run(scene);
+    } catch (...) {
+        this->_detach_scenes();
+        this->is_running = false;
+        throw;
+    }
+    this->_detach_scenes();
+    this->window->_deactivate();
+    this->is_running = false;
+}
+
+void
+Engine::_run(Scene* scene)
+{
     log("Engine is running.");
-
-    this->scene = scene;
+    this->_scene = scene;
+    this->_scene->on_enter();
     uint32_t ticks = SDL_GetTicks();
-
-    this->scene->on_enter();
     while (this->is_running) {
         uint32_t ticks_now = SDL_GetTicks();
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
-        this->time += dt;
-        this->_pump_events();
 
-        if (this->next_scene != nullptr) {
+        this->_pump_events();
+        if (this->_next_scene) {
             this->_swap_scenes();
         }
-
         this->renderer->begin_frame();
-        this->scene->process_frame(dt);
+        this->_scene->process_frame(dt);
         this->renderer->end_frame();
     }
-    this->scene->on_exit();
-    this->scene = nullptr;
-
+    this->_scene->on_exit();
     log("Engine stopped.");
 }
 
 void
 Engine::change_scene(Scene* scene)
 {
-    this->next_scene = scene;
+    this->_next_scene = scene;
+}
+
+Scene*
+Engine::current_scene()
+{
+    return this->_scene.data();
 }
 
 void
@@ -140,13 +160,6 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
-std::unique_ptr<Window>
-Engine::_create_window()
-{
-    Display display = this->get_displays().at(0);
-    return std::make_unique<Window>(display.size * 2u / 3u);
-}
-
 std::unique_ptr<Renderer>
 Engine::_create_renderer()
 {
@@ -160,6 +173,9 @@ Engine::_create_renderer()
 #elif SDL_VIDEO_DRIVER_WINDOWS
     this->platform_data.ndt = nullptr;
     this->platform_data.nwh = wminfo.info.win.window;
+#elif SDL_VIDEO_DRIVER_COCOA
+    this->platform_data.ndt = nullptr;
+    this->platform_data.nwh = wminfo.info.cocoa.window;
 #else
 #error "No platform configuration available for given renderer"
 #endif
@@ -182,10 +198,17 @@ Engine::_create_renderer()
 void
 Engine::_swap_scenes()
 {
-    this->scene->on_exit();
-    this->next_scene->on_enter();
-    this->scene = this->next_scene;
-    this->next_scene = nullptr;
+    this->_scene->on_exit();
+    this->_next_scene->on_enter();
+    this->_scene = std::move(this->_next_scene);
+    this->_scene->reset_views();
+}
+
+void
+Engine::_detach_scenes()
+{
+    this->_scene.detach();
+    this->_next_scene.detach();
 }
 
 void
@@ -205,9 +228,68 @@ Engine::_pump_events()
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             this->renderer->reset();
+            this->_scene->reset_views();
         }
         this->input_manager->push_event(event);
     }
+}
+
+Engine::_ScenePointerWrapper::_ScenePointerWrapper() : _scene_ptr(nullptr) {}
+
+Engine::_ScenePointerWrapper::operator bool() const
+{
+    return this->_scene_ptr != nullptr;
+}
+
+Scene* Engine::_ScenePointerWrapper::operator->() const
+{
+    return this->_scene_ptr;
+}
+
+Engine::_ScenePointerWrapper&
+Engine::_ScenePointerWrapper::operator=(Scene* const scene)
+{
+    if (scene == this->_scene_ptr) {
+        return *this;
+    }
+
+    if (scene) {
+        scene->on_attach();
+    }
+
+    this->detach();
+    this->_scene_ptr = scene;
+    return *this;
+}
+
+Engine::_ScenePointerWrapper&
+Engine::_ScenePointerWrapper::operator=(_ScenePointerWrapper&& other)
+{
+    if (this == &other) {
+        return *this;
+    }
+
+    auto tmp = this->_scene_ptr;
+    this->_scene_ptr = other._scene_ptr;
+    other._scene_ptr = tmp;
+    other.detach();
+    return *this;
+}
+
+void
+Engine::_ScenePointerWrapper::detach()
+{
+    auto prev_scene = this->_scene_ptr;
+    this->_scene_ptr = nullptr;
+    if (prev_scene) {
+        prev_scene->on_detach();
+    }
+}
+
+Scene*
+Engine::_ScenePointerWrapper::data()
+{
+    return this->_scene_ptr;
 }
 
 } // namespace kaacore

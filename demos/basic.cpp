@@ -21,7 +21,7 @@ main(int argc, char* argv[])
     bool running = true;
 
     bgfx::TextureHandle texture;
-    Resource<Image> res;
+    ResourceReference<Image> res;
     if (argc < 2) {
         texture = eng.renderer->default_texture;
     } else {
@@ -47,7 +47,7 @@ main(int argc, char* argv[])
                 break;
             }
         }
-        eng.renderer->render_vertices(vertices, indices, texture);
+        eng.renderer->render_vertices(0, vertices, indices, texture);
         bgfx::frame();
     }
 

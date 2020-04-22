@@ -6,11 +6,9 @@
 #include <vector>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/log.h"
 
 #include "kaacore/scenes.h"
 
@@ -19,46 +17,60 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
+    this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].clear_color({0, 0, 0, 1});
 }
 
 Scene::~Scene()
 {
-    auto engine = get_engine(false);
-    if (engine && (this == engine->scene || this == engine->next_scene)) {
-        log<LogLevel::critical, LogCategory::engine>(
-            "An attempt to delete current scene detected. Aborting.");
-        std::terminate();
-    }
-
     while (not this->root_node._children.empty()) {
         delete this->root_node._children[0];
     }
     KAACORE_ASSERT_TERMINATE(this->simulations_registry.empty());
 }
 
+Camera&
+Scene::camera()
+{
+    return this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].camera;
+}
+
+void
+Scene::process_frame(uint32_t dt)
+{
+    this->process_physics(dt);
+    this->process_nodes(dt);
+    this->update(dt);
+    this->process_nodes_drawing();
+}
+
+void
+Scene::process_physics(uint32_t dt)
+{
+    for (Node* space_node : this->simulations_registry) {
+        space_node->space.simulate(dt);
+    }
+}
+
 void
 Scene::process_nodes(uint32_t dt)
 {
     static std::deque<Node*> processing_queue;
-
     processing_queue.clear();
+
     processing_queue.push_back(&this->root_node);
-
-    for (Node* space_node : this->simulations_registry) {
-        space_node->space.simulate(dt);
-    }
-
     while (not processing_queue.empty()) {
         Node* node = processing_queue.front();
         processing_queue.pop_front();
 
+        if (node->_marked_to_delete) {
+            delete node;
+            continue;
+        }
+
         if (node->_lifetime) {
-            if (node->_lifetime <= dt) {
+            if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0) {
                 delete node;
                 continue;
-            } else {
-                KAACORE_ASSERT(node->_lifetime > dt);
-                node->_lifetime -= dt;
             }
         }
 
@@ -67,12 +79,8 @@ Scene::process_nodes(uint32_t dt)
             node->body.sync_simulation_rotation();
         }
 
-        if (node->_transition) {
-            node->_transition.step(node, dt);
-        }
-
-        if (node->_sprite and node->_sprite.auto_animate) {
-            node->_sprite.animation_time_step(dt);
+        if (node->_transitions_manager) {
+            node->_transitions_manager.step(node, dt);
         }
 
         for (const auto child_node : node->_children) {
@@ -82,7 +90,7 @@ Scene::process_nodes(uint32_t dt)
 }
 
 void
-Scene::process_nodes_drawing(uint32_t dt)
+Scene::process_nodes_drawing()
 {
     static std::deque<Node*> processing_queue;
     static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
@@ -90,6 +98,7 @@ Scene::process_nodes_drawing(uint32_t dt)
     processing_queue.clear();
     rendering_queue.clear();
     processing_queue.push_back(&this->root_node);
+    auto renderer = get_engine()->renderer.get();
     while (not processing_queue.empty()) {
         Node* node = processing_queue.front();
         processing_queue.pop_front();
@@ -110,31 +119,31 @@ Scene::process_nodes_drawing(uint32_t dt)
             node);
     }
 
-    std::sort(rendering_queue.begin(), rendering_queue.end());
+    std::stable_sort(rendering_queue.begin(), rendering_queue.end());
+
+    for (auto& view : this->views) {
+        renderer->process_view(view);
+    }
 
     for (const auto& qn : rendering_queue) {
-        if (std::get<Node*>(qn)->_render_data.computed_vertices.empty()) {
+        auto node = std::get<Node*>(qn);
+        if (node->_render_data.computed_vertices.empty()) {
             continue;
         }
-        get_engine()->renderer->render_vertices(
-            std::get<Node*>(qn)->_render_data.computed_vertices,
-            std::get<Node*>(qn)->_shape.indices,
-            std::get<Node*>(qn)->_render_data.texture_handle);
+
+        for (auto z_index : node->_views) {
+            auto& view = this->views[z_index];
+
+            renderer->render_vertices(
+                view.index(), node->_render_data.computed_vertices,
+                node->_shape.indices, node->_render_data.texture_handle);
+        }
     }
 }
 
 void
-Scene::process_frame(uint32_t dt)
-{
-    this->time += dt;
-    this->process_nodes(dt);
-    this->update(dt);
-    this->camera.refresh();
-    bgfx::setViewTransform(
-        0, glm::value_ptr(this->camera.calculated_view),
-        glm::value_ptr(get_engine()->renderer->projection_matrix));
-    this->process_nodes_drawing(dt);
-}
+Scene::on_attach()
+{}
 
 void
 Scene::on_enter()
@@ -146,6 +155,10 @@ Scene::update(uint32_t dt)
 
 void
 Scene::on_exit()
+{}
+
+void
+Scene::on_detach()
 {}
 
 void
@@ -175,37 +188,10 @@ Scene::get_events() const
     return get_engine()->input_manager->events_queue;
 }
 
-Camera::Camera()
-{
-    auto virtual_resolution = get_engine()->virtual_resolution();
-    this->position = {double(virtual_resolution.x) / 2,
-                      double(virtual_resolution.y) / 2};
-    this->refresh();
-}
-
 void
-Camera::refresh()
+Scene::reset_views()
 {
-    this->calculated_view = glm::translate(
-        glm::rotate(
-            glm::scale(
-                glm::fmat4(1.0), glm::fvec3(this->scale.x, this->scale.y, 1.)),
-            static_cast<float>(this->rotation), glm::fvec3(0., 0., 1.)),
-        glm::fvec3(-this->position.x, -this->position.y, 0.));
-}
-
-glm::dvec2
-Camera::unproject_position(const glm::dvec2& pos)
-{
-    this->refresh();
-    auto virtual_resolution = get_engine()->virtual_resolution();
-
-    // account for virtual_resolution / 2 since we want to get
-    // top-left corner of camera 'window'
-    glm::fvec4 pos4 = {pos.x - virtual_resolution.x / 2,
-                       pos.y - virtual_resolution.y / 2, 0., 1.};
-    pos4 = glm::inverse(this->calculated_view) * pos4;
-    return {pos4.x, pos4.y};
+    this->views._mark_dirty();
 }
 
 } // namespace kaacore

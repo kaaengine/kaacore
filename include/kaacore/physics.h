@@ -1,16 +1,28 @@
 #pragma once
 
 #include <functional>
+#include <memory>
+#include <set>
 #include <vector>
 
 #include <chipmunk/chipmunk.h>
 #include <glm/glm.hpp>
+
+#include "kaacore/geometry.h"
+#include "kaacore/node_ptr.h"
+#include "kaacore/shapes.h"
 
 namespace kaacore {
 
 typedef size_t CollisionTriggerId;
 typedef size_t CollisionGroup;
 typedef cpBitmask CollisionBitmask;
+
+constexpr CollisionGroup collision_group_none = CP_NO_GROUP;
+constexpr CollisionBitmask collision_bitmask_all = CP_ALL_CATEGORIES;
+constexpr CollisionBitmask collision_bitmask_none = ~CP_ALL_CATEGORIES;
+
+typedef std::unique_ptr<cpShape, void (*)(cpShape*)> CpShapeUniquePtr;
 
 constexpr uint32_t default_simulation_step_size = 10;
 
@@ -30,7 +42,7 @@ enum struct CollisionPhase {
 struct Arbiter {
     cpArbiter* cp_arbiter;
     CollisionPhase phase;
-    Node* space;
+    NodePtr space;
 
     Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
 };
@@ -43,14 +55,13 @@ uint8_t operator&(CollisionPhase phase, uint8_t other);
 uint8_t operator&(CollisionPhase phase, CollisionPhase other);
 
 struct CollisionPair {
-    Node* body_node;
-    Node* hitbox_node;
+    NodePtr body_node;
+    NodePtr hitbox_node;
 
     CollisionPair(BodyNode* body, HitboxNode* hitbox);
 };
 
-typedef std::function<uint8_t(
-    const Arbiter, const CollisionPair, const CollisionPair)>
+typedef std::function<uint8_t(const Arbiter, CollisionPair, CollisionPair)>
     CollisionHandlerFunc;
 
 typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
@@ -58,6 +69,18 @@ typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
 void
 cp_call_post_step_callbacks(
     cpSpace* cp_space, void* space_node_phys_ptr, void* data);
+
+struct CollisionContactPoint {
+    glm::dvec2 point_a;
+    glm::dvec2 point_b;
+    double distance;
+};
+
+struct ShapeQueryResult {
+    NodePtr body_node;
+    NodePtr hitbox_node;
+    std::vector<CollisionContactPoint> contact_points;
+};
 
 class SpaceNode {
     friend class Node;
@@ -83,6 +106,12 @@ class SpaceNode {
         CollisionHandlerFunc handler,
         uint8_t phases_mask = uint8_t(CollisionPhase::any_phase),
         bool only_non_deleted_nodes = true);
+
+    const std::vector<ShapeQueryResult> query_shape_overlaps(
+        const Shape& shape, const glm::dvec2& position = {0., 0.},
+        const CollisionBitmask mask = collision_bitmask_all,
+        const CollisionBitmask collision_mask = collision_bitmask_all,
+        const CollisionGroup group = collision_group_none);
 
     void gravity(const glm::dvec2& gravity);
     glm::dvec2 gravity();
@@ -113,6 +142,7 @@ class BodyNode {
     ~BodyNode();
 
     void attach_to_simulation();
+    void detach_from_simulation();
 
     void override_simulation_position();
     void sync_simulation_position() const;
@@ -148,6 +178,9 @@ class BodyNode {
     void sleeping(const bool& sleeping);
 };
 
+CpShapeUniquePtr
+prepare_hitbox_shape(const Shape& shape, const Transformation& transformtion);
+
 class HitboxNode {
     friend class Node;
 
@@ -158,6 +191,7 @@ class HitboxNode {
 
     void update_physics_shape();
     void attach_to_simulation();
+    void detach_from_simulation();
 
   public:
     SpaceNode* space() const;

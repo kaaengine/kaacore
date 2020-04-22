@@ -3,14 +3,15 @@
 #include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/geometry.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
 #include "kaacore/shapes.h"
+#include "kaacore/views.h"
 
 namespace kaacore {
 
@@ -67,6 +68,26 @@ Node::_mark_dirty()
         if (not child->_model_matrix.is_dirty) {
             child->_mark_dirty();
         }
+    }
+}
+
+void
+Node::_mark_to_delete()
+{
+    this->_marked_to_delete = true;
+    for (auto child : this->_children) {
+        if (not child->_marked_to_delete) {
+            child->_mark_to_delete();
+        }
+    }
+
+    // Physics have side effect if we don't perform
+    // deletion immediately, so we give it special
+    // treatment here by dettaching them from simulation.
+    if (this->_type == NodeType::body) {
+        this->body.detach_from_simulation();
+    } else if (this->_type == NodeType::hitbox) {
+        this->hitbox.detach_from_simulation();
     }
 }
 
@@ -147,11 +168,18 @@ Node::_set_rotation(const double rotation)
 }
 
 void
-Node::add_child(Node* const child_node)
+Node::add_child(NodeOwnerPtr& child_node)
 {
     KAACORE_CHECK(child_node->_parent == nullptr);
+    KAACORE_CHECK(child_node._ownership_transferred == false);
+
     child_node->_parent = this;
-    this->_children.push_back(child_node);
+    child_node._ownership_transferred = true;
+    this->_children.push_back(child_node.get());
+
+    if (child_node->_node_wrapper) {
+        child_node->_node_wrapper->on_add_to_parent();
+    }
 
     // TODO set root
     // TODO optimize (replace with iterator?)
@@ -169,7 +197,8 @@ Node::add_child(Node* const child_node)
         std::for_each(
             n->_children.begin(), n->_children.end(), initialize_node);
     };
-    initialize_node(child_node);
+
+    initialize_node(child_node.get());
 }
 
 void
@@ -286,15 +315,7 @@ Node::absolute_rotation()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    glm::vec3 _scale;
-    glm::quat rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(
-        this->_model_matrix.value, _scale, rotation, _translation, _skew,
-        _perspective);
-    return glm::eulerAngles(rotation).z;
+    return DecomposedTransformation<float>(this->_model_matrix.value).rotation;
 }
 
 void
@@ -321,15 +342,7 @@ Node::absolute_scale()
         this->_recalculate_model_matrix_cumulative();
     }
 
-    glm::vec3 scale;
-    glm::quat _rotation;
-    glm::vec3 _translation;
-    glm::vec3 _skew;
-    glm::vec4 _perspective;
-    glm::decompose(
-        this->_model_matrix.value, scale, _rotation, _translation, _skew,
-        _perspective);
-    return {scale[0], scale[1]};
+    return DecomposedTransformation<float>(this->_model_matrix.value).scale;
 }
 
 void
@@ -348,6 +361,42 @@ Node::scale(const glm::dvec2& scale)
     } else if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
+}
+
+Transformation
+Node::absolute_transformation()
+{
+    if (this->_model_matrix.is_dirty) {
+        this->_recalculate_model_matrix_cumulative();
+    }
+    return Transformation{this->_model_matrix.value};
+}
+
+Transformation
+Node::get_relative_transformation(const Node* const ancestor)
+{
+    if (ancestor == nullptr) {
+        return this->absolute_transformation();
+    } else if (ancestor == this) {
+        return Transformation{glm::dmat4(1.)};
+    }
+
+    return Transformation{this->_compute_model_matrix_cumulative(ancestor)};
+}
+
+Transformation
+Node::transformation()
+{
+    return this->get_relative_transformation(this->_parent);
+}
+
+void
+Node::transformation(const Transformation& transformation)
+{
+    auto decomposed = transformation.decompose();
+    this->position(decomposed.translation);
+    this->rotation(decomposed.rotation);
+    this->scale(decomposed.scale);
 }
 
 int16_t
@@ -369,9 +418,15 @@ Node::shape()
 }
 
 void
-Node::shape(const Shape& shape)
+Node::shape(const Shape& shape, bool is_auto_shape)
 {
     this->_shape = shape;
+    if (not shape) {
+        this->_auto_shape = true;
+    } else {
+        this->_auto_shape = is_auto_shape;
+    }
+
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
@@ -379,8 +434,8 @@ Node::shape(const Shape& shape)
     this->_render_data.is_dirty = true;
 }
 
-Sprite&
-Node::sprite_ref()
+Sprite
+Node::sprite()
 {
     return this->_sprite;
 }
@@ -389,8 +444,8 @@ void
 Node::sprite(const Sprite& sprite)
 {
     this->_sprite = sprite;
-    if (!this->_shape) {
-        this->shape(Shape::Box(sprite.get_size()));
+    if (this->_auto_shape) {
+        this->shape(Shape::Box(sprite.get_size()), true);
     }
     // TODO: check if we aren't setting the same sprite before marking it dirty
     this->_render_data.is_dirty = true;
@@ -444,13 +499,13 @@ Node::origin_alignment(const Alignment& alignment)
 NodeTransitionHandle
 Node::transition()
 {
-    return this->_transition.transition_handle;
+    return this->_transitions_manager.get(default_transition_name);
 }
 
 void
 Node::transition(const NodeTransitionHandle& transition)
 {
-    this->_transition.setup(transition);
+    this->_transitions_manager.set(default_transition_name, transition);
 }
 
 uint32_t
@@ -465,16 +520,40 @@ Node::lifetime(const uint32_t& lifetime)
     this->_lifetime = lifetime;
 }
 
+NodeTransitionsManager&
+Node::transitions_manager()
+{
+    return this->_transitions_manager;
+}
+
 Scene* const
 Node::scene() const
 {
     return this->_scene;
 }
 
-Node* const
+NodePtr
 Node::parent() const
 {
     return this->_parent;
+}
+
+void
+Node::views(const std::unordered_set<int16_t>& z_indices)
+{
+    KAACORE_CHECK(z_indices.size() <= KAACORE_MAX_VIEWS);
+
+    this->_views.clear();
+    for (auto z_index : z_indices) {
+        KAACORE_CHECK(validate_view_z_index(z_index));
+        this->_views.push_back(z_index);
+    }
+}
+
+const std::vector<int16_t>
+Node::views() const
+{
+    return this->_views;
 }
 
 void
@@ -488,16 +567,6 @@ ForeignNodeWrapper*
 Node::wrapper_ptr() const
 {
     return this->_node_wrapper.get();
-}
-
-MyForeignWrapper::MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper ctor!" << std::endl;
-}
-
-MyForeignWrapper::~MyForeignWrapper()
-{
-    std::cout << "MyForeignWrapper dtor!" << std::endl;
 }
 
 } // namespace kaacore

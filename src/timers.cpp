@@ -15,21 +15,26 @@ struct _TimerData {
     SDL_TimerID internal_timer_id;
 };
 
-static TimerID _last_timer_id = 0;
-std::unordered_map<TimerID, _TimerData> _timer_data_map;
+struct {
+    _TimerData& operator[](const TimerID timer_id)
+    {
+        return this->_timer_data_map[timer_id];
+    }
 
-bool
-_map_contains(TimerID timer_id)
-{
-    auto index = _timer_data_map.find(timer_id);
-    return index != _timer_data_map.end();
-}
+    bool contains(TimerID timer_id)
+    {
+        auto index = this->_timer_data_map.find(timer_id);
+        return index != this->_timer_data_map.end();
+    }
 
-void
-_remove_timer(TimerID timer_id)
-{
-    _timer_data_map.erase(timer_id);
-}
+    void remove(TimerID timer_id) { this->_timer_data_map.erase(timer_id); }
+
+    void clear() { this->_timer_data_map.clear(); }
+
+  private:
+    std::unordered_map<TimerID, _TimerData> _timer_data_map;
+
+} _timers_manager;
 
 static uint32_t
 _timer_callback_wrapper(uint32_t interval, void* encoded_id)
@@ -58,11 +63,11 @@ _spawn_sdl_timer(TimerID timer_id, uint32_t interval)
 void
 resolve_timer(TimerID timer_id)
 {
-    if (!_map_contains(timer_id)) {
+    if (!_timers_manager.contains(timer_id)) {
         return;
     }
 
-    _TimerData& timer_data = _timer_data_map[timer_id];
+    auto& timer_data = _timers_manager[timer_id];
     timer_data.callback();
 
     if (timer_data.next_trigger_time == 0) {
@@ -80,7 +85,7 @@ resolve_timer(TimerID timer_id)
 void
 destroy_timers()
 {
-    _timer_data_map.clear();
+    _timers_manager.clear();
 }
 
 Timer::Timer(
@@ -103,7 +108,7 @@ Timer::_start()
 
     timer_data.internal_timer_id =
         _spawn_sdl_timer(this->_timer_id, this->_interval);
-    _timer_data_map[this->_timer_id] = timer_data;
+    _timers_manager[this->_timer_id] = timer_data;
 }
 
 void
@@ -119,7 +124,7 @@ Timer::start()
 bool
 Timer::_is_running()
 {
-    return _map_contains(this->_timer_id);
+    return _timers_manager.contains(this->_timer_id);
 }
 
 bool
@@ -131,8 +136,8 @@ Timer::is_running()
 void
 Timer::_stop()
 {
-    SDL_RemoveTimer(_timer_data_map[this->_timer_id].internal_timer_id);
-    _remove_timer(this->_timer_id);
+    SDL_RemoveTimer(_timers_manager[this->_timer_id].internal_timer_id);
+    _timers_manager.remove(this->_timer_id);
 }
 
 void

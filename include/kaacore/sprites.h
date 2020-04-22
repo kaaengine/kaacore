@@ -1,48 +1,56 @@
 #pragma once
 
+#include <vector>
+
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include "kaacore/images.h"
 #include "kaacore/resources.h"
+#include "kaacore/utils.h"
 
 namespace kaacore {
 
 struct Sprite {
-    Resource<Image> texture;
+    ResourceReference<Image> texture;
     // we assume that image contains it's width and height
 
     // origin points and dimensions
     glm::dvec2 origin;
     glm::dvec2 dimensions;
 
-    // animations stuff
-    glm::dvec2 frame_dimensions = {0., 0.};
-
-    uint16_t frame_offset = 0;
-    uint16_t frame_count = 0;
-    uint16_t frame_current = 0;
-    bool animation_loop = false;
-
-    // auto-timed animations
-    uint16_t animation_frame_duration = 0;
-    uint32_t animation_time_acc = 0;
-    bool auto_animate = true;
-
     Sprite();
-    Sprite(Resource<Image> texture);
+    Sprite(ResourceReference<Image> texture);
 
     static Sprite load(const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
 
     inline bool has_texture() const { return bool(this->texture); }
     inline operator bool() const { return this->has_texture(); }
+    bool operator==(const Sprite& other);
 
     Sprite crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const;
     Sprite crop(glm::dvec2 new_origin) const;
     std::pair<glm::dvec2, glm::dvec2> get_display_rect() const;
-    void animation_step(uint16_t step_size);
-    void animation_time_step(uint16_t time_step_size);
-
     glm::dvec2 get_size() const;
 };
 
+std::vector<Sprite>
+split_spritesheet(
+    const Sprite& spritesheet, const glm::dvec2 frame_dimensions,
+    const size_t frames_offset = 0, const size_t frames_count = 0,
+    const glm::dvec2 frame_padding = {0., 0.});
+
 } // namespace kaacore
+
+namespace std {
+using kaacore::hash_combined;
+using kaacore::Sprite;
+
+template<>
+struct hash<Sprite> {
+    size_t operator()(const Sprite& sprite) const
+    {
+        return hash_combined(sprite.texture, sprite.origin, sprite.dimensions);
+    }
+};
+}
