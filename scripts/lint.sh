@@ -4,10 +4,10 @@ set -e
 
 if which clang-tidy
 then
-    CLANG_FORMAT=clang-tidy
+    CLANG_TIDY=clang-tidy
 elif which clang-tidy-7
 then
-    CLANG_FORMAT=clang-tidy-7
+    CLANG_TIDY=clang-tidy-7
 else
     echo "clang-tidy not found!"
     exit 1
@@ -20,4 +20,4 @@ if [ ! -f "${SCRIPTS_DIR}/../build/compile_commands.json" ]; then
     exit 1
 fi
 
-clang-tidy -p "${SCRIPTS_DIR}/../build/" "${SCRIPTS_DIR}"/../src/*.cpp "$@"
+${CLANG_TIDY} "${SCRIPTS_DIR}/../build/" "${SCRIPTS_DIR}"/../src/*.cpp "$@"
