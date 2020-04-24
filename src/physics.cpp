@@ -599,6 +599,20 @@ BodyNode::force(const glm::dvec2& force)
     cpBodySetForce(this->_cp_body, convert_vector(force));
 }
 
+void
+BodyNode::apply_force_at(const glm::dvec2& force, const glm::dvec2& at)
+{
+    cpBodyApplyForceAtLocalPoint(
+        this->_cp_body, convert_vector(force), convert_vector(at));
+}
+
+void
+BodyNode::apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at)
+{
+    cpBodyApplyImpulseAtLocalPoint(
+        this->_cp_body, convert_vector(force), convert_vector(at));
+}
+
 double
 BodyNode::torque()
 {
