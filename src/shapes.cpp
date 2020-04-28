@@ -17,9 +17,11 @@ Shape::Shape(
     : type(type), points(points), radius(radius), indices(indices),
       vertices(vertices)
 {
+    BoundingBoxBuilder<float> bbox_builder;
     for (const auto& vt : vertices) {
-        this->vertices_bbox.add_point(vt.xyz);
+        bbox_builder.add_point(vt.xyz);
     }
+    this->vertices_bbox = bbox_builder.bounding_box;
 };
 
 bool

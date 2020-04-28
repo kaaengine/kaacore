@@ -17,6 +17,7 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
+    this->spatial_index.start_tracking(&this->root_node);
     this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].clear_color({0, 0, 0, 1});
 }
 
@@ -81,6 +82,10 @@ Scene::process_nodes(uint32_t dt)
 
         if (node->_transitions_manager) {
             node->_transitions_manager.step(node, dt);
+        }
+
+        if (node->_spatial_data.is_dirty) {
+            this->spatial_index.refresh_single(node);
         }
 
         for (const auto child_node : node->_children) {

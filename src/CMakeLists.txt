@@ -90,6 +90,7 @@ set(SRC_CXX_FILES
     node_transitions.cpp
     camera.cpp
     views.cpp
+    spatial_index.cpp
     utils.cpp
     embedded_data.cpp
 )
@@ -119,6 +120,7 @@ set(SRC_H_FILES
     ../include/kaacore/node_transitions.h
     ../include/kaacore/camera.h
     ../include/kaacore/views.h
+    ../include/kaacore/spatial_index.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

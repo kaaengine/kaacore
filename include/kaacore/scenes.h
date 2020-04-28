@@ -7,6 +7,7 @@
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"
 #include "kaacore/physics.h"
+#include "kaacore/spatial_index.h"
 #include "kaacore/views.h"
 
 namespace kaacore {
@@ -16,6 +17,7 @@ class Scene {
     Node root_node;
     ViewsManager views;
     std::set<Node*> simulations_registry;
+    SpatialIndex spatial_index;
 
     Scene();
     virtual ~Scene();

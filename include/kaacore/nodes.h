@@ -12,6 +12,7 @@
 #include "kaacore/physics.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shapes.h"
+#include "kaacore/spatial_index.h"
 #include "kaacore/sprites.h"
 #include "kaacore/transitions.h"
 
@@ -138,6 +139,10 @@ class Node {
         bgfx::TextureHandle texture_handle;
         bool is_dirty = true;
     } _render_data;
+    struct {
+        NodeSpatialWrapper* wrapper = nullptr;
+        bool is_dirty = true;
+    } _spatial_data;
 
     bool _marked_to_delete = false;
 
@@ -158,6 +163,8 @@ class Node {
     friend struct SpaceNode;
     friend struct BodyNode;
     friend struct HitboxNode;
+    friend struct NodeSpatialWrapper;
+    friend class SpatialIndex;
 };
 
 template<class... Args>
