@@ -20,4 +20,4 @@ if [ ! -f "${SCRIPTS_DIR}/../build/compile_commands.json" ]; then
     exit 1
 fi
 
-${CLANG_TIDY} "${SCRIPTS_DIR}/../build/" "${SCRIPTS_DIR}"/../src/*.cpp "$@"
+${CLANG_TIDY} -p "${SCRIPTS_DIR}/../build/" "${SCRIPTS_DIR}"/../src/*.cpp "$@"
