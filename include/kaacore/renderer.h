@@ -62,7 +62,7 @@ struct Renderer {
     glm::uvec2 view_size;
     glm::uvec2 border_size;
 
-    Renderer(const glm::uvec2& window_size);
+    Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size);
     ~Renderer();
 
     bgfx::TextureHandle make_texture(

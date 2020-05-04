@@ -85,8 +85,13 @@ load_default_image()
     return image;
 }
 
-Renderer::Renderer(const glm::uvec2& window_size)
+Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
+    log("Initializing bgfx.");
+    bgfx_init_data.resolution.width = window_size.x;
+    bgfx_init_data.resolution.height = window_size.y;
+    bgfx::init(bgfx_init_data);
+    log("Initializing bgfx completed.");
     log("Initializing renderer.");
     this->vertex_layout.begin()
         .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float)
@@ -126,6 +131,7 @@ Renderer::Renderer(const glm::uvec2& window_size)
     this->default_program = bgfx::createProgram(vs, fs, true);
 
     log("Created program: %d.", this->default_program);
+    log("Initializing renderer completed.");
 }
 
 Renderer::~Renderer()
@@ -133,6 +139,8 @@ Renderer::~Renderer()
     log("Destroying renderer");
     bgfx::destroy(this->texture_uniform);
     bgfx::destroy(this->default_program);
+    this->default_image.reset();
+    bgfx::shutdown();
 }
 
 bgfx::TextureHandle

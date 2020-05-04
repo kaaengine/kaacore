@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #include <SDL.h>
 
@@ -8,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/audio.h"
+#include "kaacore/config.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources_manager.h"
@@ -80,11 +84,39 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
-    std::unique_ptr<Renderer> _create_renderer();
-    void _run(Scene* scene);
+#if KAACORE_MULTITHREADING_MODE
+    enum struct EngineLoopState {
+        not_initialized = 1,
+        sleeping = 2,
+        starting = 11,
+        running = 12,
+        stopping = 13,
+        terminating = 21,
+        terminated = 22,
+    };
+
+    std::mutex _events_mutex;
+
+    EngineLoopState _engine_loop_state = EngineLoopState::not_initialized;
+    std::thread _engine_loop_thread;
+    std::mutex _engine_loop_mutex;
+    std::condition_variable _engine_loop_condition;
+    std::exception_ptr _engine_loop_exception;
+#endif
+
+    bgfx::Init _gather_platform_data();
+    void _scene_processing();
+    void _scene_processing_single();
     void _swap_scenes();
     void _detach_scenes();
-    void _pump_events();
+    void _process_events();
+
+#if KAACORE_MULTITHREADING_MODE
+    void _main_loop_thread_entrypoint();
+    void _engine_loop_thread_entrypoint();
+#else
+    void _single_thread_entrypoint();
+#endif
 };
 
 extern Engine* engine;
