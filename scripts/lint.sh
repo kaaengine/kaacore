@@ -16,7 +16,7 @@ fi
 SCRIPTS_DIR=${BASH_SOURCE%/*}
 
 if [ ! -f "${SCRIPTS_DIR}/../build/compile_commands.json" ]; then
-    echo "Build the project in order to run linter."
+    echo "Build the project with CMAKE_EXPORT_COMPILE_COMMANDS flag on in order to run linter."
     exit 1
 fi
 

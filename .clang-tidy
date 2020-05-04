@@ -13,10 +13,13 @@ Checks: '
     readability-*,
 
     -cppcoreguidelines-pro-type-vararg,
+    -cppcoreguidelines-pro-type-member-init,
     -cppcoreguidelines-pro-type-union-access,
     -cppcoreguidelines-pro-type-reinterpret-cast,
     -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-    -cppcoreguidelines-pro-type-static-cast-downcast
+    -cppcoreguidelines-pro-type-static-cast-downcast,
+    -cppcoreguidelines-pro-bounds-constant-array-index,
+    -readability-implicit-bool-conversion
 '
 
 WarningsAsErrors: ''
@@ -77,12 +80,6 @@ CheckOptions:
     value:           '::free;::realloc;::freopen;::fclose'
   - key:             cppcoreguidelines-owning-memory.LegacyResourceProducers
     value:           '::malloc;::aligned_alloc;::realloc;::calloc;::fopen;::freopen;::tmpfile'
-  - key:             cppcoreguidelines-pro-bounds-constant-array-index.GslHeader
-    value:           ''
-  - key:             cppcoreguidelines-pro-bounds-constant-array-index.IncludeStyle
-    value:           '0'
-  - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
-    value:           '0'
   - key:             cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
     value:           '0'
   - key:             cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
@@ -190,10 +187,6 @@ CheckOptions:
   - key:             readability-function-size.VariableThreshold
     value:           '4294967295'
   - key:             readability-identifier-naming.IgnoreFailedSplit
-    value:           '0'
-  - key:             readability-implicit-bool-conversion.AllowIntegerConditions
-    value:           '0'
-  - key:             readability-implicit-bool-conversion.AllowPointerConditions
     value:           '0'
   - key:             readability-inconsistent-declaration-parameter-name.IgnoreMacros
     value:           '1'
