@@ -89,8 +89,7 @@ destroy_timers()
 }
 
 Timer::Timer(
-    const uint32_t interval, TimerCallback callback,
-    const bool single_shot)
+    const uint32_t interval, TimerCallback callback, const bool single_shot)
     : _single_shot(single_shot), _timer_id(++_last_timer_id),
       _interval(interval), _callback(std::move(callback))
 {}
