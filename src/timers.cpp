@@ -89,10 +89,10 @@ destroy_timers()
 }
 
 Timer::Timer(
-    const uint32_t interval, const TimerCallback callback,
+    const uint32_t interval, TimerCallback callback,
     const bool single_shot)
     : _single_shot(single_shot), _timer_id(++_last_timer_id),
-      _interval(interval), _callback(callback)
+      _interval(interval), _callback(std::move(callback))
 {}
 
 void
@@ -104,11 +104,11 @@ Timer::_start()
     }
 
     _TimerData timer_data(
-        {this->_interval, this->_callback, next_trigger_time, 0});
+        {this->_interval, std::move(this->_callback), next_trigger_time, 0});
 
     timer_data.internal_timer_id =
         _spawn_sdl_timer(this->_timer_id, this->_interval);
-    _timers_manager[this->_timer_id] = timer_data;
+    _timers_manager[this->_timer_id] = std::move(timer_data);
 }
 
 void
