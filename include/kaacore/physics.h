@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -116,10 +117,10 @@ class SpaceNode {
     void gravity(const glm::dvec2& gravity);
     glm::dvec2 gravity();
 
-    void damping(const double& damping);
+    void damping(const double damping);
     double damping();
 
-    void sleeping_threshold(const double& threshold);
+    void sleeping_threshold(const double threshold);
     double sleeping_threshold();
 
     bool locked() const;
@@ -131,12 +132,30 @@ enum struct BodyNodeType {
     static_ = cpBodyType::CP_BODY_TYPE_STATIC
 };
 
+typedef std::function<void(Node*, glm::dvec2, double, double)>
+    VelocityUpdateCallback;
+static void
+_velocity_update_wrapper(
+    cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt);
+
+typedef std::function<void(Node*, double)> PositionUpdateCallback;
+static void
+_position_update_wrapper(cpBody* cp_body, cpFloat dt);
+
 class BodyNode {
     friend class Node;
     friend class HitboxNode;
     friend class Scene;
+    friend void _velocity_update_wrapper(cpBody*, cpVect, cpFloat, cpFloat);
+    friend void _position_update_wrapper(cpBody*, cpFloat);
 
     cpBody* _cp_body = nullptr;
+
+    std::optional<double> _damping = std::nullopt;
+    std::optional<cpVect> _gravity = std::nullopt;
+
+    VelocityUpdateCallback _velocity_update_callback = nullptr;
+    PositionUpdateCallback _position_update_callback = nullptr;
 
     BodyNode();
     ~BodyNode();
@@ -156,11 +175,16 @@ class BodyNode {
     void body_type(const BodyNodeType& type);
     BodyNodeType body_type();
 
-    void mass(const double& m);
+    void mass(const double m);
     double mass();
+    double mass_inverse();
 
-    void moment(const double& i);
+    void moment(const double i);
     double moment();
+    double moment_inverse();
+
+    void center_of_gravity(const glm::dvec2& cog);
+    glm::dvec2 center_of_gravity();
 
     void velocity(const glm::dvec2& velocity);
     glm::dvec2 velocity();
@@ -170,14 +194,29 @@ class BodyNode {
     void apply_force_at(const glm::dvec2& force, const glm::dvec2& at);
     void apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at);
 
-    void torque(const double& torque);
+    void torque(const double torque);
     double torque();
 
     void angular_velocity(const double& angular_velocity);
     double angular_velocity();
 
+    void damping(const std::optional<double>& damping);
+    std::optional<double> damping();
+
+    void gravity(const std::optional<glm::dvec2>& gravity);
+    std::optional<glm::dvec2> gravity();
+
     bool sleeping();
-    void sleeping(const bool& sleeping);
+    void sleeping(const bool sleeping);
+
+    void _velocity_bias(const glm::dvec2& velocity);
+    glm::dvec2 _velocity_bias();
+
+    void _angular_velocity_bias(const double torque);
+    double _angular_velocity_bias();
+
+    void set_velocity_update_callback(VelocityUpdateCallback callback);
+    void set_position_update_callback(PositionUpdateCallback callback);
 };
 
 CpShapeUniquePtr
