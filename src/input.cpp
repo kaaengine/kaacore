@@ -220,6 +220,13 @@ MouseMotionEvent::position() const
 }
 
 glm::dvec2
+MouseMotionEvent::motion() const
+{
+    return _naive_screen_position_to_virtual(
+        this->sdl_event.motion.xrel, this->sdl_event.motion.yrel);
+}
+
+glm::dvec2
 MouseWheelEvent::scroll() const
 {
     auto direction =
@@ -473,6 +480,18 @@ InputManager::MouseManager::get_position() const
     int pos_x, pos_y;
     SDL_GetMouseState(&pos_x, &pos_y);
     return _naive_screen_position_to_virtual(pos_x, pos_y);
+}
+
+bool
+InputManager::MouseManager::relative_motion() const
+{
+    return SDL_GetRelativeMouseMode();
+}
+
+void
+InputManager::MouseManager::relative_motion(const bool rel) const
+{
+    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel));
 }
 
 InputManager::ControllerManager::~ControllerManager()
