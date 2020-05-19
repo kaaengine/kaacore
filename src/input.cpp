@@ -489,13 +489,13 @@ InputManager::MouseManager::get_position() const
 }
 
 bool
-InputManager::MouseManager::relative_motion() const
+InputManager::MouseManager::relative_mode() const
 {
     return SDL_GetRelativeMouseMode();
 }
 
 void
-InputManager::MouseManager::relative_motion(const bool rel) const
+InputManager::MouseManager::relative_mode(const bool rel) const
 {
     SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel));
 }

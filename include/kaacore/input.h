@@ -539,8 +539,8 @@ struct InputManager {
         bool is_released(const MouseButton mb) const;
         glm::dvec2 get_position() const;
 
-        bool relative_motion() const;
-        void relative_motion(const bool rel) const;
+        bool relative_mode() const;
+        void relative_mode(const bool rel) const;
     } mouse;
 
     struct ControllerManager {
