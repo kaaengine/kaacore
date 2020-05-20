@@ -19,16 +19,22 @@ _handle_quit(const Event& event)
 }
 
 glm::dvec2
-_naive_screen_position_to_virtual(int32_t x, int32_t y)
+_scale_vector_to_virtual_resolution(int32_t x, int32_t y)
 {
     auto engine = get_engine();
-    glm::dvec2 pos = {x, y};
-    pos -= engine->renderer->border_size;
-    pos.x *= double(engine->virtual_resolution().x) /
-             double(engine->renderer->view_size.x);
-    pos.y *= double(engine->virtual_resolution().y) /
-             double(engine->renderer->view_size.y);
-    return pos;
+    x *= static_cast<double>(engine->virtual_resolution().x) /
+         static_cast<double>(engine->renderer->view_size.x);
+    y *= static_cast<double>(engine->virtual_resolution().y) /
+         static_cast<double>(engine->renderer->view_size.y);
+    return {x, y};
+}
+
+glm::dvec2
+_naive_screen_position_to_virtual_resolution(int32_t x, int32_t y)
+{
+    auto border_size = get_engine()->renderer->border_size;
+    x -= border_size.x, y -= border_size.y;
+    return _scale_vector_to_virtual_resolution(x, y);
 }
 
 double
@@ -208,15 +214,22 @@ MouseButtonEvent::is_button_up() const
 glm::dvec2
 MouseButtonEvent::position() const
 {
-    return _naive_screen_position_to_virtual(
+    return _naive_screen_position_to_virtual_resolution(
         this->sdl_event.button.x, this->sdl_event.button.y);
 }
 
 glm::dvec2
 MouseMotionEvent::position() const
 {
-    return _naive_screen_position_to_virtual(
+    return _naive_screen_position_to_virtual_resolution(
         this->sdl_event.motion.x, this->sdl_event.motion.y);
+}
+
+glm::dvec2
+MouseMotionEvent::motion() const
+{
+    return _scale_vector_to_virtual_resolution(
+        sdl_event.motion.xrel, this->sdl_event.motion.yrel);
 }
 
 glm::dvec2
@@ -472,7 +485,19 @@ InputManager::MouseManager::get_position() const
 {
     int pos_x, pos_y;
     SDL_GetMouseState(&pos_x, &pos_y);
-    return _naive_screen_position_to_virtual(pos_x, pos_y);
+    return _naive_screen_position_to_virtual_resolution(pos_x, pos_y);
+}
+
+bool
+InputManager::MouseManager::relative_mode() const
+{
+    return SDL_GetRelativeMouseMode();
+}
+
+void
+InputManager::MouseManager::relative_mode(const bool rel) const
+{
+    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel));
 }
 
 InputManager::ControllerManager::~ControllerManager()
