@@ -1,46 +1,34 @@
 cmake_minimum_required(VERSION 3.13)
 cmake_policy(SET CMP0077 NEW)
 
-add_executable(demo-basic-scene basic_scene.cpp)
-list(APPEND DEMO_TARGETS demo-basic-scene)
+function(_add_demo_target TARGET_NAME SOURCE_FILE)
+    add_executable(${TARGET_NAME} ${SOURCE_FILE})
+    target_link_libraries(${TARGET_NAME} kaacore)
 
-add_executable(demo-physics physics.cpp)
-list(APPEND DEMO_TARGETS demo-physics)
+    set_target_properties(
+        ${TARGET_NAME} PROPERTIES
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+    )
+endfunction()
 
-add_executable(demo-sprites sprites.cpp)
-list(APPEND DEMO_TARGETS demo-sprites)
+function(add_demo TARGET_NAME SOURCE_FILE)
+    _add_demo_target(${TARGET_NAME} ${SOURCE_FILE})
 
-add_executable(demo-polygon-tester polygon_tester.cpp)
-list(APPEND DEMO_TARGETS demo-polygon-tester)
+    if (KAACORE_BUILD_DEMOS_WITH_TSAN)
+        _add_demo_target(${TARGET_NAME}-tsan ${SOURCE_FILE})
+        target_compile_options(${TARGET_NAME}-tsan PRIVATE -fsanitize=thread)
+        target_link_libraries(${TARGET_NAME}-tsan -ltsan)
+    endif()
+endfunction()
 
-add_executable(demo-fonts fonts.cpp)
-list(APPEND DEMO_TARGETS demo-fonts)
-
-add_executable(demo-timers timers.cpp)
-list(APPEND DEMO_TARGETS demo-timers)
-
-add_executable(demo-transitions transitions.cpp)
-list(APPEND DEMO_TARGETS demo-transitions)
-
-add_executable(demo-controllers controllers.cpp)
-list(APPEND DEMO_TARGETS demo-controllers)
-
-add_executable(demo-spatial-indexing spatial_indexing.cpp)
-list(APPEND DEMO_TARGETS demo-spatial-indexing)
-
-target_link_libraries(demo-basic-scene kaacore)
-target_link_libraries(demo-physics kaacore)
-target_link_libraries(demo-sprites kaacore)
-target_link_libraries(demo-polygon-tester kaacore)
-target_link_libraries(demo-fonts kaacore)
-target_link_libraries(demo-timers kaacore)
-target_link_libraries(demo-transitions kaacore)
-target_link_libraries(demo-controllers kaacore)
-target_link_libraries(demo-spatial-indexing kaacore)
-set_target_properties(
-    ${DEMO_TARGETS}
-    PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-)
+add_demo(demo-basic-scene basic_scene.cpp)
+add_demo(demo-physics physics.cpp)
+add_demo(demo-sprites sprites.cpp)
+add_demo(demo-polygon-tester polygon_tester.cpp)
+add_demo(demo-fonts fonts.cpp)
+add_demo(demo-timers timers.cpp)
+add_demo(demo-transitions transitions.cpp)
+add_demo(demo-controllers controllers.cpp)
+add_demo(demo-spatial-indexing spatial_indexing.cpp)

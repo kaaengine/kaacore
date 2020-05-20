@@ -8,6 +8,7 @@ project(kaacore)
 
 option(KAACORE_SHARED "Build kaacore-shared" OFF)
 option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
+option(KAACORE_BUILD_DEMOS_WITH_TSAN "Build kaacore demos with thread-sanitizer" OFF)
 option(KAACORE_MULTITHREADING_MODE "Build kaacore in multithreading mode" ON)
 
 set(KAACORE_MAX_VIEWS 32)

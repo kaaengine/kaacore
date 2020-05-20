@@ -1,0 +1,43 @@
+{
+   ignore_pulseaudio
+   Helgrind:Race
+   ...
+   obj:*/libpulsecommon*.so
+   ...
+}
+
+{
+   ignore_pulseaudio
+   Helgrind:Race
+   ...
+   obj:*/libpulse*.so*
+   ...
+}
+
+{
+   bgfx_datarace_render_frame
+   Helgrind:Race
+   ...
+   fun:_ZN4bgfx11renderFrameEi
+   ...
+}
+
+{
+   bgfx_shutdown
+   Helgrind:Race
+   ...
+   fun:~Context
+   fun:deleteObject<bgfx::Context>
+   fun:_ZN4bgfx8shutdownEv
+   fun:_ZN7kaacore8RendererD1Ev
+   ...
+}
+
+{
+   audio_opening
+   Helgrind:Race
+   ...
+   fun:Mix_OpenAudioDevice
+   fun:_ZN7kaacore12AudioManagerC1Ev
+   ...
+}

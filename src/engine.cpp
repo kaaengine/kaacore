@@ -60,7 +60,8 @@ Engine::Engine(
         auto ret = bgfx::renderFrame();
         log("Waiting for bgfx initialization... (%d)", ret);
         if (ret == bgfx::RenderFrame::Enum::NoContext) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            // renderer isn't ready yet, wait for a bit
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 #else
