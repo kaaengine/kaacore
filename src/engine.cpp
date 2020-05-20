@@ -20,7 +20,6 @@ namespace kaacore {
 
 Engine* engine;
 
-
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
     const VirtualResolutionMode vr_mode) noexcept(false)
@@ -41,17 +40,17 @@ Engine::Engine(
     auto bgfx_init_data = this->_gather_platform_data();
     auto window_size = this->window->size();
 #if KAACORE_MULTITHREADING_MODE
-    bgfx::renderFrame();  // This marks main thread as "rendering thread"
-                          // meaning it will talk with system graphics.
-    this->_engine_loop_thread = std::thread{
-        [this, bgfx_init_data, window_size]() {
-            this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
+    bgfx::renderFrame(); // This marks main thread as "rendering thread"
+                         // meaning it will talk with system graphics.
+    this->_engine_loop_thread =
+        std::thread{[this, bgfx_init_data, window_size]() {
+            this->renderer =
+                std::make_unique<Renderer>(bgfx_init_data, window_size);
             this->_engine_loop_thread_entrypoint();
             // When _engine_loop_thread_entrypoint() exits it means engine is
             // going to stop and it's time to destroy the renderer.
             this->renderer.reset();
-        }
-    };
+        }};
 
     // threaded bgfx::init will block until we call bgfx::renderFrame
     // TODO make better synchronization with engine_loop start
@@ -90,7 +89,7 @@ Engine::~Engine()
         this->_engine_loop_condition.notify_one();
     }
 
-    while(true) {
+    while (true) {
         auto ret = bgfx::renderFrame();
         if (ret == bgfx::RenderFrame::Enum::Exiting) {
             break;
@@ -196,7 +195,8 @@ Engine::_gather_platform_data()
 
 #if SDL_VIDEO_DRIVER_X11
     bgfx_init_data.platformData.ndt = wminfo.info.x11.display;
-    bgfx_init_data.platformData.nwh = reinterpret_cast<void*>(wminfo.info.x11.window);
+    bgfx_init_data.platformData.nwh =
+        reinterpret_cast<void*>(wminfo.info.x11.window);
 #elif SDL_VIDEO_DRIVER_WINDOWS
     bgfx_init_data.platformData.ndt = nullptr;
     bgfx_init_data.platformData.nwh = wminfo.info.win.window;
@@ -282,7 +282,8 @@ Engine::_process_events()
     this->input_manager->clear_events();
     SDL_Event event;
     int peep_status;
-    while((peep_status = SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) > 0) {
+    while ((peep_status = SDL_PeepEvents(
+                &event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) > 0) {
         if (event.type == EventType::_timer_fired) {
             auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
             resolve_timer(timer_id);
@@ -342,8 +343,9 @@ Engine::_engine_loop_thread_entrypoint()
 {
     log("Starting engine loop.");
     {
-        std::lock_guard lock{this->_engine_loop_mutex}; 
-        KAACORE_ASSERT(this->_engine_loop_state == EngineLoopState::not_initialized);
+        std::lock_guard lock{this->_engine_loop_mutex};
+        KAACORE_ASSERT(
+            this->_engine_loop_state == EngineLoopState::not_initialized);
         this->_engine_loop_state = EngineLoopState::sleeping;
     }
     log("Starting engine loop: sleeping.");
@@ -351,13 +353,14 @@ Engine::_engine_loop_thread_entrypoint()
     while (true) {
         {
             std::unique_lock lock{this->_engine_loop_mutex};
-            this->_engine_loop_condition.wait(lock, [this]{
-                return (this->_engine_loop_state == EngineLoopState::starting
-                        or this->_engine_loop_state == EngineLoopState::terminating);
+            this->_engine_loop_condition.wait(lock, [this] {
+                return (
+                    this->_engine_loop_state == EngineLoopState::starting or
+                    this->_engine_loop_state == EngineLoopState::terminating);
             });
 
             if (this->_engine_loop_state == EngineLoopState::terminating) {
-                return;  // exit from loop so renderer will get terminated
+                return; // exit from loop so renderer will get terminated
             }
         }
 
@@ -367,7 +370,8 @@ Engine::_engine_loop_thread_entrypoint()
             this->_engine_loop_state = EngineLoopState::running;
             this->_scene_processing();
         } catch (const std::exception exc) {
-            log<LogLevel::error>("Engine loop interrupted by exception: %s", exc.what());
+            log<LogLevel::error>(
+                "Engine loop interrupted by exception: %s", exc.what());
             this->_engine_loop_exception = std::current_exception();
             // this->_engine_loop_state = MultithreadedLoopState::stopping;
             log("Engine API loop stopped with exception.");
@@ -389,7 +393,7 @@ Engine::_single_thread_entrypoint()
     this->_scene_processing();
 }
 
-#endif  // KAACORE_MULTITHREADING_MODE
+#endif // KAACORE_MULTITHREADING_MODE
 
 Engine::_ScenePointerWrapper::_ScenePointerWrapper() : _scene_ptr(nullptr) {}
 

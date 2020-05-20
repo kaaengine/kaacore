@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
-#include <thread>
 #include <condition_variable>
 #include <mutex>
+#include <string>
+#include <thread>
 
 #include <SDL.h>
 
