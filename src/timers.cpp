@@ -95,6 +95,11 @@ Timer::Timer(
       _interval(interval), _callback(callback)
 {}
 
+Timer::~Timer()
+{
+    this->stop();
+}
+
 void
 Timer::_start()
 {
@@ -114,7 +119,7 @@ Timer::_start()
 void
 Timer::start()
 {
-    if (this->_is_running()) {
+    if (this->is_running()) {
         this->_stop();
     }
 
@@ -122,15 +127,9 @@ Timer::start()
 }
 
 bool
-Timer::_is_running()
-{
-    return _timers_manager.contains(this->_timer_id);
-}
-
-bool
 Timer::is_running()
 {
-    return this->_is_running();
+    return _timers_manager.contains(this->_timer_id);
 }
 
 void
@@ -143,7 +142,7 @@ Timer::_stop()
 void
 Timer::stop()
 {
-    if (!this->_is_running()) {
+    if (!this->is_running()) {
         return;
     }
     this->_stop();
