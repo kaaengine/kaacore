@@ -16,6 +16,12 @@ Transformation::Transformation() : Transformation(glm::dmat4(1.)) {}
 
 Transformation::Transformation(const glm::dmat4& matrix) : _matrix(matrix) {}
 
+bool
+Transformation::operator==(const Transformation& other) const
+{
+    return this->_matrix == other._matrix;
+}
+
 Transformation
 Transformation::translate(const glm::dvec2& tr)
 {
