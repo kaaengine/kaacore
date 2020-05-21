@@ -453,6 +453,7 @@ struct MouseButtonEvent : public BaseEvent {
 
 struct MouseMotionEvent : public BaseEvent {
     glm::dvec2 position() const;
+    glm::dvec2 motion() const;
 };
 
 struct MouseWheelEvent : public BaseEvent {
@@ -537,6 +538,9 @@ struct InputManager {
         bool is_pressed(const MouseButton mb) const;
         bool is_released(const MouseButton mb) const;
         glm::dvec2 get_position() const;
+
+        bool relative_mode() const;
+        void relative_mode(const bool rel) const;
     } mouse;
 
     struct ControllerManager {

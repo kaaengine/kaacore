@@ -22,6 +22,7 @@ class Timer {
     Timer(
         const uint32_t interval, const TimerCallback callback,
         const bool single_shot = true);
+    ~Timer();
 
     void start();
     bool is_running();
@@ -36,7 +37,6 @@ class Timer {
 
     void _start();
     void _stop();
-    bool _is_running();
 };
 
 }
