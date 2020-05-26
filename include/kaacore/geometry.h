@@ -115,33 +115,32 @@ struct BoundingBox {
             not std::isnan(this->min_x) and not std::isnan(this->max_x) and
             not std::isnan(this->min_y) and not std::isnan(this->max_y));
     }
-};
 
-template<typename T>
-struct BoundingBoxBuilder {
-    BoundingBox<T> bounding_box;
-
-    inline void add_point(const glm::vec<2, T> point)
+    static BoundingBox<T> single_point(glm::tvec2<T> pt)
     {
-        if (std::isnan(this->bounding_box.min_x) or
-            this->bounding_box.min_x > point.x) {
-            this->bounding_box.min_x = point.x;
-        }
-        if (std::isnan(this->bounding_box.max_x) or
-            this->bounding_box.max_x < point.x) {
-            this->bounding_box.max_x = point.x;
-        }
-        if (std::isnan(this->bounding_box.min_y) or
-            this->bounding_box.min_y > point.y) {
-            this->bounding_box.min_y = point.y;
-        }
-        if (std::isnan(this->bounding_box.max_y) or
-            this->bounding_box.max_y < point.y) {
-            this->bounding_box.max_y = point.y;
-        }
+        return BoundingBox<T>{pt.x, pt.y, pt.x, pt.y};
     }
 
-    operator bool() const { return bool(this->bounding_box); }
+    static BoundingBox<T> from_points(const std::vector<glm::tvec2<T>>& points)
+    {
+        BoundingBox<T> bbox;
+        for (const auto& pt : points) {
+            if (std::isnan(bbox.min_x) or bbox.min_x > pt.x) {
+                bbox.min_x = pt.x;
+            }
+            if (std::isnan(bbox.max_x) or bbox.max_x < pt.x) {
+                bbox.max_x = pt.x;
+            }
+            if (std::isnan(bbox.min_y) or bbox.min_y > pt.y) {
+                bbox.min_y = pt.y;
+            }
+            if (std::isnan(bbox.max_y) or bbox.max_y < pt.y) {
+                bbox.max_y = pt.y;
+            }
+        }
+
+        return bbox;
+    }
 };
 
 template<typename T>

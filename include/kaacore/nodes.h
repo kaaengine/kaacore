@@ -139,10 +139,8 @@ class Node {
         bgfx::TextureHandle texture_handle;
         bool is_dirty = true;
     } _render_data;
-    struct {
-        NodeSpatialWrapper* wrapper = nullptr;
-        bool is_dirty = true;
-    } _spatial_data;
+
+    NodeSpatialData _spatial_data;
 
     bool _marked_to_delete = false;
 
@@ -163,8 +161,9 @@ class Node {
     friend struct SpaceNode;
     friend struct BodyNode;
     friend struct HitboxNode;
-    friend struct NodeSpatialWrapper;
+    friend struct NodeSpatialData;
     friend class SpatialIndex;
+    friend constexpr Node* container_node(const NodeSpatialData*);
 };
 
 template<class... Args>

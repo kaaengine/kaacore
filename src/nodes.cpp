@@ -226,7 +226,7 @@ Node::recalculate_render_data()
     }
 
     // TODO optimize
-    glm::fvec2 pos_realignment = calculate_realignment_vector(
+    glm::dvec2 pos_realignment = calculate_realignment_vector(
         this->_origin_alignment, this->_shape.vertices_bbox);
     this->_render_data.computed_vertices = this->_shape.vertices;
     for (auto& vertex : this->_render_data.computed_vertices) {

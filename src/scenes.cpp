@@ -41,6 +41,7 @@ Scene::process_frame(uint32_t dt)
     this->process_physics(dt);
     this->process_nodes(dt);
     this->update(dt);
+    this->resolve_dirty_nodes();
     this->process_nodes_drawing();
 }
 
@@ -95,6 +96,34 @@ Scene::process_nodes(uint32_t dt)
 }
 
 void
+Scene::resolve_dirty_nodes()
+{
+    static std::deque<Node*> processing_queue;
+    processing_queue.clear();
+
+    processing_queue.push_back(&this->root_node);
+    while (not processing_queue.empty()) {
+        Node* node = processing_queue.front();
+        processing_queue.pop_front();
+
+        if (node->_marked_to_delete) {
+            delete node;
+            continue;
+        }
+
+        node->recalculate_model_matrix();
+
+        if (node->_spatial_data.is_dirty) {
+            this->spatial_index.refresh_single(node);
+        }
+
+        for (const auto child_node : node->_children) {
+            processing_queue.push_back(child_node);
+        }
+    }
+}
+
+void
 Scene::process_nodes_drawing()
 {
     static std::deque<Node*> processing_queue;
@@ -116,7 +145,6 @@ Scene::process_nodes_drawing()
             processing_queue.push_back(child_node);
         }
 
-        node->recalculate_model_matrix();
         node->recalculate_render_data();
 
         rendering_queue.emplace_back(

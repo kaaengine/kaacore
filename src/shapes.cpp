@@ -10,18 +10,20 @@
 
 namespace kaacore {
 
+constexpr int circle_shape_generated_points_count = 24;
+
 Shape::Shape(
     const ShapeType type, const std::vector<glm::dvec2>& points,
     const double radius, const std::vector<VertexIndex>& indices,
-    const std::vector<StandardVertexData>& vertices)
+    const std::vector<StandardVertexData>& vertices,
+    const std::vector<glm::dvec2>& bounding_points)
     : type(type), points(points), radius(radius), indices(indices),
-      vertices(vertices)
+      vertices(vertices),
+      vertices_bbox(BoundingBox<double>::from_points(bounding_points)),
+      bounding_points(bounding_points)
 {
-    BoundingBoxBuilder<float> bbox_builder;
-    for (const auto& vt : vertices) {
-        bbox_builder.add_point(vt.xyz);
-    }
-    this->vertices_bbox = bbox_builder.bounding_box;
+    KAACORE_ASSERT(
+        classify_polygon(this->bounding_points) == PolygonType::convex_ccw);
 };
 
 bool
@@ -57,7 +59,11 @@ Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
-    return Shape(ShapeType::segment, points, radius, indices, vertices);
+    // const std::vector<glm::dvec2> bounding_points = {a0, a1, b1, b0};
+    const std::vector<glm::dvec2> bounding_points = {a0, b0, b1, a1};
+
+    return Shape(
+        ShapeType::segment, points, radius, indices, vertices, bounding_points);
 }
 
 Shape
@@ -77,7 +83,16 @@ Shape::Circle(const double radius, const glm::dvec2 center)
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
-    return Shape(ShapeType::circle, points, radius, indices, vertices);
+    std::vector<glm::dvec2> bounding_points;
+    bounding_points.reserve(circle_shape_generated_points_count);
+    for (int i = circle_shape_generated_points_count - 1; i >= 0; i--) {
+        double t = (2 * M_PI / circle_shape_generated_points_count) * i;
+        bounding_points.push_back(glm::dvec2{center.x + radius * std::sin(t),
+                                             center.y + radius * std::cos(t)});
+    }
+
+    return Shape(
+        ShapeType::circle, points, radius, indices, vertices, bounding_points);
 }
 
 Shape
@@ -102,7 +117,7 @@ Shape::Box(const glm::dvec2 size)
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
-    return Shape(ShapeType::polygon, points, 0., indices, vertices);
+    return Shape(ShapeType::polygon, points, 0., indices, vertices, points);
 }
 
 Shape
@@ -148,7 +163,8 @@ Shape::Polygon(const std::vector<glm::dvec2>& points)
         vertex.uv.y = (vertex.xyz.y - min_pt.y) / (max_pt.y - min_pt.y);
     }
 
-    return Shape(ShapeType::polygon, polygon_points, 0., indices, vertices);
+    return Shape(
+        ShapeType::polygon, polygon_points, 0., indices, vertices, points);
 }
 
 Shape
@@ -156,7 +172,18 @@ Shape::Freeform(
     const std::vector<VertexIndex>& indices,
     const std::vector<StandardVertexData>& vertices)
 {
-    return Shape(ShapeType::freeform, {}, 0., indices, vertices);
+    std::vector<glm::dvec2> vertices_points;
+    vertices_points.reserve(vertices.size());
+    for (const auto& vt : vertices) {
+        vertices_points.push_back({vt.xyz.x, vt.xyz.y});
+    }
+    auto [min_pt, max_pt] = find_points_minmax(vertices_points);
+    const std::vector<glm::dvec2> bounding_points = {{min_pt.x, min_pt.y},
+                                                     {max_pt.x, min_pt.y},
+                                                     {max_pt.x, max_pt.y},
+                                                     {min_pt.x, max_pt.y}};
+    return Shape(
+        ShapeType::freeform, {}, 0., indices, vertices, bounding_points);
 }
 
 Shape
@@ -185,7 +212,24 @@ Shape::transform(const Transformation& transformation) const
         vt.xyz.y = tmp_pt.y;
     }
 
-    return Shape(this->type, points, radius, this->indices, vertices);
+    std::vector<glm::dvec2> new_bounding_points;
+    new_bounding_points.resize(this->bounding_points.size());
+    std::transform(
+        this->bounding_points.begin(), this->bounding_points.end(),
+        new_bounding_points.begin(),
+        [&transformation](const glm::dvec2 pt) -> glm::dvec2 {
+            return pt | transformation;
+        });
+
+    return Shape(
+        this->type, points, radius, this->indices, vertices,
+        new_bounding_points);
+}
+
+bool
+Shape::contains_point(const glm::dvec2 point) const
+{
+    return check_point_in_polygon(this->bounding_points, point);
 }
 
 } // namespace kaacore

@@ -27,6 +27,7 @@ class Scene {
     void process_frame(uint32_t dt);
     void process_physics(uint32_t dt);
     void process_nodes(uint32_t dt);
+    void resolve_dirty_nodes();
     void process_nodes_drawing();
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);

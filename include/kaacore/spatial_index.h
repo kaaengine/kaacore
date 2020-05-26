@@ -2,28 +2,23 @@
 
 #include <vector>
 
+#include <chipmunk/chipmunk.h>
 #include <glm/glm.hpp>
 
 #include "kaacore/geometry.h"
 #include "kaacore/node_ptr.h"
 
-#include <chipmunk/chipmunk.h>
-
 namespace kaacore {
 
 class Node;
 
-struct NodeSpatialWrapper {
-    NodeSpatialWrapper(Node* node);
-
+struct NodeSpatialData {
     void refresh();
     bool contains_point(const glm::dvec2 point) const;
 
-    Node* const node;
+    bool is_dirty = false;
     BoundingBox<double> bounding_box;
-    std::vector<glm::dvec2> bounding_points;
     std::vector<glm::dvec2> bounding_points_transformed;
-    size_t shape_hash = 0;
 };
 
 class SpatialIndex {
@@ -38,12 +33,11 @@ class SpatialIndex {
     void refresh_all();
 
     std::vector<NodePtr> query_bounding_box(
-        const BoundingBox<double>& bbox, bool include_shapeless = false);
-    std::vector<NodePtr> query_point(
-        const glm::dvec2 point, bool include_shapeless = false);
+        const BoundingBox<double>& bbox, bool include_shapeless = true);
+    std::vector<NodePtr> query_point(const glm::dvec2 point);
 
   private:
-    std::vector<NodeSpatialWrapper*> _query_wrappers(
+    std::vector<NodeSpatialData*> _query_wrappers(
         const BoundingBox<double>& bbox);
 
     cpSpatialIndex* _cp_index;
