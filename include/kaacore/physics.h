@@ -191,8 +191,10 @@ class BodyNode {
 
     void force(const glm::dvec2& force);
     glm::dvec2 force();
-    void apply_force_at(const glm::dvec2& force, const glm::dvec2& at);
-    void apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at);
+    void apply_force_at(
+        const glm::dvec2& force, const glm::dvec2& at, bool local = true) const;
+    void apply_impulse_at(
+        const glm::dvec2& force, const glm::dvec2& at, bool local = true) const;
 
     void torque(const double torque);
     double torque();

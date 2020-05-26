@@ -625,16 +625,26 @@ BodyNode::force(const glm::dvec2& force)
 }
 
 void
-BodyNode::apply_force_at(const glm::dvec2& force, const glm::dvec2& at)
+BodyNode::apply_force_at(
+    const glm::dvec2& force, const glm::dvec2& at, bool local) const
 {
-    cpBodyApplyForceAtLocalPoint(
+    if (local) {
+        return cpBodyApplyForceAtLocalPoint(
+            this->_cp_body, convert_vector(force), convert_vector(at));
+    }
+    cpBodyApplyForceAtWorldPoint(
         this->_cp_body, convert_vector(force), convert_vector(at));
 }
 
 void
-BodyNode::apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at)
+BodyNode::apply_impulse_at(
+    const glm::dvec2& force, const glm::dvec2& at, bool local) const
 {
-    cpBodyApplyImpulseAtLocalPoint(
+    if (local) {
+        return cpBodyApplyImpulseAtLocalPoint(
+            this->_cp_body, convert_vector(force), convert_vector(at));
+    }
+    cpBodyApplyImpulseAtWorldPoint(
         this->_cp_body, convert_vector(force), convert_vector(at));
 }
 
