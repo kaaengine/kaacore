@@ -150,7 +150,6 @@ SpaceNode::SpaceNode()
         "Creating space node %p (cpSpace: %p)", container_node(this),
         this->_cp_space);
     cpSpaceSetUserData(this->_cp_space, this);
-    this->_time_acc = 0;
 }
 
 void
@@ -207,14 +206,16 @@ SpaceNode::add_post_step_callback(const SpacePostStepFunc& func)
 }
 
 void
-SpaceNode::simulate(const uint32_t dt)
+SpaceNode::simulate(const microseconds dt)
 {
     ASSERT_VALID_SPACE_NODE();
     log<LogLevel::debug, LogCategory::physics>(
-        "Simulating SpaceNode(%p) physics, dt = %lu", this, dt);
-    uint32_t time_left = dt + this->_time_acc;
+        "Simulating SpaceNode(%p) physics, dt = %l", this, dt);
+    microseconds time_left = dt + this->_time_acc;
+    static auto step_secs =
+        duration_to_seconds(default_simulation_step_size).count();
     while (time_left > default_simulation_step_size) {
-        cpSpaceStep(this->_cp_space, 0.001 * default_simulation_step_size);
+        cpSpaceStep(this->_cp_space, step_secs);
         time_left -= default_simulation_step_size;
     }
     this->_time_acc = time_left;

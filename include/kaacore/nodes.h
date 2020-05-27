@@ -119,7 +119,7 @@ class Node {
     glm::dvec4 _color = {1., 1., 1., 1.};
     bool _visible = true;
     Alignment _origin_alignment = Alignment::none;
-    uint32_t _lifetime = 0;
+    double _lifetime = 0;
     NodeTransitionsManager _transitions_manager;
 
     Scene* _scene = nullptr;

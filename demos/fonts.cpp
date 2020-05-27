@@ -61,7 +61,7 @@ struct DemoFontsScene : Scene {
         }));
     }
 
-    void update(uint32_t dt) override
+    void update(double dt) override
     {
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {

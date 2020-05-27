@@ -99,7 +99,7 @@ struct DemoScene : Scene {
         this->root_node.add_child(this->container_node);
     }
 
-    void update(uint32_t dt) override
+    void update(double dt) override
     {
         log<LogLevel::debug>("DemoScene update %lu.", dt);
         auto texture = get_engine()->renderer->default_texture;

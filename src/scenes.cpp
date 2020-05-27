@@ -35,16 +35,16 @@ Scene::camera()
 }
 
 void
-Scene::process_frame(uint32_t dt)
+Scene::process_frame(microseconds dt)
 {
     this->process_physics(dt);
     this->process_nodes(dt);
-    this->update(dt);
+    this->update(duration_to_seconds(dt).count() * this->_time_scale);
     this->process_nodes_drawing();
 }
 
 void
-Scene::process_physics(uint32_t dt)
+Scene::process_physics(microseconds dt)
 {
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
@@ -52,7 +52,7 @@ Scene::process_physics(uint32_t dt)
 }
 
 void
-Scene::process_nodes(uint32_t dt)
+Scene::process_nodes(microseconds dt)
 {
     static std::deque<Node*> processing_queue;
     processing_queue.clear();
@@ -68,7 +68,8 @@ Scene::process_nodes(uint32_t dt)
         }
 
         if (node->_lifetime) {
-            if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0) {
+            auto dt_secs = duration_to_seconds(dt).count();
+            if ((node->_lifetime -= std::min(dt_secs, node->_lifetime)) == 0) {
                 delete node;
                 continue;
             }
@@ -80,7 +81,8 @@ Scene::process_nodes(uint32_t dt)
         }
 
         if (node->_transitions_manager) {
-            node->_transitions_manager.step(node, dt);
+            node->_transitions_manager.step(
+                node, std::chrono::duration_cast<microseconds>(dt).count());
         }
 
         for (const auto child_node : node->_children) {
@@ -150,7 +152,7 @@ Scene::on_enter()
 {}
 
 void
-Scene::update(uint32_t dt)
+Scene::update(double dt)
 {}
 
 void
@@ -180,6 +182,18 @@ Scene::unregister_simulation(Node* node)
     auto pos = this->simulations_registry.find(node);
     KAACORE_ASSERT(pos != this->simulations_registry.end());
     this->simulations_registry.erase(pos);
+}
+
+void
+Scene::time_scale(double scale)
+{
+    this->_time_scale = scale;
+}
+
+double
+Scene::time_scale(void)
+{
+    return this->_time_scale;
 }
 
 const std::vector<Event>&

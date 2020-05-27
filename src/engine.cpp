@@ -5,6 +5,7 @@
 #include <SDL_syswm.h>
 
 #include "kaacore/audio.h"
+#include "kaacore/clock.h"
 #include "kaacore/display.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/input.h"
@@ -19,9 +20,10 @@ namespace kaacore {
 Engine* engine;
 
 Engine::Engine(
-    const glm::uvec2& virtual_resolution,
-    const VirtualResolutionMode vr_mode) noexcept(false)
-    : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
+    const glm::uvec2& virtual_resolution, const VirtualResolutionMode vr_mode,
+    const uint16_t target_fps) noexcept(false)
+    : _virtual_resolution(virtual_resolution),
+      _virtual_resolution_mode(vr_mode), _target_fps(target_fps)
 {
     KAACORE_CHECK(engine == nullptr);
     KAACORE_CHECK(virtual_resolution.x > 0 and virtual_resolution.y > 0);
@@ -97,12 +99,17 @@ Engine::_run(Scene* scene)
     log("Engine is running.");
     this->_scene = scene;
     this->_scene->on_enter();
-    uint32_t ticks = SDL_GetTicks();
+    auto last = this->clock.now();
+    auto step = microseconds(1s) / this->_target_fps;
     while (this->is_running) {
-        uint32_t ticks_now = SDL_GetTicks();
-        uint32_t dt = ticks_now - ticks;
-        ticks = ticks_now;
-
+        auto now = this->clock._measure_frame();
+        microseconds dt = now - last;
+        if (step > dt) {
+            this->clock.sleep(step - dt);
+            now = this->clock.now();
+            dt = now - last;
+        }
+        last = now;
         this->_pump_events();
         if (this->_next_scene) {
             this->_swap_scenes();
@@ -110,6 +117,7 @@ Engine::_run(Scene* scene)
         this->renderer->begin_frame();
         this->_scene->process_frame(dt);
         this->renderer->end_frame();
+        printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %f \n", this->clock.fps());
     }
     this->_scene->on_exit();
     log("Engine stopped.");
@@ -158,6 +166,18 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
     this->renderer->reset();
+}
+
+uint16_t
+Engine::target_fps()
+{
+    return this->_target_fps;
+}
+
+void
+Engine::target_fps(const uint16_t target_fps)
+{
+    this->_target_fps = target_fps;
 }
 
 std::unique_ptr<Renderer>

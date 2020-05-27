@@ -145,7 +145,7 @@ struct DemoScene : Scene {
         this->box->body.angular_velocity(-0.50);
     }
 
-    void update(uint32_t dt) override
+    void update(double dt) override
     {
         log<LogLevel::debug>("DemoScene update %lu.", dt);
         auto texture = get_engine()->renderer->default_texture;

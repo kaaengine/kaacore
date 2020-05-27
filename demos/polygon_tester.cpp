@@ -69,7 +69,7 @@ struct PolygonTesterDemoScene : Scene {
         this->points.clear();
     }
 
-    void update(uint32_t dt) override
+    void update(double dt) override
     {
         for (auto const& event : this->get_events()) {
             if (auto mouse_button = event.mouse_button()) {

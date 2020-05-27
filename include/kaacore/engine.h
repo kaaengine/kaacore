@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/audio.h"
+#include "kaacore/clock.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources_manager.h"
@@ -27,6 +28,7 @@ enum struct VirtualResolutionMode {
 
 class Engine {
   public:
+    Clock clock;
     bool is_running = false;
     bgfx::PlatformData platform_data;
 
@@ -44,7 +46,8 @@ class Engine {
     Engine(
         const glm::uvec2& virtual_resolution,
         const VirtualResolutionMode vr_mode =
-            VirtualResolutionMode::adaptive_stretch) noexcept(false);
+            VirtualResolutionMode::adaptive_stretch,
+        const uint16_t target_fps = 300) noexcept(false);
     ~Engine();
 
     std::vector<Display> get_displays();
@@ -58,6 +61,9 @@ class Engine {
 
     VirtualResolutionMode virtual_resolution_mode() const;
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
+
+    uint16_t target_fps();
+    void target_fps(const uint16_t target_fps);
 
   private:
     class _ScenePointerWrapper {
@@ -77,6 +83,7 @@ class Engine {
         Scene* _scene_ptr;
     };
 
+    uint16_t _target_fps;
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 

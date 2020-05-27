@@ -35,7 +35,7 @@ struct SpritesDemoScene : Scene {
         this->root_node.add_child(this->animating_node);
     }
 
-    void update(uint32_t dt) override
+    void update(double dt) override
     {
         log<LogLevel::debug>("DemoScene update %lu.", dt);
 
