@@ -3,10 +3,10 @@
 
 #include <SDL.h>
 
-#include "kaacore/log.h"
 #include "kaacore/audio.h"
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/log.h"
 
 #include "kaacore/input.h"
 
