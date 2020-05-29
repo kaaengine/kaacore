@@ -498,7 +498,7 @@ InputManager::MouseManager::relative_mode() const
 void
 InputManager::MouseManager::relative_mode(const bool rel) const
 {
-    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) == -1) {
+    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
         throw kaacore::exception(SDL_GetError());
     }
 }
