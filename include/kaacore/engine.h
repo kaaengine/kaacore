@@ -15,7 +15,14 @@
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources_manager.h"
+#include "kaacore/threading.h"
 #include "kaacore/window.h"
+
+#define KAACORE_ASSERT_MAIN_THREAD()                                           \
+    do {                                                                       \
+        KAACORE_ASSERT(                                                        \
+            get_engine()->main_thread_id() == std::this_thread::get_id());     \
+    } while (0)
 
 namespace kaacore {
 
@@ -63,6 +70,19 @@ class Engine {
     VirtualResolutionMode virtual_resolution_mode() const;
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
+    inline std::thread::id main_thread_id() { return this->_main_thread_id; }
+
+    inline std::thread::id engine_thread_id()
+    {
+#if KAACORE_MULTITHREADING_MODE
+        return this->_engine_thread_id;
+#else
+        return this->_main_thread_id;
+#endif
+    }
+
+    void enqueue_syscall_function(DelayedSyscallFunction&& func);
+
   private:
     class _ScenePointerWrapper {
       public:
@@ -83,8 +103,14 @@ class Engine {
 
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
+    std::vector<Display> _displays;
+
+    std::thread::id _main_thread_id;
+    DelayedSyscallQueue _delayed_syscall_queue;
 
 #if KAACORE_MULTITHREADING_MODE
+    std::thread::id _engine_thread_id;
+
     enum struct EngineLoopState {
         not_initialized = 1,
         sleeping = 2,
@@ -105,6 +131,7 @@ class Engine {
 #endif
 
     bgfx::Init _gather_platform_data();
+    void _refresh_displays();
     void _scene_processing();
     void _scene_processing_single();
     void _swap_scenes();

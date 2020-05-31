@@ -38,16 +38,6 @@ Scene::camera()
 }
 
 void
-Scene::process_frame(uint32_t dt)
-{
-    this->process_physics(dt);
-    this->process_nodes(dt);
-    this->update(dt);
-    this->resolve_dirty_nodes();
-    this->process_nodes_drawing();
-}
-
-void
 Scene::process_physics(uint32_t dt)
 {
     for (Node* space_node : this->simulations_registry) {

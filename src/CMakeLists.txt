@@ -91,6 +91,7 @@ set(SRC_CXX_FILES
     camera.cpp
     views.cpp
     spatial_index.cpp
+    threading.cpp
     utils.cpp
     embedded_data.cpp
 )
@@ -121,6 +122,7 @@ set(SRC_H_FILES
     ../include/kaacore/camera.h
     ../include/kaacore/views.h
     ../include/kaacore/spatial_index.h
+    ../include/kaacore/threading.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

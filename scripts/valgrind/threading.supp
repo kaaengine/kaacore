@@ -1,24 +1,17 @@
 {
-   ignore_pulseaudio
-   Helgrind:Race
-   ...
-   obj:*/libpulsecommon*.so
-   ...
-}
-
-{
-   ignore_pulseaudio
-   Helgrind:Race
-   ...
-   obj:*/libpulse*.so*
-   ...
-}
-
-{
    bgfx_datarace_render_frame
    Helgrind:Race
    ...
    fun:_ZN4bgfx11renderFrameEi
+   ...
+}
+
+{
+   bgfx_init_renderer_reset
+   Helgrind:Race
+   fun:reset
+   fun:_ZN4bgfx5resetEjjjNS_13TextureFormat4EnumE
+   fun:_ZN7kaacore8Renderer5resetEv
    ...
 }
 
@@ -39,5 +32,28 @@
    ...
    fun:Mix_OpenAudioDevice
    fun:_ZN7kaacore12AudioManagerC1Ev
+   ...
+}
+
+{
+   ignore_pulseaudio
+   Helgrind:Race
+   ...
+   obj:*/libpulsecommon*.so
+   ...
+}
+
+{
+   ignore_pulseaudio
+   Helgrind:Race
+   ...
+   obj:*/libpulse*.so*
+   ...
+}
+
+{
+   dri_i965
+   Helgrind:Race
+   obj:*/i965_dri.so
    ...
 }

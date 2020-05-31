@@ -1,10 +1,14 @@
 #pragma once
 
+#include <functional>
+#include <mutex>
 #include <string>
 #include <utility>
 
 #include <SDL.h>
 #include <glm/glm.hpp>
+
+#include "kaacore/threading.h"
 
 namespace kaacore {
 
@@ -15,27 +19,29 @@ class Window {
 
     void show();
     void hide();
-    std::string title() const;
-    void title(const std::string& title) const;
-    bool fullscreen() const;
-    void fullscreen(const bool fullscreen) const;
-    glm::uvec2 size() const;
-    void size(const glm::uvec2& size) const;
-    void maximize() const;
-    void minimize() const;
-    void restore() const;
-    glm::uvec2 position() const;
-    void position(const glm::uvec2& position) const;
-    void center() const;
+    std::string title();
+    void title(const std::string& title);
+    bool fullscreen();
+    void fullscreen(const bool fullscreen);
+    glm::uvec2 size();
+    void size(const glm::uvec2& size);
+    void maximize();
+    void minimize();
+    void restore();
+    glm::uvec2 position();
+    void position(const glm::uvec2& position);
+    void center();
 
   private:
+    void _activate();
+    void _deactivate();
+    void _thread_safe_call(DelayedSyscallFunction&& func);
+
     bool _active = false;
     bool _is_shown = false;
     SDL_Window* _window = nullptr;
 
-    void _show() const;
-    void _activate();
-    void _deactivate();
+    std::mutex _sdl_call_mutex;
 
     friend class Engine;
 };

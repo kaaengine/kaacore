@@ -1,5 +1,6 @@
 #include <cassert>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 #include <SDL_config.h>
@@ -32,8 +33,11 @@ Engine::Engine(
     initialize_logging();
 
     log<LogLevel::info>("Initializing Kaacore.");
+    this->_main_thread_id = std::this_thread::get_id();
     SDL_Init(SDL_INIT_EVERYTHING);
     engine = this;
+
+    this->_refresh_displays();
 
     this->window = std::make_unique<Window>(this->_virtual_resolution);
 
@@ -51,16 +55,23 @@ Engine::Engine(
             // going to stop and it's time to destroy the renderer.
             this->renderer.reset();
         }};
+    this->_engine_thread_id = this->_engine_loop_thread.get_id();
 
     // threaded bgfx::init will block until we call bgfx::renderFrame
     // TODO make better synchronization with engine_loop start
-    while (not this->renderer) {
+    while (true) {
         // bgfx needs matching renderFrame() for init to complete
         auto ret = bgfx::renderFrame();
         log("Waiting for bgfx initialization... (%d)", ret);
         if (ret == bgfx::RenderFrame::Enum::NoContext) {
             // renderer isn't ready yet, wait for a bit
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        {
+            std::unique_lock lock{this->_engine_loop_mutex};
+            if (this->_engine_loop_state != EngineLoopState::not_initialized) {
+                break;
+            }
         }
     }
 #else
@@ -110,19 +121,7 @@ Engine::~Engine()
 std::vector<Display>
 Engine::get_displays()
 {
-    SDL_Rect rect;
-    std::vector<Display> result;
-    int32_t displays_num = SDL_GetNumVideoDisplays();
-    result.resize(displays_num);
-    for (int32_t i = 0; i < displays_num; i++) {
-        SDL_GetDisplayUsableBounds(i, &rect);
-        Display& display = result[i];
-        display.index = i;
-        display.position = {rect.x, rect.y};
-        display.size = {rect.w, rect.h};
-        display.name = SDL_GetDisplayName(i);
-    }
-    return result;
+    return this->_displays;
 }
 
 void
@@ -130,11 +129,13 @@ Engine::run(Scene* scene)
 {
     this->_scene = scene;
 
+    this->window->_activate();
 #if KAACORE_MULTITHREADING_MODE
     this->_main_loop_thread_entrypoint();
 #else
     this->_single_thread_entrypoint();
 #endif
+    this->window->_deactivate();
 }
 
 void
@@ -185,6 +186,12 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
+void
+Engine::enqueue_syscall_function(DelayedSyscallFunction&& func)
+{
+    this->_delayed_syscall_queue.enqueue_function(std::move(func));
+}
+
 bgfx::Init
 Engine::_gather_platform_data()
 {
@@ -215,10 +222,25 @@ Engine::_gather_platform_data()
 }
 
 void
+Engine::_refresh_displays()
+{
+    SDL_Rect rect;
+    int32_t displays_num = SDL_GetNumVideoDisplays();
+    this->_displays.resize(displays_num);
+    for (int32_t i = 0; i < displays_num; i++) {
+        SDL_GetDisplayUsableBounds(i, &rect);
+        Display& display = this->_displays[i];
+        display.index = i;
+        display.position = {rect.x, rect.y};
+        display.size = {rect.w, rect.h};
+        display.name = SDL_GetDisplayName(i);
+    }
+}
+
+void
 Engine::_scene_processing()
 {
     this->is_running = true;
-    this->window->_activate();
     try {
         this->_scene_processing_single();
     } catch (...) {
@@ -227,7 +249,6 @@ Engine::_scene_processing()
         throw;
     }
     this->_detach_scenes();
-    this->window->_deactivate();
     this->is_running = false;
 }
 
@@ -242,12 +263,24 @@ Engine::_scene_processing_single()
         uint32_t dt = ticks_now - ticks;
         ticks = ticks_now;
 
-        this->_process_events();
-        if (this->_next_scene) {
-            this->_swap_scenes();
-        }
         this->renderer->begin_frame();
-        this->_scene->process_frame(dt);
+        {
+#if KAACORE_MULTITHREADING_MODE
+            std::lock_guard lock{this->_events_mutex};
+#endif
+            this->_process_events();
+            if (this->_next_scene) {
+                this->_swap_scenes();
+            }
+            this->_scene->update(dt);
+        }
+        this->_scene->resolve_dirty_nodes();
+        this->_scene->process_nodes_drawing();
+        this->_scene->process_physics(dt);
+        this->_scene->process_nodes(dt);
+
+
+
         this->renderer->end_frame();
     }
     this->_scene->on_exit();
@@ -273,17 +306,16 @@ Engine::_detach_scenes()
 void
 Engine::_process_events()
 {
-#if KAACORE_MULTITHREADING_MODE
-    // TODO replace with ABAB synchronization
-    std::lock_guard lock{this->_events_mutex};
-#else
+#if !KAACORE_MULTITHREADING_MODE
     SDL_PumpEvents();
 #endif
+    this->_delayed_syscall_queue.call_all();
     this->input_manager->clear_events();
     SDL_Event event;
     int peep_status;
     while ((peep_status = SDL_PeepEvents(
                 &event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) > 0) {
+        KAACORE_ASSERT(&event != nullptr);
         if (event.type == EventType::_timer_fired) {
             auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
             resolve_timer(timer_id);
@@ -323,12 +355,13 @@ Engine::_main_loop_thread_entrypoint()
             // TODO replace with ABAB synchronization
             std::lock_guard lock{this->_events_mutex};
             SDL_PumpEvents();
-            // TODO notify events processed
         }
         bgfx::renderFrame();
-        // TODO Condition sync?
-        if (this->_engine_loop_state == EngineLoopState::stopping) {
-            break;
+        {
+            std::lock_guard lock{this->_engine_loop_mutex};
+            if (this->_engine_loop_state == EngineLoopState::stopping) {
+                break;
+            }
         }
     }
 
@@ -373,12 +406,12 @@ Engine::_engine_loop_thread_entrypoint()
             log<LogLevel::error>(
                 "Engine loop interrupted by exception: %s", exc.what());
             this->_engine_loop_exception = std::current_exception();
-            // this->_engine_loop_state = MultithreadedLoopState::stopping;
             log("Engine API loop stopped with exception.");
-            // Render final frame so Render loop stops waiting
-            // bgfx::frame();  // XXX not needed?
         }
-        this->_engine_loop_state = EngineLoopState::stopping;
+        {
+            std::lock_guard lock{this->_engine_loop_mutex};
+            this->_engine_loop_state = EngineLoopState::stopping;
+        }
         log("Engine loop stopped.");
         // Render final frame so Render loop stops waiting
         bgfx::frame();
