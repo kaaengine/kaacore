@@ -39,7 +39,7 @@ Engine::Engine(
 
     this->_refresh_displays();
 
-    this->window = std::make_unique<Window>(this->_virtual_resolution);
+    this->window = std::make_unique<Window>(this->_sdl_windowing_call_mutex, this->_virtual_resolution);
 
     auto bgfx_init_data = this->_gather_platform_data();
     auto window_size = this->window->size();
@@ -77,7 +77,7 @@ Engine::Engine(
 #else
     this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
 #endif
-    this->input_manager = std::make_unique<InputManager>();
+    this->input_manager = std::make_unique<InputManager>(this->_sdl_windowing_call_mutex);
     this->audio_manager = std::make_unique<AudioManager>();
     this->resources_manager = std::make_unique<ResourcesManager>();
 

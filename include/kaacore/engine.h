@@ -122,6 +122,7 @@ class Engine {
     };
 
     std::mutex _events_mutex;
+    std::mutex _sdl_windowing_call_mutex;
 
     EngineLoopState _engine_loop_state = EngineLoopState::not_initialized;
     std::thread _engine_loop_thread;

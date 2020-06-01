@@ -14,7 +14,7 @@ namespace kaacore {
 
 class Window {
   public:
-    Window(const glm::uvec2& size);
+    Window(std::mutex& sdl_windowing_call_mutex, const glm::uvec2& size);
     ~Window();
 
     void show();
@@ -41,7 +41,7 @@ class Window {
     bool _is_shown = false;
     SDL_Window* _window = nullptr;
 
-    std::mutex _sdl_call_mutex;
+    std::mutex& _sdl_windowing_call_mutex;
 
     friend class Engine;
 };

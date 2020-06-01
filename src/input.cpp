@@ -424,7 +424,8 @@ Event::music_finished() const
 
 bool InputManager::_custom_events_registered = false;
 
-InputManager::InputManager()
+InputManager::InputManager(std::mutex& _sdl_windowing_call_mutex)
+: _sdl_windowing_call_mutex(_sdl_windowing_call_mutex)
 {
     if (not this->_custom_events_registered) {
         auto num_events =
@@ -493,15 +494,19 @@ InputManager::MouseManager::get_position() const
 bool
 InputManager::MouseManager::relative_mode() const
 {
+    std::lock_guard<std::mutex> lock{container_of(this, &InputManager::mouse)->_sdl_windowing_call_mutex};
     return SDL_GetRelativeMouseMode();
 }
 
 void
-InputManager::MouseManager::relative_mode(const bool rel) const
+InputManager::MouseManager::relative_mode(const bool rel)
 {
-    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
-        throw kaacore::exception(SDL_GetError());
-    }
+    container_of(this, &InputManager::mouse)->_thread_safe_call([this, rel]() {
+        std::lock_guard<std::mutex> lock{container_of(this, &InputManager::mouse)->_sdl_windowing_call_mutex};
+        if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
+            throw kaacore::exception(SDL_GetError());
+        }
+    });
 }
 
 InputManager::ControllerManager::~ControllerManager()
@@ -686,6 +691,19 @@ void
 InputManager::clear_events()
 {
     this->events_queue.clear();
+}
+
+void
+InputManager::_thread_safe_call(DelayedSyscallFunction&& func)
+{
+    if (get_engine()->main_thread_id() == std::this_thread::get_id()) {
+        log<LogLevel::debug>("Received syscall request... calling now.");
+        func();
+    } else {
+        log<LogLevel::debug>(
+            "Received syscall request... not in main thread, delaying.");
+        get_engine()->enqueue_syscall_function(std::move(func));
+    }
 }
 
 } // namespace kaacore
