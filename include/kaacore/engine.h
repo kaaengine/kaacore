@@ -107,10 +107,9 @@ class Engine {
 
     std::thread::id _main_thread_id;
     DelayedSyscallQueue _delayed_syscall_queue;
+    std::mutex _sdl_windowing_call_mutex;
 
 #if KAACORE_MULTITHREADING_MODE
-    std::thread::id _engine_thread_id;
-
     enum struct EngineLoopState {
         not_initialized = 1,
         sleeping = 2,
@@ -121,13 +120,18 @@ class Engine {
         terminated = 22,
     };
 
-    std::mutex _events_mutex;
-    std::mutex _sdl_windowing_call_mutex;
+    enum struct EventProcessingState {
+        not_initialized = 1,
+        ready = 2,
+        consumed = 3,
+    };
 
-    EngineLoopState _engine_loop_state = EngineLoopState::not_initialized;
+    AwaitableStateEnum<EngineLoopState> _engine_loop_state =
+        EngineLoopState::not_initialized;
+    AwaitableStateEnum<EventProcessingState> _event_processing_state =
+        EventProcessingState::not_initialized;
     std::thread _engine_loop_thread;
-    std::mutex _engine_loop_mutex;
-    std::condition_variable _engine_loop_condition;
+    std::thread::id _engine_thread_id;
     std::exception_ptr _engine_loop_exception;
 #endif
 

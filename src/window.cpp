@@ -8,7 +8,7 @@
 namespace kaacore {
 
 Window::Window(std::mutex& sdl_windowing_call_mutex, const glm::uvec2& size)
-: _sdl_windowing_call_mutex(sdl_windowing_call_mutex)
+    : _sdl_windowing_call_mutex(sdl_windowing_call_mutex)
 {
     KAACORE_ASSERT_MAIN_THREAD();
     uint32_t flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;

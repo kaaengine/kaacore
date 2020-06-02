@@ -1,4 +1,12 @@
 {
+   bgfx_init
+   Helgrind:Race
+   ...
+   fun:_ZN4bgfx4initERKNS_4InitE
+   fun:_ZN7kaacore8RendererC1EN4bgfx4InitERKN3glm3vecILi2EjLNS3_9qualifierE0EEE
+   ...
+}
+{
    bgfx_datarace_render_frame
    Helgrind:Race
    ...

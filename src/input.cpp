@@ -425,7 +425,7 @@ Event::music_finished() const
 bool InputManager::_custom_events_registered = false;
 
 InputManager::InputManager(std::mutex& _sdl_windowing_call_mutex)
-: _sdl_windowing_call_mutex(_sdl_windowing_call_mutex)
+    : _sdl_windowing_call_mutex(_sdl_windowing_call_mutex)
 {
     if (not this->_custom_events_registered) {
         auto num_events =
@@ -494,17 +494,20 @@ InputManager::MouseManager::get_position() const
 bool
 InputManager::MouseManager::relative_mode() const
 {
-    std::lock_guard<std::mutex> lock{container_of(this, &InputManager::mouse)->_sdl_windowing_call_mutex};
+    InputManager* input_manager = container_of(this, &InputManager::mouse);
+    std::lock_guard<std::mutex> lock{input_manager->_sdl_windowing_call_mutex};
     return SDL_GetRelativeMouseMode();
 }
 
 void
 InputManager::MouseManager::relative_mode(const bool rel)
 {
-    container_of(this, &InputManager::mouse)->_thread_safe_call([this, rel]() {
-        std::lock_guard<std::mutex> lock{container_of(this, &InputManager::mouse)->_sdl_windowing_call_mutex};
+    InputManager* input_manager = container_of(this, &InputManager::mouse);
+    input_manager->_thread_safe_call([input_manager, rel]() {
+        std::lock_guard<std::mutex> lock{
+            input_manager->_sdl_windowing_call_mutex};
         if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
-            throw kaacore::exception(SDL_GetError());
+            log<LogLevel::error, LogCategory::input>(SDL_GetError());
         }
     });
 }

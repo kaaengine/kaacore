@@ -39,7 +39,8 @@ Engine::Engine(
 
     this->_refresh_displays();
 
-    this->window = std::make_unique<Window>(this->_sdl_windowing_call_mutex, this->_virtual_resolution);
+    this->window = std::make_unique<Window>(
+        this->_sdl_windowing_call_mutex, this->_virtual_resolution);
 
     auto bgfx_init_data = this->_gather_platform_data();
     auto window_size = this->window->size();
@@ -58,7 +59,6 @@ Engine::Engine(
     this->_engine_thread_id = this->_engine_loop_thread.get_id();
 
     // threaded bgfx::init will block until we call bgfx::renderFrame
-    // TODO make better synchronization with engine_loop start
     while (true) {
         // bgfx needs matching renderFrame() for init to complete
         auto ret = bgfx::renderFrame();
@@ -67,17 +67,16 @@ Engine::Engine(
             // renderer isn't ready yet, wait for a bit
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        {
-            std::unique_lock lock{this->_engine_loop_mutex};
-            if (this->_engine_loop_state != EngineLoopState::not_initialized) {
-                break;
-            }
+        if (this->_engine_loop_state.retrieve() !=
+            EngineLoopState::not_initialized) {
+            break;
         }
     }
 #else
     this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
 #endif
-    this->input_manager = std::make_unique<InputManager>(this->_sdl_windowing_call_mutex);
+    this->input_manager =
+        std::make_unique<InputManager>(this->_sdl_windowing_call_mutex);
     this->audio_manager = std::make_unique<AudioManager>();
     this->resources_manager = std::make_unique<ResourcesManager>();
 
@@ -94,11 +93,7 @@ Engine::~Engine()
     this->resources_manager.reset();
 
 #if KAACORE_MULTITHREADING_MODE
-    {
-        std::unique_lock lock{this->_engine_loop_mutex};
-        this->_engine_loop_state = EngineLoopState::terminating;
-        this->_engine_loop_condition.notify_one();
-    }
+    this->_engine_loop_state.set(EngineLoopState::terminating);
 
     while (true) {
         auto ret = bgfx::renderFrame();
@@ -264,22 +259,21 @@ Engine::_scene_processing_single()
         ticks = ticks_now;
 
         this->renderer->begin_frame();
-        {
 #if KAACORE_MULTITHREADING_MODE
-            std::lock_guard lock{this->_events_mutex};
+        this->_event_processing_state.wait(EventProcessingState::ready);
 #endif
-            this->_process_events();
-            if (this->_next_scene) {
-                this->_swap_scenes();
-            }
-            this->_scene->update(dt);
+        this->_process_events();
+        if (this->_next_scene) {
+            this->_swap_scenes();
         }
+        this->_scene->update(dt);
+#if KAACORE_MULTITHREADING_MODE
+        this->_event_processing_state.set(EventProcessingState::consumed);
+#endif
         this->_scene->resolve_dirty_nodes();
         this->_scene->process_nodes_drawing();
         this->_scene->process_physics(dt);
         this->_scene->process_nodes(dt);
-
-
 
         this->renderer->end_frame();
     }
@@ -343,25 +337,18 @@ Engine::_main_loop_thread_entrypoint()
 {
     log("Starting main loop.");
     KAACORE_ASSERT(this->_scene);
-    {
-        std::unique_lock lock{this->_engine_loop_mutex};
-        KAACORE_ASSERT(this->_engine_loop_state == EngineLoopState::sleeping);
-        this->_engine_loop_state = EngineLoopState::starting;
-        this->_engine_loop_condition.notify_one();
-    }
+    SDL_PumpEvents(); // pump initial events, for 1st update
+    this->_event_processing_state.set(EventProcessingState::ready);
+    this->_engine_loop_state.set(EngineLoopState::starting);
 
     while (true) {
-        {
-            // TODO replace with ABAB synchronization
-            std::lock_guard lock{this->_events_mutex};
-            SDL_PumpEvents();
-        }
+        this->_event_processing_state.wait(EventProcessingState::consumed);
+        SDL_PumpEvents();
+        this->_event_processing_state.set(EventProcessingState::ready);
         bgfx::renderFrame();
-        {
-            std::lock_guard lock{this->_engine_loop_mutex};
-            if (this->_engine_loop_state == EngineLoopState::stopping) {
-                break;
-            }
+
+        if (this->_engine_loop_state.retrieve() == EngineLoopState::stopping) {
+            break;
         }
     }
 
@@ -375,32 +362,21 @@ void
 Engine::_engine_loop_thread_entrypoint()
 {
     log("Starting engine loop.");
-    {
-        std::lock_guard lock{this->_engine_loop_mutex};
-        KAACORE_ASSERT(
-            this->_engine_loop_state == EngineLoopState::not_initialized);
-        this->_engine_loop_state = EngineLoopState::sleeping;
-    }
+    this->_engine_loop_state.set(EngineLoopState::sleeping);
     log("Starting engine loop: sleeping.");
 
     while (true) {
-        {
-            std::unique_lock lock{this->_engine_loop_mutex};
-            this->_engine_loop_condition.wait(lock, [this] {
-                return (
-                    this->_engine_loop_state == EngineLoopState::starting or
-                    this->_engine_loop_state == EngineLoopState::terminating);
-            });
+        auto retrieved_state = this->_engine_loop_state.wait(
+            {EngineLoopState::starting, EngineLoopState::terminating});
 
-            if (this->_engine_loop_state == EngineLoopState::terminating) {
-                return; // exit from loop so renderer will get terminated
-            }
+        if (retrieved_state == EngineLoopState::terminating) {
+            return; // exit from loop so renderer will get terminated
         }
 
         log("Engine loop is starting to process scenes.");
         try {
             KAACORE_ASSERT(this->_scene);
-            this->_engine_loop_state = EngineLoopState::running;
+            this->_engine_loop_state.set(EngineLoopState::running);
             this->_scene_processing();
         } catch (const std::exception exc) {
             log<LogLevel::error>(
@@ -408,10 +384,7 @@ Engine::_engine_loop_thread_entrypoint()
             this->_engine_loop_exception = std::current_exception();
             log("Engine API loop stopped with exception.");
         }
-        {
-            std::lock_guard lock{this->_engine_loop_mutex};
-            this->_engine_loop_state = EngineLoopState::stopping;
-        }
+        this->_engine_loop_state.set(EngineLoopState::stopping);
         log("Engine loop stopped.");
         // Render final frame so Render loop stops waiting
         bgfx::frame();
