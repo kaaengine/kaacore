@@ -5,6 +5,7 @@
 
 #include "kaacore/audio.h"
 #include "kaacore/engine.h"
+#include "kaacore/exceptions.h"
 #include "kaacore/log.h"
 
 #include "kaacore/input.h"
@@ -497,7 +498,9 @@ InputManager::MouseManager::relative_mode() const
 void
 InputManager::MouseManager::relative_mode(const bool rel) const
 {
-    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel));
+    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
+        throw kaacore::exception(SDL_GetError());
+    }
 }
 
 InputManager::ControllerManager::~ControllerManager()
