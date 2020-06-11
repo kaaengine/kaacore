@@ -28,7 +28,7 @@ void
 Window::show()
 {
     if (this->_active) {
-        this->_thread_safe_call([this]() {
+        get_engine()->make_call_from_main_thread<void>([this]() {
             std::lock_guard lock{this->_sdl_windowing_call_mutex};
             SDL_ShowWindow(this->_window);
         });
@@ -40,7 +40,7 @@ void
 Window::hide()
 {
     if (this->_active) {
-        this->_thread_safe_call([this]() {
+        get_engine()->make_call_from_main_thread<void>([this]() {
             std::lock_guard lock{this->_sdl_windowing_call_mutex};
             SDL_HideWindow(this->_window);
         });
@@ -51,14 +51,16 @@ Window::hide()
 std::string
 Window::title()
 {
-    std::lock_guard lock{this->_sdl_windowing_call_mutex};
-    return SDL_GetWindowTitle(this->_window);
+    return get_engine()->make_call_from_main_thread<std::string>([this]() {
+        std::lock_guard lock{this->_sdl_windowing_call_mutex};
+        return SDL_GetWindowTitle(this->_window);
+    });
 }
 
 void
 Window::title(const std::string& title)
 {
-    this->_thread_safe_call([this, title]() {
+    get_engine()->make_call_from_main_thread<void>([this, title]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         SDL_SetWindowTitle(this->_window, title.c_str());
     });
@@ -67,14 +69,17 @@ Window::title(const std::string& title)
 bool
 Window::fullscreen()
 {
-    std::lock_guard lock{this->_sdl_windowing_call_mutex};
-    return SDL_GetWindowFlags(this->_window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+    return get_engine()->make_call_from_main_thread<bool>([this]() {
+        std::lock_guard lock{this->_sdl_windowing_call_mutex};
+        return SDL_GetWindowFlags(this->_window) &
+               SDL_WINDOW_FULLSCREEN_DESKTOP;
+    });
 }
 
 void
 Window::fullscreen(const bool fullscreen)
 {
-    this->_thread_safe_call([this, fullscreen]() {
+    get_engine()->make_call_from_main_thread<void>([this, fullscreen]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         int32_t value = fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0;
         SDL_SetWindowFullscreen(this->_window, value);
@@ -82,7 +87,7 @@ Window::fullscreen(const bool fullscreen)
 }
 
 glm::uvec2
-Window::size()
+Window::_peek_size()
 {
     std::lock_guard lock{this->_sdl_windowing_call_mutex};
     glm::uvec2 vec;
@@ -92,10 +97,23 @@ Window::size()
     return vec;
 }
 
+glm::uvec2
+Window::size()
+{
+    return get_engine()->make_call_from_main_thread<glm::uvec2>([this]() {
+        std::lock_guard lock{this->_sdl_windowing_call_mutex};
+        glm::uvec2 vec;
+        SDL_GetWindowSize(
+            this->_window, reinterpret_cast<int32_t*>(&vec.x),
+            reinterpret_cast<int32_t*>(&vec.y));
+        return vec;
+    });
+}
+
 void
 Window::size(const glm::uvec2& size)
 {
-    this->_thread_safe_call([this, size]() {
+    get_engine()->make_call_from_main_thread<void>([this, size]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         SDL_SetWindowSize(this->_window, size.x, size.y);
     });
@@ -104,7 +122,7 @@ Window::size(const glm::uvec2& size)
 void
 Window::maximize()
 {
-    this->_thread_safe_call([this]() {
+    get_engine()->make_call_from_main_thread<void>([this]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         SDL_MaximizeWindow(this->_window);
     });
@@ -113,7 +131,7 @@ Window::maximize()
 void
 Window::minimize()
 {
-    this->_thread_safe_call([this]() {
+    get_engine()->make_call_from_main_thread<void>([this]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         SDL_MinimizeWindow(this->_window);
     });
@@ -122,7 +140,7 @@ Window::minimize()
 void
 Window::restore()
 {
-    this->_thread_safe_call([this]() {
+    get_engine()->make_call_from_main_thread<void>([this]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         SDL_RestoreWindow(this->_window);
     });
@@ -131,18 +149,20 @@ Window::restore()
 glm::uvec2
 Window::position()
 {
-    std::lock_guard lock{this->_sdl_windowing_call_mutex};
-    glm::uvec2 vec;
-    SDL_GetWindowPosition(
-        this->_window, reinterpret_cast<int32_t*>(&vec.x),
-        reinterpret_cast<int32_t*>(&vec.y));
-    return vec;
+    return get_engine()->make_call_from_main_thread<glm::uvec2>([this]() {
+        std::lock_guard lock{this->_sdl_windowing_call_mutex};
+        glm::uvec2 vec;
+        SDL_GetWindowPosition(
+            this->_window, reinterpret_cast<int32_t*>(&vec.x),
+            reinterpret_cast<int32_t*>(&vec.y));
+        return vec;
+    });
 }
 
 void
 Window::position(const glm::uvec2& position)
 {
-    this->_thread_safe_call([this, position]() {
+    get_engine()->make_call_from_main_thread<void>([this, position]() {
         std::lock_guard lock{this->_sdl_windowing_call_mutex};
         SDL_SetWindowPosition(this->_window, position.x, position.y);
     });
@@ -172,19 +192,6 @@ Window::_deactivate()
     std::lock_guard lock{this->_sdl_windowing_call_mutex};
     SDL_HideWindow(this->_window);
     this->_active = false;
-}
-
-void
-Window::_thread_safe_call(DelayedSyscallFunction&& func)
-{
-    if (get_engine()->main_thread_id() == std::this_thread::get_id()) {
-        log<LogLevel::debug>("Received syscall request... calling now.");
-        func();
-    } else {
-        log<LogLevel::debug>(
-            "Received syscall request... not in main thread, delaying.");
-        get_engine()->enqueue_syscall_function(std::move(func));
-    }
 }
 
 } // namespace kaacore

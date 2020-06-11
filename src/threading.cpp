@@ -5,20 +5,13 @@
 namespace kaacore {
 
 void
-DelayedSyscallQueue::enqueue_function(DelayedSyscallFunction&& func)
+SyncedSyscallQueue::finalize_calls()
 {
     std::lock_guard lock{this->_queue_mutex};
-    this->_delayed_functions.emplace_back(std::move(func));
-}
-
-void
-DelayedSyscallQueue::call_all()
-{
-    std::lock_guard lock{this->_queue_mutex};
-    for (const auto& func : this->_delayed_functions) {
+    for (const auto& func : this->_queued_functions) {
         func();
     }
-    this->_delayed_functions.clear();
+    this->_queued_functions.clear();
 }
 
 } // namespace kaacore

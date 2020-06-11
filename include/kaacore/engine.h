@@ -81,7 +81,19 @@ class Engine {
 #endif
     }
 
-    void enqueue_syscall_function(DelayedSyscallFunction&& func);
+    template<typename T>
+    T make_call_from_main_thread(std::function<T()>&& func)
+    {
+        if (this->main_thread_id() == std::this_thread::get_id()) {
+            log<LogLevel::debug>("Received syscall request... calling now.");
+            return func();
+        }
+
+        KAACORE_ASSERT(this->is_running);
+        log<LogLevel::debug>("Received syscall request... not in main thread, "
+                             "calling though queue.");
+        return this->_synced_syscall_queue.make_sync_call<T>(std::move(func));
+    }
 
   private:
     class _ScenePointerWrapper {
@@ -106,7 +118,7 @@ class Engine {
     std::vector<Display> _displays;
 
     std::thread::id _main_thread_id;
-    DelayedSyscallQueue _delayed_syscall_queue;
+    SyncedSyscallQueue _synced_syscall_queue;
     std::mutex _sdl_windowing_call_mutex;
 
 #if KAACORE_MULTITHREADING_MODE
@@ -136,7 +148,6 @@ class Engine {
 #endif
 
     bgfx::Init _gather_platform_data();
-    void _refresh_displays();
     void _scene_processing();
     void _scene_processing_single();
     void _swap_scenes();

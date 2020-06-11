@@ -442,20 +442,32 @@ InputManager::InputManager(std::mutex& _sdl_windowing_call_mutex)
 std::string
 InputManager::SystemManager::get_clipboard_text() const
 {
-    auto text = SDL_GetClipboardText();
-    if (text == nullptr) {
-        log<LogLevel::error>("Unable to read clipboard content.");
-        return "";
-    }
-    return text;
+    InputManager* input_manager = container_of(this, &InputManager::system);
+    return get_engine()->make_call_from_main_thread<std::string>(
+        [input_manager]() -> std::string {
+            std::lock_guard<std::mutex> lock{
+                input_manager->_sdl_windowing_call_mutex};
+            auto text = SDL_GetClipboardText();
+            if (text == nullptr) {
+                log<LogLevel::error>("Unable to read clipboard content.");
+                return "";
+            }
+            return text;
+        });
 }
 
 void
 InputManager::SystemManager::set_clipboard_text(const std::string& text) const
 {
-    if (SDL_SetClipboardText(text.c_str()) < 0) {
-        log<LogLevel::error>("Unable to set clipboard content.");
-    }
+    InputManager* input_manager = container_of(this, &InputManager::system);
+    return get_engine()->make_call_from_main_thread<void>(
+        [input_manager, &text]() {
+            std::lock_guard<std::mutex> lock{
+                input_manager->_sdl_windowing_call_mutex};
+            if (SDL_SetClipboardText(text.c_str()) < 0) {
+                log<LogLevel::error>("Unable to set clipboard content.");
+            }
+        });
 }
 
 bool
@@ -495,15 +507,18 @@ bool
 InputManager::MouseManager::relative_mode() const
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
-    std::lock_guard<std::mutex> lock{input_manager->_sdl_windowing_call_mutex};
-    return SDL_GetRelativeMouseMode();
+    return get_engine()->make_call_from_main_thread<bool>([input_manager]() {
+        std::lock_guard<std::mutex> lock{
+            input_manager->_sdl_windowing_call_mutex};
+        return SDL_GetRelativeMouseMode();
+    });
 }
 
 void
 InputManager::MouseManager::relative_mode(const bool rel)
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
-    input_manager->_thread_safe_call([input_manager, rel]() {
+    get_engine()->make_call_from_main_thread<void>([input_manager, rel]() {
         std::lock_guard<std::mutex> lock{
             input_manager->_sdl_windowing_call_mutex};
         if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
@@ -694,19 +709,6 @@ void
 InputManager::clear_events()
 {
     this->events_queue.clear();
-}
-
-void
-InputManager::_thread_safe_call(DelayedSyscallFunction&& func)
-{
-    if (get_engine()->main_thread_id() == std::this_thread::get_id()) {
-        log<LogLevel::debug>("Received syscall request... calling now.");
-        func();
-    } else {
-        log<LogLevel::debug>(
-            "Received syscall request... not in main thread, delaying.");
-        get_engine()->enqueue_syscall_function(std::move(func));
-    }
 }
 
 } // namespace kaacore

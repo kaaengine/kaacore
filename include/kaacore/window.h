@@ -23,6 +23,7 @@ class Window {
     void title(const std::string& title);
     bool fullscreen();
     void fullscreen(const bool fullscreen);
+    glm::uvec2 _peek_size();
     glm::uvec2 size();
     void size(const glm::uvec2& size);
     void maximize();
@@ -35,7 +36,6 @@ class Window {
   private:
     void _activate();
     void _deactivate();
-    void _thread_safe_call(DelayedSyscallFunction&& func);
 
     bool _active = false;
     bool _is_shown = false;

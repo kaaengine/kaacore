@@ -194,7 +194,7 @@ void
 Renderer::reset()
 {
     log<LogLevel::debug>("Calling Renderer::reset()");
-    auto window_size = get_engine()->window->size();
+    auto window_size = get_engine()->window->_peek_size();
     bgfx::reset(window_size.x, window_size.y, this->_reset_flags);
 
     glm::uvec2 view_size, border_size;

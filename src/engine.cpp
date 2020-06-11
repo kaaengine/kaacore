@@ -37,8 +37,6 @@ Engine::Engine(
     SDL_Init(SDL_INIT_EVERYTHING);
     engine = this;
 
-    this->_refresh_displays();
-
     this->window = std::make_unique<Window>(
         this->_sdl_windowing_call_mutex, this->_virtual_resolution);
 
@@ -116,7 +114,23 @@ Engine::~Engine()
 std::vector<Display>
 Engine::get_displays()
 {
-    return this->_displays;
+    return this->make_call_from_main_thread<std::vector<Display>>([this]() {
+        std::lock_guard lock{this->_sdl_windowing_call_mutex};
+        std::vector<Display> displays;
+        SDL_Rect rect;
+        int32_t displays_num = SDL_GetNumVideoDisplays();
+        displays.resize(displays_num);
+        for (int32_t i = 0; i < displays_num; i++) {
+            SDL_GetDisplayUsableBounds(i, &rect);
+            Display& display = displays[i];
+            display.index = i;
+            display.position = {rect.x, rect.y};
+            display.size = {rect.w, rect.h};
+            display.name = SDL_GetDisplayName(i);
+        }
+
+        return displays;
+    });
 }
 
 void
@@ -181,12 +195,6 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
-void
-Engine::enqueue_syscall_function(DelayedSyscallFunction&& func)
-{
-    this->_delayed_syscall_queue.enqueue_function(std::move(func));
-}
-
 bgfx::Init
 Engine::_gather_platform_data()
 {
@@ -214,22 +222,6 @@ Engine::_gather_platform_data()
     bgfx_init_data.debug = true;
 
     return bgfx_init_data;
-}
-
-void
-Engine::_refresh_displays()
-{
-    SDL_Rect rect;
-    int32_t displays_num = SDL_GetNumVideoDisplays();
-    this->_displays.resize(displays_num);
-    for (int32_t i = 0; i < displays_num; i++) {
-        SDL_GetDisplayUsableBounds(i, &rect);
-        Display& display = this->_displays[i];
-        display.index = i;
-        display.position = {rect.x, rect.y};
-        display.size = {rect.w, rect.h};
-        display.name = SDL_GetDisplayName(i);
-    }
 }
 
 void
@@ -303,7 +295,6 @@ Engine::_process_events()
 #if !KAACORE_MULTITHREADING_MODE
     SDL_PumpEvents();
 #endif
-    this->_delayed_syscall_queue.call_all();
     this->input_manager->clear_events();
     SDL_Event event;
     int peep_status;
@@ -342,10 +333,15 @@ Engine::_main_loop_thread_entrypoint()
     this->_engine_loop_state.set(EngineLoopState::starting);
 
     while (true) {
-        this->_event_processing_state.wait(EventProcessingState::consumed);
+        do {
+            this->_synced_syscall_queue.finalize_calls();
+        } while (not this->_event_processing_state.wait_for(
+            EventProcessingState::consumed, std::chrono::milliseconds(5)));
         SDL_PumpEvents();
         this->_event_processing_state.set(EventProcessingState::ready);
-        bgfx::renderFrame();
+        do {
+            this->_synced_syscall_queue.finalize_calls();
+        } while (bgfx::renderFrame(5) == bgfx::RenderFrame::Enum::Timeout);
 
         if (this->_engine_loop_state.retrieve() == EngineLoopState::stopping) {
             break;

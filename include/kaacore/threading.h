@@ -1,22 +1,45 @@
-#include <condition_variable>
-#include <initializer_list>
 #pragma once
 
+#include <condition_variable>
 #include <functional>
+#include <future>
+#include <initializer_list>
 #include <mutex>
 #include <vector>
 
 namespace kaacore {
 
-typedef std::function<void()> DelayedSyscallFunction;
-
-class DelayedSyscallQueue {
+class SyncedSyscallQueue {
   public:
-    void enqueue_function(DelayedSyscallFunction&& func);
-    void call_all();
+    template<typename T>
+    T make_sync_call(std::function<T()>&& sync_func)
+    {
+        std::promise<T> result_promise;
+        auto result_future = result_promise.get_future();
+        auto call_wrapper = [&result_promise, &sync_func]() {
+            // TODO exceptions
+            if constexpr (std::is_void_v<T>) {
+                sync_func();
+                result_promise.set_value();
+            } else {
+                T ret = sync_func();
+                result_promise.set_value(std::move(ret));
+            }
+        };
+
+        {
+            std::lock_guard lock{this->_queue_mutex};
+            this->_queued_functions.push_back(std::move(call_wrapper));
+        }
+
+        result_future.wait();
+        return result_future.get();
+    }
+
+    void finalize_calls();
 
   private:
-    std::vector<DelayedSyscallFunction> _delayed_functions;
+    std::vector<std::function<void()>> _queued_functions;
     std::mutex _queue_mutex;
 };
 
@@ -42,6 +65,15 @@ class AwaitableStateEnum {
     {
         std::unique_lock lock{this->_mutex};
         this->_condition_var.wait(lock, [this, expected_state] {
+            return this->_current_state == expected_state;
+        });
+    }
+
+    template<typename Duration>
+    bool wait_for(T expected_state, Duration dur)
+    {
+        std::unique_lock lock{this->_mutex};
+        return this->_condition_var.wait_for(lock, dur, [this, expected_state] {
             return this->_current_state == expected_state;
         });
     }

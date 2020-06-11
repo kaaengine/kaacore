@@ -573,8 +573,6 @@ struct InputManager {
     void clear_events();
 
   private:
-    void _thread_safe_call(DelayedSyscallFunction&& func);
-
     std::unordered_map<EventType, EventCallback> _registered_callbacks;
     std::mutex& _sdl_windowing_call_mutex;
 
