@@ -110,14 +110,14 @@ class SpaceNode {
     bool locked() const;
 
   private:
-    cpSpace* _cp_space = nullptr;
-    uint32_t _time_acc = 0;
-    std::vector<SpacePostStepFunc> _post_step_callbacks;
-
     SpaceNode();
     ~SpaceNode();
 
     void simulate(uint32_t dt);
+
+    cpSpace* _cp_space = nullptr;
+    uint32_t _time_acc = 0;
+    std::vector<SpacePostStepFunc> _post_step_callbacks;
 
     friend class Node;
     friend class BodyNode;
@@ -163,8 +163,6 @@ class BodyNode {
     void sleeping(const bool& sleeping);
 
   private:
-    cpBody* _cp_body = nullptr;
-
     BodyNode();
     ~BodyNode();
 
@@ -176,6 +174,8 @@ class BodyNode {
 
     void override_simulation_rotation();
     void sync_simulation_rotation() const;
+
+    cpBody* _cp_body = nullptr;
 
     friend class Node;
     friend class HitboxNode;
@@ -202,14 +202,14 @@ class HitboxNode {
     CollisionBitmask collision_mask();
 
   private:
-    cpShape* _cp_shape = nullptr;
-
     HitboxNode();
     ~HitboxNode();
 
     void update_physics_shape();
     void attach_to_simulation();
     void detach_from_simulation();
+
+    cpShape* _cp_shape = nullptr;
 
     friend class Node;
 };
