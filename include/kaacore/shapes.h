@@ -26,13 +26,15 @@ struct Shape {
 
     std::vector<VertexIndex> indices;
     std::vector<StandardVertexData> vertices;
-    BoundingBox<float> vertices_bbox;
+    BoundingBox<double> vertices_bbox;
+    std::vector<glm::dvec2> bounding_points;
 
     Shape() : type(ShapeType::none){};
     Shape(
         const ShapeType type, const std::vector<glm::dvec2>& points,
         const double radius, const std::vector<VertexIndex>& indices,
-        const std::vector<StandardVertexData>& vertices);
+        const std::vector<StandardVertexData>& vertices,
+        const std::vector<glm::dvec2>& bounding_points);
 
     inline operator bool() const { return this->type != ShapeType::none; }
     bool operator==(const Shape& other);
@@ -47,6 +49,7 @@ struct Shape {
         const std::vector<StandardVertexData>& vertices);
 
     Shape transform(const Transformation& transformation) const;
+    bool contains_point(const glm::dvec2 point) const;
 };
 
 } // namespace kaacore

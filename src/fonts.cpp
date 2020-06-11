@@ -157,6 +157,10 @@ FontRenderGlyph::arrange_glyphs(
 Shape
 FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
 {
+    if (render_glyphs.empty()) {
+        return Shape{};
+    }
+
     std::vector<StandardVertexData> vertices;
     std::vector<VertexIndex> indices;
 
