@@ -64,6 +64,7 @@ Node::_mark_dirty()
 {
     this->_render_data.is_dirty = true;
     this->_model_matrix.is_dirty = true;
+    this->_spatial_data.is_dirty = true;
     for (auto child : this->_children) {
         if (not child->_model_matrix.is_dirty) {
             child->_mark_dirty();
@@ -74,7 +75,9 @@ Node::_mark_dirty()
 void
 Node::_mark_to_delete()
 {
+    KAACORE_ASSERT(this->_scene != nullptr);
     this->_marked_to_delete = true;
+    this->_scene->spatial_index.stop_tracking(this);
     for (auto child : this->_children) {
         if (not child->_marked_to_delete) {
             child->_mark_to_delete();
@@ -185,8 +188,13 @@ Node::add_child(NodeOwnerPtr& child_node)
     // TODO optimize (replace with iterator?)
     std::function<void(Node*)> initialize_node;
     initialize_node = [&initialize_node, this](Node* n) {
+        bool added_to_scene =
+            (n->_scene == nullptr and this->_scene != nullptr);
         n->_scene = this->_scene;
-        if (n->_type == NodeType::space) {
+        if (added_to_scene) {
+            n->_scene->spatial_index.start_tracking(n);
+        }
+        if (added_to_scene and n->_type == NodeType::space) {
             n->_scene->register_simulation(n);
         } else if (n->_type == NodeType::body) {
             n->body.attach_to_simulation();
@@ -218,7 +226,7 @@ Node::recalculate_render_data()
     }
 
     // TODO optimize
-    glm::fvec2 pos_realignment = calculate_realignment_vector(
+    glm::dvec2 pos_realignment = calculate_realignment_vector(
         this->_origin_alignment, this->_shape.vertices_bbox);
     this->_render_data.computed_vertices = this->_shape.vertices;
     for (auto& vertex : this->_render_data.computed_vertices) {
@@ -432,6 +440,7 @@ Node::shape(const Shape& shape, bool is_auto_shape)
     }
     // TODO: check if we aren't setting the same shape before marking it dirty
     this->_render_data.is_dirty = true;
+    this->_spatial_data.is_dirty = true;
 }
 
 Sprite
