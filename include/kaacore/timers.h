@@ -20,7 +20,7 @@ class Timer {
   public:
     Timer() = default;
     Timer(
-        const uint32_t interval, const TimerCallback callback,
+        const uint32_t interval, TimerCallback callback,
         const bool single_shot = true);
     ~Timer();
 
