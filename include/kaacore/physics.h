@@ -201,6 +201,18 @@ class HitboxNode {
     void collision_mask(const CollisionBitmask& mask);
     CollisionBitmask collision_mask();
 
+    void sensor(const bool sensor);
+    bool sensor();
+
+    void elasticity(const double elasticity);
+    double elasticity();
+
+    void friction(const double friction);
+    double friction();
+
+    void surface_velocity(const glm::dvec2 surface_velocity);
+    glm::dvec2 surface_velocity();
+
   private:
     HitboxNode();
     ~HitboxNode();

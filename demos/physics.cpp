@@ -66,12 +66,16 @@ struct DemoScene : Scene {
 
         this->wall_l =
             this->init_wall({-box_size, +box_size}, {-box_size, -box_size});
+        this->wall_l->hitbox.surface_velocity({0., 1e12});
         this->wall_t =
             this->init_wall({-box_size, -box_size}, {+box_size, -box_size});
+        this->wall_t->hitbox.surface_velocity({-1e12, 0.});
         this->wall_r =
             this->init_wall({+box_size, -box_size}, {+box_size, +box_size});
+        this->wall_r->hitbox.surface_velocity({0., -1e12});
         this->wall_b =
             this->init_wall({+box_size, +box_size}, {-box_size, +box_size});
+        this->wall_b->hitbox.surface_velocity({1e12, 0.});
 
         this->box->add_child(this->wall_l);
         this->box->add_child(this->wall_t);
@@ -98,6 +102,8 @@ struct DemoScene : Scene {
             ball_hitbox->shape(chosen_shape);
             ball_hitbox->scale({1.5, 1.5});
             ball_hitbox->hitbox.trigger_id(120);
+            ball_hitbox->hitbox.elasticity(0.3);
+            ball_hitbox->hitbox.friction(0.5);
             ball_hitbox->color(this->default_hitbox_color);
             ball_hitbox->z_index(ball->z_index() + 1);
 
@@ -142,7 +148,7 @@ struct DemoScene : Scene {
             },
             CollisionPhase::begin | CollisionPhase::separate);
         this->container->space.gravity({0.0, 2.5});
-        this->box->body.angular_velocity(-0.50);
+        this->box->body.angular_velocity(-0.10);
     }
 
     void update(uint32_t dt) override
@@ -151,7 +157,8 @@ struct DemoScene : Scene {
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
-            if (auto keyboard_key = event.keyboard_key()) {
+            auto keyboard_key = event.keyboard_key();
+            if (keyboard_key and keyboard_key->is_key_down()) {
                 if (keyboard_key->key() == Keycode::q) {
                     get_engine()->quit();
                     break;
