@@ -62,20 +62,10 @@ struct DecomposedTransformation {
 };
 
 class Transformation {
-    friend Transformation operator|(
-        const Transformation& left, const Transformation& right);
-    friend glm::dvec2 operator|(
-        const glm::dvec2& position, const Transformation& transformation);
-    friend Transformation& operator|=(
-        Transformation& left, const Transformation& right);
-    friend glm::dvec2& operator|=(
-        glm::dvec2& position, const Transformation& transformation);
-
-    glm::dmat4 _matrix;
-
   public:
     Transformation();
     Transformation(const glm::dmat4& matrix);
+    bool operator==(Transformation const& other) const;
 
     static Transformation translate(const glm::dvec2& tr);
     static Transformation scale(const glm::dvec2& sc);
@@ -85,6 +75,18 @@ class Transformation {
 
     double at(const size_t col, const size_t row) const;
     const DecomposedTransformation<double> decompose() const;
+
+  private:
+    glm::dmat4 _matrix;
+
+    friend Transformation operator|(
+        const Transformation& left, const Transformation& right);
+    friend glm::dvec2 operator|(
+        const glm::dvec2& position, const Transformation& transformation);
+    friend Transformation& operator|=(
+        Transformation& left, const Transformation& right);
+    friend glm::dvec2& operator|=(
+        glm::dvec2& position, const Transformation& transformation);
 };
 
 Transformation
