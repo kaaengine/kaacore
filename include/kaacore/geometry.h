@@ -104,31 +104,44 @@ struct BoundingBox {
     T min_x, min_y, max_x, max_y;
 
     BoundingBox()
-        : min_x(std::nan("")), max_x(std::nan("")), min_y(std::nan("")),
-          max_y(std::nan(""))
+        : BoundingBox(std::nan(""), std::nan(""), std::nan(""), std::nan(""))
     {}
 
-    void add_point(glm::vec<2, T> point)
-    {
-        if (std::isnan(this->min_x) or this->min_x > point.x) {
-            this->min_x = point.x;
-        }
-        if (std::isnan(this->max_x) or this->max_x < point.x) {
-            this->max_x = point.x;
-        }
-        if (std::isnan(this->min_y) or this->min_y > point.y) {
-            this->min_y = point.y;
-        }
-        if (std::isnan(this->max_y) or this->max_y < point.y) {
-            this->max_y = point.y;
-        }
-    }
+    BoundingBox(const T min_x, const T min_y, const T max_x, const T max_y)
+        : min_x(min_x), min_y(min_y), max_x(max_x), max_y(max_y)
+    {}
 
     operator bool() const
     {
         return (
-            !std::isnan(this->min_x) and !std::isnan(this->max_x) and
-            !std::isnan(this->min_y) and !std::isnan(this->max_y));
+            not std::isnan(this->min_x) and not std::isnan(this->max_x) and
+            not std::isnan(this->min_y) and not std::isnan(this->max_y));
+    }
+
+    static BoundingBox<T> single_point(glm::tvec2<T> pt)
+    {
+        return BoundingBox<T>{pt.x, pt.y, pt.x, pt.y};
+    }
+
+    static BoundingBox<T> from_points(const std::vector<glm::tvec2<T>>& points)
+    {
+        BoundingBox<T> bbox;
+        for (const auto& pt : points) {
+            if (std::isnan(bbox.min_x) or bbox.min_x > pt.x) {
+                bbox.min_x = pt.x;
+            }
+            if (std::isnan(bbox.max_x) or bbox.max_x < pt.x) {
+                bbox.max_x = pt.x;
+            }
+            if (std::isnan(bbox.min_y) or bbox.min_y > pt.y) {
+                bbox.min_y = pt.y;
+            }
+            if (std::isnan(bbox.max_y) or bbox.max_y < pt.y) {
+                bbox.max_y = pt.y;
+            }
+        }
+
+        return bbox;
     }
 };
 
@@ -168,6 +181,10 @@ calculate_realignment_vector(Alignment alignment, const BoundingBox<T>& bbox)
 
     return {align_x, align_y};
 }
+
+bool
+check_point_in_polygon(
+    const std::vector<glm::dvec2>& polygon_points, const glm::dvec2 point);
 
 PolygonType
 classify_polygon(const std::vector<glm::dvec2>& points);

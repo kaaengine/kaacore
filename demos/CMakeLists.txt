@@ -25,6 +25,9 @@ list(APPEND DEMO_TARGETS demo-transitions)
 add_executable(demo-controllers controllers.cpp)
 list(APPEND DEMO_TARGETS demo-controllers)
 
+add_executable(demo-spatial-indexing spatial_indexing.cpp)
+list(APPEND DEMO_TARGETS demo-spatial-indexing)
+
 target_link_libraries(demo-basic-scene kaacore)
 target_link_libraries(demo-physics kaacore)
 target_link_libraries(demo-sprites kaacore)
@@ -33,6 +36,7 @@ target_link_libraries(demo-fonts kaacore)
 target_link_libraries(demo-timers kaacore)
 target_link_libraries(demo-transitions kaacore)
 target_link_libraries(demo-controllers kaacore)
+target_link_libraries(demo-spatial-indexing kaacore)
 set_target_properties(
     ${DEMO_TARGETS}
     PROPERTIES

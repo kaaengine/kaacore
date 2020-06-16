@@ -12,6 +12,7 @@
 #include "kaacore/physics.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shapes.h"
+#include "kaacore/spatial_index.h"
 #include "kaacore/sprites.h"
 #include "kaacore/transitions.h"
 
@@ -139,6 +140,8 @@ class Node {
         bool is_dirty = true;
     } _render_data;
 
+    NodeSpatialData _spatial_data;
+
     bool _marked_to_delete = false;
 
     void _mark_dirty();
@@ -158,6 +161,9 @@ class Node {
     friend struct SpaceNode;
     friend struct BodyNode;
     friend struct HitboxNode;
+    friend struct NodeSpatialData;
+    friend class SpatialIndex;
+    friend constexpr Node* container_node(const NodeSpatialData*);
 };
 
 template<class... Args>

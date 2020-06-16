@@ -83,21 +83,6 @@ struct ShapeQueryResult {
 };
 
 class SpaceNode {
-    friend class Node;
-    friend class BodyNode;
-    friend class HitboxNode;
-    friend class Scene;
-    friend void cp_call_post_step_callbacks(cpSpace*, void*, void*);
-
-    cpSpace* _cp_space = nullptr;
-    uint32_t _time_acc = 0;
-    std::vector<SpacePostStepFunc> _post_step_callbacks;
-
-    SpaceNode();
-    ~SpaceNode();
-
-    void simulate(uint32_t dt);
-
   public:
     void add_post_step_callback(const SpacePostStepFunc& func);
 
@@ -123,6 +108,22 @@ class SpaceNode {
     double sleeping_threshold();
 
     bool locked() const;
+
+  private:
+    SpaceNode();
+    ~SpaceNode();
+
+    void simulate(uint32_t dt);
+
+    cpSpace* _cp_space = nullptr;
+    uint32_t _time_acc = 0;
+    std::vector<SpacePostStepFunc> _post_step_callbacks;
+
+    friend class Node;
+    friend class BodyNode;
+    friend class HitboxNode;
+    friend class Scene;
+    friend void cp_call_post_step_callbacks(cpSpace*, void*, void*);
 };
 
 enum struct BodyNodeType {
@@ -132,24 +133,6 @@ enum struct BodyNodeType {
 };
 
 class BodyNode {
-    friend class Node;
-    friend class HitboxNode;
-    friend class Scene;
-
-    cpBody* _cp_body = nullptr;
-
-    BodyNode();
-    ~BodyNode();
-
-    void attach_to_simulation();
-    void detach_from_simulation();
-
-    void override_simulation_position();
-    void sync_simulation_position() const;
-
-    void override_simulation_rotation();
-    void sync_simulation_rotation() const;
-
   public:
     SpaceNode* space() const;
 
@@ -178,23 +161,31 @@ class BodyNode {
 
     bool sleeping();
     void sleeping(const bool& sleeping);
+
+  private:
+    BodyNode();
+    ~BodyNode();
+
+    void attach_to_simulation();
+    void detach_from_simulation();
+
+    void override_simulation_position();
+    void sync_simulation_position() const;
+
+    void override_simulation_rotation();
+    void sync_simulation_rotation() const;
+
+    cpBody* _cp_body = nullptr;
+
+    friend class Node;
+    friend class HitboxNode;
+    friend class Scene;
 };
 
 CpShapeUniquePtr
 prepare_hitbox_shape(const Shape& shape, const Transformation& transformtion);
 
 class HitboxNode {
-    friend class Node;
-
-    cpShape* _cp_shape = nullptr;
-
-    HitboxNode();
-    ~HitboxNode();
-
-    void update_physics_shape();
-    void attach_to_simulation();
-    void detach_from_simulation();
-
   public:
     SpaceNode* space() const;
 
@@ -209,6 +200,18 @@ class HitboxNode {
 
     void collision_mask(const CollisionBitmask& mask);
     CollisionBitmask collision_mask();
+
+  private:
+    HitboxNode();
+    ~HitboxNode();
+
+    void update_physics_shape();
+    void attach_to_simulation();
+    void detach_from_simulation();
+
+    cpShape* _cp_shape = nullptr;
+
+    friend class Node;
 };
 
 } // namespace kaacore

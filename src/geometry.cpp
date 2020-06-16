@@ -156,6 +156,31 @@ classify_polygon(const std::vector<glm::dvec2>& points)
     }
 }
 
+bool
+check_point_in_polygon(
+    const std::vector<glm::dvec2>& polygon_points, const glm::dvec2 point)
+{
+    const auto points_count = polygon_points.size();
+    if (points_count < 3) {
+        return false;
+    }
+
+    int turn = 0;
+    for (size_t i; i < points_count; i++) {
+        const auto& pt1 = polygon_points[i];
+        const auto& pt2 = polygon_points[(i + 1) % points_count];
+
+        int new_turn = detect_turn(pt1, pt2, point);
+        if (new_turn == 0) {
+            return true;
+        } else if (new_turn == turn or turn == 0) {
+            turn = new_turn;
+        } else {
+            return false;
+        }
+    }
+}
+
 glm::dvec2
 find_points_center(const std::vector<glm::dvec2>& points)
 {
