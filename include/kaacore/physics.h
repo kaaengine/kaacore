@@ -84,21 +84,6 @@ struct ShapeQueryResult {
 };
 
 class SpaceNode {
-    friend class Node;
-    friend class BodyNode;
-    friend class HitboxNode;
-    friend class Scene;
-    friend void cp_call_post_step_callbacks(cpSpace*, void*, void*);
-
-    cpSpace* _cp_space = nullptr;
-    uint32_t _time_acc = 0;
-    std::vector<SpacePostStepFunc> _post_step_callbacks;
-
-    SpaceNode();
-    ~SpaceNode();
-
-    void simulate(uint32_t dt);
-
   public:
     void add_post_step_callback(const SpacePostStepFunc& func);
 
@@ -124,6 +109,22 @@ class SpaceNode {
     double sleeping_threshold();
 
     bool locked() const;
+
+  private:
+    SpaceNode();
+    ~SpaceNode();
+
+    void simulate(uint32_t dt);
+
+    cpSpace* _cp_space = nullptr;
+    uint32_t _time_acc = 0;
+    std::vector<SpacePostStepFunc> _post_step_callbacks;
+
+    friend class Node;
+    friend class BodyNode;
+    friend class HitboxNode;
+    friend class Scene;
+    friend void cp_call_post_step_callbacks(cpSpace*, void*, void*);
 };
 
 enum struct BodyNodeType {
@@ -143,32 +144,6 @@ static void
 _position_update_wrapper(cpBody* cp_body, cpFloat dt);
 
 class BodyNode {
-    friend class Node;
-    friend class HitboxNode;
-    friend class Scene;
-    friend void _velocity_update_wrapper(cpBody*, cpVect, cpFloat, cpFloat);
-    friend void _position_update_wrapper(cpBody*, cpFloat);
-
-    cpBody* _cp_body = nullptr;
-
-    std::optional<double> _damping = std::nullopt;
-    std::optional<cpVect> _gravity = std::nullopt;
-
-    VelocityUpdateCallback _velocity_update_callback = nullptr;
-    PositionUpdateCallback _position_update_callback = nullptr;
-
-    BodyNode();
-    ~BodyNode();
-
-    void attach_to_simulation();
-    void detach_from_simulation();
-
-    void override_simulation_position();
-    void sync_simulation_position() const;
-
-    void override_simulation_rotation();
-    void sync_simulation_rotation() const;
-
   public:
     SpaceNode* space() const;
 
@@ -223,23 +198,40 @@ class BodyNode {
 
     void set_velocity_update_callback(VelocityUpdateCallback callback);
     void set_position_update_callback(PositionUpdateCallback callback);
+
+  private:
+    BodyNode();
+    ~BodyNode();
+
+    void attach_to_simulation();
+    void detach_from_simulation();
+
+    void override_simulation_position();
+    void sync_simulation_position() const;
+
+    void override_simulation_rotation();
+    void sync_simulation_rotation() const;
+
+    cpBody* _cp_body = nullptr;
+
+    std::optional<double> _damping = std::nullopt;
+    std::optional<cpVect> _gravity = std::nullopt;
+
+    VelocityUpdateCallback _velocity_update_callback = nullptr;
+    PositionUpdateCallback _position_update_callback = nullptr;
+
+    friend class Node;
+    friend class HitboxNode;
+    friend class Scene;
+
+    friend void _velocity_update_wrapper(cpBody*, cpVect, cpFloat, cpFloat);
+    friend void _position_update_wrapper(cpBody*, cpFloat);
 };
 
 CpShapeUniquePtr
 prepare_hitbox_shape(const Shape& shape, const Transformation& transformtion);
 
 class HitboxNode {
-    friend class Node;
-
-    cpShape* _cp_shape = nullptr;
-
-    HitboxNode();
-    ~HitboxNode();
-
-    void update_physics_shape();
-    void attach_to_simulation();
-    void detach_from_simulation();
-
   public:
     SpaceNode* space() const;
 
@@ -254,6 +246,30 @@ class HitboxNode {
 
     void collision_mask(const CollisionBitmask& mask);
     CollisionBitmask collision_mask();
+
+    void sensor(const bool sensor);
+    bool sensor();
+
+    void elasticity(const double elasticity);
+    double elasticity();
+
+    void friction(const double friction);
+    double friction();
+
+    void surface_velocity(const glm::dvec2 surface_velocity);
+    glm::dvec2 surface_velocity();
+
+  private:
+    HitboxNode();
+    ~HitboxNode();
+
+    void update_physics_shape();
+    void attach_to_simulation();
+    void detach_from_simulation();
+
+    cpShape* _cp_shape = nullptr;
+
+    friend class Node;
 };
 
 } // namespace kaacore
