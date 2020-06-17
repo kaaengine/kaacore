@@ -612,6 +612,24 @@ BodyNode::velocity(const glm::dvec2& velocity)
 }
 
 glm::dvec2
+BodyNode::local_force()
+{
+    ASSERT_VALID_BODY_NODE();
+    auto cp_vector = cpBodyGetForce(this->_cp_body);
+    auto transformed_cp_vector = cpTransformVect(
+        cpTransformInverse(this->_cp_body->transform), cp_vector);
+    return convert_vector(transformed_cp_vector);
+}
+
+void
+BodyNode::local_force(const glm::dvec2& force)
+{
+    auto transformed_force =
+        cpTransformVect(this->_cp_body->transform, convert_vector(force));
+    cpBodySetForce(this->_cp_body, transformed_force);
+}
+
+glm::dvec2
 BodyNode::force()
 {
     ASSERT_VALID_BODY_NODE();
@@ -625,25 +643,31 @@ BodyNode::force(const glm::dvec2& force)
 }
 
 void
-BodyNode::apply_force_at(
-    const glm::dvec2& force, const glm::dvec2& at, bool local) const
+BodyNode::apply_force_at_local(
+    const glm::dvec2& force, const glm::dvec2& at) const
 {
-    if (local) {
-        return cpBodyApplyForceAtLocalPoint(
-            this->_cp_body, convert_vector(force), convert_vector(at));
-    }
+    cpBodyApplyForceAtLocalPoint(
+        this->_cp_body, convert_vector(force), convert_vector(at));
+}
+
+void
+BodyNode::apply_impulse_at_local(
+    const glm::dvec2& force, const glm::dvec2& at) const
+{
+    cpBodyApplyImpulseAtLocalPoint(
+        this->_cp_body, convert_vector(force), convert_vector(at));
+}
+
+void
+BodyNode::apply_force_at(const glm::dvec2& force, const glm::dvec2& at) const
+{
     cpBodyApplyForceAtWorldPoint(
         this->_cp_body, convert_vector(force), convert_vector(at));
 }
 
 void
-BodyNode::apply_impulse_at(
-    const glm::dvec2& force, const glm::dvec2& at, bool local) const
+BodyNode::apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at) const
 {
-    if (local) {
-        return cpBodyApplyImpulseAtLocalPoint(
-            this->_cp_body, convert_vector(force), convert_vector(at));
-    }
     cpBodyApplyImpulseAtWorldPoint(
         this->_cp_body, convert_vector(force), convert_vector(at));
 }
