@@ -727,7 +727,6 @@ HitboxNode::update_physics_shape()
         "Updating hitbox node %p shape (cpShape: %p)", node, new_cp_shape);
 
     cpShapeSetUserData(new_cp_shape, this);
-    cpShapeSetElasticity(new_cp_shape, 0.95);
 
     if (this->_cp_shape != nullptr) {
         cpShapeSetUserData(this->_cp_shape, nullptr);
@@ -736,6 +735,12 @@ HitboxNode::update_physics_shape()
         cpShapeSetCollisionType(
             new_cp_shape, cpShapeGetCollisionType(this->_cp_shape));
         cpShapeSetFilter(new_cp_shape, cpShapeGetFilter(this->_cp_shape));
+        cpShapeSetSensor(new_cp_shape, cpShapeGetSensor(this->_cp_shape));
+        cpShapeSetElasticity(
+            new_cp_shape, cpShapeGetElasticity(this->_cp_shape));
+        cpShapeSetFriction(new_cp_shape, cpShapeGetFriction(this->_cp_shape));
+        cpShapeSetSurfaceVelocity(
+            new_cp_shape, cpShapeGetSurfaceVelocity(this->_cp_shape));
 
         space_safe_call(
             this->space(),
@@ -749,6 +754,8 @@ HitboxNode::update_physics_shape()
                 cpShapeFree(shape_ptr);
             });
         this->_cp_shape = nullptr;
+    } else {
+        cpShapeSetElasticity(new_cp_shape, 0.95); // default elasticity value
     }
 
     this->_cp_shape = new_cp_shape;
@@ -886,6 +893,63 @@ HitboxNode::collision_mask(const CollisionBitmask& mask)
     auto filter = cpShapeGetFilter(this->_cp_shape);
     filter.mask = mask;
     cpShapeSetFilter(this->_cp_shape, filter);
+}
+
+void
+HitboxNode::sensor(const bool sensor)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    cpShapeSetSensor(this->_cp_shape, sensor);
+}
+
+bool
+HitboxNode::sensor()
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return cpShapeGetSensor(this->_cp_shape);
+}
+
+void
+HitboxNode::elasticity(const double elasticity)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    cpShapeSetElasticity(this->_cp_shape, elasticity);
+}
+
+double
+HitboxNode::elasticity()
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return cpShapeGetElasticity(this->_cp_shape);
+}
+
+void
+HitboxNode::friction(const double friction)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    cpShapeSetFriction(this->_cp_shape, friction);
+}
+
+double
+HitboxNode::friction()
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return cpShapeGetFriction(this->_cp_shape);
+}
+
+void
+HitboxNode::surface_velocity(const glm::dvec2 surface_velocity)
+{
+    ASSERT_VALID_HITBOX_NODE();
+    cpShapeSetSurfaceVelocity(
+        this->_cp_shape, convert_vector(surface_velocity));
+}
+
+glm::dvec2
+HitboxNode::surface_velocity()
+{
+    ASSERT_VALID_HITBOX_NODE();
+    return convert_vector(cpShapeGetSurfaceVelocity(this->_cp_shape));
 }
 
 } // namespace kaacore
