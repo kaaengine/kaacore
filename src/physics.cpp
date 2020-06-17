@@ -77,21 +77,18 @@ convert_contact_points(const cpContactPointSet* const cp_contact_points)
 inline constexpr Node*
 container_node(const SpaceNode* space)
 {
-    // static_assert(std::is_standard_layout<Node>::value, "");
     return container_of(space, &Node::space);
 }
 
 inline constexpr Node*
 container_node(const BodyNode* body)
 {
-    // static_assert(std::is_standard_layout<Node>::value, "");
     return container_of(body, &Node::body);
 }
 
 inline constexpr Node*
 container_node(const HitboxNode* hitbox)
 {
-    // static_assert(std::is_standard_layout<Node>::value, "");
     return container_of(hitbox, &Node::hitbox);
 }
 
@@ -393,7 +390,7 @@ SpaceNode::damping()
 }
 
 void
-SpaceNode::damping(const double& damping)
+SpaceNode::damping(const double damping)
 {
     ASSERT_VALID_SPACE_NODE();
     cpSpaceSetDamping(this->_cp_space, damping);
@@ -407,7 +404,7 @@ SpaceNode::sleeping_threshold()
 }
 
 void
-SpaceNode::sleeping_threshold(const double& threshold)
+SpaceNode::sleeping_threshold(const double threshold)
 {
     ASSERT_VALID_SPACE_NODE();
     cpSpaceSetSleepTimeThreshold(this->_cp_space, threshold);
@@ -551,8 +548,15 @@ BodyNode::mass()
     return cpBodyGetMass(this->_cp_body);
 }
 
+double
+BodyNode::mass_inverse()
+{
+    ASSERT_DYNAMIC_BODY_NODE();
+    return this->_cp_body->m_inv;
+}
+
 void
-BodyNode::mass(const double& m)
+BodyNode::mass(const double m)
 {
     ASSERT_DYNAMIC_BODY_NODE();
     cpBodySetMass(this->_cp_body, m);
@@ -565,11 +569,32 @@ BodyNode::moment()
     return cpBodyGetMoment(this->_cp_body);
 }
 
+double
+BodyNode::moment_inverse()
+{
+    ASSERT_DYNAMIC_BODY_NODE();
+    return this->_cp_body->i_inv;
+}
+
 void
-BodyNode::moment(const double& i)
+BodyNode::moment(const double i)
 {
     ASSERT_DYNAMIC_BODY_NODE();
     cpBodySetMoment(this->_cp_body, i);
+}
+
+void
+BodyNode::center_of_gravity(const glm::dvec2& cog)
+{
+    ASSERT_DYNAMIC_BODY_NODE();
+    cpBodySetCenterOfGravity(this->_cp_body, convert_vector(cog));
+}
+
+glm::dvec2
+BodyNode::center_of_gravity()
+{
+    ASSERT_DYNAMIC_BODY_NODE();
+    return convert_vector(cpBodyGetCenterOfGravity(this->_cp_body));
 }
 
 glm::dvec2
@@ -587,6 +612,24 @@ BodyNode::velocity(const glm::dvec2& velocity)
 }
 
 glm::dvec2
+BodyNode::local_force()
+{
+    ASSERT_VALID_BODY_NODE();
+    auto cp_vector = cpBodyGetForce(this->_cp_body);
+    auto transformed_cp_vector = cpTransformVect(
+        cpTransformInverse(this->_cp_body->transform), cp_vector);
+    return convert_vector(transformed_cp_vector);
+}
+
+void
+BodyNode::local_force(const glm::dvec2& force)
+{
+    auto transformed_force =
+        cpTransformVect(this->_cp_body->transform, convert_vector(force));
+    cpBodySetForce(this->_cp_body, transformed_force);
+}
+
+glm::dvec2
 BodyNode::force()
 {
     ASSERT_VALID_BODY_NODE();
@@ -600,16 +643,32 @@ BodyNode::force(const glm::dvec2& force)
 }
 
 void
-BodyNode::apply_force_at(const glm::dvec2& force, const glm::dvec2& at)
+BodyNode::apply_force_at_local(
+    const glm::dvec2& force, const glm::dvec2& at) const
 {
     cpBodyApplyForceAtLocalPoint(
         this->_cp_body, convert_vector(force), convert_vector(at));
 }
 
 void
-BodyNode::apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at)
+BodyNode::apply_impulse_at_local(
+    const glm::dvec2& force, const glm::dvec2& at) const
 {
     cpBodyApplyImpulseAtLocalPoint(
+        this->_cp_body, convert_vector(force), convert_vector(at));
+}
+
+void
+BodyNode::apply_force_at(const glm::dvec2& force, const glm::dvec2& at) const
+{
+    cpBodyApplyForceAtWorldPoint(
+        this->_cp_body, convert_vector(force), convert_vector(at));
+}
+
+void
+BodyNode::apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at) const
+{
+    cpBodyApplyImpulseAtWorldPoint(
         this->_cp_body, convert_vector(force), convert_vector(at));
 }
 
@@ -621,7 +680,7 @@ BodyNode::torque()
 }
 
 void
-BodyNode::torque(const double& torque)
+BodyNode::torque(const double torque)
 {
     ASSERT_VALID_BODY_NODE();
     cpBodySetTorque(this->_cp_body, torque);
@@ -641,6 +700,54 @@ BodyNode::angular_velocity(const double& angular_velocity)
     cpBodySetAngularVelocity(this->_cp_body, angular_velocity);
 }
 
+void
+BodyNode::damping(const std::optional<double>& damping)
+{
+    this->_damping = damping;
+    if (this->_damping) {
+        cpBodySetVelocityUpdateFunc(this->_cp_body, _velocity_update_wrapper);
+    } else if (
+        this->_gravity == std::nullopt and
+        this->_velocity_update_callback == nullptr) {
+        // if custom velocity wrapper is not in use anymore, switch back to
+        // default chipmunk function
+        cpBodySetVelocityUpdateFunc(this->_cp_body, cpBodyUpdateVelocity);
+    }
+}
+
+std::optional<double>
+BodyNode::damping()
+{
+    return this->_damping;
+}
+
+void
+BodyNode::gravity(const std::optional<glm::dvec2>& gravity)
+{
+    if (gravity) {
+        this->_gravity = convert_vector(gravity.value());
+        cpBodySetVelocityUpdateFunc(this->_cp_body, _velocity_update_wrapper);
+    } else {
+        this->_gravity = std::nullopt;
+
+        if (this->_damping == std::nullopt and
+            this->_velocity_update_callback == nullptr) {
+            // if custom velocity wrapper is not in use anymore, switch back to
+            // default chipmunk function
+            cpBodySetVelocityUpdateFunc(this->_cp_body, cpBodyUpdateVelocity);
+        }
+    }
+}
+
+std::optional<glm::dvec2>
+BodyNode::gravity()
+{
+    if (this->_gravity) {
+        return convert_vector(this->_gravity.value());
+    }
+    return std::nullopt;
+}
+
 bool
 BodyNode::sleeping()
 {
@@ -649,7 +756,7 @@ BodyNode::sleeping()
 }
 
 void
-BodyNode::sleeping(const bool& sleeping)
+BodyNode::sleeping(const bool sleeping)
 {
     ASSERT_VALID_BODY_NODE();
     if (sleeping) {
@@ -657,6 +764,87 @@ BodyNode::sleeping(const bool& sleeping)
     } else {
         cpBodyActivate(this->_cp_body);
     }
+}
+
+glm::dvec2
+BodyNode::_velocity_bias()
+{
+    return convert_vector(this->_cp_body->v_bias);
+}
+
+void
+BodyNode::_velocity_bias(const glm::dvec2& velocity)
+{
+    this->_cp_body->v_bias = convert_vector(velocity);
+}
+
+double
+BodyNode::_angular_velocity_bias()
+{
+    return this->_cp_body->w_bias;
+}
+
+void
+BodyNode::_angular_velocity_bias(const double torque)
+{
+    this->_cp_body->w_bias = torque;
+}
+
+void
+_velocity_update_wrapper(
+    cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt)
+{
+    auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
+
+    if (body->_gravity) {
+        gravity = body->_gravity.value();
+    }
+
+    if (body->_damping) {
+        damping = body->_damping.value();
+    }
+
+    if (body->_velocity_update_callback == nullptr) {
+        return cpBodyUpdateVelocity(cp_body, gravity, damping, dt);
+    }
+
+    Node* node = container_node(body);
+    body->_velocity_update_callback(node, {gravity.x, gravity.y}, damping, dt);
+    // TODO: cpAssertSaneBody
+}
+
+void
+_position_update_wrapper(cpBody* cp_body, cpFloat dt)
+{
+    auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
+    Node* node = container_node(body);
+    body->_position_update_callback(node, dt);
+    // TODO: cpAssertSaneBody
+}
+
+void
+BodyNode::set_velocity_update_callback(VelocityUpdateCallback callback)
+{
+    this->_velocity_update_callback = std::move(callback);
+    if (this->_velocity_update_callback == nullptr) {
+        return cpBodySetVelocityUpdateFunc(
+            this->_cp_body, cpBodyUpdateVelocity);
+    }
+    cpBodySetVelocityUpdateFunc(this->_cp_body, _velocity_update_wrapper);
+}
+
+void
+BodyNode::set_position_update_callback(PositionUpdateCallback callback)
+{
+    this->_position_update_callback = std::move(callback);
+    if (this->_position_update_callback == nullptr) {
+        // if custom position wrapper is not in use anymore, switch back to
+        // default chipmunk function
+        return cpBodySetPositionUpdateFunc(
+            this->_cp_body, cpBodyUpdatePosition);
+    }
+
+    cpBodySetPositionUpdateFunc(this->_cp_body, _position_update_wrapper);
 }
 
 CpShapeUniquePtr
