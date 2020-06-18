@@ -454,7 +454,11 @@ Node::sprite(const Sprite& sprite)
 {
     this->_sprite = sprite;
     if (this->_auto_shape) {
-        this->shape(Shape::Box(sprite.get_size()), true);
+        if (sprite) {
+            this->shape(Shape::Box(sprite.get_size()), true);
+        } else {
+            this->shape(Shape{});
+        }
     }
     // TODO: check if we aren't setting the same sprite before marking it dirty
     this->_render_data.is_dirty = true;

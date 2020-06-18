@@ -164,7 +164,7 @@ Shape::Polygon(const std::vector<glm::dvec2>& points)
     }
 
     return Shape(
-        ShapeType::polygon, polygon_points, 0., indices, vertices, points);
+        ShapeType::polygon, polygon_points, 0., indices, vertices, polygon_points);
 }
 
 Shape
