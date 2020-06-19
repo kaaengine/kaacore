@@ -19,6 +19,7 @@ struct NodeSpatialData {
     bool is_dirty = false;
     BoundingBox<double> bounding_box;
     std::vector<glm::dvec2> bounding_points_transformed;
+    uint64_t index_uid;
 };
 
 class SpatialIndex {
@@ -41,6 +42,7 @@ class SpatialIndex {
         const BoundingBox<double>& bbox);
 
     cpSpatialIndex* _cp_index;
+    uint64_t _index_counter;
 };
 
 } // namespace kaacore

@@ -31,12 +31,6 @@ _node_wrapper_bbfunc(void* node_wrapper_obj)
     return convert_bounding_box(wrapper->bounding_box);
 }
 
-cpHashValue
-_node_hash(Node* node)
-{
-    return reinterpret_cast<cpHashValue>(node);
-}
-
 inline constexpr Node*
 container_node(const NodeSpatialData* spatial_data)
 {
@@ -87,7 +81,7 @@ NodeSpatialData::contains_point(const glm::dvec2 point) const
     return check_point_in_polygon(this->bounding_points_transformed, point);
 }
 
-SpatialIndex::SpatialIndex()
+SpatialIndex::SpatialIndex() : _index_counter(0)
 {
     this->_cp_index = cpBBTreeNew(_node_wrapper_bbfunc, nullptr);
 }
@@ -101,22 +95,23 @@ void
 SpatialIndex::start_tracking(Node* node)
 {
     node->_spatial_data.is_dirty = true;
+    node->_spatial_data.index_uid = ++this->_index_counter;
     cpSpatialIndexInsert(
-        this->_cp_index, &node->_spatial_data, _node_hash(node));
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
 }
 
 void
 SpatialIndex::stop_tracking(Node* node)
 {
     cpSpatialIndexRemove(
-        this->_cp_index, &node->_spatial_data, _node_hash(node));
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
 }
 
 void
 SpatialIndex::refresh_single(Node* node)
 {
     cpSpatialIndexReindexObject(
-        this->_cp_index, &node->_spatial_data, _node_hash(node));
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
 }
 
 void
