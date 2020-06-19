@@ -179,6 +179,7 @@ check_point_in_polygon(
             return false;
         }
     }
+    return true;
 }
 
 glm::dvec2
