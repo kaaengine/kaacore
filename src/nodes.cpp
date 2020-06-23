@@ -582,4 +582,19 @@ Node::wrapper_ptr() const
     return this->_node_wrapper.get();
 }
 
+void
+Node::indexable(const bool indexable_flag)
+{
+    if (this->_indexable != indexable_flag) {
+        this->_indexable = indexable_flag;
+        this->_spatial_data.is_dirty = true;
+    }
+}
+
+bool
+Node::indexable() const
+{
+    return this->_indexable;
+}
+
 } // namespace kaacore

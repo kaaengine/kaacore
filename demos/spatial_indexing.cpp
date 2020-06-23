@@ -13,6 +13,7 @@ using namespace kaacore;
 
 struct SpatialIndexingDemoScene : Scene {
     NodeOwnerPtr stats_text_node;
+    NodeOwnerPtr shapes_tree;
 
     SpatialIndexingDemoScene()
     {
@@ -39,7 +40,7 @@ struct SpatialIndexingDemoScene : Scene {
         this->stats_text_node->origin_alignment(Alignment::top_left);
         this->root_node.add_child(this->stats_text_node);
 
-        auto shapes_tree = make_node();
+        this->shapes_tree = make_node();
         shapes_tree->scale({0.5, 0.5});
         shapes_tree->transition(scaling_transition);
         this->root_node.add_child(shapes_tree);
@@ -64,6 +65,19 @@ struct SpatialIndexingDemoScene : Scene {
             if (keyboard_key and keyboard_key->key() == Keycode::q) {
                 get_engine()->quit();
                 break;
+            } else if (keyboard_key and keyboard_key->key() == Keycode::r) {
+                log<LogLevel::info, LogCategory::application>(
+                    "Resetting non-indexable nodes...");
+                int count = 0;
+                for (auto node : this->shapes_tree->children()) {
+                    if (not node->indexable()) {
+                        node->indexable(true);
+                        node->color({0.5, 0.5, 1., 1.});
+                        count++;
+                    }
+                }
+                log<LogLevel::info, LogCategory::application>(
+                    "Reset nodes: %d", count);
             }
 
             if (auto mouse_button = event.mouse_button()) {
@@ -77,14 +91,26 @@ struct SpatialIndexingDemoScene : Scene {
                     for (auto& node : query_results) {
                         node->color({1., 0., 0., 1.});
                     }
+                } else if (
+                    mouse_button->is_button_down() and
+                    mouse_button->button() == MouseButton::right) {
+                    pos = this->camera().unproject_position(pos);
+                    auto query_results = this->spatial_index.query_point(pos);
+                    log<LogLevel::info, LogCategory::application>(
+                        "Clicked %ld nodes", query_results.size());
+                    for (auto& node : query_results) {
+                        node->color({0., 0.5, 1., 1.});
+                        node->indexable(false);
+                    }
                 }
             }
         }
 
         auto query_results = this->spatial_index.query_bounding_box(
-            BoundingBox{-50., -50., 50., 50.});
+            BoundingBox{-50., -50., 50., 50.}, true, true);
         this->stats_text_node->text.content(
-            "Nodes visible: " + std::to_string(query_results.size()));
+            "Nodes visible (including non-indexable): " +
+            std::to_string(query_results.size()));
     }
 };
 
