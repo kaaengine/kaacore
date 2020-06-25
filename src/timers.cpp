@@ -89,9 +89,9 @@ destroy_timers()
 }
 
 Timer::Timer(
-    const uint32_t interval, TimerCallback callback, const bool single_shot)
-    : _single_shot(single_shot), _timer_id(++_last_timer_id),
-      _interval(interval), _callback(std::move(callback))
+    TimerCallback callback, const uint32_t interval, const bool single_shot)
+    : _callback(std::move(callback)), _interval(interval),
+      _single_shot(single_shot), _timer_id(++_last_timer_id)
 {}
 
 Timer::~Timer()
@@ -118,6 +118,7 @@ Timer::_start()
 void
 Timer::start()
 {
+    KAACORE_CHECK(this->_interval);
     if (this->is_running()) {
         this->_stop();
     }

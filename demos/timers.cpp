@@ -25,12 +25,11 @@ struct DemoScene : Scene {
         this->root_node.add_child(this->node);
 
         this->timer = Timer(
-            1000,
             [this]() {
                 log("Timer callback called.");
                 this->node->visible(not this->node->visible());
             },
-            false);
+            1000, false);
         this->timer.start();
     }
 
