@@ -125,12 +125,12 @@ SpatialIndex::update_single(Node* node)
     if (node->_indexable == node->_spatial_data.is_phony_indexed) {
         if (node->_indexable) {
             // state change: non-indexable -> indexable
-            log<LogLevel::info>("Node %p switched indexable flag to: true");
+            log<LogLevel::debug>("Node %p switched indexable flag to: true");
             this->_remove_from_phony_index(node);
             this->_add_to_cp_index(node);
         } else {
             // state change: indexable -> non-indexable
-            log<LogLevel::info>("Node %p switched indexable flag to: false");
+            log<LogLevel::debug>("Node %p switched indexable flag to: false");
             this->_remove_from_cp_index(node);
             this->_add_to_phony_index(node);
         }
@@ -154,8 +154,7 @@ SpatialIndex::refresh_all()
 
 std::vector<NodePtr>
 SpatialIndex::query_bounding_box(
-    const BoundingBox<double>& bbox, bool include_shapeless,
-    bool include_non_indexable)
+    const BoundingBox<double>& bbox, bool include_shapeless)
 {
     auto wrapper_results = this->_query_wrappers(bbox);
     std::vector<NodePtr> results;
@@ -167,12 +166,16 @@ SpatialIndex::query_bounding_box(
         }
     }
 
-    if (include_non_indexable) {
-        for (auto node : this->_phony_index) {
-            results.push_back(node);
-        }
-    }
+    return results;
+}
 
+std::vector<NodePtr>
+SpatialIndex::query_bounding_box_for_drawing(const BoundingBox<double>& bbox)
+{
+    auto results = this->query_bounding_box(bbox, false);
+
+    results.insert(
+        results.end(), this->_phony_index.begin(), this->_phony_index.end());
     return results;
 }
 

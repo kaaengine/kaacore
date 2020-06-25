@@ -13,8 +13,6 @@ namespace kaacore {
 
 class Node;
 
-enum class IndexingState {};
-
 struct NodeSpatialData {
     void refresh();
     bool contains_point(const glm::dvec2 point) const;
@@ -39,8 +37,9 @@ class SpatialIndex {
     void refresh_all();
 
     std::vector<NodePtr> query_bounding_box(
-        const BoundingBox<double>& bbox, bool include_shapeless = true,
-        bool include_non_indexable = false);
+        const BoundingBox<double>& bbox, bool include_shapeless = true);
+    std::vector<NodePtr> query_bounding_box_for_drawing(
+        const BoundingBox<double>& bbox);
     std::vector<NodePtr> query_point(const glm::dvec2 point);
 
   private:
