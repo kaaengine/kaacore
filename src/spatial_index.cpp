@@ -27,7 +27,8 @@ _node_wrapper_bbfunc(void* node_wrapper_obj)
 {
     auto* wrapper = reinterpret_cast<NodeSpatialData*>(node_wrapper_obj);
     wrapper->refresh();
-    KAACORE_ASSERT(wrapper->bounding_box);
+    KAACORE_ASSERT(
+        wrapper->bounding_box, "Node wrapper is missing bounding box.");
     return convert_bounding_box(wrapper->bounding_box);
 }
 

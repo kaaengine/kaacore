@@ -173,7 +173,7 @@ ViewsManager::ViewsManager()
 
 View& ViewsManager::operator[](const int16_t z_index)
 {
-    KAACORE_CHECK(validate_view_z_index(z_index));
+    KAACORE_CHECK(validate_view_z_index(z_index), "Invalid view z_index.");
     auto index = z_index + (this->size() / 2);
     return this->_views[index];
 }

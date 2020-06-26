@@ -11,7 +11,8 @@ namespace kaacore {
 TransitionWarping::TransitionWarping(uint32_t loops, bool back_and_forth)
     : loops(loops), back_and_forth(back_and_forth)
 {
-    KAACORE_ASSERT(this->loops >= 0);
+    KAACORE_ASSERT(
+        this->loops >= 0, "Number of loop must be greater or equal to zero.");
 }
 
 double
@@ -70,7 +71,7 @@ NodeTransitionCustomizable::process_time_point(
     TransitionStateBase* state, NodePtr node,
     const TransitionTimePoint& tp) const
 {
-    KAACORE_ASSERT(this->duration >= 0.);
+    KAACORE_ASSERT(this->duration >= 0., "Duration must be greater than zero.");
     const TransitionTimePoint local_tp =
         this->warping.warp_time(tp, this->internal_duration);
 
@@ -113,7 +114,8 @@ NodeTransitionsSequence::NodeTransitionsSequence(
 
     for (const auto& tr : transitions) {
         double sub_duration;
-        KAACORE_CHECK(tr->duration >= 0.);
+        KAACORE_CHECK(
+            tr->duration >= 0., "Duration must be greater than zero.");
         if (has_infinite_subs) {
             throw exception("NodeTransitionsSequence has infinite "
                             "subtransition on non last position");
@@ -265,7 +267,8 @@ NodeTransitionsParallel::NodeTransitionsParallel(
 
     for (const auto& tr : transitions) {
         double sub_duration;
-        KAACORE_CHECK(tr->duration >= 0.);
+        KAACORE_CHECK(
+            tr->duration >= 0., "Duration must be greater than zero.");
         if (std::isinf(tr->duration)) {
             sub_duration = tr->internal_duration;
             has_infinite_subs = true;
@@ -411,7 +414,7 @@ NodeTransitionCallback::process_time_point(
         "NodeTransitionCallback(%p)::process_time_point - node: %p, abs_t: "
         "%lf",
         this, node.get(), tp.abs_t);
-    KAACORE_ASSERT(this->callback_func);
+    KAACORE_ASSERT(this->callback_func, "No callback set.");
     this->callback_func(node);
 }
 
@@ -440,7 +443,7 @@ NodeTransitionRunner::setup(const NodeTransitionHandle& transition)
 bool
 NodeTransitionRunner::step(NodePtr node, const uint32_t dt)
 {
-    KAACORE_ASSERT(bool(*this));
+    KAACORE_ASSERT(bool(*this), "Invalid internal stet of transition runner.");
 
     if (not this->transition_state_prepared) {
         this->transition_state = this->transition_handle->prepare_state(node);
@@ -500,8 +503,11 @@ NodeTransitionsManager::set(
 void
 NodeTransitionsManager::step(NodePtr node, const uint32_t dt)
 {
-    KAACORE_ASSERT(not node.is_marked_to_delete());
-    KAACORE_ASSERT(this->_is_processing == false);
+    KAACORE_ASSERT(
+        not node.is_marked_to_delete(), "Node is marked for deletion.");
+    KAACORE_ASSERT(
+        this->_is_processing == false,
+        "Invalid internal state of transition manager.");
     this->_is_processing = true;
     for (auto& [name, runner] : this->_transitions_map) {
         bool finished = runner.step(node, dt);

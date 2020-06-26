@@ -23,8 +23,10 @@ Engine::Engine(
     const VirtualResolutionMode vr_mode) noexcept(false)
     : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
 {
-    KAACORE_CHECK(engine == nullptr);
-    KAACORE_CHECK(virtual_resolution.x > 0 and virtual_resolution.y > 0);
+    KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
+    KAACORE_CHECK(
+        virtual_resolution.x > 0 and virtual_resolution.y > 0,
+        "Virtual resolution must be greater than zero.");
     initialize_logging();
 
     log<LogLevel::info>("Initializing Kaacore.");
@@ -42,7 +44,7 @@ Engine::Engine(
 
 Engine::~Engine()
 {
-    KAACORE_CHECK_TERMINATE(engine != nullptr);
+    KAACORE_CHECK_TERMINATE(engine != nullptr, "Engine already destroyed.");
 
     log<LogLevel::info>("Shutting down Kaacore.");
     this->audio_manager.reset();
@@ -142,7 +144,9 @@ Engine::virtual_resolution() const
 void
 Engine::virtual_resolution(const glm::uvec2& resolution)
 {
-    KAACORE_CHECK(resolution.x > 0 and resolution.y > 0);
+    KAACORE_CHECK(
+        resolution.x > 0 and resolution.y > 0,
+        "Virtual resolution must be greater than zero.");
     this->_virtual_resolution = resolution;
     this->renderer->reset();
 }

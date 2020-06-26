@@ -75,7 +75,7 @@ Node::_mark_dirty()
 void
 Node::_mark_to_delete()
 {
-    KAACORE_ASSERT(this->_scene != nullptr);
+    KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to tree.");
     this->_marked_to_delete = true;
     this->_scene->spatial_index.stop_tracking(this);
     for (auto child : this->_children) {
@@ -173,8 +173,10 @@ Node::_set_rotation(const double rotation)
 void
 Node::add_child(NodeOwnerPtr& child_node)
 {
-    KAACORE_CHECK(child_node->_parent == nullptr);
-    KAACORE_CHECK(child_node._ownership_transferred == false);
+    KAACORE_CHECK(child_node->_parent == nullptr, "Node has a parent already.");
+    KAACORE_CHECK(
+        child_node._ownership_transferred == false,
+        "Node has a ownership already transferred");
 
     child_node->_parent = this;
     child_node._ownership_transferred = true;
@@ -554,11 +556,12 @@ Node::parent() const
 void
 Node::views(const std::unordered_set<int16_t>& z_indices)
 {
-    KAACORE_CHECK(z_indices.size() <= KAACORE_MAX_VIEWS);
+    KAACORE_CHECK(
+        z_indices.size() <= KAACORE_MAX_VIEWS, "Invalid indices size.");
 
     this->_views.clear();
     for (auto z_index : z_indices) {
-        KAACORE_CHECK(validate_view_z_index(z_index));
+        KAACORE_CHECK(validate_view_z_index(z_index), "Invalid view index.");
         this->_views.push_back(z_index);
     }
 }
@@ -572,7 +575,7 @@ Node::views() const
 void
 Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)
 {
-    KAACORE_ASSERT(!this->_node_wrapper);
+    KAACORE_ASSERT(!this->_node_wrapper, "Node wrapper already initialized.");
     this->_node_wrapper = std::move(wrapper);
 }
 

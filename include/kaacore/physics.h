@@ -125,6 +125,8 @@ class SpaceNode {
     friend class HitboxNode;
     friend class Scene;
     friend void cp_call_post_step_callbacks(cpSpace*, void*, void*);
+    friend void space_safe_call(
+        Node* space_node, const SpacePostStepFunc& func);
 };
 
 enum struct BodyNodeType {

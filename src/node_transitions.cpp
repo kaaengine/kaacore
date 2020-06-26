@@ -17,7 +17,8 @@ NodeSpriteTransition::NodeSpriteTransition(
     : NodeTransitionCustomizable(duration, warping), _frames(frames),
       _frames_count(frames.size())
 {
-    KAACORE_CHECK(this->_frames_count > 0);
+    KAACORE_CHECK(
+        this->_frames_count > 0, "Number of frames must be greater than zero.");
 }
 
 std::unique_ptr<TransitionStateBase>
