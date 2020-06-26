@@ -21,6 +21,8 @@ namespace kaacore {
 
 Engine* engine;
 
+constexpr int threads_sync_timeout = 1; // milliseconds
+
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
     const VirtualResolutionMode vr_mode) noexcept(false)
@@ -49,9 +51,11 @@ Engine::Engine(
         std::thread{[this, bgfx_init_data, window_size]() {
             this->renderer =
                 std::make_unique<Renderer>(bgfx_init_data, window_size);
+            this->resources_manager = std::make_unique<ResourcesManager>();
             this->_engine_loop_thread_entrypoint();
             // When _engine_loop_thread_entrypoint() exits it means engine is
             // going to stop and it's time to destroy the renderer.
+            this->resources_manager.reset();
             this->renderer.reset();
         }};
     this->_engine_thread_id = this->_engine_loop_thread.get_id();
@@ -59,7 +63,7 @@ Engine::Engine(
     // threaded bgfx::init will block until we call bgfx::renderFrame
     while (true) {
         // bgfx needs matching renderFrame() for init to complete
-        auto ret = bgfx::renderFrame();
+        auto ret = bgfx::renderFrame(threads_sync_timeout);
         log("Waiting for bgfx initialization... (%d)", ret);
         if (ret == bgfx::RenderFrame::Enum::NoContext) {
             // renderer isn't ready yet, wait for a bit
@@ -72,11 +76,11 @@ Engine::Engine(
     }
 #else
     this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
+    this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
     this->input_manager =
         std::make_unique<InputManager>(this->_sdl_windowing_call_mutex);
     this->audio_manager = std::make_unique<AudioManager>();
-    this->resources_manager = std::make_unique<ResourcesManager>();
 
     this->window->show();
 }
@@ -88,13 +92,12 @@ Engine::~Engine()
     log<LogLevel::info>("Shutting down Kaacore.");
     this->audio_manager.reset();
     this->input_manager.reset();
-    this->resources_manager.reset();
 
 #if KAACORE_MULTITHREADING_MODE
     this->_engine_loop_state.set(EngineLoopState::terminating);
 
     while (true) {
-        auto ret = bgfx::renderFrame();
+        auto ret = bgfx::renderFrame(threads_sync_timeout);
         if (ret == bgfx::RenderFrame::Enum::Exiting) {
             break;
         }
@@ -102,6 +105,7 @@ Engine::~Engine()
     }
     this->_engine_loop_thread.join();
 #else
+    this->resources_manager.reset();
     this->renderer.reset();
 #endif
 
@@ -335,13 +339,16 @@ Engine::_main_loop_thread_entrypoint()
     while (true) {
         do {
             this->_synced_syscall_queue.finalize_calls();
-        } while (not this->_event_processing_state.wait_for(
-            EventProcessingState::consumed, std::chrono::milliseconds(5)));
+        } while (this->is_running and
+                 not this->_event_processing_state.wait_for(
+                     EventProcessingState::consumed,
+                     std::chrono::milliseconds(threads_sync_timeout)));
         SDL_PumpEvents();
         this->_event_processing_state.set(EventProcessingState::ready);
         do {
             this->_synced_syscall_queue.finalize_calls();
-        } while (bgfx::renderFrame(5) == bgfx::RenderFrame::Enum::Timeout);
+        } while (this->is_running and bgfx::renderFrame(threads_sync_timeout) ==
+                                          bgfx::RenderFrame::Enum::Timeout);
 
         if (this->_engine_loop_state.retrieve() == EngineLoopState::stopping) {
             break;

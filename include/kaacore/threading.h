@@ -1,3 +1,4 @@
+#include <exception>
 #pragma once
 
 #include <condition_variable>
@@ -6,6 +7,8 @@
 #include <initializer_list>
 #include <mutex>
 #include <vector>
+
+#include "kaacore/log.h"
 
 namespace kaacore {
 
@@ -17,13 +20,21 @@ class SyncedSyscallQueue {
         std::promise<T> result_promise;
         auto result_future = result_promise.get_future();
         auto call_wrapper = [&result_promise, &sync_func]() {
-            // TODO exceptions
-            if constexpr (std::is_void_v<T>) {
-                sync_func();
-                result_promise.set_value();
-            } else {
-                T ret = sync_func();
-                result_promise.set_value(std::move(ret));
+            try {
+                if constexpr (std::is_void_v<T>) {
+                    sync_func();
+                    result_promise.set_value();
+                } else {
+                    T ret = sync_func();
+                    result_promise.set_value(std::move(ret));
+                }
+            } catch (std::future_error err) {
+                log<LogLevel::error>(
+                    "SyncedSyscallQueue call failed to set promise value: %s",
+                    err.what());
+                throw;
+            } catch (...) {
+                result_promise.set_exception(std::current_exception());
             }
         };
 
