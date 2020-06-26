@@ -108,6 +108,9 @@ class Node {
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
 
+    void indexable(const bool indexable_flag);
+    bool indexable() const;
+
   private:
     const NodeType _type = NodeType::basic;
     glm::dvec2 _position = {0., 0.};
@@ -140,6 +143,7 @@ class Node {
         bool is_dirty = true;
     } _render_data;
 
+    bool _indexable = true;
     NodeSpatialData _spatial_data;
 
     bool _marked_to_delete = false;
