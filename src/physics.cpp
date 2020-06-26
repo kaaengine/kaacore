@@ -466,7 +466,7 @@ BodyNode::attach_to_simulation()
             this->_cp_body);
         KAACORE_ASSERT(
             node->_parent != nullptr,
-            "Node must have a parent in order to attach it to the simulation");
+            "Node must have a parent in order to attach it to the simulation.");
         ASSERT_VALID_SPACE_NODE(static_cast<SpaceNode*>(&node->_parent->space));
         space_safe_call(node->_parent, [&](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>(

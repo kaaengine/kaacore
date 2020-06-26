@@ -643,7 +643,7 @@ AudioManager::_recalc_channel_volume(ChannelId channel_id)
         channel_id < this->_channels_state.size(), "Invalid channel id.");
     KAACORE_ASSERT(
         this->_channels_state[channel_id].current_sound,
-        "Invalid state for channel id: " KAACORE_STRINGIFY(channel_id) ".");
+        "Invalid channel state.");
 
     Mix_Volume(
         channel_id, this->_master_volume * this->_master_sound_volume *

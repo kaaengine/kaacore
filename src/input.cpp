@@ -431,7 +431,7 @@ InputManager::InputManager()
             static_cast<uint32_t>(EventType::_sentinel) - SDL_USEREVENT;
         auto first_event = SDL_RegisterEvents(num_events);
         KAACORE_CHECK_TERMINATE(
-            first_event == SDL_USEREVENT, "Input system misconfigured");
+            first_event == SDL_USEREVENT, "Input system misconfigured.");
     }
     this->_custom_events_registered = true;
 

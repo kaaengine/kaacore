@@ -75,7 +75,7 @@ Node::_mark_dirty()
 void
 Node::_mark_to_delete()
 {
-    KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to tree.");
+    KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to the tree.");
     this->_marked_to_delete = true;
     this->_scene->spatial_index.stop_tracking(this);
     for (auto child : this->_children) {
