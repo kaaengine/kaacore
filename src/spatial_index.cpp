@@ -94,24 +94,56 @@ SpatialIndex::~SpatialIndex()
 void
 SpatialIndex::start_tracking(Node* node)
 {
-    node->_spatial_data.is_dirty = true;
-    node->_spatial_data.index_uid = ++this->_index_counter;
-    cpSpatialIndexInsert(
-        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+    KAACORE_ASSERT(not node->_spatial_data.is_indexed);
+    if (node->_indexable) {
+        this->_add_to_cp_index(node);
+    } else {
+        this->_add_to_phony_index(node);
+    }
+    node->_spatial_data.is_indexed = true;
 }
 
 void
 SpatialIndex::stop_tracking(Node* node)
 {
-    cpSpatialIndexRemove(
-        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+    KAACORE_ASSERT(node->_spatial_data.is_indexed);
+    if (node->_indexable) {
+        this->_remove_from_cp_index(node);
+    } else {
+        this->_remove_from_phony_index(node);
+    }
+    node->_spatial_data.is_indexed = false;
+    node->_spatial_data.is_dirty = false;
 }
 
 void
-SpatialIndex::refresh_single(Node* node)
+SpatialIndex::update_single(Node* node)
 {
-    cpSpatialIndexReindexObject(
-        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+    KAACORE_ASSERT(node->_spatial_data.is_indexed);
+
+    // check if `indexable` state hash been changed
+    if (node->_indexable == node->_spatial_data.is_phony_indexed) {
+        if (node->_indexable) {
+            // state change: non-indexable -> indexable
+            log<LogLevel::debug>("Node %p switched indexable flag to: true");
+            this->_remove_from_phony_index(node);
+            this->_add_to_cp_index(node);
+        } else {
+            // state change: indexable -> non-indexable
+            log<LogLevel::debug>("Node %p switched indexable flag to: false");
+            this->_remove_from_cp_index(node);
+            this->_add_to_phony_index(node);
+        }
+    }
+
+    if (not node->_spatial_data.is_phony_indexed) {
+        cpSpatialIndexReindexObject(
+            this->_cp_index, &node->_spatial_data,
+            node->_spatial_data.index_uid);
+    } else {
+        // phony index needs no updates
+        node->_spatial_data.is_dirty = false;
+    }
 }
 
 void
@@ -134,6 +166,16 @@ SpatialIndex::query_bounding_box(
         }
     }
 
+    return results;
+}
+
+std::vector<NodePtr>
+SpatialIndex::query_bounding_box_for_drawing(const BoundingBox<double>& bbox)
+{
+    auto results = this->query_bounding_box(bbox, false);
+
+    results.insert(
+        results.end(), this->_phony_index.begin(), this->_phony_index.end());
     return results;
 }
 
@@ -174,6 +216,38 @@ SpatialIndex::_query_wrappers(const BoundingBox<double>& bbox)
         _cp_spatial_index_query, nullptr);
 
     return wrapper_results;
+}
+
+void
+SpatialIndex::_add_to_cp_index(Node* node)
+{
+    node->_spatial_data.index_uid = ++this->_index_counter;
+    node->_spatial_data.is_dirty = true;
+    cpSpatialIndexInsert(
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+    node->_spatial_data.is_phony_indexed = false;
+}
+
+void
+SpatialIndex::_remove_from_cp_index(Node* node)
+{
+    KAACORE_ASSERT(not node->_spatial_data.is_phony_indexed);
+    cpSpatialIndexRemove(
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+}
+
+void
+SpatialIndex::_add_to_phony_index(Node* node)
+{
+    this->_phony_index.insert(node);
+    node->_spatial_data.is_phony_indexed = true;
+}
+
+void
+SpatialIndex::_remove_from_phony_index(Node* node)
+{
+    KAACORE_ASSERT(node->_spatial_data.is_phony_indexed);
+    this->_phony_index.erase(node);
 }
 
 } // namespace kaacore

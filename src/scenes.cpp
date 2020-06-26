@@ -86,7 +86,7 @@ Scene::process_nodes(uint32_t dt)
         }
 
         if (node->_spatial_data.is_dirty) {
-            this->spatial_index.refresh_single(node);
+            this->spatial_index.update_single(node);
         }
 
         for (const auto child_node : node->_children) {
@@ -114,7 +114,7 @@ Scene::resolve_dirty_nodes()
         node->recalculate_model_matrix();
 
         if (node->_spatial_data.is_dirty) {
-            this->spatial_index.refresh_single(node);
+            this->spatial_index.update_single(node);
         }
 
         for (const auto child_node : node->_children) {
