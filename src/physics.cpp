@@ -995,7 +995,7 @@ HitboxNode::attach_to_simulation()
         KAACORE_ASSERT(
             node->_parent != nullptr, "Hitbox must to have a parent in order "
                                       "to attach it to the simulation.");
-        ASSERT_VALID_BODY_NODE(static_cast<BodyNode*>(&node->_parent->body));
+        ASSERT_VALID_BODY_NODE(&node->_parent->body);
         space_safe_call(
             node->_parent->body.space(),
             [body_ptr = node->_parent->body._cp_body,
