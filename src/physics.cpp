@@ -34,7 +34,7 @@ namespace kaacore {
         container_node(space_node)->_type == NodeType::space,                  \
         "Invalid type - space type expected.");                                \
     KAACORE_ASSERT(                                                            \
-        space_node->_cp_space != nullptr,                                      \
+        (space_node)->_cp_space != nullptr,                                    \
         "Space node has invalid internal state.");
 
 #define ASSERT_VALID_BODY_NODE(body_node)                                      \
@@ -42,13 +42,13 @@ namespace kaacore {
         container_node(body_node)->_type == NodeType::body,                    \
         "Invalid type - body type expected.");                                 \
     KAACORE_ASSERT(                                                            \
-        body_node->_cp_body != nullptr,                                        \
+        (body_node)->_cp_body != nullptr,                                      \
         "Body node has invalid internal state.");
 
 #define ASSERT_DYNAMIC_BODY_NODE(body_node)                                    \
     ASSERT_VALID_BODY_NODE(body_node);                                         \
     KAACORE_ASSERT(                                                            \
-        body_node->body_type() == BodyNodeType::dynamic,                       \
+        (body_node)->body_type() == BodyNodeType::dynamic,                     \
         "Invalid body type - dynamic body type expected.");
 
 #define ASSERT_VALID_HITBOX_NODE(hitbox_node)                                  \
@@ -56,7 +56,7 @@ namespace kaacore {
         container_node(hitbox_node)->_type == NodeType::hitbox,                \
         "Invalid type = hitbox type expected.");                               \
     KAACORE_ASSERT(                                                            \
-        hitbox_node->_cp_shape != nullptr,                                     \
+        (hitbox_node)->_cp_shape != nullptr,                                   \
         "Hitbox node has invalid internal state.");
 
 // conversions
@@ -467,7 +467,7 @@ BodyNode::attach_to_simulation()
         KAACORE_ASSERT(
             node->_parent != nullptr,
             "Node must have a parent in order to attach it to the simulation.");
-        ASSERT_VALID_SPACE_NODE(static_cast<SpaceNode*>(&node->_parent->space));
+        ASSERT_VALID_SPACE_NODE(&node->_parent->space);
         space_safe_call(node->_parent, [&](const SpaceNode* space_node_phys) {
             log<LogLevel::debug>(
                 "Simulation callback: attaching cpBody %p", this->_cp_body);
@@ -1013,8 +1013,7 @@ HitboxNode::attach_to_simulation()
         log<LogLevel::debug>(
             "Attaching hitbox node %p to simulation (space) (cpShape: %p)",
             node, this->_cp_shape);
-        ASSERT_VALID_SPACE_NODE(
-            static_cast<SpaceNode*>(&node->_parent->_parent->space));
+        ASSERT_VALID_SPACE_NODE(&node->_parent->_parent->space);
         space_safe_call(
             node->_parent->_parent,
             [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
