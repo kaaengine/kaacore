@@ -118,7 +118,8 @@ Timer::_start()
 void
 Timer::start()
 {
-    KAACORE_CHECK(this->_interval);
+    KAACORE_CHECK(
+        this->_interval, "Interval must be set before starting the timer.");
     if (this->is_running()) {
         this->_stop();
     }
@@ -157,9 +158,8 @@ Timer::interval()
 void
 Timer::interval(const uint32_t value)
 {
-    if (this->is_running()) {
-        throw kaacore::exception("Can't modify timer while it's running.");
-    }
+    KAACORE_CHECK(
+        not this->is_running(), "Can't modify timer while it's running.");
     this->_interval = value;
 }
 
@@ -172,9 +172,8 @@ Timer::single_shot()
 void
 Timer::single_shot(const bool value)
 {
-    if (this->is_running()) {
-        throw kaacore::exception("Can't modify timer while it's running.");
-    }
+    KAACORE_CHECK(
+        not this->is_running(), "Can't modify timer while it's running.");
     this->_single_shot = value;
 }
 

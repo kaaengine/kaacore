@@ -355,7 +355,7 @@ TextNode::~TextNode() {}
 void
 TextNode::_update_shape()
 {
-    KAACORE_ASSERT(this->_font._font_data);
+    KAACORE_ASSERT(this->_font._font_data, "Invalid internal font state.");
     this->_render_glyphs = this->_font._font_data->generate_render_glyphs(
         this->_content, this->_font_size);
     FontRenderGlyph::arrange_glyphs(

@@ -27,7 +27,8 @@ _node_wrapper_bbfunc(void* node_wrapper_obj)
 {
     auto* wrapper = reinterpret_cast<NodeSpatialData*>(node_wrapper_obj);
     wrapper->refresh();
-    KAACORE_ASSERT(wrapper->bounding_box);
+    KAACORE_ASSERT(
+        wrapper->bounding_box, "Node wrapper is missing bounding box.");
     return convert_bounding_box(wrapper->bounding_box);
 }
 
@@ -94,7 +95,8 @@ SpatialIndex::~SpatialIndex()
 void
 SpatialIndex::start_tracking(Node* node)
 {
-    KAACORE_ASSERT(not node->_spatial_data.is_indexed);
+    KAACORE_ASSERT(
+        not node->_spatial_data.is_indexed, "Node is already indexed.");
     if (node->_indexable) {
         this->_add_to_cp_index(node);
     } else {
@@ -106,7 +108,7 @@ SpatialIndex::start_tracking(Node* node)
 void
 SpatialIndex::stop_tracking(Node* node)
 {
-    KAACORE_ASSERT(node->_spatial_data.is_indexed);
+    KAACORE_ASSERT(node->_spatial_data.is_indexed, "Node is not indexed.");
     if (node->_indexable) {
         this->_remove_from_cp_index(node);
     } else {
@@ -119,7 +121,7 @@ SpatialIndex::stop_tracking(Node* node)
 void
 SpatialIndex::update_single(Node* node)
 {
-    KAACORE_ASSERT(node->_spatial_data.is_indexed);
+    KAACORE_ASSERT(node->_spatial_data.is_indexed, "Node is not indexed.");
 
     // check if `indexable` state hash been changed
     if (node->_indexable == node->_spatial_data.is_phony_indexed) {
@@ -231,7 +233,9 @@ SpatialIndex::_add_to_cp_index(Node* node)
 void
 SpatialIndex::_remove_from_cp_index(Node* node)
 {
-    KAACORE_ASSERT(not node->_spatial_data.is_phony_indexed);
+    KAACORE_ASSERT(
+        not node->_spatial_data.is_phony_indexed,
+        "Node is marked as not indexable.");
     cpSpatialIndexRemove(
         this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
 }
@@ -246,7 +250,8 @@ SpatialIndex::_add_to_phony_index(Node* node)
 void
 SpatialIndex::_remove_from_phony_index(Node* node)
 {
-    KAACORE_ASSERT(node->_spatial_data.is_phony_indexed);
+    KAACORE_ASSERT(
+        node->_spatial_data.is_phony_indexed, "Node is marked as indexable.");
     this->_phony_index.erase(node);
 }
 

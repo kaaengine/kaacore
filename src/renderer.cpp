@@ -140,9 +140,11 @@ Renderer::make_texture(
     std::shared_ptr<bimg::ImageContainer> image_container,
     const uint64_t flags) const
 {
-    KAACORE_ASSERT(bgfx::isTextureValid(
-        0, false, image_container->m_numLayers,
-        bgfx::TextureFormat::Enum(image_container->m_format), flags));
+    KAACORE_ASSERT(
+        bgfx::isTextureValid(
+            0, false, image_container->m_numLayers,
+            bgfx::TextureFormat::Enum(image_container->m_format), flags),
+        "Invalid texture.");
 
     const bgfx::Memory* memory = bgfx::makeRef(
         image_container->m_data, image_container->m_size,
@@ -153,7 +155,7 @@ Renderer::make_texture(
         1 < image_container->m_numMips, image_container->m_numLayers,
         bgfx::TextureFormat::Enum(image_container->m_format), flags, memory);
 
-    KAACORE_ASSERT(bgfx::isValid(handle));
+    KAACORE_ASSERT(bgfx::isValid(handle), "Failed to create texture.");
     _used_containers.insert(std::move(image_container));
     return handle;
 }
@@ -161,7 +163,8 @@ Renderer::make_texture(
 void
 Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 {
-    KAACORE_ASSERT_TERMINATE(bgfx::isValid(handle));
+    KAACORE_ASSERT_TERMINATE(
+        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed.");
     bgfx::destroy(handle);
 }
 

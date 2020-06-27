@@ -106,7 +106,6 @@ Sound::operator==(const Sound& other) const
 void
 Sound::play(double volume_factor)
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     get_engine()->audio_manager->play_sound(
         *this, this->_volume * volume_factor);
 }
@@ -140,7 +139,6 @@ SoundPlayback::volume(const double vol)
 AudioStatus
 SoundPlayback::status() const
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->_playback_uid > 0) {
         return get_engine()->audio_manager->_check_playback(
             this->_channel_id, this->_playback_uid);
@@ -157,7 +155,6 @@ SoundPlayback::is_playing() const
 void
 SoundPlayback::play(const int loops)
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->status() != AudioStatus::stopped) {
         this->stop();
     }
@@ -263,7 +260,6 @@ Music::load(const char* path, double volume)
 Music
 Music::get_current()
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     return get_engine()->audio_manager->_music_state.current_music;
 }
 
@@ -287,14 +283,12 @@ Music::operator==(const Music& other) const
 AudioStatus
 Music::status() const
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     return get_engine()->audio_manager->music_state();
 }
 
 bool
 Music::is_playing() const
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     return *this == this->get_current() and
            this->get_current().status() == AudioStatus::playing;
 }
@@ -302,7 +296,6 @@ Music::is_playing() const
 void
 Music::play(double volume_factor)
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     get_engine()->audio_manager->play_music(
         *this, this->_volume * volume_factor);
 }
@@ -310,7 +303,6 @@ Music::play(double volume_factor)
 bool
 Music::is_paused() const
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
         this->get_current().status() == AudioStatus::paused) {
         return true;
@@ -321,7 +313,6 @@ Music::is_paused() const
 bool
 Music::pause()
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
         this->get_current().status() == AudioStatus::playing) {
         get_engine()->audio_manager->_pause_music();
@@ -333,7 +324,6 @@ Music::pause()
 bool
 Music::resume()
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     if (this->get_current() == *this and
         this->get_current().status() == AudioStatus::paused) {
         get_engine()->audio_manager->_resume_music();
@@ -345,7 +335,6 @@ Music::resume()
 bool
 Music::stop()
 {
-    KAACORE_ASSERT(get_engine()->audio_manager);
     auto status = this->get_current().status();
     if (this->get_current() == *this and
         (status == AudioStatus::paused or status == AudioStatus::playing)) {
@@ -431,7 +420,7 @@ std::pair<ChannelId, PlaybackUid>
 AudioManager::play_sound(
     const Sound& sound, const double volume_factor, const int loops)
 {
-    KAACORE_ASSERT(bool(sound));
+    KAACORE_ASSERT(bool(sound), "Invalid sound data.");
     if (sound._sound_data->_raw_sound) {
         // SDL_mixer loops meaning are different, -1 is infinite, 0 is once, 1
         // is twice, ...
@@ -439,7 +428,8 @@ AudioManager::play_sound(
         auto channel =
             Mix_PlayChannel(-1, sound._sound_data->_raw_sound, mixer_loops);
         if (channel >= 0) {
-            KAACORE_ASSERT(channel < this->_channels_state.size());
+            KAACORE_ASSERT(
+                channel < this->_channels_state.size(), "Invalid channel id.");
             this->_channels_state[channel].current_sound = sound;
             this->_channels_state[channel].requested_volume = volume_factor;
             auto playback_uid = random_uid<PlaybackUid>();
@@ -461,7 +451,7 @@ AudioManager::play_sound(
 void
 AudioManager::play_music(const Music& music, const double volume_factor)
 {
-    KAACORE_ASSERT(bool(music));
+    KAACORE_ASSERT(bool(music), "Invalid music data.");
     if (music._music_data->_raw_music) {
         auto err_code = Mix_PlayMusic(music._music_data->_raw_music, 1);
         if (err_code == -1) {
@@ -562,7 +552,8 @@ AudioManager::_check_playback(
 void
 AudioManager::_pause_channel(const ChannelId& channel_id)
 {
-    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    KAACORE_ASSERT(
+        this->_channels_state.size() > channel_id, "Invalid channel id.");
     auto& channel_state = this->_channels_state[channel_id];
     if (channel_state.current_sound) {
         channel_state.paused = true;
@@ -573,7 +564,8 @@ AudioManager::_pause_channel(const ChannelId& channel_id)
 void
 AudioManager::_resume_channel(const ChannelId& channel_id)
 {
-    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    KAACORE_ASSERT(
+        this->_channels_state.size() > channel_id, "Invalid channel id.");
     auto& channel_state = this->_channels_state[channel_id];
     if (channel_state.current_sound) {
         channel_state.paused = false;
@@ -584,7 +576,8 @@ AudioManager::_resume_channel(const ChannelId& channel_id)
 void
 AudioManager::_stop_channel(const ChannelId& channel_id)
 {
-    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    KAACORE_ASSERT(
+        this->_channels_state.size() > channel_id, "Invalid channel id.");
     auto& channel_state = this->_channels_state[channel_id];
     if (channel_state.current_sound) {
         Mix_HaltChannel(channel_id);
@@ -597,7 +590,8 @@ void
 AudioManager::_update_channel_volume(
     const ChannelId& channel_id, const double volume)
 {
-    KAACORE_ASSERT(this->_channels_state.size() > channel_id);
+    KAACORE_ASSERT(
+        this->_channels_state.size() > channel_id, "Invalid channel id.");
     auto& channel_state = this->_channels_state[channel_id];
     if (channel_state.current_sound) {
         channel_state.requested_volume = volume;
@@ -645,8 +639,12 @@ AudioManager::_recalc_channels_volume()
 void
 AudioManager::_recalc_channel_volume(ChannelId channel_id)
 {
-    KAACORE_ASSERT(channel_id < this->_channels_state.size());
-    KAACORE_ASSERT(this->_channels_state[channel_id].current_sound);
+    KAACORE_ASSERT(
+        channel_id < this->_channels_state.size(), "Invalid channel id.");
+    KAACORE_ASSERT(
+        this->_channels_state[channel_id].current_sound,
+        "Invalid channel state.");
+
     Mix_Volume(
         channel_id, this->_master_volume * this->_master_sound_volume *
                         this->_channels_state[channel_id].requested_volume *

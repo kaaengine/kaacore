@@ -23,7 +23,8 @@ Shape::Shape(
       bounding_points(bounding_points)
 {
     KAACORE_ASSERT(
-        classify_polygon(this->bounding_points) == PolygonType::convex_ccw);
+        classify_polygon(this->bounding_points) == PolygonType::convex_ccw,
+        "Invalid shape - expected convex counterclockwise polygon.");
 };
 
 bool
@@ -124,7 +125,8 @@ Shape
 Shape::Polygon(const std::vector<glm::dvec2>& points)
 {
     auto polygon_type = classify_polygon(points);
-    KAACORE_CHECK(polygon_type != PolygonType::not_convex);
+    KAACORE_CHECK(
+        polygon_type != PolygonType::not_convex, "Convex polygon required.");
 
     std::vector<glm::dvec2> polygon_points = points;
 

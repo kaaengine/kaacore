@@ -21,7 +21,7 @@ _NodePtrBase::operator==(const Node* node) const
 bool
 _NodePtrBase::is_marked_to_delete() const
 {
-    KAACORE_ASSERT(this->_node != nullptr);
+    KAACORE_ASSERT(this->_node != nullptr, "Node already deleted.");
     return this->_node->_marked_to_delete;
 }
 
@@ -33,8 +33,9 @@ _NodePtrBase::get() const
 
 Node* _NodePtrBase::operator->() const
 {
-    KAACORE_CHECK(this->_node != nullptr);
-    KAACORE_CHECK(not this->_node->_marked_to_delete);
+    KAACORE_CHECK(this->_node != nullptr, "Node already deleted.");
+    KAACORE_CHECK(
+        not this->_node->_marked_to_delete, "Node marked for deletion.");
     return this->_node;
 }
 

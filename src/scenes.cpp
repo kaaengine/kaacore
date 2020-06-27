@@ -26,7 +26,9 @@ Scene::~Scene()
     while (not this->root_node._children.empty()) {
         delete this->root_node._children[0];
     }
-    KAACORE_ASSERT_TERMINATE(this->simulations_registry.empty());
+    KAACORE_ASSERT_TERMINATE(
+        this->simulations_registry.empty(),
+        "Simulation registry not empty on scene deletion.");
 }
 
 Camera&
@@ -197,8 +199,12 @@ Scene::on_detach()
 void
 Scene::register_simulation(Node* node)
 {
-    KAACORE_ASSERT(node->_type == NodeType::space);
-    KAACORE_ASSERT(node->space._cp_space != nullptr);
+    KAACORE_ASSERT(
+        node->_type == NodeType::space,
+        "Invalid type - space node type expected.");
+    KAACORE_ASSERT(
+        node->space._cp_space != nullptr,
+        "Space node has invalid internal state.");
     if (this->simulations_registry.find(node) ==
         this->simulations_registry.end()) {
         this->simulations_registry.insert(node);
@@ -208,10 +214,16 @@ Scene::register_simulation(Node* node)
 void
 Scene::unregister_simulation(Node* node)
 {
-    KAACORE_ASSERT(node->_type == NodeType::space);
-    KAACORE_ASSERT(node->space._cp_space != nullptr);
+    KAACORE_ASSERT(
+        node->_type == NodeType::space,
+        "Invalid type - space node type expected.");
+    KAACORE_ASSERT(
+        node->space._cp_space != nullptr,
+        "Space node has invalid internal state.");
     auto pos = this->simulations_registry.find(node);
-    KAACORE_ASSERT(pos != this->simulations_registry.end());
+    KAACORE_ASSERT(
+        pos != this->simulations_registry.end(),
+        "Can't unregister from simulation, space node not in registry.");
     this->simulations_registry.erase(pos);
 }
 

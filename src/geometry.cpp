@@ -49,8 +49,8 @@ Transformation::inverse() const
 double
 Transformation::at(const size_t col, const size_t row) const
 {
-    KAACORE_ASSERT(col < 4 and col >= 0);
-    KAACORE_ASSERT(row < 4 and row >= 0);
+    KAACORE_ASSERT(col < 4 and col >= 0, "Invalid col parameter.");
+    KAACORE_ASSERT(row < 4 and row >= 0, "Invalid row parameter.");
     return this->_matrix[col][row];
 }
 
@@ -193,7 +193,7 @@ find_points_center(const std::vector<glm::dvec2>& points)
 std::pair<glm::dvec2, glm::dvec2>
 find_points_minmax(const std::vector<glm::dvec2>& points)
 {
-    KAACORE_CHECK(points.size() > 0);
+    KAACORE_CHECK(points.size() > 0, "points size must be greater than zero.");
     glm::dvec2 min_pt = points[0];
     glm::dvec2 max_pt = points[0];
     for (const auto& pt : points) {

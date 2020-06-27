@@ -83,8 +83,10 @@ split_spritesheet(
     const size_t frames_offset, const size_t frames_count,
     const glm::dvec2 frame_padding)
 {
-    KAACORE_CHECK(spritesheet.has_texture());
-    KAACORE_CHECK(frame_dimensions.x > 0 and frame_dimensions.y > 0);
+    KAACORE_CHECK(spritesheet.has_texture(), "Invalid sprite sheet.");
+    KAACORE_CHECK(
+        frame_dimensions.x > 0 and frame_dimensions.y > 0,
+        "frame dimensions have to be greater than zero.");
     std::vector<Sprite> frames;
 
     glm::dvec2 spritesheet_dimensions = spritesheet.get_size();
@@ -94,8 +96,11 @@ split_spritesheet(
         spritesheet_dimensions.y / (frame_dimensions.y + 2 * frame_padding.y);
     uint32_t max_frames_count = columns_count * rows_count;
 
-    KAACORE_CHECK(frames_offset < max_frames_count);
-    KAACORE_CHECK(frames_offset + frames_count <= max_frames_count);
+    KAACORE_CHECK(
+        frames_offset < max_frames_count, "Invalid frames_offset parameter.");
+    KAACORE_CHECK(
+        frames_offset + frames_count <= max_frames_count,
+        "Invalid frames_offset parameter.");
 
     uint32_t starting_col = frames_offset % columns_count;
     uint32_t starting_row = frames_offset / columns_count;
@@ -113,7 +118,7 @@ split_spritesheet(
     }
 
     log<LogLevel::debug, LogCategory::misc>(
-        "Starting grid spritesheet splitter, columns_count: %lu, rows_count: "
+        "Starting grid sprite sheet splitter, columns_count: %lu, rows_count: "
         "%lu, "
         "starting_pos: %lux%lu, ending_pos: %lux%lu.",
         columns_count, rows_count, starting_col, starting_row, ending_col,

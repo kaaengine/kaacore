@@ -98,7 +98,7 @@ is_engine_initialized()
 inline Engine*
 get_engine()
 {
-    KAACORE_CHECK(is_engine_initialized());
+    KAACORE_CHECK(is_engine_initialized(), "Engine is not initialized.");
     return engine;
 }
 
