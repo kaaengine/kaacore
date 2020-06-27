@@ -89,9 +89,9 @@ destroy_timers()
 }
 
 Timer::Timer(
-    const uint32_t interval, TimerCallback callback, const bool single_shot)
-    : _single_shot(single_shot), _timer_id(++_last_timer_id),
-      _interval(interval), _callback(std::move(callback))
+    TimerCallback callback, const uint32_t interval, const bool single_shot)
+    : _callback(std::move(callback)), _interval(interval),
+      _single_shot(single_shot), _timer_id(++_last_timer_id)
 {}
 
 Timer::~Timer()
@@ -108,7 +108,7 @@ Timer::_start()
     }
 
     _TimerData timer_data(
-        {this->_interval, std::move(this->_callback), next_trigger_time, 0});
+        {this->_interval, this->_callback, next_trigger_time, 0});
 
     timer_data.internal_timer_id =
         _spawn_sdl_timer(this->_timer_id, this->_interval);
@@ -118,6 +118,7 @@ Timer::_start()
 void
 Timer::start()
 {
+    KAACORE_CHECK(this->_interval);
     if (this->is_running()) {
         this->_stop();
     }
@@ -145,6 +146,36 @@ Timer::stop()
         return;
     }
     this->_stop();
+}
+
+uint32_t
+Timer::interval()
+{
+    return this->_interval;
+}
+
+void
+Timer::interval(const uint32_t value)
+{
+    if (this->is_running()) {
+        throw kaacore::exception("Can't modify timer while it's running.");
+    }
+    this->_interval = value;
+}
+
+bool
+Timer::single_shot()
+{
+    return this->_single_shot;
+}
+
+void
+Timer::single_shot(const bool value)
+{
+    if (this->is_running()) {
+        throw kaacore::exception("Can't modify timer while it's running.");
+    }
+    this->_single_shot = value;
 }
 
 }
