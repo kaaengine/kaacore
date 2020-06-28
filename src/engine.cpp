@@ -21,7 +21,7 @@ namespace kaacore {
 
 Engine* engine;
 
-constexpr int threads_sync_timeout = 1; // milliseconds
+constexpr uint32_t threads_sync_timeout = 5; // milliseconds
 
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
@@ -166,7 +166,6 @@ Engine::current_scene()
 void
 Engine::quit()
 {
-    // TODO convert to condition sync
     this->is_running = false;
 }
 
@@ -389,8 +388,6 @@ Engine::_engine_loop_thread_entrypoint()
         }
         this->_engine_loop_state.set(EngineLoopState::stopping);
         log("Engine loop stopped.");
-        // Render final frame so Render loop stops waiting
-        bgfx::frame();
     }
 }
 

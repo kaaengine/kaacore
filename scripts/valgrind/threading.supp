@@ -1,4 +1,24 @@
 {
+   cpp_atomics
+   Helgrind:Race
+   fun:store
+   ...
+   fun:_ZN7kaacore6Engine17_scene_processingEv
+   fun:_ZN7kaacore6Engine30_engine_loop_thread_entrypointEv
+   ...
+}
+
+{
+   cpp_atmoics
+   Helgrind:Race
+   fun:load
+   ...
+   fun:_ZN7kaacore6Engine28_main_loop_thread_entrypointEv
+   fun:_ZN7kaacore6Engine3runEPNS_5SceneE
+   ...
+}
+
+{
    bgfx_init
    Helgrind:Race
    ...

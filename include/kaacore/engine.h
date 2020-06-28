@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <string>
@@ -38,7 +39,7 @@ enum struct VirtualResolutionMode {
 
 class Engine {
   public:
-    bool is_running = false;
+    std::atomic<bool> is_running = false;
     bgfx::PlatformData platform_data;
 
     glm::uvec2 _virtual_resolution;
