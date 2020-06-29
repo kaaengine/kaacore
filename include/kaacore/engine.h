@@ -22,7 +22,8 @@
 #define KAACORE_ASSERT_MAIN_THREAD()                                           \
     do {                                                                       \
         KAACORE_ASSERT(                                                        \
-            get_engine()->main_thread_id() == std::this_thread::get_id());     \
+            get_engine()->main_thread_id() == std::this_thread::get_id(),      \
+            "Call did not originate from main thread.");                       \
     } while (0)
 
 namespace kaacore {
@@ -90,7 +91,7 @@ class Engine {
             return func();
         }
 
-        KAACORE_ASSERT(this->is_running);
+        KAACORE_ASSERT(this->is_running, "Engine loop must be running.");
         log<LogLevel::debug>("Received syscall request... not in main thread, "
                              "calling though queue.");
         return this->_synced_syscall_queue.make_sync_call<T>(std::move(func));

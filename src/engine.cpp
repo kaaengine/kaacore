@@ -303,7 +303,6 @@ Engine::_process_events()
     int peep_status;
     while ((peep_status = SDL_PeepEvents(
                 &event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) > 0) {
-        KAACORE_ASSERT(&event != nullptr);
         if (event.type == EventType::_timer_fired) {
             auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
             resolve_timer(timer_id);
@@ -330,7 +329,7 @@ void
 Engine::_main_loop_thread_entrypoint()
 {
     log("Starting main loop.");
-    KAACORE_ASSERT(this->_scene);
+    KAACORE_ASSERT(this->_scene, "Running scene not selected.");
     SDL_PumpEvents(); // pump initial events, for 1st update
     this->_event_processing_state.set(EventProcessingState::ready);
     this->_engine_loop_state.set(EngineLoopState::starting);
@@ -377,7 +376,7 @@ Engine::_engine_loop_thread_entrypoint()
 
         log("Engine loop is starting to process scenes.");
         try {
-            KAACORE_ASSERT(this->_scene);
+            KAACORE_ASSERT(this->_scene, "Running scene not selected.");
             this->_engine_loop_state.set(EngineLoopState::running);
             this->_scene_processing();
         } catch (const std::exception exc) {
