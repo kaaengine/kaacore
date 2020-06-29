@@ -80,7 +80,7 @@ struct Renderer {
         const bgfx::TextureHandle texture) const;
 
   private:
-    uint32_t _reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X2;
+    uint32_t _reset_flags = BGFX_RESET_VSYNC;
 };
 
 } // namespace kaacore
