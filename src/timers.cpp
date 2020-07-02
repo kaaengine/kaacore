@@ -71,6 +71,7 @@ resolve_timer(TimerID timer_id)
     timer_data.callback();
 
     if (timer_data.next_trigger_time == 0) {
+        _timers_manager.remove(timer_id);
         return;
     }
 
