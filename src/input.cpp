@@ -424,8 +424,7 @@ Event::music_finished() const
 
 bool InputManager::_custom_events_registered = false;
 
-InputManager::InputManager(std::mutex& _sdl_windowing_call_mutex)
-    : _sdl_windowing_call_mutex(_sdl_windowing_call_mutex)
+InputManager::InputManager()
 {
     if (not this->_custom_events_registered) {
         auto num_events =
@@ -445,8 +444,6 @@ InputManager::SystemManager::get_clipboard_text() const
     InputManager* input_manager = container_of(this, &InputManager::system);
     return get_engine()->make_call_from_main_thread<std::string>(
         [input_manager]() -> std::string {
-            std::lock_guard<std::mutex> lock{
-                input_manager->_sdl_windowing_call_mutex};
             auto text = SDL_GetClipboardText();
             if (text == nullptr) {
                 log<LogLevel::error>("Unable to read clipboard content.");
@@ -462,8 +459,6 @@ InputManager::SystemManager::set_clipboard_text(const std::string& text) const
     InputManager* input_manager = container_of(this, &InputManager::system);
     return get_engine()->make_call_from_main_thread<void>(
         [input_manager, &text]() {
-            std::lock_guard<std::mutex> lock{
-                input_manager->_sdl_windowing_call_mutex};
             if (SDL_SetClipboardText(text.c_str()) < 0) {
                 log<LogLevel::error>("Unable to set clipboard content.");
             }
@@ -507,11 +502,8 @@ bool
 InputManager::MouseManager::relative_mode() const
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
-    return get_engine()->make_call_from_main_thread<bool>([input_manager]() {
-        std::lock_guard<std::mutex> lock{
-            input_manager->_sdl_windowing_call_mutex};
-        return SDL_GetRelativeMouseMode();
-    });
+    return get_engine()->make_call_from_main_thread<bool>(
+        [input_manager]() { return SDL_GetRelativeMouseMode(); });
 }
 
 void
@@ -519,8 +511,6 @@ InputManager::MouseManager::relative_mode(const bool rel)
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
     get_engine()->make_call_from_main_thread<void>([input_manager, rel]() {
-        std::lock_guard<std::mutex> lock{
-            input_manager->_sdl_windowing_call_mutex};
         if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
             log<LogLevel::error, LogCategory::input>(SDL_GetError());
         }

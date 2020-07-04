@@ -524,7 +524,7 @@ struct InputManager {
     std::vector<Event> events_queue;
     static bool _custom_events_registered;
 
-    InputManager(std::mutex& _sdl_windowing_call_mutex);
+    InputManager();
 
     struct SystemManager {
         std::string get_clipboard_text() const;
@@ -574,7 +574,6 @@ struct InputManager {
 
   private:
     std::unordered_map<EventType, EventCallback> _registered_callbacks;
-    std::mutex& _sdl_windowing_call_mutex;
 
     friend struct MouseManager;
 };

@@ -77,7 +77,7 @@ class Engine {
     inline std::thread::id engine_thread_id()
     {
 #if KAACORE_MULTITHREADING_MODE
-        return this->_engine_thread_id;
+        return this->_engine_loop_thread.get_id();
 #else
         return this->_main_thread_id;
 #endif
@@ -117,11 +117,9 @@ class Engine {
 
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
-    std::vector<Display> _displays;
 
     std::thread::id _main_thread_id;
     SyncedSyscallQueue _synced_syscall_queue;
-    std::mutex _sdl_windowing_call_mutex;
 
 #if KAACORE_MULTITHREADING_MODE
     enum struct EngineLoopState {
@@ -145,20 +143,18 @@ class Engine {
     AwaitableStateEnum<EventProcessingState> _event_processing_state =
         EventProcessingState::not_initialized;
     std::thread _engine_loop_thread;
-    std::thread::id _engine_thread_id;
     std::exception_ptr _engine_loop_exception;
 #endif
 
     bgfx::Init _gather_platform_data();
     void _scene_processing();
-    void _scene_processing_single();
     void _swap_scenes();
     void _detach_scenes();
     void _process_events();
 
 #if KAACORE_MULTITHREADING_MODE
-    void _main_loop_thread_entrypoint();
-    void _engine_loop_thread_entrypoint();
+    void _main_thread_entrypoint();
+    void _engine_thread_entrypoint();
 #else
     void _single_thread_entrypoint();
 #endif
