@@ -1,4 +1,5 @@
 #include <cassert>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -21,7 +22,7 @@ namespace kaacore {
 
 Engine* engine;
 
-constexpr uint32_t threads_sync_timeout = 5; // milliseconds
+constexpr auto threads_sync_timeout = std::chrono::milliseconds(5);
 
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
@@ -61,7 +62,10 @@ Engine::Engine(
     // threaded bgfx::init will block until we call bgfx::renderFrame
     while (true) {
         // bgfx needs matching renderFrame() for init to complete
-        auto ret = bgfx::renderFrame(threads_sync_timeout);
+        auto ret = bgfx::renderFrame(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                threads_sync_timeout)
+                .count());
         log<LogLevel::debug>("Waiting for bgfx initialization... (%d)", ret);
         if (this->_engine_loop_state.retrieve() !=
             EngineLoopState::not_initialized) {
@@ -90,7 +94,10 @@ Engine::~Engine()
     this->_engine_loop_state.set(EngineLoopState::terminating);
 
     while (true) {
-        auto ret = bgfx::renderFrame(threads_sync_timeout);
+        auto ret = bgfx::renderFrame(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                threads_sync_timeout)
+                .count());
         if (ret == bgfx::RenderFrame::Enum::Exiting) {
             break;
         }
@@ -325,14 +332,16 @@ Engine::_main_thread_entrypoint()
             this->_synced_syscall_queue.finalize_calls();
         } while (this->is_running and
                  not this->_event_processing_state.wait_for(
-                     EventProcessingState::consumed,
-                     std::chrono::milliseconds(threads_sync_timeout)));
+                     EventProcessingState::consumed, threads_sync_timeout));
         SDL_PumpEvents();
         this->_event_processing_state.set(EventProcessingState::ready);
         do {
             this->_synced_syscall_queue.finalize_calls();
-        } while (this->is_running and bgfx::renderFrame(threads_sync_timeout) ==
-                                          bgfx::RenderFrame::Enum::Timeout);
+        } while (this->is_running and
+                 bgfx::renderFrame(
+                     std::chrono::duration_cast<std::chrono::milliseconds>(
+                         threads_sync_timeout)
+                         .count()) == bgfx::RenderFrame::Enum::Timeout);
 
         if (this->_engine_loop_state.retrieve() == EngineLoopState::stopping) {
             break;
