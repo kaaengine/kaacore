@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <initializer_list>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -10,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/audio.h"
+#include "kaacore/threading.h"
 
 namespace kaacore {
 
@@ -540,7 +542,7 @@ struct InputManager {
         glm::dvec2 get_position() const;
 
         bool relative_mode() const;
-        void relative_mode(const bool rel) const;
+        void relative_mode(const bool rel);
     } mouse;
 
     struct ControllerManager {
@@ -572,6 +574,8 @@ struct InputManager {
 
   private:
     std::unordered_map<EventType, EventCallback> _registered_callbacks;
+
+    friend struct MouseManager;
 };
 
 } // namespace kaacore

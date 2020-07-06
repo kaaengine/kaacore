@@ -441,20 +441,28 @@ InputManager::InputManager()
 std::string
 InputManager::SystemManager::get_clipboard_text() const
 {
-    auto text = SDL_GetClipboardText();
-    if (text == nullptr) {
-        log<LogLevel::error>("Unable to read clipboard content.");
-        return "";
-    }
-    return text;
+    InputManager* input_manager = container_of(this, &InputManager::system);
+    return get_engine()->make_call_from_main_thread<std::string>(
+        [input_manager]() -> std::string {
+            auto text = SDL_GetClipboardText();
+            if (text == nullptr) {
+                log<LogLevel::error>("Unable to read clipboard content.");
+                return "";
+            }
+            return text;
+        });
 }
 
 void
 InputManager::SystemManager::set_clipboard_text(const std::string& text) const
 {
-    if (SDL_SetClipboardText(text.c_str()) < 0) {
-        log<LogLevel::error>("Unable to set clipboard content.");
-    }
+    InputManager* input_manager = container_of(this, &InputManager::system);
+    return get_engine()->make_call_from_main_thread<void>(
+        [input_manager, &text]() {
+            if (SDL_SetClipboardText(text.c_str()) < 0) {
+                log<LogLevel::error>("Unable to set clipboard content.");
+            }
+        });
 }
 
 bool
@@ -493,15 +501,20 @@ InputManager::MouseManager::get_position() const
 bool
 InputManager::MouseManager::relative_mode() const
 {
-    return SDL_GetRelativeMouseMode();
+    InputManager* input_manager = container_of(this, &InputManager::mouse);
+    return get_engine()->make_call_from_main_thread<bool>(
+        [input_manager]() { return SDL_GetRelativeMouseMode(); });
 }
 
 void
-InputManager::MouseManager::relative_mode(const bool rel) const
+InputManager::MouseManager::relative_mode(const bool rel)
 {
-    if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
-        throw kaacore::exception(SDL_GetError());
-    }
+    InputManager* input_manager = container_of(this, &InputManager::mouse);
+    get_engine()->make_call_from_main_thread<void>([input_manager, rel]() {
+        if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
+            log<LogLevel::error, LogCategory::input>(SDL_GetError());
+        }
+    });
 }
 
 InputManager::ControllerManager::~ControllerManager()
