@@ -1,5 +1,6 @@
 #include <list>
 
+#include "kaacore/easings.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
@@ -66,6 +67,14 @@ NodeTransitionBase::prepare_state(NodePtr node) const
     return nullptr;
 }
 
+NodeTransitionCustomizable::NodeTransitionCustomizable() {}
+
+NodeTransitionCustomizable::NodeTransitionCustomizable(
+    const double duration, const TransitionWarping& warping,
+    const Easing easing)
+    : NodeTransitionBase(duration, warping), _easing(easing)
+{}
+
 void
 NodeTransitionCustomizable::process_time_point(
     TransitionStateBase* state, NodePtr node,
@@ -81,7 +90,7 @@ NodeTransitionCustomizable::process_time_point(
         this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
 
     const double warped_t = local_tp.abs_t / this->internal_duration;
-    this->evaluate(state, node, warped_t);
+    this->evaluate(state, node, apply_easing_function(this->_easing, warped_t));
 }
 
 struct _NodeTransitionsGroupSubState {
