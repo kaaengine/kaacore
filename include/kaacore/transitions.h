@@ -9,6 +9,7 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/easings.h"
 #include "kaacore/node_ptr.h"
 
 namespace kaacore {
@@ -31,7 +32,6 @@ struct TransitionTimePoint {
 struct TransitionWarping {
     uint32_t loops;
     bool back_and_forth;
-    uint64_t easing;
 
     TransitionWarping(uint32_t loops = 1, bool back_and_forth = false);
 
@@ -61,13 +61,20 @@ class NodeTransitionBase {
 
 class NodeTransitionCustomizable : public NodeTransitionBase {
   public:
-    using NodeTransitionBase::NodeTransitionBase;
+    NodeTransitionCustomizable();
+    NodeTransitionCustomizable(
+        const double duration,
+        const TransitionWarping& warping = TransitionWarping(),
+        const Easing easing = Easing::none);
 
     virtual void process_time_point(
         TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
     virtual void evaluate(
         TransitionStateBase* state, NodePtr node, const double t) const = 0;
+
+  private:
+    Easing _easing;
 };
 
 class NodeTransitionsGroupBase : public NodeTransitionBase {

@@ -25,20 +25,24 @@ struct TransitionsDemoScene : Scene {
                     {
                         make_node_transition<NodePositionTransition>(
                             glm::dvec2(-15., -15.),
-                            AttributeTransitionMethod::add, tr_time),
+                            AttributeTransitionMethod::add, tr_time,
+                            TransitionWarping{}, Easing::back_in_out),
                         make_node_transition<NodePositionTransition>(
                             glm::dvec2(-25., 0.),
-                            AttributeTransitionMethod::add, tr_time * 4),
+                            AttributeTransitionMethod::add, tr_time * 4,
+                            TransitionWarping{}, Easing::sine_in_out),
                         make_node_transition<NodeScaleTransition>(
                             glm::dvec2(2., 2.),
-                            AttributeTransitionMethod::multiply, tr_time * 2),
+                            AttributeTransitionMethod::multiply, tr_time * 2,
+                            TransitionWarping{}, Easing::quintic_in_out),
                         make_node_transitions_parallel({
                             make_node_transition<NodeScaleTransition>(
                                 glm::dvec2(2., 2.),
                                 AttributeTransitionMethod::multiply,
                                 tr_time * 5),
                             make_node_transition<NodeColorTransition>(
-                                glm::dvec4(1., 0.2, 0.2, 0.5), tr_time * 5),
+                                glm::dvec4(1., 0.2, 0.2, 0.5), tr_time * 5,
+                                TransitionWarping{}, Easing::elastic_in_out),
                         }),
                         make_node_transitions_parallel({
                             make_node_transition<NodePositionTransition>(
