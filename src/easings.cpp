@@ -5,71 +5,71 @@
 namespace kaacore {
 
 double
-apply_easing_function(const Easing easing, const double t)
+ease(const Easing easing, const double progress)
 {
     switch (easing) {
         case Easing::none:
-            return t;
+            return progress;
         case Easing::back_in:
-            return glm::backEaseIn(t);
+            return glm::backEaseIn(progress);
         case Easing::back_in_out:
-            return glm::backEaseInOut(t);
+            return glm::backEaseInOut(progress);
         case Easing::back_out:
-            return glm::backEaseOut(t);
+            return glm::backEaseOut(progress);
         case Easing::bounce_in:
-            return glm::bounceEaseIn(t);
+            return glm::bounceEaseIn(progress);
         case Easing::bounce_in_out:
-            return glm::bounceEaseInOut(t);
+            return glm::bounceEaseInOut(progress);
         case Easing::bounce_out:
-            return glm::bounceEaseOut(t);
+            return glm::bounceEaseOut(progress);
         case Easing::circular_in:
-            return glm::circularEaseIn(t);
+            return glm::circularEaseIn(progress);
         case Easing::circular_in_out:
-            return glm::circularEaseInOut(t);
+            return glm::circularEaseInOut(progress);
         case Easing::circular_out:
-            return glm::circularEaseOut(t);
+            return glm::circularEaseOut(progress);
         case Easing::cubic_in:
-            return glm::cubicEaseIn(t);
+            return glm::cubicEaseIn(progress);
         case Easing::cubic_in_out:
-            return glm::cubicEaseInOut(t);
+            return glm::cubicEaseInOut(progress);
         case Easing::cubic_out:
-            return glm::cubicEaseOut(t);
+            return glm::cubicEaseOut(progress);
         case Easing::elastic_in:
-            return glm::elasticEaseIn(t);
+            return glm::elasticEaseIn(progress);
         case Easing::elastic_in_out:
-            return glm::elasticEaseInOut(t);
+            return glm::elasticEaseInOut(progress);
         case Easing::elastic_out:
-            return glm::elasticEaseOut(t);
+            return glm::elasticEaseOut(progress);
         case Easing::exponential_in:
-            return glm::exponentialEaseIn(t);
+            return glm::exponentialEaseIn(progress);
         case Easing::exponential_in_out:
-            return glm::exponentialEaseInOut(t);
+            return glm::exponentialEaseInOut(progress);
         case Easing::exponential_out:
-            return glm::exponentialEaseOut(t);
+            return glm::exponentialEaseOut(progress);
         case Easing::quadratic_in:
-            return glm::quadraticEaseIn(t);
+            return glm::quadraticEaseIn(progress);
         case Easing::quadratic_in_out:
-            return glm::quadraticEaseInOut(t);
+            return glm::quadraticEaseInOut(progress);
         case Easing::quadratic_out:
-            return glm::quadraticEaseOut(t);
+            return glm::quadraticEaseOut(progress);
         case Easing::quartic_in:
-            return glm::quarticEaseIn(t);
+            return glm::quarticEaseIn(progress);
         case Easing::quartic_in_out:
-            return glm::quarticEaseInOut(t);
+            return glm::quarticEaseInOut(progress);
         case Easing::quartic_out:
-            return glm::quarticEaseOut(t);
+            return glm::quarticEaseOut(progress);
         case Easing::quintic_in:
-            return glm::quinticEaseIn(t);
+            return glm::quinticEaseIn(progress);
         case Easing::quintic_in_out:
-            return glm::quinticEaseInOut(t);
+            return glm::quinticEaseInOut(progress);
         case Easing::quintic_out:
-            return glm::quinticEaseOut(t);
+            return glm::quinticEaseOut(progress);
         case Easing::sine_in:
-            return glm::sineEaseIn(t);
+            return glm::sineEaseIn(progress);
         case Easing::sine_in_out:
-            return glm::sineEaseInOut(t);
+            return glm::sineEaseInOut(progress);
         case Easing::sine_out:
-            return glm::sineEaseOut(t);
+            return glm::sineEaseOut(progress);
     }
 }
 

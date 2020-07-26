@@ -39,14 +39,14 @@ enum class Easing {
 };
 
 double
-apply_easing_function(const Easing easing, const double t);
+ease(const Easing easing, const double progress);
 
 template<typename T>
 T
-apply_easing_function(const Easing easing, const double t, const T a, const T b)
+ease_between(const Easing easing, const double progress, const T a, const T b)
 {
-    const auto eased_t = apply_easing_function(easing, t);
-    return glm::mix(a, b, eased_t);
+    const auto eased_progress = ease(easing, progress);
+    return glm::mix(a, b, eased_progress);
 }
 
 } // namespace kaacore

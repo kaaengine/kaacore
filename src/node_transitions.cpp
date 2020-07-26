@@ -13,8 +13,8 @@ struct _NodeSpriteAnimationTransitionState : TransitionStateBase {
 
 NodeSpriteTransition::NodeSpriteTransition(
     const std::vector<Sprite>& frames, const double duration,
-    const TransitionWarping& warping)
-    : NodeTransitionCustomizable(duration, warping), _frames(frames),
+    const TransitionWarping& warping, const Easing easing)
+    : NodeTransitionCustomizable(duration, warping, easing), _frames(frames),
       _frames_count(frames.size())
 {
     KAACORE_CHECK(

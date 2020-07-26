@@ -73,7 +73,6 @@ class NodeTransitionCustomizable : public NodeTransitionBase {
     virtual void evaluate(
         TransitionStateBase* state, NodePtr node, const double t) const = 0;
 
-  private:
     Easing _easing;
 };
 
