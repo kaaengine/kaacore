@@ -130,7 +130,8 @@ class NodeSpriteTransition : public NodeTransitionCustomizable {
   public:
     NodeSpriteTransition(
         const std::vector<Sprite>& frames, const double duration,
-        const TransitionWarping& warping = TransitionWarping());
+        const TransitionWarping& warping = TransitionWarping(),
+        const Easing easing = Easing::none);
 
     std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const;
     void evaluate(

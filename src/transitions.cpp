@@ -90,7 +90,7 @@ NodeTransitionCustomizable::process_time_point(
         this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
 
     const double warped_t = local_tp.abs_t / this->internal_duration;
-    this->evaluate(state, node, apply_easing_function(this->_easing, warped_t));
+    this->evaluate(state, node, ease(this->_easing, warped_t));
 }
 
 struct _NodeTransitionsGroupSubState {
