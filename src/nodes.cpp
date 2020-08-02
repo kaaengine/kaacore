@@ -15,6 +15,12 @@
 
 namespace kaacore {
 
+constexpr double
+_normalize_angle(const double angle)
+{
+    return std::remainder(angle, 2 * M_PI);
+}
+
 Node::Node(NodeType type) : _type(type)
 {
     if (type == NodeType::space) {
@@ -164,10 +170,11 @@ Node::_set_position(const glm::dvec2& position)
 void
 Node::_set_rotation(const double rotation)
 {
-    if (rotation != this->_rotation) {
+    auto normalized_rotation = _normalize_angle(rotation);
+    if (normalized_rotation != this->_rotation) {
         this->_mark_dirty();
     }
-    this->_rotation = rotation;
+    this->_rotation = normalized_rotation;
 }
 
 void
