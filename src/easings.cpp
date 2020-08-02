@@ -8,8 +8,6 @@ double
 ease(const Easing easing, const double progress)
 {
     switch (easing) {
-        case Easing::none:
-            return progress;
         case Easing::back_in:
             return glm::backEaseIn(progress);
         case Easing::back_in_out:
@@ -70,6 +68,8 @@ ease(const Easing easing, const double progress)
             return glm::sineEaseInOut(progress);
         case Easing::sine_out:
             return glm::sineEaseOut(progress);
+        default:
+            return progress;
     }
 }
 
