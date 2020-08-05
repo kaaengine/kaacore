@@ -11,8 +11,13 @@ option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
 option(KAACORE_BUILD_DEMOS_WITH_TSAN "Build kaacore demos with thread-sanitizer" OFF)
 option(KAACORE_MULTITHREADING_MODE "Build kaacore in multithreading mode" ON)
 
-set(KAACORE_MAX_VIEWS 32)
-set(BGFX_MAX_VIEWS 64)
+set(KAACORE_MAX_VIEWS 32 CACHE STRING "")
+set(BGFX_MAX_VIEWS 64 CACHE STRING "")
+if(KAACORE_MAX_VIEWS GREATER_EQUAL BGFX_MAX_VIEWS)
+    message(FATAL_ERROR
+        "BGFX_MAX_VIEWS(${BGFX_MAX_VIEWS}) must be greater than "
+        "KAACORE_MAX_VIEWS(${KAACORE_MAX_VIEWS}).")
+endif()
 
 # force static bgfx build
 set(BUILD_SHARED_LIBS OFF)
