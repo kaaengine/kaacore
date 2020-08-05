@@ -11,7 +11,13 @@ option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
 option(KAACORE_BUILD_DEMOS_WITH_TSAN "Build kaacore demos with thread-sanitizer" OFF)
 option(KAACORE_MULTITHREADING_MODE "Build kaacore in multithreading mode" ON)
 
-set(KAACORE_MAX_VIEWS 32)
+set(KAACORE_MAX_VIEWS 32 CACHE STRING "")
+set(BGFX_MAX_VIEWS 64 CACHE STRING "")
+if(KAACORE_MAX_VIEWS GREATER_EQUAL BGFX_MAX_VIEWS)
+    message(FATAL_ERROR
+        "BGFX_MAX_VIEWS(${BGFX_MAX_VIEWS}) must be greater than "
+        "KAACORE_MAX_VIEWS(${KAACORE_MAX_VIEWS}).")
+endif()
 
 # force static bgfx build
 set(BUILD_SHARED_LIBS OFF)
@@ -21,7 +27,7 @@ set(SDL_SHARED_ENABLED_BY_DEFAULT ON)
 add_subdirectory(third_party/bgfx)
 target_compile_options(
     bgfx PUBLIC
-    -DBGFX_CONFIG_MAX_VIEWS=${KAACORE_MAX_VIEWS}
+    -DBGFX_CONFIG_MAX_VIEWS=${BGFX_MAX_VIEWS}
     -DBGFX_CONFIG_MULTITHREADED=$<BOOL:${KAACORE_MULTITHREADING_MODE}>)
 if (TARGET astc-codec)
     set_target_properties(astc-codec PROPERTIES POSITION_INDEPENDENT_CODE ON)

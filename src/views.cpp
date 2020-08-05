@@ -6,6 +6,9 @@
 
 namespace kaacore {
 
+// index 0 is reserved for internal use
+constexpr int views_offset = 1;
+
 uint16_t
 operator~(ClearFlag flag)
 {
@@ -42,7 +45,7 @@ View::View()
 {}
 
 uint16_t
-View::index() const
+View::internal_index() const
 {
     return this->_index;
 }
@@ -50,7 +53,7 @@ View::index() const
 int16_t
 View::z_index() const
 {
-    return this->_index - (KAACORE_MAX_VIEWS / 2);
+    return this->_index - views_offset - (KAACORE_MAX_VIEWS / 2);
 }
 
 bool
@@ -167,7 +170,7 @@ View::_refresh()
 ViewsManager::ViewsManager()
 {
     for (uint16_t view_index = 0; view_index < this->size(); ++view_index) {
-        this->_views[view_index]._index = view_index;
+        this->_views[view_index]._index = view_index + views_offset;
     }
 }
 

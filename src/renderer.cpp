@@ -17,6 +17,8 @@
 
 namespace kaacore {
 
+constexpr uint16_t _internal_view_index = 0;
+
 // Since the memory that is used to load texture to bgfx should be available
 // for at least two frames, we bump up its ref count by storing it in a set.
 std::unordered_set<std::shared_ptr<bimg::ImageContainer>> _used_containers;
@@ -184,7 +186,7 @@ void
 Renderer::end_frame()
 {
     // TODO: optimize!
-    for (int i = 0; i < KAACORE_MAX_VIEWS; ++i) {
+    for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
         bgfx::touch(i);
     }
     bgfx::frame();
@@ -231,6 +233,10 @@ Renderer::reset()
     }
     this->view_size = view_size;
     this->border_size = border_size;
+
+    bgfx::setViewRect(_internal_view_index, 0, 0, window_size.x, window_size.y);
+    bgfx::setViewClear(
+        _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
 }
 
 void
