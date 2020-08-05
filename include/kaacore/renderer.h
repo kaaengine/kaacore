@@ -61,6 +61,7 @@ struct Renderer {
 
     glm::uvec2 view_size;
     glm::uvec2 border_size;
+    uint32_t border_color = 0x000000ff;
 
     Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size);
     ~Renderer();

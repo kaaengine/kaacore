@@ -58,7 +58,7 @@ class View {
 
     View& operator=(const View&) = delete;
 
-    uint16_t index() const;
+    uint16_t internal_index() const;
     int16_t z_index() const;
     bool is_dirty() const;
     glm::ivec2 origin() const;

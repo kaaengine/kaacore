@@ -60,7 +60,6 @@ Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
-    // const std::vector<glm::dvec2> bounding_points = {a0, a1, b1, b0};
     const std::vector<glm::dvec2> bounding_points = {a0, b0, b1, a1};
 
     return Shape(

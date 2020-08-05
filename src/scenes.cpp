@@ -18,7 +18,6 @@ Scene::Scene()
 {
     this->root_node._scene = this;
     this->spatial_index.start_tracking(&this->root_node);
-    this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].clear_color({0, 0, 0, 1});
 }
 
 Scene::~Scene()
@@ -160,7 +159,7 @@ Scene::process_nodes_drawing()
             auto& view = this->views[z_index];
 
             renderer->render_vertices(
-                view.index(), node->_render_data.computed_vertices,
+                view.internal_index(), node->_render_data.computed_vertices,
                 node->_shape.indices, node->_render_data.texture_handle);
         }
     }
