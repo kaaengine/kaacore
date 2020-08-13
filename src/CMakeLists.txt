@@ -175,7 +175,7 @@ target_include_directories(kaacore PUBLIC
 
 target_link_libraries(
     kaacore PUBLIC
-    SDL2 SDL_mixer bgfx chipmunk_static glm $<TARGET_OBJECTS:SDL_mixer>
+    SDL2 SDL_mixer bgfx chipmunk_static glm soloud $<TARGET_OBJECTS:SDL_mixer>
     stb $<TARGET_OBJECTS:stb>
 )
 

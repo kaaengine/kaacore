@@ -51,6 +51,12 @@ add_subdirectory(third_party/glm)
 
 add_subdirectory(third_party/stb)
 
+set(SDL2_LIBRARY SDL2)
+set(SDL2_INCLUDE_DIR SDL2)
+add_subdirectory(third_party/soloud/contrib)
+unset(SDL2_LIBRARY)
+unset(SDL2_INCLUDE_DIR)
+
 set_target_properties(
     bgfx bimg bx chipmunk_static
     PROPERTIES POSITION_INDEPENDENT_CODE ON
