@@ -34,16 +34,20 @@ Engine::Engine(
         virtual_resolution.x > 0 and virtual_resolution.y > 0,
         "Virtual resolution must be greater than zero.");
     initialize_logging();
-
     log<LogLevel::info>("Initializing Kaacore.");
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        throw kaacore::exception(SDL_GetError());
+    }
     this->_main_thread_id = std::this_thread::get_id();
-    SDL_Init(SDL_INIT_EVERYTHING);
     engine = this;
 
     this->window = std::make_unique<Window>(this->_virtual_resolution);
 
     auto bgfx_init_data = this->_gather_platform_data();
     auto window_size = this->window->size();
+
+    this->input_manager = std::make_unique<InputManager>();
+    this->audio_manager = std::make_unique<AudioManager>();
 #if KAACORE_MULTITHREADING_MODE
     bgfx::renderFrame(); // This marks main thread as "rendering thread"
                          // meaning it will talk with system graphics.
@@ -76,9 +80,6 @@ Engine::Engine(
     this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
-    this->input_manager = std::make_unique<InputManager>();
-    this->audio_manager = std::make_unique<AudioManager>();
-
     this->window->show();
 }
 

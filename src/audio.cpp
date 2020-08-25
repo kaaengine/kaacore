@@ -372,7 +372,6 @@ _channel_finished_hook(int channel)
 AudioManager::AudioManager()
     : _master_volume(1.), _master_sound_volume(1.), _master_music_volume(1.)
 {
-    SDL_InitSubSystem(SDL_INIT_AUDIO);
     Mix_Init(MIX_INIT_OGG);
     auto err_code =
         Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048);
