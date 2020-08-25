@@ -56,6 +56,10 @@ set(SDL2_INCLUDE_DIR SDL2)
 add_subdirectory(third_party/soloud/contrib)
 unset(SDL2_LIBRARY)
 unset(SDL2_INCLUDE_DIR)
+target_include_directories(
+    soloud PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/soloud/include>
+)
 
 set_target_properties(
     bgfx bimg bx chipmunk_static
