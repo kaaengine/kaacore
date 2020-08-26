@@ -818,6 +818,10 @@ _velocity_update_wrapper(
     cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt)
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
+    if (not body) {
+        // body has been already detached for the simulation
+        return;
+    }
 
     if (body->_gravity) {
         gravity = body->_gravity.value();
@@ -840,6 +844,10 @@ void
 _position_update_wrapper(cpBody* cp_body, cpFloat dt)
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
+    if (not body) {
+        // body has been already detached for the simulation
+        return;
+    }
     Node* node = container_node(body);
     body->_position_update_callback(node, dt);
     // TODO: cpAssertSaneBody
