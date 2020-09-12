@@ -608,4 +608,28 @@ Node::indexable() const
     return this->_indexable;
 }
 
+BoundingBox<double>
+Node::bounding_box()
+{
+    const auto transformation = this->absolute_transformation();
+
+    if (this->_shape) {
+        KAACORE_ASSERT(
+            not this->_shape.bounding_points.empty(),
+            "Shape must have bounding points");
+        std::vector<glm::dvec2> bounding_points;
+        bounding_points.resize(this->_shape.bounding_points.size());
+        std::transform(
+            this->_shape.bounding_points.begin(),
+            this->_shape.bounding_points.end(), bounding_points.begin(),
+            [&transformation](glm::dvec2 pt) -> glm::dvec2 {
+                return pt | transformation;
+            });
+        return BoundingBox<double>::from_points(bounding_points);
+    } else {
+        return BoundingBox<double>::single_point(
+            this->_position | transformation);
+    }
+}
+
 } // namespace kaacore

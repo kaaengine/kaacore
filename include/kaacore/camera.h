@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/geometry.h"
+
 namespace kaacore {
 
 class View;
@@ -18,6 +20,7 @@ class Camera {
     glm::dvec2 scale() const;
     void scale(const glm::dvec2& scale);
     glm::dvec2 unproject_position(const glm::dvec2& position);
+    BoundingBox<double> visible_area_bounding_box();
 
   private:
     bool _is_dirty;

@@ -36,6 +36,12 @@ Shape::operator==(const Shape& other)
         this->vertices == other.vertices);
 }
 
+BoundingBox<double>
+Shape::bounding_box() const
+{
+    return this->vertices_bbox;
+}
+
 Shape
 Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
 {

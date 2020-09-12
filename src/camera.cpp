@@ -81,4 +81,21 @@ Camera::unproject_position(const glm::dvec2& pos)
     return {pos4.x, pos4.y};
 }
 
+BoundingBox<double>
+Camera::visible_area_bounding_box()
+{
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    return BoundingBox<double>::from_points(
+        {this->unproject_position(glm::dvec2{-double(virtual_resolution.x) / 2,
+                                             double(virtual_resolution.y) / 2}),
+         this->unproject_position(glm::dvec2{double(virtual_resolution.x) / 2,
+                                             double(virtual_resolution.y) / 2}),
+         this->unproject_position(
+             glm::dvec2{-double(virtual_resolution.x) / 2,
+                        -double(virtual_resolution.y) / 2}),
+         this->unproject_position(
+             glm::dvec2{double(virtual_resolution.x) / 2,
+                        -double(virtual_resolution.y) / 2})});
+}
+
 } // namespace kaacore
