@@ -72,10 +72,6 @@ Camera::refresh()
 glm::dvec2
 Camera::unproject_position(const glm::dvec2& pos)
 {
-    if (this->_is_dirty) {
-        this->refresh();
-    }
-
     auto virtual_resolution = get_engine()->virtual_resolution();
     // account for virtual_resolution / 2 since we want to get
     // top-left corner of camera 'window'
