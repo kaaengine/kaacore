@@ -16,7 +16,7 @@
 
 namespace kaacore {
 
-constexpr double
+inline double
 _normalize_angle(const double angle)
 {
     return std::remainder(angle, 2 * M_PI);
