@@ -1,3 +1,4 @@
+#include <cmath>
 #include <type_traits>
 
 #include <chipmunk/chipmunk.h>
@@ -828,7 +829,7 @@ _velocity_update_wrapper(
     }
 
     if (body->_damping) {
-        damping = body->_damping.value();
+        damping = std::pow(body->_damping.value(), dt);
     }
 
     if (body->_velocity_update_callback == nullptr) {
