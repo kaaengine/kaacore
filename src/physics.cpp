@@ -819,7 +819,7 @@ _velocity_update_wrapper(
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
     if (not body) {
-        // body has been already detached for the simulation
+        // body has been already detached from the simulation
         return;
     }
 
@@ -845,7 +845,7 @@ _position_update_wrapper(cpBody* cp_body, cpFloat dt)
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
     if (not body) {
-        // body has been already detached for the simulation
+        // body has been already detached from the simulation
         return;
     }
     Node* node = container_node(body);
