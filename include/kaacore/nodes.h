@@ -3,6 +3,7 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <optional>
 #include <unordered_set>
 #include <vector>
 
@@ -50,6 +51,7 @@ class Node {
     void add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
     void recalculate_render_data();
+    void recalculate_view_data();
 
     const NodeType type() const;
 
@@ -102,8 +104,8 @@ class Node {
     NodePtr parent() const;
     const std::vector<Node*>& children();
 
-    void views(const std::unordered_set<int16_t>& z_indices);
-    const std::vector<int16_t> views() const;
+    void views(const std::optional<std::unordered_set<int16_t>>& z_indices);
+    const std::optional<std::vector<int16_t>> views() const;
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
@@ -131,7 +133,7 @@ class Node {
     Scene* _scene = nullptr;
     Node* _parent = nullptr;
     std::vector<Node*> _children;
-    std::vector<int16_t> _views = {0};
+    std::optional<ViewIndexSet> _views = std::nullopt;
 
     std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
 
@@ -144,6 +146,10 @@ class Node {
         bgfx::TextureHandle texture_handle;
         bool is_dirty = true;
     } _render_data;
+    struct {
+        ViewIndexSet calculated_views;
+        bool is_dirty = true;
+    } _ordering_data;
 
     bool _indexable = true;
     NodeSpatialData _spatial_data;

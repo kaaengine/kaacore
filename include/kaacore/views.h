@@ -1,5 +1,8 @@
 #pragma once
 
+#include <bitset>
+#include <unordered_set>
+
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 
@@ -8,15 +11,15 @@
 
 namespace kaacore {
 
-#define KAACORE_VIEWS_MIN_Z_INDEX (KAACORE_MAX_VIEWS / -2)
-#define KAACORE_VIEWS_MAX_Z_INDEX ((KAACORE_MAX_VIEWS / 2) - 1)
-#define KAACORE_VIEWS_DEFAULT_Z_INDEX 0
+constexpr auto views_min_z_index = (KAACORE_MAX_VIEWS / -2);
+constexpr auto views_max_z_index = ((KAACORE_MAX_VIEWS / 2) - 1);
+constexpr auto views_z_index_to_internal_offset = -views_min_z_index;
+constexpr auto views_default_z_index = 0;
 
-inline bool
+inline constexpr bool
 validate_view_z_index(int16_t z_index)
 {
-    return (KAACORE_VIEWS_MIN_Z_INDEX <= z_index) and
-           (z_index <= KAACORE_VIEWS_MAX_Z_INDEX);
+    return (views_min_z_index <= z_index) and (z_index <= views_max_z_index);
 }
 
 enum class ClearFlag : uint16_t {
@@ -51,6 +54,37 @@ operator|=(uint16_t& left, ClearFlag right);
 
 class Renderer;
 class ViewsManager;
+
+class ViewIndexSet {
+  public:
+    ViewIndexSet() = default;
+    ViewIndexSet(std::unordered_set<int16_t>);
+    ~ViewIndexSet() = default;
+    ViewIndexSet(const ViewIndexSet&) = default;
+    ViewIndexSet(ViewIndexSet&&) = default;
+    ViewIndexSet& operator=(const ViewIndexSet&) = default;
+    ViewIndexSet& operator=(ViewIndexSet&&) = default;
+
+    operator std::unordered_set<int16_t>() const;
+    operator std::vector<int16_t>() const;
+
+    std::bitset<KAACORE_MAX_VIEWS>::reference operator[](size_t pos);
+    ViewIndexSet operator|(const ViewIndexSet& other) const;
+    ViewIndexSet operator&(const ViewIndexSet& other) const;
+    ViewIndexSet& operator|=(const ViewIndexSet& other);
+    ViewIndexSet& operator&=(const ViewIndexSet& other);
+
+    bool all() const;
+    bool any() const;
+    bool none() const;
+
+    void each_active_z_index(const std::function<void(int16_t)>) const;
+
+  private:
+    ViewIndexSet(std::bitset<KAACORE_MAX_VIEWS> _bitset);
+
+    std::bitset<KAACORE_MAX_VIEWS> _views_bitset;
+};
 
 class View {
   public:

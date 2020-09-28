@@ -9,6 +9,7 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/views.h"
 
 #include "kaacore/scenes.h"
 
@@ -17,6 +18,7 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
+    this->root_node.views(std::unordered_set<int16_t>{views_default_z_index});
     this->spatial_index.start_tracking(&this->root_node);
 }
 
@@ -33,7 +35,7 @@ Scene::~Scene()
 Camera&
 Scene::camera()
 {
-    return this->views[KAACORE_VIEWS_DEFAULT_Z_INDEX].camera;
+    return this->views[views_default_z_index].camera;
 }
 
 void
@@ -137,6 +139,7 @@ Scene::process_nodes_drawing()
         }
 
         node->recalculate_render_data();
+        node->recalculate_view_data();
 
         rendering_queue.emplace_back(
             std::abs(std::numeric_limits<int16_t>::min()) + node->_z_index,
@@ -155,13 +158,14 @@ Scene::process_nodes_drawing()
             continue;
         }
 
-        for (auto z_index : node->_views) {
-            auto& view = this->views[z_index];
+        node->_ordering_data.calculated_views.each_active_z_index(
+            [this, &renderer, &node](int16_t z_index) {
+                auto& view = this->views[z_index];
 
-            renderer->render_vertices(
-                view.internal_index(), node->_render_data.computed_vertices,
-                node->_shape.indices, node->_render_data.texture_handle);
-        }
+                renderer->render_vertices(
+                    view.internal_index(), node->_render_data.computed_vertices,
+                    node->_shape.indices, node->_render_data.texture_handle);
+            });
     }
 }
 

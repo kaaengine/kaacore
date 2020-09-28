@@ -16,7 +16,7 @@
 
 namespace kaacore {
 
-constexpr double
+inline double
 _normalize_angle(const double angle)
 {
     return std::remainder(angle, 2 * M_PI);
@@ -72,6 +72,7 @@ Node::_mark_dirty()
     this->_render_data.is_dirty = true;
     this->_model_matrix.is_dirty = true;
     this->_spatial_data.is_dirty = true;
+    this->_ordering_data.is_dirty = true;
     for (auto child : this->_children) {
         if (not child->_model_matrix.is_dirty) {
             child->_mark_dirty();
@@ -261,6 +262,26 @@ Node::recalculate_render_data()
             get_engine()->renderer->default_texture;
     }
     this->_render_data.is_dirty = false;
+}
+
+void
+Node::recalculate_view_data()
+{
+    if (not this->_ordering_data.is_dirty) {
+        return;
+    }
+
+    if (this->_views.has_value()) {
+        this->_ordering_data.calculated_views = *this->_views;
+    } else {
+        KAACORE_ASSERT(
+            this->_parent != nullptr,
+            "Can't inherit view data if node has no parent");
+        this->_parent->recalculate_view_data();
+        this->_ordering_data.calculated_views =
+            this->_parent->_ordering_data.calculated_views;
+    }
+    this->_ordering_data.is_dirty = false;
 }
 
 const NodeType
@@ -562,19 +583,17 @@ Node::parent() const
 }
 
 void
-Node::views(const std::unordered_set<int16_t>& z_indices)
+Node::views(const std::optional<std::unordered_set<int16_t>>& z_indices)
 {
-    KAACORE_CHECK(
-        z_indices.size() <= KAACORE_MAX_VIEWS, "Invalid indices size.");
-
-    this->_views.clear();
-    for (auto z_index : z_indices) {
-        KAACORE_CHECK(validate_view_z_index(z_index), "Invalid view index.");
-        this->_views.push_back(z_index);
+    if (z_indices.has_value()) {
+        KAACORE_CHECK(
+            z_indices->size() <= KAACORE_MAX_VIEWS, "Invalid indices size.");
     }
+
+    this->_views = z_indices;
 }
 
-const std::vector<int16_t>
+const std::optional<std::vector<int16_t>>
 Node::views() const
 {
     return this->_views;
