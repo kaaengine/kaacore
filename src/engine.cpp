@@ -252,7 +252,6 @@ Engine::_scene_processing()
 #if KAACORE_MULTITHREADING_MODE
             this->_event_processing_state.set(EventProcessingState::consumed);
 #endif
-            this->_scene->resolve_dirty_nodes();
             this->_scene->process_nodes_drawing();
             this->_scene->process_physics(dt);
             this->_scene->process_nodes(dt);

@@ -87,11 +87,13 @@ Scene::process_nodes(uint32_t dt)
 }
 
 void
-Scene::resolve_dirty_nodes()
+Scene::process_nodes_drawing()
 {
     static std::deque<Node*> processing_queue;
-    processing_queue.clear();
+    static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
 
+    processing_queue.clear();
+    rendering_queue.clear();
     processing_queue.push_back(&this->root_node);
     while (not processing_queue.empty()) {
         Node* node = processing_queue.front();
@@ -111,40 +113,19 @@ Scene::resolve_dirty_nodes()
         for (const auto child_node : node->_children) {
             processing_queue.push_back(child_node);
         }
-    }
-}
-
-void
-Scene::process_nodes_drawing()
-{
-    static std::deque<Node*> processing_queue;
-    static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
-
-    processing_queue.clear();
-    rendering_queue.clear();
-    processing_queue.push_back(&this->root_node);
-    auto renderer = get_engine()->renderer.get();
-    while (not processing_queue.empty()) {
-        Node* node = processing_queue.front();
-        processing_queue.pop_front();
 
         if (not node->_visible) {
             continue;
         }
 
-        for (const auto child_node : node->_children) {
-            processing_queue.push_back(child_node);
-        }
-
         node->recalculate_render_data();
-
         rendering_queue.emplace_back(
             std::abs(std::numeric_limits<int16_t>::min()) + node->_z_index,
             node);
     }
 
+    auto renderer = get_engine()->renderer.get();
     std::stable_sort(rendering_queue.begin(), rendering_queue.end());
-
     for (auto& view : this->views) {
         renderer->process_view(view);
     }
