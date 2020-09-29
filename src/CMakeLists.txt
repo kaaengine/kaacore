@@ -95,6 +95,7 @@ set(SRC_CXX_FILES
     utils.cpp
     embedded_data.cpp
     easings.cpp
+    shaders.cpp
 )
 
 set(SRC_H_FILES
@@ -125,6 +126,7 @@ set(SRC_H_FILES
     ../include/kaacore/spatial_index.h
     ../include/kaacore/threading.h
     ../include/kaacore/easings.h
+    ../include/kaacore/shaders.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

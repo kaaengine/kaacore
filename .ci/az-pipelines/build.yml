@@ -1,0 +1,47 @@
+name: 'Checking PR - build'
+
+trigger: none
+pr:
+  branches:
+    include:
+      - '*'
+
+strategy:
+  matrix:
+    linux:
+      system_name: 'linux'
+      image_name: 'ubuntu-18.04'
+      cmake_generator: 'Unix Makefiles'
+      cmake_generator_platform: ''
+    windows:
+      system_name: 'windows'
+      image_name: 'windows-2019'
+      cmake_generator: 'Visual Studio 16 2019'
+      cmake_generator_platform: 'x64'
+    macos:
+      system_name: 'macos'
+      image_name: 'macOS-10.14'
+      cmake_generator: 'Unix Makefiles'
+      cmake_generator_platform: ''
+
+pool:
+  vmImage: $(image_name)
+
+steps:
+  - checkout: self
+
+  - bash: |
+      sudo apt-get update
+      sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev g++
+    displayName: 'Install dependencies (Linux)'
+    condition: eq(variables['system_name'], 'linux')
+
+  - script: git submodule update --init --recursive
+    displayName: 'Fetch submodules'
+
+  - bash: |
+      cmake -B ./cmake_build -G "$(cmake_generator)" -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
+      cmake --build ./cmake_build -j 5
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '10.14'
+    displayName: 'Build kaacore'
