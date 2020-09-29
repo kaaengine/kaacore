@@ -72,10 +72,6 @@ Camera::refresh()
 glm::dvec2
 Camera::unproject_position(const glm::dvec2& pos)
 {
-    if (this->_is_dirty) {
-        this->refresh();
-    }
-
     auto virtual_resolution = get_engine()->virtual_resolution();
     // account for virtual_resolution / 2 since we want to get
     // top-left corner of camera 'window'
@@ -83,6 +79,23 @@ Camera::unproject_position(const glm::dvec2& pos)
                        pos.y - virtual_resolution.y / 2, 0., 1.};
     pos4 = glm::inverse(this->_calculated_view) * pos4;
     return {pos4.x, pos4.y};
+}
+
+BoundingBox<double>
+Camera::visible_area_bounding_box()
+{
+    auto virtual_resolution = get_engine()->virtual_resolution();
+    return BoundingBox<double>::from_points(
+        {this->unproject_position(glm::dvec2{-double(virtual_resolution.x) / 2,
+                                             double(virtual_resolution.y) / 2}),
+         this->unproject_position(glm::dvec2{double(virtual_resolution.x) / 2,
+                                             double(virtual_resolution.y) / 2}),
+         this->unproject_position(
+             glm::dvec2{-double(virtual_resolution.x) / 2,
+                        -double(virtual_resolution.y) / 2}),
+         this->unproject_position(
+             glm::dvec2{double(virtual_resolution.x) / 2,
+                        -double(virtual_resolution.y) / 2})});
 }
 
 } // namespace kaacore

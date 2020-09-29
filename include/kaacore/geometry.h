@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "kaacore/utils.h"
+
 namespace kaacore {
 
 enum struct PolygonType { convex_cw = 1, convex_ccw = 2, not_convex = 10 };
@@ -111,11 +113,64 @@ struct BoundingBox {
         : min_x(min_x), min_y(min_y), max_x(max_x), max_y(max_y)
     {}
 
-    operator bool() const
+    bool operator==(const BoundingBox<T>& other)
     {
         return (
-            not std::isnan(this->min_x) and not std::isnan(this->max_x) and
-            not std::isnan(this->min_y) and not std::isnan(this->max_y));
+            this->min_x == other.min_x and this->min_y == other.min_y and
+            this->max_x == other.max_x and this->max_y == other.max_y);
+    }
+
+    bool is_nan() const
+    {
+        return (
+            std::isnan(this->min_x) or std::isnan(this->max_x) or
+            std::isnan(this->min_y) or std::isnan(this->max_y));
+    }
+
+    BoundingBox<T> merge(const BoundingBox<T>& other)
+    {
+        return BoundingBox<T>{glm::min(this->min_x, other.min_x),
+                              glm::min(this->min_y, other.min_y),
+                              glm::max(this->max_x, other.max_x),
+                              glm::max(this->max_y, other.max_y)};
+    }
+
+    bool contains(const BoundingBox<T>& bbox)
+    {
+        return (
+            this->min_x <= bbox.min_x and this->max_x >= bbox.max_x and
+            this->min_y <= bbox.min_y and this->max_y >= bbox.max_y);
+    }
+
+    bool contains(const glm::tvec2<T> point)
+    {
+        return (
+            this->min_x <= point.x and this->max_x >= point.x and
+            this->min_y <= point.y and this->max_y >= point.y);
+    }
+
+    bool intersects(const BoundingBox<T>& other)
+    {
+        return (
+            this->min_x <= other.max_x and other.min_x <= this->max_x and
+            this->min_y <= other.max_y and other.min_y <= this->max_y);
+    }
+
+    BoundingBox<T> grow(glm::tvec2<T> vec)
+    {
+        return BoundingBox<T>{this->min_x - vec.x, this->min_y - vec.y,
+                              this->max_x + vec.x, this->max_y + vec.y};
+    }
+
+    glm::tvec2<T> center()
+    {
+        return {(this->max_x + this->min_x) / 2,
+                (this->max_y + this->min_y) / 2};
+    }
+
+    glm::tvec2<T> dimensions()
+    {
+        return {this->max_x - this->min_x, this->max_y - this->min_y};
     }
 
     static BoundingBox<T> single_point(glm::tvec2<T> pt)
@@ -149,7 +204,7 @@ template<typename T>
 glm::vec<2, T>
 calculate_realignment_vector(Alignment alignment, const BoundingBox<T>& bbox)
 {
-    if (alignment == Alignment::none or not bbox) {
+    if (alignment == Alignment::none or bbox.is_nan()) {
         return {0., 0.};
     }
 
@@ -194,3 +249,16 @@ std::pair<glm::dvec2, glm::dvec2>
 find_points_minmax(const std::vector<glm::dvec2>& points);
 
 } // namespace kaacore
+
+namespace std {
+
+template<typename T>
+struct hash<kaacore::BoundingBox<T>> {
+    size_t operator()(const kaacore::BoundingBox<T>& bbox) const
+    {
+        return kaacore::hash_combined(
+            bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y);
+    }
+};
+
+} // namespace std

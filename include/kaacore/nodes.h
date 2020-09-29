@@ -111,6 +111,8 @@ class Node {
     void indexable(const bool indexable_flag);
     bool indexable() const;
 
+    BoundingBox<double> bounding_box();
+
   private:
     const NodeType _type = NodeType::basic;
     glm::dvec2 _position = {0., 0.};

@@ -38,6 +38,7 @@ struct Shape {
 
     inline operator bool() const { return this->type != ShapeType::none; }
     bool operator==(const Shape& other);
+    BoundingBox<double> bounding_box() const;
 
     static Shape Segment(const glm::dvec2 a, const glm::dvec2 b);
     static Shape Circle(const double radius, const glm::dvec2 center);

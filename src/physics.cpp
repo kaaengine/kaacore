@@ -1,3 +1,4 @@
+#include <cmath>
 #include <type_traits>
 
 #include <chipmunk/chipmunk.h>
@@ -819,7 +820,7 @@ _velocity_update_wrapper(
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
     if (not body) {
-        // body has been already detached for the simulation
+        // body has been already detached from the simulation
         return;
     }
 
@@ -828,7 +829,7 @@ _velocity_update_wrapper(
     }
 
     if (body->_damping) {
-        damping = body->_damping.value();
+        damping = std::pow(body->_damping.value(), dt);
     }
 
     if (body->_velocity_update_callback == nullptr) {
@@ -845,7 +846,7 @@ _position_update_wrapper(cpBody* cp_body, cpFloat dt)
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
     if (not body) {
-        // body has been already detached for the simulation
+        // body has been already detached from the simulation
         return;
     }
     Node* node = container_node(body);
