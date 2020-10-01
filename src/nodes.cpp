@@ -72,10 +72,20 @@ Node::_mark_dirty()
     this->_render_data.is_dirty = true;
     this->_model_matrix.is_dirty = true;
     this->_spatial_data.is_dirty = true;
-    this->_ordering_data.is_dirty = true;
     for (auto child : this->_children) {
         if (not child->_model_matrix.is_dirty) {
             child->_mark_dirty();
+        }
+    }
+}
+
+void
+Node::_mark_ordering_dirty()
+{
+    this->_ordering_data.is_dirty = true;
+    for (auto child : this->_children) {
+        if (not child->_ordering_data.is_dirty) {
+            child->_mark_ordering_dirty();
         }
     }
 }
@@ -591,6 +601,7 @@ Node::views(const std::optional<std::unordered_set<int16_t>>& z_indices)
     }
 
     this->_views = z_indices;
+    this->_mark_ordering_dirty();
 }
 
 const std::optional<std::vector<int16_t>>

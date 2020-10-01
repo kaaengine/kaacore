@@ -157,6 +157,7 @@ class Node {
     bool _marked_to_delete = false;
 
     void _mark_dirty();
+    void _mark_ordering_dirty();
     void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(
