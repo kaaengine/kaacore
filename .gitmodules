@@ -1,6 +1,6 @@
 [submodule "third_party/bgfx"]
 	path = third_party/bgfx
-	url = https://github.com/JoshuaBrookover/bgfx.cmake
+	url = https://github.com/labuzm/bgfx.cmake.git
 [submodule "third_party/sdl_mixer"]
 	path = third_party/sdl_mixer
 	url = https://github.com/maniek2332/SDL_mixer-cmake

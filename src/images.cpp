@@ -36,11 +36,11 @@ load_image(const uint8_t* data, size_t size)
         bimg::imageParse(&texture_image_allocator, data, size);
     assert(image_container != NULL);
 
-    log("Image details - width: %u, height: %u, depth: %u, layers: %u, format: "
-        "%u",
+    log("Image details - width: %u, height: %u, depth: %u, layers: %u, alpha: "
+        "%u, format: %u",
         image_container->m_width, image_container->m_height,
         image_container->m_depth, image_container->m_numLayers,
-        image_container->m_format);
+        image_container->m_hasAlpha, image_container->m_format);
 
     return image_container;
 }
