@@ -39,6 +39,78 @@ operator|=(uint16_t& left, ClearFlag right)
     return left = left | static_cast<uint16_t>(right);
 }
 
+ViewIndexSet::ViewIndexSet(std::unordered_set<int16_t> z_indexes_set)
+{
+    for (auto view_z_index : z_indexes_set) {
+        KAACORE_ASSERT(
+            validate_view_z_index(view_z_index), "Invalid view z-index");
+        this->_views_bitset.set(
+            view_z_index + views_z_index_to_internal_offset);
+    }
+}
+
+ViewIndexSet::ViewIndexSet(std::bitset<KAACORE_MAX_VIEWS> _bitset)
+    : _views_bitset(_bitset)
+{}
+
+std::bitset<KAACORE_MAX_VIEWS>::reference ViewIndexSet::operator[](size_t pos)
+{
+    return this->_views_bitset[pos + views_z_index_to_internal_offset];
+}
+
+ViewIndexSet
+ViewIndexSet::operator|(const ViewIndexSet& other) const
+{
+    return ViewIndexSet{this->_views_bitset | other._views_bitset};
+}
+
+ViewIndexSet ViewIndexSet::operator&(const ViewIndexSet& other) const
+{
+    return ViewIndexSet{this->_views_bitset & other._views_bitset};
+}
+
+ViewIndexSet&
+ViewIndexSet::operator|=(const ViewIndexSet& other)
+{
+    this->_views_bitset |= other._views_bitset;
+    return *this;
+}
+
+ViewIndexSet&
+ViewIndexSet::operator&=(const ViewIndexSet& other)
+{
+    this->_views_bitset &= other._views_bitset;
+    return *this;
+}
+
+ViewIndexSet::operator std::unordered_set<int16_t>() const
+{
+    std::unordered_set<int16_t> active_views_set;
+    this->each_active_z_index([&active_views_set](int16_t view_z_index) {
+        active_views_set.insert(view_z_index);
+    });
+    return active_views_set;
+}
+
+ViewIndexSet::operator std::vector<int16_t>() const
+{
+    std::vector<int16_t> active_views_vector;
+    this->each_active_z_index([&active_views_vector](int16_t view_z_index) {
+        active_views_vector.push_back(view_z_index);
+    });
+    return active_views_vector;
+}
+
+void
+ViewIndexSet::each_active_z_index(const std::function<void(int16_t)> func) const
+{
+    for (auto i = 0; i < this->_views_bitset.size(); i++) {
+        if (this->_views_bitset.test(i)) {
+            func(i - views_z_index_to_internal_offset);
+        }
+    }
+}
+
 View::View()
     : _dimensions(get_engine()->virtual_resolution()), _is_dirty(true),
       _requires_clean(false)
