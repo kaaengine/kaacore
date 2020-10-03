@@ -50,7 +50,8 @@ class ResourcesRegistry {
     void initialze()
     {
         for (auto& it : this->_registry) {
-            if (auto resource_ptr = it.second.lock()) {
+            auto resource_ptr = it.second.lock();
+            if (resource_ptr and not resource_ptr->is_initialized) {
                 resource_ptr->_initialize();
             }
         }

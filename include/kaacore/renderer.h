@@ -11,6 +11,8 @@
 #include "kaacore/files.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/resources.h"
+#include "kaacore/shaders.h"
 #include "kaacore/utils.h"
 #include "kaacore/views.h"
 
@@ -55,7 +57,7 @@ struct Renderer {
     std::unique_ptr<Image> default_image;
 
     bgfx::UniformHandle texture_uniform;
-    bgfx::ProgramHandle default_program;
+    ResourceReference<Program> default_program;
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 

@@ -121,18 +121,15 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
     if (!found_defaults) {
         log<LogLevel::error>(
             "Can't find precompiled shaders for this platform!");
-        this->default_program = BGFX_INVALID_HANDLE;
         return;
     }
 
-    auto vs = bgfx::createShader(vs_mem);
-    auto fs = bgfx::createShader(fs_mem);
+    auto vs = Shader::load(vs_mem);
+    auto fs = Shader::load(fs_mem);
+    log("Created shaders, VS: %d, FS: %d.", vs->_handle, fs->_handle);
 
-    log("Created shaders, VS: %d, FS: %d.", vs, fs);
-
-    this->default_program = bgfx::createProgram(vs, fs, true);
-
-    log("Created program: %d.", this->default_program);
+    this->default_program = Program::load(vs, fs);
+    log("Created program: %d.", this->default_program->_handle);
     log("Initializing renderer completed.");
 }
 
@@ -140,8 +137,11 @@ Renderer::~Renderer()
 {
     log("Destroying renderer");
     bgfx::destroy(this->texture_uniform);
-    bgfx::destroy(this->default_program);
     this->default_image.reset();
+    // since default shaders are embeded and not present
+    // in registry, free them manually
+    this->default_program.res_ptr.get()->vertex_shader->_uninitialize();
+    this->default_program.res_ptr.get()->fragment_shader->_uninitialize();
     bgfx::shutdown();
 }
 
@@ -296,7 +296,7 @@ Renderer::render_vertices(
     bgfx::setIndexBuffer(&indices_buffer);
     bgfx::setTexture(0, this->texture_uniform, texture);
 
-    bgfx::submit(view_index, this->default_program, false);
+    bgfx::submit(view_index, this->default_program->_handle, false);
 }
 
 } // namespace kaacore
