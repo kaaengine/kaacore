@@ -40,7 +40,9 @@ steps:
     displayName: 'Fetch submodules'
 
   - bash: |
-      cmake -B ./cmake_build -G "$(cmake_generator)" -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
+      cmake -B ./cmake_build -DCMAKE_BUILD_TYPE=Release \
+      -G "$(cmake_generator)" \
+      -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
       cmake --build ./cmake_build -j 5
     env:
       MACOSX_DEPLOYMENT_TARGET: '10.14'
