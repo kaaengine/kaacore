@@ -86,16 +86,11 @@ Camera::visible_area_bounding_box()
 {
     auto virtual_resolution = get_engine()->virtual_resolution();
     return BoundingBox<double>::from_points(
-        {this->unproject_position(glm::dvec2{-double(virtual_resolution.x) / 2,
-                                             double(virtual_resolution.y) / 2}),
-         this->unproject_position(glm::dvec2{double(virtual_resolution.x) / 2,
-                                             double(virtual_resolution.y) / 2}),
-         this->unproject_position(
-             glm::dvec2{-double(virtual_resolution.x) / 2,
-                        -double(virtual_resolution.y) / 2}),
-         this->unproject_position(
-             glm::dvec2{double(virtual_resolution.x) / 2,
-                        -double(virtual_resolution.y) / 2})});
+        {this->unproject_position(glm::dvec2{0, virtual_resolution.y}),
+         this->unproject_position(glm::dvec2{virtual_resolution.x, virtual_resolution.y}),
+         this->unproject_position(glm::dvec2{0, 0}),
+         this->unproject_position(glm::dvec2{virtual_resolution.x, 0})}
+    );
 }
 
 } // namespace kaacore
