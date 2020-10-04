@@ -520,7 +520,7 @@ InputManager::MouseManager::relative_mode(const bool rel)
 InputManager::ControllerManager::~ControllerManager()
 {
     for (auto& it : this->_connected_map) {
-        this->disconnect(it.first);
+        SDL_GameControllerClose(it.second);
     }
 }
 
