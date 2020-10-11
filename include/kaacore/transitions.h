@@ -91,6 +91,8 @@ class NodeTransitionsGroupBase : public NodeTransitionBase {
     };
 
   protected:
+    NodeTransitionsGroupBase(
+        const std::vector<NodeTransitionHandle>& transitions) noexcept(false);
     std::vector<_SubTransition> _sub_transitions;
     bool has_infinite_sub_transitions;
 };
