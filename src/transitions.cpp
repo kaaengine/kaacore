@@ -108,6 +108,12 @@ struct _NodeTransitionsGroupSubState {
     {}
 };
 
+NodeTransitionsGroupBase::NodeTransitionsGroupBase(
+    const std::vector<NodeTransitionHandle>& transitions) noexcept(false)
+{
+    KAACORE_ASSERT(transitions.size(), "At least one transition is required.");
+}
+
 struct _NodeTransitionsSequenceState : TransitionStateBase {
     TransitionTimePoint prev_tp;
     std::list<_NodeTransitionsGroupSubState> sub_states;
@@ -117,6 +123,7 @@ struct _NodeTransitionsSequenceState : TransitionStateBase {
 NodeTransitionsSequence::NodeTransitionsSequence(
     const std::vector<NodeTransitionHandle>& transitions,
     const TransitionWarping& warping) noexcept(false)
+    : NodeTransitionsGroupBase(transitions)
 {
     double total_duration = 0.;
     bool has_infinite_subs = false;
@@ -270,6 +277,7 @@ struct _NodeTransitionsParallelState : TransitionStateBase {
 NodeTransitionsParallel::NodeTransitionsParallel(
     const std::vector<NodeTransitionHandle>& transitions,
     const TransitionWarping& warping) noexcept(false)
+    : NodeTransitionsGroupBase(transitions)
 {
     double max_sub_internal_duration = 0.;
     bool has_infinite_subs = false;
