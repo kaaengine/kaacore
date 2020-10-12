@@ -89,8 +89,12 @@ NodeTransitionCustomizable::process_time_point(
         "%lf, local_abs_t: %lf, internal_duration: %lf",
         this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
 
-    const double warped_t = local_tp.abs_t / this->internal_duration;
-    this->evaluate(state, node, ease(this->_easing, warped_t));
+    if (this->duration > 0) {
+        const double warped_t = local_tp.abs_t / this->internal_duration;
+        this->evaluate(state, node, ease(this->_easing, warped_t));
+    } else {
+        this->evaluate(state, node, tp.is_backing ? 0. : 1.);
+    }
 }
 
 struct _NodeTransitionsGroupSubState {
