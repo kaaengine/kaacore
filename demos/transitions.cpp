@@ -27,6 +27,10 @@ struct TransitionsDemoScene : Scene {
                             glm::dvec2(-15., -15.),
                             AttributeTransitionMethod::add, tr_time,
                             TransitionWarping{}, Easing::back_in_out),
+                        make_node_transition<NodeColorTransition>(
+                            glm::dvec4(0., 1., 0., 1.),
+                            AttributeTransitionMethod::set, 0.,
+                            TransitionWarping{}),
                         make_node_transition<NodePositionTransition>(
                             glm::dvec2(-25., 0.),
                             AttributeTransitionMethod::add, tr_time * 4,
