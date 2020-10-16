@@ -446,7 +446,7 @@ InputManager::SystemManager::get_clipboard_text() const
         [input_manager]() -> std::string {
             auto text = SDL_GetClipboardText();
             if (text == nullptr) {
-                log<LogLevel::error>("Unable to read clipboard content.");
+                KAACORE_LOG_ERROR("Unable to read clipboard content.");
                 return "";
             }
             return text;
@@ -460,7 +460,7 @@ InputManager::SystemManager::set_clipboard_text(const std::string& text) const
     return get_engine()->make_call_from_main_thread<void>(
         [input_manager, &text]() {
             if (SDL_SetClipboardText(text.c_str()) < 0) {
-                log<LogLevel::error>("Unable to set clipboard content.");
+                KAACORE_LOG_ERROR("Unable to set clipboard content.");
             }
         });
 }
@@ -512,7 +512,7 @@ InputManager::MouseManager::relative_mode(const bool rel)
     InputManager* input_manager = container_of(this, &InputManager::mouse);
     get_engine()->make_call_from_main_thread<void>([input_manager, rel]() {
         if (SDL_SetRelativeMouseMode(static_cast<SDL_bool>(rel)) < 0) {
-            log<LogLevel::error, LogCategory::input>(SDL_GetError());
+            KAACORE_LOG_ERROR(SDL_GetError());
         }
     });
 }
@@ -633,8 +633,8 @@ InputManager::ControllerManager::connect(int device_index)
 {
     auto controller = SDL_GameControllerOpen(device_index);
     if (not controller) {
-        log<LogLevel::error>(
-            "Failed to connect game controller: %s\n", SDL_GetError());
+        KAACORE_LOG_ERROR(
+            "Failed to connect game controller: {}", SDL_GetError());
         return -1;
     }
 
@@ -674,12 +674,14 @@ InputManager::push_event(SDL_Event sdl_event)
         case EventType::controller_added:
             sdl_event.cdevice.which =
                 this->controller.connect(sdl_event.cdevice.which);
-            log<LogLevel::debug>("Controller conneced.");
+            KAACORE_LOG_DEBUG(
+                "Controller connected ({}).", sdl_event.cdevice.which);
             break;
 
         case EventType::controller_removed:
             this->controller.disconnect(sdl_event.cdevice.which);
-            log<LogLevel::debug>("Controller disconnected.");
+            KAACORE_LOG_DEBUG(
+                "Controller disconnected ({}).", sdl_event.cdevice.which);
             break;
     }
 

@@ -153,7 +153,7 @@ struct DemoScene : Scene {
 
     void update(uint32_t dt) override
     {
-        log<LogLevel::debug>("DemoScene update %lu.", dt);
+        KAACORE_APP_LOG_DEBUG("DemoScene update, dt: {}ms.", dt);
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
@@ -214,6 +214,7 @@ extern "C" int
 main(int argc, char* argv[])
 {
     Engine eng({20, 20});
+    set_logging_level("physics", spdlog::level::debug);
     eng.window->size({800, 600});
     eng.window->center();
     DemoScene scene;

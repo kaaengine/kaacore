@@ -36,10 +36,11 @@ NodeSpriteTransition::evaluate(
     if (target_frame >= this->_frames_count) {
         target_frame = this->_frames_count - 1;
     }
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeSpriteTransition(%p)::evaluate - node: %p, t: "
-        "%lf, frames_count: %lu, target_frame %lu",
-        this, node.get(), t, this->_frames_count, target_frame);
+    KAACORE_LOG_TRACE(
+        "NodeSpriteTransition({})::evaluate - node: {}, t: "
+        "{}, frames_count: {}, target_frame {}",
+        fmt::ptr(this), fmt::ptr(node.get()), t, this->_frames_count,
+        target_frame);
 
     if (target_frame != state->last_frame_index) {
         state->last_frame_index = target_frame;

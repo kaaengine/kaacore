@@ -31,16 +31,24 @@ Sprite
 Sprite::crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const
 {
     if (new_origin.x > this->dimensions.x) {
-        log<LogLevel::warn>("Requested origin.x is greater than original");
+        KAACORE_LOG_WARN(
+            "Requested origin.x ({}) is greater than original ({})",
+            new_origin.x, this->dimensions.x);
     }
     if (new_origin.y > this->dimensions.y) {
-        log<LogLevel::warn>("Requested origin.y is greater than original");
+        KAACORE_LOG_WARN(
+            "Requested origin.y is greater than original", new_origin.y,
+            this->dimensions.y);
     }
     if (new_dimensions.x > this->dimensions.x - new_origin.x) {
-        log<LogLevel::warn>("Requested dimensions.x is greater than available");
+        KAACORE_LOG_WARN(
+            "Requested dimensions.x is greater than available", new_origin.x,
+            this->dimensions.x - new_origin.x);
     }
     if (new_dimensions.y > this->dimensions.y - new_origin.y) {
-        log<LogLevel::warn>("Requested dimensions.y is greater than available");
+        KAACORE_LOG_WARN(
+            "Requested dimensions.y is greater than available", new_origin.y,
+            this->dimensions.y - new_origin.y);
     }
     Sprite new_sprite(*this);
     new_sprite.origin = this->origin + new_origin;
@@ -117,10 +125,10 @@ split_spritesheet(
         frames.reserve(max_frames_count - frames_offset);
     }
 
-    log<LogLevel::debug, LogCategory::misc>(
-        "Starting grid sprite sheet splitter, columns_count: %lu, rows_count: "
-        "%lu, "
-        "starting_pos: %lux%lu, ending_pos: %lux%lu.",
+    KAACORE_LOG_DEBUG(
+        "Starting grid sprite sheet splitter, columns_count: {}, rows_count: "
+        "{}, "
+        "starting_pos: {}x{}, ending_pos: {}x{}.",
         columns_count, rows_count, starting_col, starting_row, ending_col,
         ending_row);
 
@@ -132,9 +140,9 @@ split_spritesheet(
             (frame_dimensions.y + 2 * frame_padding.y) * row + frame_padding.y};
         frames.push_back(
             std::move(spritesheet.crop(crop_point, frame_dimensions)));
-        log<LogLevel::debug, LogCategory::misc>(
-            "Cropped spritesheet frame %llu [%llux%llu] (%lf, %lf).",
-            frames.size() - 1, col, row, crop_point.x, crop_point.y);
+        KAACORE_LOG_DEBUG(
+            "Cropped spritesheet frame {} [{}x{}] ({}, {}).", frames.size() - 1,
+            col, row, crop_point.x, crop_point.y);
 
         if (row == ending_row and col == ending_col) {
             break;

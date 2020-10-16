@@ -277,7 +277,7 @@ FontData::generate_render_glyphs(
         }
 
         if (ch_value > font_baker_glyphs_count) {
-            log<LogLevel::warn>("Unhadled font character: %llu", ch_value);
+            KAACORE_LOG_WARN("Unhadled font character: {}", ch_value);
             ch_value = static_cast<uint32_t>('?') - font_baker_first_glyph;
         }
 
