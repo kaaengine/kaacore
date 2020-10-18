@@ -1,62 +1,12 @@
 cmake_minimum_required(VERSION 3.13)
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    set(_DEFAULT_KAACORE_LOGLEVEL "DEBUG")
+    set(KAACORE_DEFAULT_LOGGING_LEVEL "debug"
+        CACHE STRING "Default level for loggers")
 else()
-    set(_DEFAULT_KAACORE_LOGLEVEL "INFO")
+    set(KAACORE_DEFAULT_LOGGING_LEVEL "info"
+        CACHE STRING "Default level for loggers")
 endif()
-
-set(KAACORE_LOGLEVEL_OVERRIDE ""
-    CACHE STRING "Override all logging levels")
-
-macro(kaacore_option_loglevel)
-    if ("${KAACORE_LOGLEVEL_OVERRIDE}" STREQUAL "")
-        set(${ARGV0}
-            "${_DEFAULT_KAACORE_LOGLEVEL}"
-            CACHE STRING "${ARGV1}")
-    else()
-        set(${ARGV0}
-            "${KAACORE_LOGLEVEL_OVERRIDE}"
-            CACHE STRING "${ARGV1}" FORCE)
-    endif()
-
-    if (NOT (
-        "${${ARGV0}}" STREQUAL "DEBUG" OR
-        "${${ARGV0}}" STREQUAL "INFO" OR
-        "${${ARGV0}}" STREQUAL "WARN" OR
-        "${${ARGV0}}" STREQUAL "ERROR" OR
-        "${${ARGV0}}" STREQUAL "CRITICAL"
-        )
-    )
-        message(
-            FATAL_ERROR
-            "Invalid logging option for ${ARGV0}: ${${ARGV0}}, "
-            "Should be one of: DEBUG, INFO, WARN, ERROR, CRITICAL"
-        )
-    endif()
-endmacro()
-
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_ENGINE "Logging level for: engine"
-)
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_RENDERER "Logging level for: renderer"
-)
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_INPUT "Logging level for: input"
-)
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_AUDIO "Logging level for: audio"
-)
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_NODES "Logging level for: nodes"
-)
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_PHYSICS "Logging level for: physics"
-)
-kaacore_option_loglevel(
-    KAACORE_LOGLEVEL_MISC "Logging level for: misc"
-)
 
 option(KAACORE_PROTECT_ASSERTS "Enable exceptions for asserts" ON)
 option(KAACORE_PROTECT_CHECKS "Enable exceptions for checks" ON)

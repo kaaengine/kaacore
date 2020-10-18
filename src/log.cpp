@@ -16,6 +16,9 @@ bool logging_initialized = false;
 
 std::array<std::shared_ptr<spdlog::logger>, _log_categories.size()> _loggers;
 
+constexpr auto _default_logging_level =
+    _parse_logging_level_name(KAACORE_DEFAULT_LOGGING_LEVEL).value();
+
 spdlog::level::level_enum
 get_logging_level(const std::string_view& category)
 {
@@ -48,7 +51,7 @@ initialize_logging()
         const char* logging_settings_env =
             std::getenv("KAACORE_LOGGING_LEVELS");
 
-        auto default_level = _parse_logging_level_name("info").value();
+        auto default_level = _default_logging_level;
         if (logging_settings_env != nullptr) {
             auto requested_default_level_name =
                 _unpack_logging_settings(logging_settings_env, "");
