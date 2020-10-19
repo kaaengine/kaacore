@@ -51,7 +51,7 @@ class Node {
     void add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
     void recalculate_render_data();
-    void recalculate_view_data();
+    void recalculate_ordering_data();
 
     const NodeType type() const;
 
@@ -74,8 +74,8 @@ class Node {
     Transformation transformation();
     void transformation(const Transformation& transformation);
 
-    int16_t z_index();
-    void z_index(const int16_t& z_index);
+    std::optional<int16_t> z_index();
+    void z_index(const std::optional<int16_t> z_index);
 
     Shape shape();
     void shape(const Shape& shape, bool is_auto_shape = false);
@@ -103,6 +103,7 @@ class Node {
     Scene* const scene() const;
     NodePtr parent() const;
     const std::vector<Node*>& children();
+    bool is_root() const;
 
     void views(const std::optional<std::unordered_set<int16_t>>& z_indices);
     const std::optional<std::vector<int16_t>> views() const;
@@ -120,7 +121,7 @@ class Node {
     glm::dvec2 _position = {0., 0.};
     double _rotation = 0.;
     glm::dvec2 _scale = {1., 1.};
-    int16_t _z_index = 0;
+    std::optional<int16_t> _z_index = std::nullopt;
     Shape _shape;
     bool _auto_shape = true;
     Sprite _sprite;
@@ -148,6 +149,7 @@ class Node {
     } _render_data;
     struct {
         ViewIndexSet calculated_views;
+        int16_t calculated_z_index;
         bool is_dirty = true;
     } _ordering_data;
 
