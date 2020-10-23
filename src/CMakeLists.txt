@@ -37,7 +37,6 @@ set(SRC_CXX_FILES
     fonts.cpp
     timers.cpp
     transitions.cpp
-    node_transitions.cpp
     camera.cpp
     views.cpp
     spatial_index.cpp
