@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -102,7 +103,7 @@ struct DemoScene : Scene {
             ball_hitbox->shape(chosen_shape);
             ball_hitbox->scale({1.5, 1.5});
             ball_hitbox->hitbox.trigger_id(120);
-            ball_hitbox->hitbox.elasticity(0.3);
+            ball_hitbox->hitbox.elasticity(0.9);
             ball_hitbox->hitbox.friction(0.5);
             ball_hitbox->color(this->default_hitbox_color);
 
@@ -156,8 +157,8 @@ struct DemoScene : Scene {
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
-            auto keyboard_key = event.keyboard_key();
-            if (keyboard_key and keyboard_key->is_key_down()) {
+            if (auto keyboard_key = event.keyboard_key();
+                keyboard_key and keyboard_key->is_key_down()) {
                 if (keyboard_key->key() == Keycode::q) {
                     get_engine()->quit();
                     break;
@@ -198,6 +199,28 @@ struct DemoScene : Scene {
                               << std::endl;
                     this->change_shape_on_collision = true;
                 }
+            } else if (auto mouse_button = event.mouse_button();
+                       mouse_button and mouse_button->is_button_down()) {
+                if (mouse_button->button() == MouseButton::left) {
+                    auto point_results =
+                        this->container->space.query_point_neighbors(
+                            this->camera().unproject_position(
+                                mouse_button->position()),
+                            10.);
+                    if (not point_results.empty()) {
+                        auto nearest_neighbor = *std::min_element(
+                            point_results.begin(), point_results.end(),
+                            [](const auto a, const auto b) {
+                                return a.distance < b.distance;
+                            });
+                        auto hit_indicator = make_node();
+                        hit_indicator->position(nearest_neighbor.point);
+                        hit_indicator->shape(Shape::Circle(0.1));
+                        hit_indicator->color(glm::dvec4(0., 1., 0., 0.4));
+                        hit_indicator->lifetime(1000);
+                        this->container->add_child(hit_indicator);
+                    }
+                }
             }
         }
 
@@ -205,6 +228,24 @@ struct DemoScene : Scene {
             this->query_shape, {0., 0.}, collision_bitmask_all, mask_circle);
         for (auto& res : results) {
             res.hitbox_node->color(this->queried_hitbox_color);
+        }
+
+        auto raycast_results = this->container->space.query_raycast(
+            glm::dvec2{-10, 0}, glm::dvec2{10, 0});
+        for (auto& res : raycast_results) {
+            auto hit_indicator = make_node();
+            hit_indicator->position(res.point);
+            hit_indicator->shape(Shape::Circle(0.1));
+            hit_indicator->color(glm::dvec4(1., 0., 0., 0.4));
+            hit_indicator->lifetime(90);
+            this->container->add_child(hit_indicator);
+
+            auto hit_indicator_normal = make_node();
+            hit_indicator_normal->position(res.normal);
+            hit_indicator_normal->shape(Shape::Circle(0.1));
+            hit_indicator_normal->color(glm::dvec4(1., 1., 0., 0.4));
+            hit_indicator_normal->lifetime(90);
+            hit_indicator->add_child(hit_indicator_normal);
         }
     }
 };
