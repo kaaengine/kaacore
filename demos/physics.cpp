@@ -105,7 +105,6 @@ struct DemoScene : Scene {
             ball_hitbox->hitbox.elasticity(0.3);
             ball_hitbox->hitbox.friction(0.5);
             ball_hitbox->color(this->default_hitbox_color);
-            ball_hitbox->z_index(ball->z_index() + 1);
 
             if (chosen_shape == polygon_shape) {
                 ball_hitbox->hitbox.mask(mask_polygon);

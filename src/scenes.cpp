@@ -18,7 +18,6 @@ namespace kaacore {
 Scene::Scene()
 {
     this->root_node._scene = this;
-    this->root_node.views(std::unordered_set<int16_t>{views_default_z_index});
     this->spatial_index.start_tracking(&this->root_node);
 }
 
@@ -143,14 +142,20 @@ Scene::process_nodes_drawing()
         }
 
         node->recalculate_render_data();
-        node->recalculate_view_data();
+        node->recalculate_ordering_data();
 
         rendering_queue.emplace_back(
-            std::abs(std::numeric_limits<int16_t>::min()) + node->_z_index,
+            std::abs(std::numeric_limits<int16_t>::min()) +
+                node->_ordering_data.calculated_z_index,
             node);
     }
 
-    std::stable_sort(rendering_queue.begin(), rendering_queue.end());
+    std::stable_sort(
+        rendering_queue.begin(), rendering_queue.end(),
+        [](const std::pair<uint64_t, Node*> a,
+           const std::pair<uint64_t, Node*> b) {
+            return std::get<uint64_t>(a) < std::get<uint64_t>(b);
+        });
 
     for (auto& view : this->views) {
         renderer->process_view(view);
