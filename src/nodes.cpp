@@ -2,6 +2,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <unordered_set>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -15,6 +16,10 @@
 #include "kaacore/views.h"
 
 namespace kaacore {
+
+const int16_t default_root_z_index = 0;
+const ViewIndexSet default_root_views =
+    std::unordered_set<int16_t>{views_default_z_index};
 
 inline double
 _normalize_angle(const double angle)
@@ -275,7 +280,7 @@ Node::recalculate_render_data()
 }
 
 void
-Node::recalculate_view_data()
+Node::recalculate_ordering_data()
 {
     if (not this->_ordering_data.is_dirty) {
         return;
@@ -283,13 +288,27 @@ Node::recalculate_view_data()
 
     if (this->_views.has_value()) {
         this->_ordering_data.calculated_views = *this->_views;
+    } else if (this->is_root()) {
+        this->_ordering_data.calculated_views = default_root_views;
     } else {
         KAACORE_ASSERT(
             this->_parent != nullptr,
             "Can't inherit view data if node has no parent");
-        this->_parent->recalculate_view_data();
+        this->_parent->recalculate_ordering_data();
         this->_ordering_data.calculated_views =
             this->_parent->_ordering_data.calculated_views;
+    }
+
+    if (this->_z_index.has_value()) {
+        this->_ordering_data.calculated_z_index = *this->_z_index;
+    } else if (this->is_root()) {
+        this->_ordering_data.calculated_z_index = default_root_z_index;
+    } else {
+        KAACORE_ASSERT(
+            this->_parent != nullptr,
+            "Can't inherit z_index data if node has no parent");
+        this->_ordering_data.calculated_z_index =
+            this->_parent->_ordering_data.calculated_z_index;
     }
     this->_ordering_data.is_dirty = false;
 }
@@ -304,6 +323,12 @@ const std::vector<Node*>&
 Node::children()
 {
     return this->_children;
+}
+
+bool
+Node::is_root() const
+{
+    return (this->_scene != nullptr and &this->_scene->root_node == this);
 }
 
 glm::dvec2
@@ -448,14 +473,14 @@ Node::transformation(const Transformation& transformation)
     this->scale(decomposed.scale);
 }
 
-int16_t
+std::optional<int16_t>
 Node::z_index()
 {
     return this->_z_index;
 }
 
 void
-Node::z_index(const int16_t& z_index)
+Node::z_index(const std::optional<int16_t> z_index)
 {
     this->_z_index = z_index;
 }
