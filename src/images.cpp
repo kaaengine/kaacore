@@ -36,8 +36,9 @@ load_image(const uint8_t* data, size_t size)
         bimg::imageParse(&texture_image_allocator, data, size);
     assert(image_container != NULL);
 
-    log("Image details - width: %u, height: %u, depth: %u, layers: %u, alpha: "
-        "%u, format: %u",
+    KAACORE_LOG_INFO(
+        "Image details - width: {}, height: {}, depth: {}, layers: {}, alpha: "
+        "{}, format: {}",
         image_container->m_width, image_container->m_height,
         image_container->m_depth, image_container->m_numLayers,
         image_container->m_hasAlpha, image_container->m_format);
@@ -48,9 +49,9 @@ load_image(const uint8_t* data, size_t size)
 bimg::ImageContainer*
 load_image(const char* path)
 {
-    log("Loading image from file: %s", path);
+    KAACORE_LOG_INFO("Loading image from file: {}", path);
     RawFile file(path);
-    log("Loaded file size: %d", file.content.size());
+    KAACORE_LOG_INFO("Loaded file size: {}", file.content.size());
     return load_image(file.content.data(), file.content.size());
 }
 

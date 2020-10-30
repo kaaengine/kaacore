@@ -20,92 +20,92 @@ struct DemoScene : Scene {
             if (controller_button && controller_button->is_button_up()) {
                 switch (controller_button->button()) {
                     case ControllerButton::a:
-                        log<LogLevel::info>("A button pressed.");
+                        KAACORE_APP_LOG_INFO("A button pressed.");
                         break;
                     case ControllerButton::b:
-                        log<LogLevel::info>("B button pressed.");
+                        KAACORE_APP_LOG_INFO("B button pressed.");
                         break;
                     case ControllerButton::x:
-                        log<LogLevel::info>("X button pressed.");
+                        KAACORE_APP_LOG_INFO("X button pressed.");
                         break;
                     case ControllerButton::y:
-                        log<LogLevel::info>("Y button pressed.");
+                        KAACORE_APP_LOG_INFO("Y button pressed.");
                         break;
                     case ControllerButton::dpad_up:
-                        log<LogLevel::info>("Up button pressed.");
+                        KAACORE_APP_LOG_INFO("Up button pressed.");
                         break;
                     case ControllerButton::dpad_down:
-                        log<LogLevel::info>("Down button pressed.");
+                        KAACORE_APP_LOG_INFO("Down button pressed.");
                         break;
                     case ControllerButton::dpad_left:
-                        log<LogLevel::info>("Left button pressed.");
+                        KAACORE_APP_LOG_INFO("Left button pressed.");
                         break;
                     case ControllerButton::dpad_right:
-                        log<LogLevel::info>("Right button pressed.");
+                        KAACORE_APP_LOG_INFO("Right button pressed.");
                         break;
                     case ControllerButton::left_shoulder:
-                        log<LogLevel::info>("Left shoulder button pressed.");
+                        KAACORE_APP_LOG_INFO("Left shoulder button pressed.");
                         break;
                     case ControllerButton::right_shoulder:
-                        log<LogLevel::info>("Right shoulder button pressed.");
+                        KAACORE_APP_LOG_INFO("Right shoulder button pressed.");
                         break;
                     case ControllerButton::left_stick:
-                        log<LogLevel::info>("Left stick button pressed.");
+                        KAACORE_APP_LOG_INFO("Left stick button pressed.");
                         break;
                     case ControllerButton::right_stick:
-                        log<LogLevel::info>("Right stick button pressed.");
+                        KAACORE_APP_LOG_INFO("Right stick button pressed.");
                         break;
                     case ControllerButton::back:
-                        log<LogLevel::info>("Back button pressed.");
+                        KAACORE_APP_LOG_INFO("Back button pressed.");
                         break;
                     case ControllerButton::start:
-                        log<LogLevel::info>("Start button pressed.");
+                        KAACORE_APP_LOG_INFO("Start button pressed.");
                         break;
                     case ControllerButton::guide:
-                        log<LogLevel::info>("Guide button pressed.");
+                        KAACORE_APP_LOG_INFO("Guide button pressed.");
                         break;
                 }
             } else if (auto controller_motion = event.controller_axis()) {
                 switch (controller_motion->axis()) {
                     case ControllerAxis::left_x:
-                        log<LogLevel::info>(
-                            "Left stick motion: %f, 0.0",
+                        KAACORE_APP_LOG_INFO(
+                            "Left stick motion: {}, 0.0",
                             controller_motion->motion());
                         break;
                     case ControllerAxis::left_y:
-                        log<LogLevel::info>(
-                            "Left stick motion: 0.0, %f",
+                        KAACORE_APP_LOG_INFO(
+                            "Left stick motion: 0.0, {}",
                             controller_motion->motion());
                         break;
                     case ControllerAxis::right_x:
-                        log<LogLevel::info>(
-                            "Right stick motion: %f, 0.0",
+                        KAACORE_APP_LOG_INFO(
+                            "Right stick motion: {}, 0.0",
                             controller_motion->motion());
                         break;
                     case ControllerAxis::right_y:
-                        log<LogLevel::info>(
-                            "Right stick motion: 0.0, %f",
+                        KAACORE_APP_LOG_INFO(
+                            "Right stick motion: 0.0, {}",
                             controller_motion->motion());
                         break;
                     case ControllerAxis::trigger_left:
-                        log<LogLevel::info>(
-                            "Right trigger motion: %f, 0.0",
+                        KAACORE_APP_LOG_INFO(
+                            "Right trigger motion: {}, 0.0",
                             controller_motion->motion());
                         break;
                     case ControllerAxis::trigger_right:
-                        log<LogLevel::info>(
-                            "Right trigger motion: 0.0, %f",
+                        KAACORE_APP_LOG_INFO(
+                            "Right trigger motion: 0.0, {}",
                             controller_motion->motion());
                         break;
                 }
             } else if (auto controller_device = event.controller_device()) {
                 if (controller_device->is_added()) {
-                    log<LogLevel::info>(
-                        "Controller added: %d", controller_device->id());
+                    KAACORE_APP_LOG_INFO(
+                        "Controller added: {}", controller_device->id());
 
                 } else if (controller_device->is_removed()) {
-                    log<LogLevel::info>(
-                        "Controller removed: %d", controller_device->id());
+                    KAACORE_APP_LOG_INFO(
+                        "Controller removed: {}", controller_device->id());
                 }
             }
         }

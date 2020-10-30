@@ -60,11 +60,12 @@ struct PolygonTesterDemoScene : Scene {
             pt -= center;
         }
         auto polygon_type = classify_polygon(this->points);
-        log("Polygon type: %d", static_cast<int>(polygon_type));
+        KAACORE_APP_LOG_INFO(
+            "Polygon type: {}", static_cast<int>(polygon_type));
         if (polygon_type != PolygonType::not_convex) {
             this->shape_repr->shape(Shape::Polygon(this->points));
         } else {
-            log<LogLevel::error>("Polygon not convex!");
+            KAACORE_APP_LOG_ERROR("Polygon not convex!");
         }
         this->points.clear();
     }
@@ -76,11 +77,13 @@ struct PolygonTesterDemoScene : Scene {
                 auto pos = mouse_button->position();
                 if (mouse_button->button() == MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
-                    log("Adding point: (%lf, %lf)", pos.x, pos.y);
+                    KAACORE_APP_LOG_INFO(
+                        "Adding point: ({}, {})", pos.x, pos.y);
                     this->add_point(pos);
                 } else if (mouse_button->button() == MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
-                    log("Adding point: (%lf, %lf)", pos.x, pos.y);
+                    KAACORE_APP_LOG_INFO(
+                        "Adding point: ({}, {})", pos.x, pos.y);
                     this->add_point(pos);
                 }
             }
@@ -90,7 +93,7 @@ struct PolygonTesterDemoScene : Scene {
                     get_engine()->quit();
                     break;
                 } else if (keyboard_key->key() == Keycode::f) {
-                    log("Finalizing polygon");
+                    KAACORE_APP_LOG_INFO("Finalizing polygon");
                     this->finalize_polygon();
                 } else if (keyboard_key->key() == Keycode::w) {
                     this->camera().position(

@@ -1,5 +1,7 @@
 #include <list>
 
+#include <spdlog/fmt/fmt.h>
+
 #include "kaacore/easings.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
@@ -84,10 +86,11 @@ NodeTransitionCustomizable::process_time_point(
     const TransitionTimePoint local_tp =
         this->warping.warp_time(tp, this->internal_duration);
 
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeTransitionCustomizable(%p)::process_time_point - node: %p, abs_t: "
-        "%lf, local_abs_t: %lf, internal_duration: %lf",
-        this, node.get(), tp.abs_t, local_tp.abs_t, this->internal_duration);
+    KAACORE_LOG_TRACE(
+        "NodeTransitionCustomizable({})::process_time_point - node: {}, abs_t: "
+        "{}, local_abs_t: {}, internal_duration: {}",
+        fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t, local_tp.abs_t,
+        this->internal_duration);
 
     if (this->duration > 0) {
         const double warped_t = local_tp.abs_t / this->internal_duration;
@@ -161,10 +164,10 @@ NodeTransitionsSequence::NodeTransitionsSequence(
     this->duration = total_duration * this->warping.duration_factor();
     this->internal_duration = total_duration;
 
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeTransitionsSequence(%p) constructed - duration: %lf, "
-        "internal_duration: %lf",
-        this, this->duration, this->internal_duration);
+    KAACORE_LOG_DEBUG(
+        "NodeTransitionsSequence({}) constructed - duration: {}, "
+        "internal_duration: {}",
+        fmt::ptr(this), this->duration, this->internal_duration);
 }
 
 std::unique_ptr<TransitionStateBase>
@@ -194,17 +197,17 @@ NodeTransitionsSequence::process_time_point(
     uint32_t cur_cycle_index = state->prev_tp.cycle_index;
     bool is_backing = state->prev_tp.is_backing;
 
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeTransitionsSequence(%p)::process_time_point - node: %p, abs_t: "
-        "%lf, warped_abs_t: %lf",
-        this, node.get(), tp.abs_t, warped_tp.abs_t);
+    KAACORE_LOG_TRACE(
+        "NodeTransitionsSequence({})::process_time_point - node: {}, abs_t: "
+        "{}, warped_abs_t: {}",
+        fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         if (not it->state_prepared) {
-            log<LogLevel::debug, LogCategory::misc>(
-                "NodeTransitionsSequence(%p)::process_time_point - preparing "
+            KAACORE_LOG_TRACE(
+                "NodeTransitionsSequence({})::process_time_point - preparing "
                 "state",
-                this);
+                fmt::ptr(this));
             it->state = it->handle->prepare_state(node);
             it->state_prepared = true;
         }
@@ -214,11 +217,11 @@ NodeTransitionsSequence::process_time_point(
         const TransitionTimePoint sub_tp =
             TransitionTimePoint{sub_abs_t, is_backing};
 
-        log<LogLevel::debug, LogCategory::misc>(
-            "NodeTransitionsSequence(%p)::process_time_point - processing "
+        KAACORE_LOG_TRACE(
+            "NodeTransitionsSequence({})::process_time_point - processing "
             "sub-transition, "
-            "sub_abs_t: %lf",
-            this, sub_abs_t);
+            "sub_abs_t: {}",
+            fmt::ptr(this), sub_abs_t);
         it->handle->process_time_point(it->state.get(), node, sub_tp);
 
         if (node.is_marked_to_delete()) {
@@ -229,10 +232,10 @@ NodeTransitionsSequence::process_time_point(
             is_backing == warped_tp.is_backing and
             it->starting_abs_t <= warped_tp.abs_t and
             it->ending_abs_t > warped_tp.abs_t) {
-            log<LogLevel::debug, LogCategory::misc>(
-                "NodeTransitionsSequence(%p)::process_time_point - met "
+            KAACORE_LOG_TRACE(
+                "NodeTransitionsSequence({})::process_time_point - met "
                 "breaking condition",
-                this);
+                fmt::ptr(this));
             break;
         }
 
@@ -311,10 +314,10 @@ NodeTransitionsParallel::NodeTransitionsParallel(
         max_sub_internal_duration * this->warping.duration_factor();
     this->internal_duration = max_sub_internal_duration;
 
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeTransitionsParallel(%p) constructed - duration: %lf, "
-        "internal_duration: %lf",
-        this, this->duration, this->internal_duration);
+    KAACORE_LOG_DEBUG(
+        "NodeTransitionsParallel({}) constructed - duration: {}, "
+        "internal_duration: {}",
+        fmt::ptr(this), this->duration, this->internal_duration);
 }
 
 std::unique_ptr<TransitionStateBase>
@@ -342,10 +345,10 @@ NodeTransitionsParallel::process_time_point(
     uint32_t cur_cycle_index = state->prev_tp.cycle_index;
     bool is_backing = state->prev_tp.is_backing;
 
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeTransitionsParallel(%p)::process_time_point - node: %p, abs_t: "
-        "%lf, warped_abs_t: %lf",
-        this, node.get(), tp.abs_t, warped_tp.abs_t);
+    KAACORE_LOG_TRACE(
+        "NodeTransitionsParallel({})::process_time_point - node: {}, abs_t: "
+        "{}, warped_abs_t: {}",
+        fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t, warped_tp.abs_t);
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         for (auto& sub_state : state->sub_states) {
@@ -431,10 +434,10 @@ NodeTransitionCallback::process_time_point(
     TransitionStateBase* state, NodePtr node,
     const TransitionTimePoint& tp) const
 {
-    log<LogLevel::debug, LogCategory::misc>(
-        "NodeTransitionCallback(%p)::process_time_point - node: %p, abs_t: "
-        "%lf",
-        this, node.get(), tp.abs_t);
+    KAACORE_LOG_TRACE(
+        "NodeTransitionCallback({})::process_time_point - node: {}, abs_t: "
+        "{}",
+        fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t);
     KAACORE_ASSERT(this->callback_func, "No callback set.");
     this->callback_func(node);
 }

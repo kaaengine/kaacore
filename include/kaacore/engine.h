@@ -87,13 +87,13 @@ class Engine {
     T make_call_from_main_thread(std::function<T()>&& func)
     {
         if (this->main_thread_id() == std::this_thread::get_id()) {
-            log<LogLevel::debug>("Received syscall request... calling now.");
+            KAACORE_LOG_DEBUG("Received syscall request... calling now.");
             return func();
         }
 
         KAACORE_ASSERT(this->is_running, "Engine loop must be running.");
-        log<LogLevel::debug>("Received syscall request... not in main thread, "
-                             "calling though queue.");
+        KAACORE_LOG_DEBUG("Received syscall request... not in main thread, "
+                          "calling though queue.");
         return this->_synced_syscall_queue.make_sync_call<T>(std::move(func));
     }
 

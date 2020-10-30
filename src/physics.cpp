@@ -160,9 +160,9 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other)
 SpaceNode::SpaceNode()
 {
     this->_cp_space = cpSpaceNew();
-    log<LogLevel::debug>(
-        "Creating space node %p (cpSpace: %p)", container_node(this),
-        this->_cp_space);
+    KAACORE_LOG_DEBUG(
+        "Creating space node {} (cpSpace: {})", fmt::ptr(container_node(this)),
+        fmt::ptr(this->_cp_space));
     cpSpaceSetUserData(this->_cp_space, this);
     this->_time_acc = 0;
 }
@@ -180,9 +180,9 @@ _release_cp_collision_handler_callback(cpCollisionHandler* cp_collision_handler)
 
 SpaceNode::~SpaceNode()
 {
-    log<LogLevel::debug>(
-        "Destroying space node %p (cpSpace: %p)", container_node(this),
-        this->_cp_space);
+    KAACORE_LOG_DEBUG(
+        "Destroying space node {} (cpSpace: {})",
+        fmt::ptr(container_node(this)), fmt::ptr(this->_cp_space));
 
     KAACORE_ASSERT_TERMINATE(
         this->_cp_space != nullptr, "Invalid internal state of space node.");
@@ -227,8 +227,8 @@ void
 SpaceNode::simulate(const uint32_t dt)
 {
     ASSERT_VALID_SPACE_NODE(this);
-    log<LogLevel::debug, LogCategory::physics>(
-        "Simulating SpaceNode(%p) physics, dt = %lu", this, dt);
+    KAACORE_LOG_TRACE(
+        "Simulating SpaceNode({}) physics, dt = {}", fmt::ptr(this), dt);
     uint32_t time_left = dt + this->_time_acc;
     while (time_left > default_simulation_step_size) {
         cpSpaceStep(this->_cp_space, 0.001 * default_simulation_step_size);
@@ -444,9 +444,9 @@ SpaceNode::locked() const
 BodyNode::BodyNode()
 {
     this->_cp_body = cpBodyNewKinematic();
-    log<LogLevel::debug>(
-        "Creating body node %p (cpBody: %p)", container_node(this),
-        this->_cp_body);
+    KAACORE_LOG_DEBUG(
+        "Creating body node {} (cpBody: {})", fmt::ptr(container_node(this)),
+        fmt::ptr(this->_cp_body));
     cpBodySetUserData(this->_cp_body, this);
     this->body_type(BodyNodeType::dynamic);
 }
@@ -462,16 +462,17 @@ BodyNode::attach_to_simulation()
     ASSERT_VALID_BODY_NODE(this);
     if (cpBodyGetSpace(this->_cp_body) == nullptr) {
         Node* node = container_node(this);
-        log<LogLevel::debug>(
-            "Attaching body node %p to simulation (space) (cpBody: %p)", node,
-            this->_cp_body);
+        KAACORE_LOG_DEBUG(
+            "Attaching body node {} to simulation (space) (cpBody: {})",
+            fmt::ptr(node), fmt::ptr(this->_cp_body));
         KAACORE_ASSERT(
             node->_parent != nullptr,
             "Node must have a parent in order to attach it to the simulation.");
         ASSERT_VALID_SPACE_NODE(&node->_parent->space);
         space_safe_call(node->_parent, [&](const SpaceNode* space_node_phys) {
-            log<LogLevel::debug>(
-                "Simulation callback: attaching cpBody %p", this->_cp_body);
+            KAACORE_LOG_DEBUG(
+                "Simulation callback: attaching cpBody {}",
+                fmt::ptr(this->_cp_body));
             cpSpaceAddBody(space_node_phys->_cp_space, this->_cp_body);
         });
     }
@@ -481,15 +482,16 @@ void
 BodyNode::detach_from_simulation()
 {
     if (this->_cp_body != nullptr) {
-        log<LogLevel::debug>(
-            "Destroying body node %p (cpBody: %p)", container_node(this),
-            this->_cp_body);
+        KAACORE_LOG_DEBUG(
+            "Destroying body node {} (cpBody: {})",
+            fmt::ptr(container_node(this)), fmt::ptr(this->_cp_body));
         cpBodySetUserData(this->_cp_body, nullptr);
         space_safe_call(
             this->space(),
             [body_ptr = this->_cp_body](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying cpBody %p", body_ptr);
+                KAACORE_LOG_DEBUG(
+                    "Simulation callback: destroying cpBody {}",
+                    fmt::ptr(body_ptr));
                 if (space_node_phys) {
                     cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
                 }
@@ -949,8 +951,9 @@ HitboxNode::update_physics_shape()
 
     new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
 
-    log<LogLevel::debug>(
-        "Updating hitbox node %p shape (cpShape: %p)", node, new_cp_shape);
+    KAACORE_LOG_DEBUG(
+        "Updating hitbox node {} shape (cpShape: {})", fmt::ptr(node),
+        fmt::ptr(new_cp_shape));
 
     cpShapeSetUserData(new_cp_shape, this);
 
@@ -971,9 +974,9 @@ HitboxNode::update_physics_shape()
         space_safe_call(
             this->space(),
             [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying old cpShape %p",
-                    shape_ptr);
+                KAACORE_LOG_DEBUG(
+                    "Simulation callback: destroying old cpShape {}",
+                    fmt::ptr(shape_ptr));
                 if (space_node_phys) {
                     cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
                 }
@@ -998,9 +1001,9 @@ HitboxNode::attach_to_simulation()
         this->_cp_shape != nullptr, "Invalid internal state of hitbox.");
     Node* node = container_node(this);
     if (cpShapeGetBody(this->_cp_shape) == nullptr) {
-        log<LogLevel::debug>(
-            "Attaching hitbox node %p to simulation (body) (cpShape: %p)", node,
-            this->_cp_shape);
+        KAACORE_LOG_DEBUG(
+            "Attaching hitbox node {} to simulation (body) (cpShape: {})",
+            fmt::ptr(node), fmt::ptr(this->_cp_shape));
         KAACORE_ASSERT(
             node->_parent != nullptr, "Hitbox must to have a parent in order "
                                       "to attach it to the simulation.");
@@ -1009,27 +1012,27 @@ HitboxNode::attach_to_simulation()
             node->_parent->body.space(),
             [body_ptr = node->_parent->body._cp_body,
              shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: attaching cpShape %p to body "
-                    "(cpBody: %p)",
-                    shape_ptr, body_ptr);
+                KAACORE_LOG_DEBUG(
+                    "Simulation callback: attaching cpShape {} to body "
+                    "(cpBody: {})",
+                    fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
                 cpShapeSetBody(shape_ptr, body_ptr);
             });
     }
 
     if (cpShapeGetSpace(this->_cp_shape) == nullptr and
         node->_parent->_parent != nullptr) {
-        log<LogLevel::debug>(
-            "Attaching hitbox node %p to simulation (space) (cpShape: %p)",
-            node, this->_cp_shape);
+        KAACORE_LOG_DEBUG(
+            "Attaching hitbox node {} to simulation (space) (cpShape: {})",
+            fmt::ptr(node), fmt::ptr(this->_cp_shape));
         ASSERT_VALID_SPACE_NODE(&node->_parent->_parent->space);
         space_safe_call(
             node->_parent->_parent,
             [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: attaching cpShape %p to space "
-                    "(cpSpace: %p)",
-                    shape_ptr, space_node_phys->_cp_space);
+                KAACORE_LOG_DEBUG(
+                    "Simulation callback: attaching cpShape {} to space "
+                    "(cpSpace: {})",
+                    fmt::ptr(shape_ptr), fmt::ptr(space_node_phys->_cp_space));
                 cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
             });
     }
@@ -1039,15 +1042,16 @@ void
 HitboxNode::detach_from_simulation()
 {
     if (this->_cp_shape != nullptr) {
-        log<LogLevel::debug>(
-            "Destroying hitbox node %p (cpShape: %p)", container_node(this),
-            this->_cp_shape);
+        KAACORE_LOG_DEBUG(
+            "Destroying hitbox node {} (cpShape: {})",
+            fmt::ptr(container_node(this)), fmt::ptr(this->_cp_shape));
         cpShapeSetUserData(this->_cp_shape, nullptr);
         space_safe_call(
             this->space(),
             [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                log<LogLevel::debug>(
-                    "Simulation callback: destroying cpShape %p", shape_ptr);
+                KAACORE_LOG_DEBUG(
+                    "Simulation callback: destroying cpShape {}",
+                    fmt::ptr(shape_ptr));
                 if (space_node_phys) {
                     cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
                 }

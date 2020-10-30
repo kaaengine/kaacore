@@ -37,7 +37,7 @@ struct SpritesDemoScene : Scene {
 
     void update(uint32_t dt) override
     {
-        log<LogLevel::debug>("DemoScene update %lu.", dt);
+        KAACORE_APP_LOG_DEBUG("DemoScene update {}.", dt);
 
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {

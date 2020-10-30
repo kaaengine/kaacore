@@ -1,7 +1,9 @@
 #pragma once
 
+#include <array>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <random>
 
 namespace kaacore {
@@ -60,6 +62,18 @@ hash_iterable(const Iter it_start, const Iter it_end)
         seed ^= std::hash<T>{}(*it) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
     return seed;
+}
+
+template<typename T, size_t N>
+inline constexpr std::optional<size_t>
+find_array_element(const std::array<T, N>& array, const T& value)
+{
+    for (size_t index = 0; index < array.size(); index++) {
+        if (array[index] == value) {
+            return index;
+        }
+    }
+    return std::nullopt;
 }
 
 } // namespace kaacore

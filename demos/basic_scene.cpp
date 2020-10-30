@@ -101,7 +101,7 @@ struct DemoScene : Scene {
 
     void update(uint32_t dt) override
     {
-        log<LogLevel::debug>("DemoScene update %lu.", dt);
+        KAACORE_APP_LOG_DEBUG("DemoScene update {}.", dt);
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
@@ -133,23 +133,27 @@ struct DemoScene : Scene {
                     this->node1->rotation(this->node1->rotation() + 0.2);
                     this->node1->position(
                         this->node1->position() + glm::dvec2(1., 0.));
-                    log("Node position: %lf %lf", this->node1->position().x,
+                    KAACORE_APP_LOG_INFO(
+                        "Node position: {} {}", this->node1->position().x,
                         this->node1->position().y);
                 } else if (keyboard_key->key() == Keycode::n) {
                     this->root_node.position(
                         this->root_node.position() + glm::dvec2(-1., -2.));
-                    log("World position: %lf %lf", this->root_node.position().x,
+                    KAACORE_APP_LOG_INFO(
+                        "World position: {} {}", this->root_node.position().x,
                         this->root_node.position().y);
                 } else if (keyboard_key->key() == Keycode::c) {
                     this->camera().position(this->node1->absolute_position());
-                    log("Camera position: %lf %lf", this->camera().position().x,
+                    KAACORE_APP_LOG_INFO(
+                        "Camera position: {} {}", this->camera().position().x,
                         this->camera().position().y);
                 } else if (keyboard_key->key() == Keycode::f) {
                     get_engine()->window->fullscreen(
                         !get_engine()->window->fullscreen());
                 } else if (keyboard_key->key() == Keycode::g) {
                     auto size = get_engine()->window->size();
-                    log("Current size: %u x %u", size.x, size.y);
+                    KAACORE_APP_LOG_INFO(
+                        "Current size: {} x {}", size.x, size.y);
                 }
             }
         }

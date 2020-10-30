@@ -34,7 +34,7 @@ Engine::Engine(
         virtual_resolution.x > 0 and virtual_resolution.y > 0,
         "Virtual resolution must be greater than zero.");
     initialize_logging();
-    log<LogLevel::info>("Initializing Kaacore.");
+    KAACORE_LOG_INFO("Initializing Kaacore.");
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         throw kaacore::exception(SDL_GetError());
     }
@@ -70,7 +70,7 @@ Engine::Engine(
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 threads_sync_timeout)
                 .count());
-        log<LogLevel::debug>("Waiting for bgfx initialization... (%d)", ret);
+        KAACORE_LOG_DEBUG("Waiting for bgfx initialization... ({})", ret);
         if (this->_engine_loop_state.retrieve() !=
             EngineLoopState::not_initialized) {
             break;
@@ -87,7 +87,7 @@ Engine::~Engine()
 {
     KAACORE_CHECK_TERMINATE(engine != nullptr, "Engine already destroyed.");
 
-    log<LogLevel::info>("Shutting down Kaacore.");
+    KAACORE_LOG_INFO("Shutting down Kaacore.");
     this->audio_manager.reset();
     this->input_manager.reset();
 
@@ -102,7 +102,7 @@ Engine::~Engine()
         if (ret == bgfx::RenderFrame::Enum::Exiting) {
             break;
         }
-        log<LogLevel::debug>("Waiting for bgfx shutdown... (%d)", ret);
+        KAACORE_LOG_DEBUG("Waiting for bgfx shutdown... ({})", ret);
     }
     this->_engine_loop_thread.join();
 #else
@@ -232,7 +232,7 @@ Engine::_scene_processing()
 {
     this->is_running = true;
     try {
-        log("Engine is running.");
+        KAACORE_LOG_INFO("Engine is running.");
         this->_scene->on_enter();
         uint32_t ticks = SDL_GetTicks();
         while (this->is_running) {
@@ -260,7 +260,7 @@ Engine::_scene_processing()
             this->renderer->end_frame();
         }
         this->_scene->on_exit();
-        log("Engine stopped.");
+        KAACORE_LOG_INFO("Engine stopped.");
     } catch (...) {
         this->_detach_scenes();
         this->is_running = false;
@@ -322,7 +322,7 @@ Engine::_process_events()
 void
 Engine::_main_thread_entrypoint()
 {
-    log("Starting main loop.");
+    KAACORE_LOG_INFO("Starting main loop.");
     KAACORE_ASSERT(this->_scene, "Running scene not selected.");
     SDL_PumpEvents(); // pump initial events, for 1st update
     this->_event_processing_state.set(EventProcessingState::ready);
@@ -358,9 +358,9 @@ Engine::_main_thread_entrypoint()
 void
 Engine::_engine_thread_entrypoint()
 {
-    log("Starting engine loop.");
+    KAACORE_LOG_INFO("Starting engine loop.");
     this->_engine_loop_state.set(EngineLoopState::sleeping);
-    log("Starting engine loop: sleeping.");
+    KAACORE_LOG_INFO("Starting engine loop: sleeping.");
 
     while (true) {
         auto retrieved_state = this->_engine_loop_state.wait(
@@ -370,19 +370,19 @@ Engine::_engine_thread_entrypoint()
             return; // exit from loop so renderer will get terminated
         }
 
-        log("Engine loop is starting to process scenes.");
+        KAACORE_LOG_INFO("Engine loop is starting to process scenes.");
         try {
             KAACORE_ASSERT(this->_scene, "Running scene not selected.");
             this->_engine_loop_state.set(EngineLoopState::running);
             this->_scene_processing();
         } catch (const std::exception exc) {
-            log<LogLevel::error>(
-                "Engine loop interrupted by exception: %s", exc.what());
+            KAACORE_LOG_ERROR(
+                "Engine loop interrupted by exception: {}", exc.what());
             this->_engine_loop_exception = std::current_exception();
-            log("Engine API loop stopped with exception.");
+            KAACORE_LOG_INFO("Engine API loop stopped with exception.");
         }
         this->_engine_loop_state.set(EngineLoopState::stopping);
-        log("Engine loop stopped.");
+        KAACORE_LOG_INFO("Engine loop stopped.");
     }
 }
 
