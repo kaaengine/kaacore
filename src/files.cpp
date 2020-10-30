@@ -11,7 +11,7 @@ namespace kaacore {
 
 RawFile::RawFile(const std::string file_path) noexcept(false) : path(file_path)
 {
-    log("Reading file: %s", file_path.c_str());
+    KAACORE_LOG_INFO("Reading file: {}", file_path);
     std::ifstream f(file_path, std::ifstream::binary);
     if (f.fail()) {
         throw exception("Failed to open file: " + this->path);

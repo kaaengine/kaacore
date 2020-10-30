@@ -376,7 +376,7 @@ AudioManager::AudioManager()
     auto err_code =
         Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048);
     if (err_code == -1) {
-        log<LogLevel::error>("Failed to open audio (%s)", Mix_GetError());
+        KAACORE_LOG_ERROR("Failed to open audio ({})", Mix_GetError());
         return;
     }
     Mix_HookMusicFinished(_music_finished_hook);
@@ -398,8 +398,8 @@ AudioManager::load_raw_sound(const char* path)
 {
     auto raw_sound = Mix_LoadWAV(path);
     if (not raw_sound) {
-        log<LogLevel::error>(
-            "Failed to load sound from path %s (%s)", path, Mix_GetError());
+        KAACORE_LOG_ERROR(
+            "Failed to load sound from path {} ({})", path, Mix_GetError());
     }
     return raw_sound;
 }
@@ -409,8 +409,8 @@ AudioManager::load_raw_music(const char* path)
 {
     auto raw_music = Mix_LoadMUS(path);
     if (not raw_music) {
-        log<LogLevel::error>(
-            "Failed to load music from path %s (%s)", path, Mix_GetError());
+        KAACORE_LOG_ERROR(
+            "Failed to load music from path {} ({})", path, Mix_GetError());
     }
     return raw_music;
 }
@@ -434,15 +434,15 @@ AudioManager::play_sound(
             auto playback_uid = random_uid<PlaybackUid>();
             this->_channels_state[channel].playback_uid = playback_uid;
             this->_recalc_channel_volume(channel);
-            log<LogLevel::debug, LogCategory::audio>(
-                "Playing sound at channel %u, uid: %llx", channel,
+            KAACORE_LOG_DEBUG(
+                "Playing sound at channel {}, uid: {:#x}", channel,
                 playback_uid);
             return {channel, playback_uid};
         } else {
-            log<LogLevel::error>("Failed to play sound (%s)", Mix_GetError());
+            KAACORE_LOG_ERROR("Failed to play sound ({})", Mix_GetError());
         }
     } else {
-        log<LogLevel::error>("Failed to played incorrectly loaded sound");
+        KAACORE_LOG_ERROR("Failed to played incorrectly loaded sound");
     }
     return {-1, 0};
 }
@@ -454,14 +454,14 @@ AudioManager::play_music(const Music& music, const double volume_factor)
     if (music._music_data->_raw_music) {
         auto err_code = Mix_PlayMusic(music._music_data->_raw_music, 1);
         if (err_code == -1) {
-            log<LogLevel::error>("Failed to play music (%s)", Mix_GetError());
+            KAACORE_LOG_ERROR("Failed to play music ({})", Mix_GetError());
             return;
         }
         this->_music_state.current_music = music;
         this->_music_state.requested_volume = volume_factor;
         this->_recalc_music_volume();
     } else {
-        log<LogLevel::error>("Failed to played incorrectly loaded music");
+        KAACORE_LOG_ERROR("Failed to played incorrectly loaded music");
     }
 }
 
@@ -653,14 +653,14 @@ AudioManager::_recalc_channel_volume(ChannelId channel_id)
 void
 AudioManager::_handle_music_finished()
 {
-    log<LogLevel::debug>("Music channel finished playback");
+    KAACORE_LOG_DEBUG("Music channel finished playback");
     this->_music_state.current_music = Music(); // empty Music
 }
 
 void
 AudioManager::_handle_channel_finished(ChannelId channel_id)
 {
-    log<LogLevel::debug>("Sound channel #%u finished playback", channel_id);
+    KAACORE_LOG_DEBUG("Sound channel #{} finished playback", channel_id);
     if (channel_id < this->_channels_state.size()) {
         auto& channel_state = this->_channels_state[channel_id];
         if (not channel_state._manually_stopped) {

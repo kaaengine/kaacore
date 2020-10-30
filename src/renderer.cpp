@@ -50,7 +50,7 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
     size_t vs_data_size;
     size_t fs_data_size;
     if (renderer_type == bgfx::RendererType::Enum::OpenGL) {
-        log("Loading default OpenGL GLSL shaders.");
+        KAACORE_LOG_INFO("Loading default OpenGL GLSL shaders.");
         std::tie(fs_data, fs_data_size) = get_embedded_file_content(
             "shaders/binary/default_glsl_fragment_shader.bin");
         std::tie(vs_data, vs_data_size) = get_embedded_file_content(
@@ -61,13 +61,13 @@ load_default_shaders(bgfx::RendererType::Enum renderer_type)
         std::tie(vs_data, vs_data_size) = get_embedded_file_content(
             "shaders/binary/default_hlsl_d3d9_vertex_shader.bin");
     } else if (renderer_type == bgfx::RendererType::Enum::Direct3D11) {
-        log("Loading default Direct3D11 HLSL shaders.");
+        KAACORE_LOG_INFO("Loading default Direct3D11 HLSL shaders.");
         std::tie(fs_data, fs_data_size) = get_embedded_file_content(
             "shaders/binary/default_hlsl_d3d11_fragment_shader.bin");
         std::tie(vs_data, vs_data_size) = get_embedded_file_content(
             "shaders/binary/default_hlsl_d3d11_vertex_shader.bin");
     } else {
-        log<LogLevel::warn>("No default shaders loaded");
+        KAACORE_LOG_WARN("No default shaders loaded");
         return std::make_tuple(false, nullptr, nullptr);
     }
     const bgfx::Memory* vs_mem = bgfx::makeRef(vs_data, vs_data_size);
@@ -89,12 +89,12 @@ load_default_image()
 
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
-    log("Initializing bgfx.");
+    KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
     bgfx_init_data.resolution.height = window_size.y;
     bgfx::init(bgfx_init_data);
-    log("Initializing bgfx completed.");
-    log("Initializing renderer.");
+    KAACORE_LOG_INFO("Initializing bgfx completed.");
+    KAACORE_LOG_INFO("Initializing renderer.");
     this->vertex_layout.begin()
         .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float)
         .add(bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float)
@@ -119,23 +119,24 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
     std::tie(found_defaults, vs_mem, fs_mem) =
         load_default_shaders(renderer_type);
     if (!found_defaults) {
-        log<LogLevel::error>(
-            "Can't find precompiled shaders for this platform!");
+        KAACORE_LOG_ERROR("Can't find precompiled shaders for this platform!");
         return;
     }
 
     auto vs = Shader::load(vs_mem);
     auto fs = Shader::load(fs_mem);
-    log("Created shaders, VS: %d, FS: %d.", vs->_handle, fs->_handle);
+    KAACORE_LOG_INFO(
+        "Created shaders, VS: {}, FS: {}.", vs->_handle.idx, fs->_handle.idx);
 
     this->default_program = Program::load(vs, fs);
-    log("Created program: %d.", this->default_program->_handle);
-    log("Initializing renderer completed.");
+    KAACORE_LOG_INFO(
+        "Created program: {}.", this->default_program->_handle.idx);
+    KAACORE_LOG_INFO("Initializing renderer completed.");
 }
 
 Renderer::~Renderer()
 {
-    log("Destroying renderer");
+    KAACORE_LOG_INFO("Destroying renderer");
     bgfx::destroy(this->texture_uniform);
     this->default_image.reset();
     // since default shaders are embeded and not present
@@ -195,7 +196,7 @@ Renderer::end_frame()
 void
 Renderer::reset()
 {
-    log<LogLevel::debug>("Calling Renderer::reset()");
+    KAACORE_LOG_DEBUG("Calling Renderer::reset()");
     auto window_size = get_engine()->window->_peek_size();
     bgfx::reset(window_size.x, window_size.y, this->_reset_flags);
 

@@ -44,8 +44,8 @@ NodeSpatialData::refresh()
 {
     if (this->is_dirty) {
         Node* node = container_node(this);
-        log<LogLevel::debug>(
-            "Trigerred refresh of NodeSpatialData of node: %p", node);
+        KAACORE_LOG_TRACE(
+            "Trigerred refresh of NodeSpatialData of node: {}", fmt::ptr(node));
         const auto node_transformation = node->absolute_transformation();
         const auto shape = node->_shape;
         if (shape) {
@@ -68,8 +68,8 @@ NodeSpatialData::refresh()
             this->bounding_box = BoundingBox<double>::single_point(
                 node->_position | node_transformation);
         }
-        log<LogLevel::debug>(
-            " -> Resulting bbox x:(%lg, %lg) y:(%lg, %lg)",
+        KAACORE_LOG_TRACE(
+            " -> Resulting bbox x:({:.2f}, {:.2f}) y:({:.2f}, {:.2f})",
             this->bounding_box.min_x, this->bounding_box.max_x,
             this->bounding_box.min_y, this->bounding_box.max_y);
 
@@ -128,12 +128,14 @@ SpatialIndex::update_single(Node* node)
     if (node->_indexable == node->_spatial_data.is_phony_indexed) {
         if (node->_indexable) {
             // state change: non-indexable -> indexable
-            log<LogLevel::debug>("Node %p switched indexable flag to: true");
+            KAACORE_LOG_DEBUG(
+                "Node {} switched indexable flag to: true", fmt::ptr(node));
             this->_remove_from_phony_index(node);
             this->_add_to_cp_index(node);
         } else {
             // state change: indexable -> non-indexable
-            log<LogLevel::debug>("Node %p switched indexable flag to: false");
+            KAACORE_LOG_DEBUG(
+                "Node {} switched indexable flag to: false", fmt::ptr(node));
             this->_remove_from_cp_index(node);
             this->_add_to_phony_index(node);
         }

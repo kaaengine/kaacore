@@ -26,7 +26,7 @@ struct DemoScene : Scene {
 
         this->timer = Timer(
             [this]() {
-                log("Timer callback called.");
+                KAACORE_APP_LOG_INFO("Timer callback called.");
                 this->node->visible(not this->node->visible());
             },
             1000, false);
