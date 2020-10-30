@@ -492,6 +492,12 @@ Node::shape()
 }
 
 void
+Node::shape(const Shape& shape)
+{
+    this->shape(shape, false);
+}
+
+void
 Node::shape(const Shape& shape, bool is_auto_shape)
 {
     this->_shape = shape;

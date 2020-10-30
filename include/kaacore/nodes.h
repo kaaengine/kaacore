@@ -78,7 +78,8 @@ class Node {
     void z_index(const std::optional<int16_t> z_index);
 
     Shape shape();
-    void shape(const Shape& shape, bool is_auto_shape = false);
+    void shape(const Shape& shape);
+    void shape(const Shape& shape, bool is_auto_shape);
 
     Sprite sprite();
     void sprite(const Sprite& sprite);

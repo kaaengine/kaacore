@@ -18,48 +18,54 @@ struct TransitionsDemoScene : Scene {
         this->camera().position({0., 0.});
 
         const double tr_time = 1500.;
+        const std::vector<Shape> shapes = {
+            Shape::Circle(2.5), Shape::Box({4., 4.}),
+            Shape::Polygon({{-2., -2.}, {2., -2.}, {-2., 2.}})};
+        const std::vector<double> rotations = {M_PI, M_PI / 4., 3 * M_PI / 2.};
 
         const auto movement_transitions_par = make_node_transitions_parallel(
-            {
-                make_node_transitions_sequence(
-                    {
-                        make_node_transition<NodePositionTransition>(
-                            glm::dvec2(-15., -15.),
-                            AttributeTransitionMethod::add, tr_time,
-                            TransitionWarping{}, Easing::back_in_out),
-                        make_node_transition<NodeColorTransition>(
-                            glm::dvec4(0., 1., 0., 1.),
-                            AttributeTransitionMethod::set, 0.,
-                            TransitionWarping{}),
-                        make_node_transition<NodePositionTransition>(
-                            glm::dvec2(-25., 0.),
-                            AttributeTransitionMethod::add, tr_time * 4,
-                            TransitionWarping{}, Easing::sine_in_out),
-                        make_node_transition<NodeScaleTransition>(
-                            glm::dvec2(2., 2.),
-                            AttributeTransitionMethod::multiply, tr_time * 2,
-                            TransitionWarping{}, Easing::quintic_in_out),
-                        make_node_transitions_parallel({
-                            make_node_transition<NodeScaleTransition>(
-                                glm::dvec2(2., 2.),
-                                AttributeTransitionMethod::multiply,
-                                tr_time * 5),
-                            make_node_transition<NodeColorTransition>(
-                                glm::dvec4(1., 0.2, 0.2, 0.5), tr_time * 5,
-                                TransitionWarping{}, Easing::elastic_in_out),
-                        }),
-                        make_node_transitions_parallel({
-                            make_node_transition<NodePositionTransition>(
-                                glm::dvec2(0., 0.),
-                                AttributeTransitionMethod::set, tr_time * 6),
-                            make_node_transition<NodeScaleTransition>(
-                                glm::dvec2(0.3, 0.3),
-                                AttributeTransitionMethod::multiply,
-                                tr_time * 3),
-                        }),
-                    },
-                    TransitionWarping(1, true)),
-            },
+            {make_node_transitions_sequence(
+                 {
+                     make_node_transition<NodePositionSteppingTransition>(
+                         std::vector<glm::dvec2>{
+                             {-3., -3.}, {3., -3.}, {3., 3.}, {-3., 3.}},
+                         AttributeTransitionMethod::add, tr_time * 2),
+                     make_node_transition<NodePositionTransition>(
+                         glm::dvec2(-15., -15.), AttributeTransitionMethod::add,
+                         tr_time, TransitionWarping{}, Easing::back_in_out),
+                     make_node_transition<NodeColorTransition>(
+                         glm::dvec4(0., 1., 0., 1.),
+                         AttributeTransitionMethod::set, 0.,
+                         TransitionWarping{}),
+                     make_node_transition<NodePositionTransition>(
+                         glm::dvec2(-25., 0.), AttributeTransitionMethod::add,
+                         tr_time * 4, TransitionWarping{}, Easing::sine_in_out),
+                     make_node_transition<NodeScaleTransition>(
+                         glm::dvec2(2., 2.),
+                         AttributeTransitionMethod::multiply, tr_time * 2,
+                         TransitionWarping{}, Easing::quintic_in_out),
+                     make_node_transitions_parallel({
+                         make_node_transition<NodeScaleTransition>(
+                             glm::dvec2(2., 2.),
+                             AttributeTransitionMethod::multiply, tr_time * 5),
+                         make_node_transition<NodeColorTransition>(
+                             glm::dvec4(1., 0.2, 0.2, 0.5), tr_time * 5,
+                             TransitionWarping{}, Easing::elastic_in_out),
+                     }),
+                     make_node_transitions_parallel({
+                         make_node_transition<NodePositionTransition>(
+                             glm::dvec2(0., 0.), AttributeTransitionMethod::set,
+                             tr_time * 6),
+                         make_node_transition<NodeScaleTransition>(
+                             glm::dvec2(0.3, 0.3),
+                             AttributeTransitionMethod::multiply, tr_time * 3),
+                     }),
+                 },
+                 TransitionWarping(1, true)),
+             make_node_transition<NodeShapeSteppingTransition>(
+                 shapes, tr_time * 2.4, TransitionWarping(12, false)),
+             make_node_transition<NodeRotationSteppingTransition>(
+                 rotations, tr_time * 2.4, TransitionWarping(12, false))},
             TransitionWarping(0, true));
 
         for (int i = 0; i < 625; i++) {
