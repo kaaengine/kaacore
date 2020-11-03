@@ -184,7 +184,7 @@ ShapeQueryResult::ShapeQueryResult(
       contact_points(convert_contact_points(points))
 {}
 
-RaycastQueryResult::RaycastQueryResult(
+RayQueryResult::RayQueryResult(
     const cpShape* cp_shape, const cpVect point, const cpVect normal,
     const double alpha)
     : SpatialQueryResultBase(cp_shape), point(convert_vector(point)),
@@ -392,8 +392,8 @@ void
 _cp_space_query_raycast_callback(
     cpShape* cp_shape, cpVect point, cpVect normal, double alpha, void* data)
 {
-    auto results = reinterpret_cast<std::vector<RaycastQueryResult>*>(data);
-    results->push_back(RaycastQueryResult{cp_shape, point, normal, alpha});
+    auto results = reinterpret_cast<std::vector<RayQueryResult>*>(data);
+    results->push_back(RayQueryResult{cp_shape, point, normal, alpha});
 }
 
 void
@@ -407,22 +407,11 @@ _cp_space_query_point_callback(
 
 const std::vector<ShapeQueryResult>
 SpaceNode::query_shape_overlaps(
-    const Shape& shape, const glm::dvec2& position, const CollisionBitmask mask,
+    const Shape& shape, const CollisionBitmask mask,
     const CollisionBitmask collision_mask, const CollisionGroup group)
 {
-    return this->query_shape_overlaps(
-        shape, Transformation::translate(position), mask, collision_mask,
-        group);
-}
-
-const std::vector<ShapeQueryResult>
-SpaceNode::query_shape_overlaps(
-    const Shape& shape, const Transformation transformation,
-    const CollisionBitmask mask, const CollisionBitmask collision_mask,
-    const CollisionGroup group)
-{
     std::vector<ShapeQueryResult> results;
-    auto shape_uptr = prepare_hitbox_shape(shape, transformation);
+    auto shape_uptr = prepare_hitbox_shape(shape, Transformation{});
     auto filter = cpShapeGetFilter(shape_uptr.get());
     filter.categories = mask;
     filter.mask = collision_mask;
@@ -439,13 +428,13 @@ SpaceNode::query_shape_overlaps(
     return results;
 }
 
-const std::vector<RaycastQueryResult>
-SpaceNode::query_raycast(
+const std::vector<RayQueryResult>
+SpaceNode::query_ray(
     const glm::dvec2 ray_start, const glm::dvec2 ray_end, const double radius,
-    const Transformation transformation, const CollisionBitmask mask,
-    const CollisionBitmask collision_mask, const CollisionGroup group)
+    const CollisionBitmask mask, const CollisionBitmask collision_mask,
+    const CollisionGroup group)
 {
-    std::vector<RaycastQueryResult> results;
+    std::vector<RayQueryResult> results;
     cpShapeFilter filter;
 
     filter.categories = mask;
@@ -453,9 +442,8 @@ SpaceNode::query_raycast(
     filter.group = group;
 
     cpSpaceSegmentQuery(
-        this->_cp_space, convert_vector(ray_start | transformation),
-        convert_vector(ray_end | transformation), radius, filter,
-        _cp_space_query_raycast_callback, &results);
+        this->_cp_space, convert_vector(ray_start), convert_vector(ray_end),
+        radius, filter, _cp_space_query_raycast_callback, &results);
 
     return results;
 }
@@ -463,8 +451,8 @@ SpaceNode::query_raycast(
 const std::vector<PointQueryResult>
 SpaceNode::query_point_neighbors(
     const glm::dvec2 point, const double max_distance,
-    const Transformation transformation, const CollisionBitmask mask,
-    const CollisionBitmask collision_mask, const CollisionGroup group)
+    const CollisionBitmask mask, const CollisionBitmask collision_mask,
+    const CollisionGroup group)
 {
     std::vector<PointQueryResult> results;
     cpShapeFilter filter;
@@ -474,8 +462,8 @@ SpaceNode::query_point_neighbors(
     filter.group = group;
 
     cpSpacePointQuery(
-        this->_cp_space, convert_vector(point | transformation), max_distance,
-        filter, _cp_space_query_point_callback, &results);
+        this->_cp_space, convert_vector(point), max_distance, filter,
+        _cp_space_query_point_callback, &results);
 
     return results;
 }

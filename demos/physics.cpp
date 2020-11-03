@@ -225,12 +225,12 @@ struct DemoScene : Scene {
         }
 
         auto results = this->container->space.query_shape_overlaps(
-            this->query_shape, {0., 0.}, collision_bitmask_all, mask_circle);
+            this->query_shape, collision_bitmask_all, mask_circle);
         for (auto& res : results) {
             res.hitbox_node->color(this->queried_hitbox_color);
         }
 
-        auto raycast_results = this->container->space.query_raycast(
+        auto raycast_results = this->container->space.query_ray(
             glm::dvec2{-10, 0}, glm::dvec2{10, 0});
         for (auto& res : raycast_results) {
             auto hit_indicator = make_node();

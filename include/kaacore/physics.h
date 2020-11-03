@@ -92,13 +92,13 @@ struct ShapeQueryResult : SpatialQueryResultBase {
     ShapeQueryResult(const cpShape* cp_shape, const cpContactPointSet* points);
 };
 
-struct RaycastQueryResult : SpatialQueryResultBase {
+struct RayQueryResult : SpatialQueryResultBase {
     glm::dvec2 point;
     glm::dvec2 normal;
     double alpha;
 
-    RaycastQueryResult() = default;
-    RaycastQueryResult(
+    RayQueryResult() = default;
+    RayQueryResult(
         const cpShape* cp_shape, const cpVect point, const cpVect normal,
         const double alpha);
 };
@@ -123,28 +123,19 @@ class SpaceNode {
         bool only_non_deleted_nodes = true);
 
     const std::vector<ShapeQueryResult> query_shape_overlaps(
-        const Shape& shape, const glm::dvec2& position = {0., 0.},
-        const CollisionBitmask mask = collision_bitmask_all,
+        const Shape& shape, const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
         const CollisionGroup group = collision_group_none);
 
-    const std::vector<ShapeQueryResult> query_shape_overlaps(
-        const Shape& shape, const Transformation = Transformation(),
-        const CollisionBitmask mask = collision_bitmask_all,
-        const CollisionBitmask collision_mask = collision_bitmask_all,
-        const CollisionGroup group = collision_group_none);
-
-    const std::vector<RaycastQueryResult> query_raycast(
+    const std::vector<RayQueryResult> query_ray(
         const glm::dvec2 ray_start, const glm::dvec2 ray_end,
         const double radius = 0.,
-        const Transformation transformation = Transformation(),
         const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
         const CollisionGroup group = collision_group_none);
 
     const std::vector<PointQueryResult> query_point_neighbors(
         const glm::dvec2 point, const double max_distance,
-        const Transformation transformation = Transformation(),
         const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
         const CollisionGroup group = collision_group_none);
