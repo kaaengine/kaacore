@@ -157,6 +157,46 @@ uint8_t operator&(CollisionPhase phase, CollisionPhase other)
     return uint8_t(phase) & uint8_t(other);
 }
 
+SpatialQueryResultBase::SpatialQueryResultBase(const cpShape* cp_shape)
+{
+    cpBody* cp_body = cpShapeGetBody(cp_shape);
+
+    if (cp_body) {
+        KAACORE_ASSERT(
+            cpBodyGetUserData(cp_body) != nullptr,
+            "Invalid internal state of body node.");
+        this->body_node =
+            container_node(static_cast<BodyNode*>(cpBodyGetUserData(cp_body)));
+    } else {
+        this->body_node = nullptr;
+    }
+
+    KAACORE_ASSERT(
+        cpShapeGetUserData(cp_shape) != nullptr,
+        "Invalid internal state of shape.");
+    this->hitbox_node =
+        container_node(static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape)));
+}
+
+ShapeQueryResult::ShapeQueryResult(
+    const cpShape* cp_shape, const cpContactPointSet* points)
+    : SpatialQueryResultBase(cp_shape),
+      contact_points(convert_contact_points(points))
+{}
+
+RayQueryResult::RayQueryResult(
+    const cpShape* cp_shape, const cpVect point, const cpVect normal,
+    const double alpha)
+    : SpatialQueryResultBase(cp_shape), point(convert_vector(point)),
+      normal(convert_vector(normal)), alpha(alpha)
+{}
+
+PointQueryResult::PointQueryResult(
+    const cpShape* cp_shape, const cpVect point, const double distance)
+    : SpatialQueryResultBase(cp_shape), point(convert_vector(point)),
+      distance(distance)
+{}
+
 SpaceNode::SpaceNode()
 {
     this->_cp_space = cpSpaceNew();
@@ -345,37 +385,33 @@ _cp_space_query_shape_callback(
     cpShape* cp_shape, cpContactPointSet* points, void* data)
 {
     auto results = reinterpret_cast<std::vector<ShapeQueryResult>*>(data);
-    cpBody* cp_body = cpShapeGetBody(cp_shape);
+    results->push_back(ShapeQueryResult{cp_shape, points});
+}
 
-    Node* body_node;
-    Node* hitbox_node;
+void
+_cp_space_query_raycast_callback(
+    cpShape* cp_shape, cpVect point, cpVect normal, double alpha, void* data)
+{
+    auto results = reinterpret_cast<std::vector<RayQueryResult>*>(data);
+    results->push_back(RayQueryResult{cp_shape, point, normal, alpha});
+}
 
-    if (cp_body) {
-        KAACORE_ASSERT(
-            cpBodyGetUserData(cp_body) != nullptr,
-            "Invalid internal state of body node.");
-        body_node =
-            container_node(static_cast<BodyNode*>(cpBodyGetUserData(cp_body)));
-    }
-
-    KAACORE_ASSERT(
-        cpShapeGetUserData(cp_shape) != nullptr,
-        "Invalid internal state of shape.");
-    hitbox_node =
-        container_node(static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape)));
-
-    results->push_back(
-        {body_node, hitbox_node, convert_contact_points(points)});
+void
+_cp_space_query_point_callback(
+    cpShape* cp_shape, cpVect point, double distance, cpVect gradient,
+    void* data)
+{
+    auto results = reinterpret_cast<std::vector<PointQueryResult>*>(data);
+    results->push_back(PointQueryResult{cp_shape, point, distance});
 }
 
 const std::vector<ShapeQueryResult>
 SpaceNode::query_shape_overlaps(
-    const Shape& shape, const glm::dvec2& position, const CollisionBitmask mask,
+    const Shape& shape, const CollisionBitmask mask,
     const CollisionBitmask collision_mask, const CollisionGroup group)
 {
     std::vector<ShapeQueryResult> results;
-    auto shape_uptr =
-        prepare_hitbox_shape(shape, Transformation::translate(position));
+    auto shape_uptr = prepare_hitbox_shape(shape, Transformation{});
     auto filter = cpShapeGetFilter(shape_uptr.get());
     filter.categories = mask;
     filter.mask = collision_mask;
@@ -388,6 +424,46 @@ SpaceNode::query_shape_overlaps(
     cpSpaceShapeQuery(
         this->_cp_space, shape_uptr.get(), _cp_space_query_shape_callback,
         &results);
+
+    return results;
+}
+
+const std::vector<RayQueryResult>
+SpaceNode::query_ray(
+    const glm::dvec2 ray_start, const glm::dvec2 ray_end, const double radius,
+    const CollisionBitmask mask, const CollisionBitmask collision_mask,
+    const CollisionGroup group)
+{
+    std::vector<RayQueryResult> results;
+    cpShapeFilter filter;
+
+    filter.categories = mask;
+    filter.mask = collision_mask;
+    filter.group = group;
+
+    cpSpaceSegmentQuery(
+        this->_cp_space, convert_vector(ray_start), convert_vector(ray_end),
+        radius, filter, _cp_space_query_raycast_callback, &results);
+
+    return results;
+}
+
+const std::vector<PointQueryResult>
+SpaceNode::query_point_neighbors(
+    const glm::dvec2 point, const double max_distance,
+    const CollisionBitmask mask, const CollisionBitmask collision_mask,
+    const CollisionGroup group)
+{
+    std::vector<PointQueryResult> results;
+    cpShapeFilter filter;
+
+    filter.categories = mask;
+    filter.mask = collision_mask;
+    filter.group = group;
+
+    cpSpacePointQuery(
+        this->_cp_space, convert_vector(point), max_distance, filter,
+        _cp_space_query_point_callback, &results);
 
     return results;
 }

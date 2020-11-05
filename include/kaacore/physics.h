@@ -71,16 +71,45 @@ void
 cp_call_post_step_callbacks(
     cpSpace* cp_space, void* space_node_phys_ptr, void* data);
 
+struct SpatialQueryResultBase {
+    NodePtr body_node;
+    NodePtr hitbox_node;
+
+    SpatialQueryResultBase() = default;
+    SpatialQueryResultBase(const cpShape* cp_shape);
+};
+
 struct CollisionContactPoint {
     glm::dvec2 point_a;
     glm::dvec2 point_b;
     double distance;
 };
 
-struct ShapeQueryResult {
-    NodePtr body_node;
-    NodePtr hitbox_node;
+struct ShapeQueryResult : SpatialQueryResultBase {
     std::vector<CollisionContactPoint> contact_points;
+
+    ShapeQueryResult() = default;
+    ShapeQueryResult(const cpShape* cp_shape, const cpContactPointSet* points);
+};
+
+struct RayQueryResult : SpatialQueryResultBase {
+    glm::dvec2 point;
+    glm::dvec2 normal;
+    double alpha;
+
+    RayQueryResult() = default;
+    RayQueryResult(
+        const cpShape* cp_shape, const cpVect point, const cpVect normal,
+        const double alpha);
+};
+
+struct PointQueryResult : SpatialQueryResultBase {
+    glm::dvec2 point;
+    double distance;
+
+    PointQueryResult() = default;
+    PointQueryResult(
+        const cpShape* cp_shape, const cpVect point, const double distance);
 };
 
 class SpaceNode {
@@ -94,7 +123,19 @@ class SpaceNode {
         bool only_non_deleted_nodes = true);
 
     const std::vector<ShapeQueryResult> query_shape_overlaps(
-        const Shape& shape, const glm::dvec2& position = {0., 0.},
+        const Shape& shape, const CollisionBitmask mask = collision_bitmask_all,
+        const CollisionBitmask collision_mask = collision_bitmask_all,
+        const CollisionGroup group = collision_group_none);
+
+    const std::vector<RayQueryResult> query_ray(
+        const glm::dvec2 ray_start, const glm::dvec2 ray_end,
+        const double radius = 0.,
+        const CollisionBitmask mask = collision_bitmask_all,
+        const CollisionBitmask collision_mask = collision_bitmask_all,
+        const CollisionGroup group = collision_group_none);
+
+    const std::vector<PointQueryResult> query_point_neighbors(
+        const glm::dvec2 point, const double max_distance,
         const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
         const CollisionGroup group = collision_group_none);
