@@ -75,6 +75,10 @@ set_target_properties(
 
 target_link_libraries(kaacore PUBLIC kaacore_embedded_assets)
 
+# TODO if testing
+add_subdirectory(third_party/catch2)
+add_subdirectory(tests)
+
 if (KAACORE_BUILD_DEMOS)
     add_subdirectory(demos)
 endif()

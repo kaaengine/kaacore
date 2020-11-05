@@ -17,3 +17,7 @@
 	path = third_party/spdlog
 	url = https://github.com/gabime/spdlog/
 	branch = v2.x
+[submodule "third_party/catch2"]
+	path = third_party/catch2
+	url = https://github.com/catchorg/Catch2
+	branch = v2.x
