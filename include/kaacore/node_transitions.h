@@ -295,4 +295,8 @@ typedef NodeInoperableAttributeSteppingTransition<
     Shape, Node, nullptr, &Node::shape>
     NodeShapeSteppingTransition;
 
+typedef NodeInoperableAttributeSteppingTransition<
+    std::optional<int16_t>, Node, nullptr, &Node::z_index>
+    NodeZIndexSteppingTransition;
+
 } // namespace kaacore

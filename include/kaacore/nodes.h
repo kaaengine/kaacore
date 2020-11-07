@@ -75,7 +75,7 @@ class Node {
     void transformation(const Transformation& transformation);
 
     std::optional<int16_t> z_index();
-    void z_index(const std::optional<int16_t> z_index);
+    void z_index(const std::optional<int16_t>& z_index);
 
     Shape shape();
     void shape(const Shape& shape);

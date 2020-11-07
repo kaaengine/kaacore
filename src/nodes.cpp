@@ -480,9 +480,10 @@ Node::z_index()
 }
 
 void
-Node::z_index(const std::optional<int16_t> z_index)
+Node::z_index(const std::optional<int16_t>& z_index)
 {
     this->_z_index = z_index;
+    this->_mark_ordering_dirty();
 }
 
 Shape
