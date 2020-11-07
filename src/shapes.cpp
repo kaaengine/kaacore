@@ -205,7 +205,7 @@ Shape::transform(const Transformation& transformation) const
     auto radius = this->radius;
     if (radius != 0.) {
         glm::dvec2 scale_ratio = glm::abs(transformation.decompose().scale);
-        if (scale_ratio.x != scale_ratio.y) {
+        if (glm::epsilonNotEqual<double>(scale_ratio.x, scale_ratio.y, 1e-10)) {
             throw kaacore::exception(
                 "Cannot transform shape radius by non-equal scale");
         }
