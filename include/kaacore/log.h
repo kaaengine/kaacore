@@ -88,7 +88,7 @@ _unpack_logging_settings(
     size_t parser_pos = 0;
     std::string_view section;
     std::optional<std::string_view> found_level;
-    do {
+    while (true) {
         auto next_parser_pos = settings.find(',', parser_pos);
         size_t section_size = 0;
         if (next_parser_pos == std::string_view::npos) {
@@ -111,8 +111,11 @@ _unpack_logging_settings(
             }
         }
 
-        parser_pos = next_parser_pos;
-    } while (parser_pos != std::string_view::npos);
+        if (next_parser_pos == std::string_view::npos) {
+            break;
+        }
+        parser_pos = next_parser_pos + 1;
+    }
 
     // return last found matching level name
     return found_level;
