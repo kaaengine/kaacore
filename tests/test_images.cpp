@@ -5,10 +5,8 @@
 
 #include "runner.h"
 
-
 using namespace kaacore;
 using namespace Catch::Matchers;
-
 
 TEST_CASE("Test bitmap creation and lookups", "[bitmap]")
 {
@@ -31,7 +29,6 @@ TEST_CASE("Test bitmap creation and lookups", "[bitmap]")
     }
 }
 
-
 TEST_CASE("Test bitmap creation and lookups (4-channel)", "[bitmap]")
 {
     Bitmap<glm::u8vec4> bitmap{{5, 5}};
@@ -52,7 +49,6 @@ TEST_CASE("Test bitmap creation and lookups (4-channel)", "[bitmap]")
         }
     }
 }
-
 
 TEST_CASE("Test bitmap blitting", "[bitmap]")
 {
@@ -82,14 +78,10 @@ TEST_CASE("Test bitmap blitting", "[bitmap]")
     {
         Bitmap bitmap{{3, 3}};
         REQUIRE_THROWS_WITH(
-            bitmap.blit(src_bitmap, {1, 0}),
-            Contains("would overflow X")
-        );
+            bitmap.blit(src_bitmap, {1, 0}), Contains("would overflow X"));
 
         REQUIRE_THROWS_WITH(
-            bitmap.blit(src_bitmap, {0, 1}),
-            Contains("would overflow Y")
-        );
+            bitmap.blit(src_bitmap, {0, 1}), Contains("would overflow Y"));
     }
 
     SECTION("Blit with offset")

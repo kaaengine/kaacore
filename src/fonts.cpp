@@ -19,7 +19,6 @@ namespace kaacore {
 
 ResourcesRegistry<std::string, FontData> _fonts_registry;
 
-
 // SDF rasterization helper struct
 struct RasterizedSDFBitmap {
     uint32_t codepoint;
@@ -28,28 +27,24 @@ struct RasterizedSDFBitmap {
     std::unique_ptr<unsigned char[], std::function<void(unsigned char*)>> data;
     BitmapView<> bitmap_view;
 
-    RasterizedSDFBitmap(stbtt_fontinfo& font_info, const uint32_t codepoint, const double scale)
-        : codepoint(codepoint), data(nullptr), dimensions({0, 0}), offset({0, 0})
+    RasterizedSDFBitmap(
+        stbtt_fontinfo& font_info, const uint32_t codepoint, const double scale)
+        : codepoint(codepoint), data(nullptr), dimensions({0, 0}),
+          offset({0, 0})
     {
         auto raw_data = stbtt_GetCodepointSDF(
-            &font_info, scale, codepoint,
-            5, 180, 36.0f, &dimensions.x, &dimensions.y,
-            &offset.x, &offset.y
-        );
+            &font_info, scale, codepoint, 5, 180, 36.0f, &dimensions.x,
+            &dimensions.y, &offset.x, &offset.y);
         this->data = {raw_data, [](unsigned char* sdf_data) {
-            stbtt_FreeSDF(sdf_data, nullptr);
-        }};
+                          stbtt_FreeSDF(sdf_data, nullptr);
+                      }};
         if (this->data != nullptr) {
             this->bitmap_view = BitmapView{this->data.get(), this->dimensions};
         }
     }
 
-    operator bool() const
-    {
-        return this->data != nullptr;
-    }
+    operator bool() const { return this->data != nullptr; }
 };
-
 
 void
 initialize_fonts()
@@ -115,32 +110,32 @@ bake_font_texture_legacy(const uint8_t* font_file_content, const size_t size)
     return std::make_pair(baked_font_image, baked_font_data);
 }
 
-
 std::pair<bimg::ImageContainer*, BakedFontData>
 _pack_and_bake_sdf_glyphs(
     const uint8_t* font_file_content, const double font_baking_size,
-    const uint32_t first_glyph_index, const uint32_t glyphs_count
-)
+    const uint32_t first_glyph_index, const uint32_t glyphs_count)
 {
     BakedFontData baked_font_data;
     baked_font_data.reserve(glyphs_count);
 
     stbtt_fontinfo font_info;
     font_info.userdata = nullptr;
-    stbtt_InitFont(&font_info, font_file_content,
-                   stbtt_GetFontOffsetForIndex(font_file_content, 0));
-    const double font_specific_scale = stbtt_ScaleForPixelHeight(&font_info, font_baking_size);
+    stbtt_InitFont(
+        &font_info, font_file_content,
+        stbtt_GetFontOffsetForIndex(font_file_content, 0));
+    const double font_specific_scale =
+        stbtt_ScaleForPixelHeight(&font_info, font_baking_size);
 
     std::vector<RasterizedSDFBitmap> sdfs;
     for (uint32_t character = first_glyph_index;
-            character < (first_glyph_index + glyphs_count);
-            character++) {
-        auto& sdf_bitmap = sdfs.emplace_back(font_info, character, font_specific_scale);
+         character < (first_glyph_index + glyphs_count); character++) {
+        auto& sdf_bitmap =
+            sdfs.emplace_back(font_info, character, font_specific_scale);
         KAACORE_LOG_TRACE(
-            "Generated SDF glyph for character: #{}, dimensions: ({}, {}), offset: ({}, {})",
+            "Generated SDF glyph for character: #{}, dimensions: ({}, {}), "
+            "offset: ({}, {})",
             character, sdf_bitmap.dimensions.x, sdf_bitmap.dimensions.y,
-            sdf_bitmap.offset.x, sdf_bitmap.offset.y
-        );
+            sdf_bitmap.offset.x, sdf_bitmap.offset.y);
     }
 
     std::vector<stbrp_rect> rects;
@@ -154,8 +149,8 @@ _pack_and_bake_sdf_glyphs(
 
     stbtt_pack_context pack_ctx;
     stbtt_PackBegin(
-        &pack_ctx, nullptr, font_baker_texture_size, font_baker_texture_size, 0, 1, nullptr
-    );
+        &pack_ctx, nullptr, font_baker_texture_size, font_baker_texture_size, 0,
+        1, nullptr);
     stbtt_PackFontRangesPackRects(&pack_ctx, rects.data(), rects.size());
     stbtt_PackEnd(&pack_ctx);
 
@@ -166,7 +161,9 @@ _pack_and_bake_sdf_glyphs(
         auto& sdf_gen = sdfs[i];
 
         int horizontal_advance, left_side_bearing;
-        stbtt_GetCodepointHMetrics(&font_info, sdf_gen.codepoint, &horizontal_advance, &left_side_bearing);
+        stbtt_GetCodepointHMetrics(
+            &font_info, sdf_gen.codepoint, &horizontal_advance,
+            &left_side_bearing);
 
         stbtt_packedchar glyph_data;
         glyph_data.x0 = rect.x;
@@ -203,9 +200,8 @@ bake_font_texture(const uint8_t* font_file_content, const size_t size)
             "Provided file is not TTF - magic number mismatched.");
     }
     return _pack_and_bake_sdf_glyphs(
-        font_file_content, font_baker_pixel_height,
-        font_baker_first_glyph, font_baker_glyphs_count
-    );
+        font_file_content, font_baker_pixel_height, font_baker_first_glyph,
+        font_baker_glyphs_count);
 }
 
 std::pair<bimg::ImageContainer*, BakedFontData>

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include <bgfx/bgfx.h>
 #include <bimg/decode.h>
@@ -57,27 +57,28 @@ class Image : public Resource {
     friend class FontData;
 };
 
-
-template<typename T=uint8_t>
+template<typename T = uint8_t>
 struct BitmapView {
-    BitmapView()
-        : content(nullptr), dimensions({0, 0})
-    {}
+    BitmapView() : content(nullptr), dimensions({0, 0}) {}
 
     BitmapView(T* content, const glm::uvec2 dimensions)
         : content(content), dimensions(dimensions)
     {
-        KAACORE_ASSERT(content != nullptr, "Can't create BitmapView with NULL content pointer");
+        KAACORE_ASSERT(
+            content != nullptr,
+            "Can't create BitmapView with NULL content pointer");
     }
 
     T& at(const size_t x, const size_t y)
     {
-        KAACORE_ASSERT(x < this->dimensions.x,
-                       "Requested x={} exceeds X dimensions size: {}",
-                       x, this->dimensions.x);
-        KAACORE_ASSERT(y < this->dimensions.y,
-                       "Requested y={} exceeds Y dimensions size: {}",
-                       y, this->dimensions.y);
+        KAACORE_ASSERT(
+            x < this->dimensions.x,
+            "Requested x={} exceeds X dimensions size: {}", x,
+            this->dimensions.x);
+        KAACORE_ASSERT(
+            y < this->dimensions.y,
+            "Requested y={} exceeds Y dimensions size: {}", y,
+            this->dimensions.y);
         return *(this->content + (y * this->dimensions.x) + x);
     }
 
@@ -86,17 +87,16 @@ struct BitmapView {
         KAACORE_ASSERT(
             source.dimensions.x + target_coords.x <= this->dimensions.x,
             "Blitting size ({}) would overflow X dimension ({})",
-            source.dimensions.x + target_coords.x, this->dimensions.x
-        );
+            source.dimensions.x + target_coords.x, this->dimensions.x);
         KAACORE_ASSERT(
             source.dimensions.y + target_coords.y <= this->dimensions.y,
             "Blitting size ({}) would overflow Y dimension ({})",
-            source.dimensions.y + target_coords.y, this->dimensions.y
-        );
+            source.dimensions.y + target_coords.y, this->dimensions.y);
 
         for (size_t x = 0; x < source.dimensions.x; x++) {
             for (size_t y = 0; y < source.dimensions.y; y++) {
-                this->at(target_coords.x + x, target_coords.y + y) = source.at(x, y);
+                this->at(target_coords.x + x, target_coords.y + y) =
+                    source.at(x, y);
             }
         }
     }
@@ -105,29 +105,18 @@ struct BitmapView {
     glm::uvec2 dimensions;
 };
 
-
-template<typename T=uint8_t>
+template<typename T = uint8_t>
 struct Bitmap {
-    Bitmap(const glm::uvec2 dimensions)
-        : dimensions(dimensions)
+    Bitmap(const glm::uvec2 dimensions) : dimensions(dimensions)
     {
         this->container.resize(dimensions.x * dimensions.y);
     }
 
-    BitmapView<T> view()
-    {
-        return {this->container.data(), this->dimensions};
-    }
+    BitmapView<T> view() { return {this->container.data(), this->dimensions}; }
 
-    operator BitmapView<T>()
-    {
-        return this->view();
-    }
+    operator BitmapView<T>() { return this->view(); }
 
-    T& at(const size_t x, const size_t y)
-    {
-        return this->view().at(x, y);
-    }
+    T& at(const size_t x, const size_t y) { return this->view().at(x, y); }
 
     void blit(BitmapView<T> source, const glm::uvec2 target_coords)
     {
