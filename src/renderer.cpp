@@ -43,36 +43,68 @@ constexpr size_t array_size(T (&)[N])
 }
 
 std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
-load_default_shaders(bgfx::RendererType::Enum renderer_type)
+load_default_shaders(
+    bgfx::RendererType::Enum renderer_type,
+    const std::string vertex_shader_name,
+    const std::string fragment_shader_name)
 {
-    const uint8_t* vs_data;
-    const uint8_t* fs_data;
-    size_t vs_data_size;
-    size_t fs_data_size;
-    if (renderer_type == bgfx::RendererType::Enum::OpenGL) {
-        KAACORE_LOG_INFO("Loading default OpenGL GLSL shaders.");
-        std::tie(fs_data, fs_data_size) = get_embedded_file_content(
-            "shaders/binary/default_glsl_fragment_shader.bin");
-        std::tie(vs_data, vs_data_size) = get_embedded_file_content(
-            "shaders/binary/default_glsl_vertex_shader.bin");
-    } else if (renderer_type == bgfx::RendererType::Enum::Direct3D9) {
-        std::tie(fs_data, fs_data_size) = get_embedded_file_content(
-            "shaders/binary/default_hlsl_d3d9_fragment_shader.bin");
-        std::tie(vs_data, vs_data_size) = get_embedded_file_content(
-            "shaders/binary/default_hlsl_d3d9_vertex_shader.bin");
-    } else if (renderer_type == bgfx::RendererType::Enum::Direct3D11) {
-        KAACORE_LOG_INFO("Loading default Direct3D11 HLSL shaders.");
-        std::tie(fs_data, fs_data_size) = get_embedded_file_content(
-            "shaders/binary/default_hlsl_d3d11_fragment_shader.bin");
-        std::tie(vs_data, vs_data_size) = get_embedded_file_content(
-            "shaders/binary/default_hlsl_d3d11_vertex_shader.bin");
-    } else {
-        KAACORE_LOG_WARN("No default shaders loaded");
-        return std::make_tuple(false, nullptr, nullptr);
+    const bgfx::Memory* vs_mem = nullptr;
+    const bgfx::Memory* fs_mem = nullptr;
+    std::string shader_platform_tag;
+
+    KAACORE_LOG_DEBUG(
+        "Loading embedded shaders: {}, {}", vertex_shader_name,
+        fragment_shader_name);
+
+    switch (renderer_type) {
+        case bgfx::RendererType::Noop:
+            return {false, nullptr, nullptr};
+        case bgfx::RendererType::Direct3D9:
+            shader_platform_tag = "dx9";
+            break;
+        case bgfx::RendererType::Direct3D11:
+        case bgfx::RendererType::Direct3D12:
+            shader_platform_tag = "dx11";
+            break;
+        case bgfx::RendererType::Metal:
+            shader_platform_tag = "metal";
+            break;
+        case bgfx::RendererType::OpenGL:
+            shader_platform_tag = "glsl";
+            break;
+        case bgfx::RendererType::Vulkan:
+            shader_platform_tag = "spirv";
+            break;
+        default:
+            KAACORE_LOG_ERROR(
+                "Can't load embedded shaders for unsupported renderer: #{}",
+                renderer_type);
+            return {false, nullptr, nullptr};
     }
-    const bgfx::Memory* vs_mem = bgfx::makeRef(vs_data, vs_data_size);
-    const bgfx::Memory* fs_mem = bgfx::makeRef(fs_data, fs_data_size);
-    return std::make_tuple(true, vs_mem, fs_mem);
+    KAACORE_LOG_TRACE("Detected shader platform tag: {}", shader_platform_tag);
+
+    try {
+        auto [vs_data, vs_data_size] = get_embedded_file_content(
+            embedded_shaders_filesystem,
+            fmt::format("{}/{}.bin", shader_platform_tag, vertex_shader_name));
+        vs_mem = bgfx::makeRef(vs_data, vs_data_size);
+    } catch (embedded_file_error& err) {
+        KAACORE_LOG_ERROR(
+            "Failed to load embedded binary shader: {} ({})",
+            vertex_shader_name, err.what());
+    }
+    try {
+        auto [fs_data, fs_data_size] = get_embedded_file_content(
+            embedded_shaders_filesystem,
+            fmt::format(
+                "{}/{}.bin", shader_platform_tag, fragment_shader_name));
+        fs_mem = bgfx::makeRef(fs_data, fs_data_size);
+    } catch (embedded_file_error& err) {
+        KAACORE_LOG_ERROR(
+            "Failed to load embedded binary shader: {} ({})",
+            fragment_shader_name, err.what());
+    }
+    return {vs_mem != nullptr and fs_mem != nullptr, vs_mem, fs_mem};
 }
 
 std::unique_ptr<Image>
@@ -117,7 +149,7 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 
     bool found_defaults;
     std::tie(found_defaults, vs_mem, fs_mem) =
-        load_default_shaders(renderer_type);
+        load_default_shaders(renderer_type, "vs_default", "fs_default");
     if (!found_defaults) {
         KAACORE_LOG_ERROR("Can't find precompiled shaders for this platform!");
         return;
