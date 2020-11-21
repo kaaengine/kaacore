@@ -9,12 +9,12 @@
 using namespace std::literals::string_view_literals;
 using namespace kaacore;
 
-TEST_CASE("Test testing framework", "[basics]")
+TEST_CASE("Test testing framework", "[basics][no_engine]")
 {
     REQUIRE(1 == 1);
 }
 
-TEST_CASE("Unpack logging settings", "[basics][logging_utils]")
+TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
 {
     SECTION("Empty settings")
     {
