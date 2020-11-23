@@ -9,6 +9,7 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/clock.h"
 #include "kaacore/easings.h"
 #include "kaacore/node_ptr.h"
 
@@ -24,7 +25,7 @@ struct TransitionStateBase {
 };
 
 struct TransitionTimePoint {
-    double abs_t;
+    Seconds abs_t;
     bool is_backing;
     uint32_t cycle_index;
 };
@@ -37,19 +38,19 @@ struct TransitionWarping {
 
     double duration_factor() const;
     TransitionTimePoint warp_time(
-        const TransitionTimePoint& tp, const double internal_duration) const;
+        const TransitionTimePoint& tp, const Seconds internal_duration) const;
 };
 
 class NodeTransitionBase {
   public:
-    double duration;
-    double internal_duration;
+    Seconds duration;
+    Seconds internal_duration;
 
     TransitionWarping warping;
 
     NodeTransitionBase();
     NodeTransitionBase(
-        const double duration,
+        const Seconds duration,
         const TransitionWarping& warping = TransitionWarping());
 
     virtual std::unique_ptr<TransitionStateBase> prepare_state(
@@ -63,7 +64,7 @@ class NodeTransitionCustomizable : public NodeTransitionBase {
   public:
     NodeTransitionCustomizable();
     NodeTransitionCustomizable(
-        const double duration,
+        const Seconds duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none);
 
@@ -79,12 +80,12 @@ class NodeTransitionCustomizable : public NodeTransitionBase {
 class NodeTransitionsGroupBase : public NodeTransitionBase {
     struct _SubTransition {
         NodeTransitionHandle handle;
-        double starting_time;
-        double ending_time;
+        Seconds starting_time;
+        Seconds ending_time;
 
         _SubTransition(
-            const NodeTransitionHandle& handle, const double starting_time,
-            const double ending_time)
+            const NodeTransitionHandle& handle, const Seconds starting_time,
+            const Seconds ending_time)
             : handle(handle), starting_time(starting_time),
               ending_time(ending_time)
         {}
@@ -121,7 +122,7 @@ class NodeTransitionsParallel : public NodeTransitionsGroupBase {
 
 class NodeTransitionDelay : public NodeTransitionBase {
   public:
-    NodeTransitionDelay(const double duration);
+    NodeTransitionDelay(const Seconds duration);
     void process_time_point(
         TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
@@ -143,7 +144,7 @@ struct NodeTransitionRunner {
     NodeTransitionHandle transition_handle;
     std::unique_ptr<TransitionStateBase> transition_state;
     bool transition_state_prepared = false;
-    uint64_t current_time = 0;
+    Microseconds current_time = 0us;
 
     NodeTransitionRunner(const NodeTransitionHandle& transition);
     ~NodeTransitionRunner() = default;
@@ -156,7 +157,7 @@ struct NodeTransitionRunner {
     NodeTransitionRunner& operator=(const NodeTransitionHandle& transition);
 
     void setup(const NodeTransitionHandle& transition);
-    bool step(NodePtr node, const uint32_t dt);
+    bool step(NodePtr node, const Microseconds dt);
     operator bool() const;
 };
 
@@ -167,7 +168,7 @@ class NodeTransitionsManager {
     std::vector<std::pair<std::string, NodeTransitionHandle>> _enqueued_updates;
     bool _is_processing = false;
 
-    void step(NodePtr node, const uint32_t dt);
+    void step(NodePtr node, const Microseconds dt);
 
   public:
     NodeTransitionHandle get(const std::string& name);

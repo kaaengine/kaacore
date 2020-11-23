@@ -9,6 +9,7 @@
 #include <chipmunk/chipmunk.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/clock.h"
 #include "kaacore/geometry.h"
 #include "kaacore/node_ptr.h"
 #include "kaacore/shapes.h"
@@ -25,7 +26,7 @@ constexpr CollisionBitmask collision_bitmask_none = ~CP_ALL_CATEGORIES;
 
 typedef std::unique_ptr<cpShape, void (*)(cpShape*)> CpShapeUniquePtr;
 
-constexpr uint32_t default_simulation_step_size = 10;
+constexpr Microseconds default_simulation_step_size = 10000us; // 0.01s
 
 class Node;
 class SpaceNode;
@@ -155,10 +156,10 @@ class SpaceNode {
     SpaceNode();
     ~SpaceNode();
 
-    void simulate(uint32_t dt);
+    void simulate(const Microseconds dt);
 
     cpSpace* _cp_space = nullptr;
-    uint32_t _time_acc = 0;
+    Microseconds _time_acc = 0us;
     std::vector<SpacePostStepFunc> _post_step_callbacks;
 
     friend class Node;

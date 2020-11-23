@@ -18,11 +18,11 @@ struct WindowDemoScene : Scene {
         auto circle_node = make_node();
         circle_node->shape(Shape::Circle(49.));
         circle_node->transition(make_node_transition<NodeColorTransition>(
-            glm::dvec4{1., 0.3, 0.3, 0.7}, 1000, TransitionWarping{0, true}));
+            glm::dvec4{1., 0.3, 0.3, 0.7}, 1.s, TransitionWarping{0, true}));
         this->root_node.add_child(circle_node);
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
         for (auto const& event : this->get_events()) {
             if (event.keyboard_key() and event.keyboard_key()->is_key_down()) {

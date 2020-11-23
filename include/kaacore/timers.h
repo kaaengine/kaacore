@@ -1,45 +1,96 @@
 #pragma once
 
-#include <functional>
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <variant>
+#include <vector>
 
-#include <SDL.h>
+#include "kaacore/clock.h"
 
 namespace kaacore {
 
-typedef std::uintptr_t TimerID;
-typedef std::function<void()> TimerCallback;
+using TimerID = uint32_t;
+using TimerCallbackResult = std::variant<bool, Seconds>;
+using TimerCallback = std::function<TimerCallbackResult()>;
 
-extern uint32_t KAACORE_Timer;
-void
-resolve_timer(TimerID timer_id);
-void
-destroy_timers();
+struct _TimerState {
+    // TODO: CHECK IF PYTHON CALLBACK IS COPIED OR MOVED
+    _TimerState(TimerID id, TimerCallback&& callback)
+        : id(id), callback(std::move(callback))
+    {}
+
+    TimerID id;
+    TimerCallback callback;
+    std::atomic<bool> is_running;
+};
+
+class Scene;
+class TimersManager;
 
 class Timer {
   public:
     Timer() = default;
-    Timer(
-        TimerCallback callback, const uint32_t interval = 0,
-        const bool single_shot = true);
-    ~Timer();
+    Timer(TimerCallback callback);
 
-    void start();
-    bool is_running();
+    void start_global(const Seconds interval);
+    void start(const Seconds interval, Scene* const scene);
+    bool is_running() const;
     void stop();
 
-    uint32_t interval();
-    void interval(const uint32_t value);
-    bool single_shot();
-    void single_shot(const bool value);
+  private:
+    std::shared_ptr<_TimerState> _state;
+
+    void _start(const Seconds interval, TimersManager& manager);
+
+    friend class TimersManager;
+};
+
+class TimersManager {
+  public:
+    void start(const Seconds interval, Timer& timer);
+    void process(const Microseconds dt);
+    TimePoint time_point() const;
 
   private:
-    void _start();
-    void _stop();
+    using _AwaitingState =
+        std::tuple<TimerID, Seconds, std::weak_ptr<_TimerState>>;
+    struct _InvocationInstance {
+        _InvocationInstance(
+            TimerID invocation_id, Seconds interval, TimePoint triggered_at,
+            std::weak_ptr<_TimerState>&& state)
+            : invocation_id(invocation_id), interval(interval),
+              triggered_at(triggered_at), state(state)
+        {}
 
-    bool _single_shot;
-    TimerID _timer_id;
-    uint32_t _interval;
-    TimerCallback _callback;
+        TimerID invocation_id;
+        Seconds interval;
+        TimePoint triggered_at;
+        std::weak_ptr<_TimerState> state;
+
+        inline TimePoint fire_at() const
+        {
+            return this->triggered_at +
+                   std::chrono::duration_cast<Microseconds>(this->interval);
+        }
+    };
+
+    struct _TimersQueue;
+    struct _AwaitingTimersQueue;
+
+    std::mutex _lock;
+    Microseconds _dt_accumulator;
+    struct {
+        bool is_dirty = false;
+        std::vector<_InvocationInstance> data;
+    } _queue;
+    struct {
+        std::atomic<bool> is_dirty = false;
+        std::vector<_AwaitingState> data;
+    } _awaiting_timers;
+
     static inline TimerID _last_timer_id = 0;
 };
 

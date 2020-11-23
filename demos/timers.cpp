@@ -1,3 +1,4 @@
+#include <chrono>
 #include <memory>
 #include <vector>
 
@@ -14,6 +15,7 @@ using namespace kaacore;
 
 struct DemoScene : Scene {
     NodeOwnerPtr node;
+    Seconds duration;
     Timer timer;
 
     DemoScene()
@@ -23,17 +25,17 @@ struct DemoScene : Scene {
         this->node->color({1., 0., 0., 1});
         this->node->shape(Shape::Box({100., 100.}));
         this->root_node.add_child(this->node);
+        this->duration = 1.s;
 
-        this->timer = Timer(
-            [this]() {
-                KAACORE_APP_LOG_INFO("Timer callback called.");
-                this->node->visible(not this->node->visible());
-            },
-            1000, false);
-        this->timer.start();
+        this->timer = Timer([this]() -> TimerCallbackResult {
+            KAACORE_APP_LOG_INFO("Timer callback called.");
+            this->node->visible(not this->node->visible());
+            return true;
+        });
+        this->timer.start(this->duration, this);
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {
@@ -44,7 +46,7 @@ struct DemoScene : Scene {
                         if (this->timer.is_running()) {
                             this->timer.stop();
                         } else {
-                            this->timer.start();
+                            this->timer.start(this->duration, this);
                         }
                     }
                 }

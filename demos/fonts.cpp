@@ -47,21 +47,21 @@ struct DemoFontsScene : Scene {
         this->node_text->transition(make_node_transitions_parallel({
             make_node_transitions_sequence(
                 {make_node_transition<NodePositionTransition>(
-                     glm::dvec2(200., 200.), 2000.),
+                     glm::dvec2(200., 200.), 2.s),
                  make_node_transition<NodePositionTransition>(
-                     glm::dvec2(0., 300.), 2000.),
+                     glm::dvec2(0., 300.), 2.s),
                  make_node_transition<NodeScaleTransition>(
-                     glm::dvec2(1.5, 1.5), 1500.),
+                     glm::dvec2(1.5, 1.5), 1.5s),
                  make_node_transition<NodePositionTransition>(
-                     glm::dvec2(0., -0.), 2000.),
+                     glm::dvec2(0., -0.), 2.s),
                  make_node_transition<NodeTransitionCallback>(
                      [](NodePtr node) { node.destroy(); })}),
             make_node_transition<NodeColorTransition>(
-                glm::dvec4(1., 1., 1., 0.5), 10000.),
+                glm::dvec4(1., 1., 1., 0.5), 10.s),
         }));
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {

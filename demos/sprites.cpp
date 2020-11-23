@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "kaacore/clock.h"
 #include "kaacore/engine.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
@@ -31,13 +32,13 @@ struct SpritesDemoScene : Scene {
         this->animating_node->shape(Shape::Box({3, 3}));
         this->animating_node->transition(
             make_node_transition<NodeSpriteTransition>(
-                frames, 5000., TransitionWarping(0, true)));
+                frames, 5.s, TransitionWarping(0, true)));
         this->root_node.add_child(this->animating_node);
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
-        KAACORE_APP_LOG_DEBUG("DemoScene update {}.", dt);
+        KAACORE_APP_LOG_DEBUG("DemoScene update {}s.", dt.count());
 
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {

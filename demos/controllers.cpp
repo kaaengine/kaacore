@@ -7,7 +7,7 @@ using namespace kaacore;
 
 struct DemoScene : Scene {
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
         for (auto const& event : this->get_events()) {
             auto keyboard_key = event.keyboard_key();

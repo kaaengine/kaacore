@@ -151,9 +151,9 @@ struct DemoScene : Scene {
         this->box->body.angular_velocity(-0.10);
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
-        KAACORE_APP_LOG_DEBUG("DemoScene update, dt: {}ms.", dt);
+        KAACORE_APP_LOG_DEBUG("DemoScene update, dt: {}s.", dt.count());
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {
@@ -187,7 +187,7 @@ struct DemoScene : Scene {
                     std::cout << "Setting objects lifetime" << std::endl;
                     if (not this->balls.empty()) {
                         for (const auto node : this->balls) {
-                            node->lifetime(5000);
+                            node->lifetime(5.s);
                         }
                         this->balls.clear();
                     }
@@ -217,7 +217,7 @@ struct DemoScene : Scene {
                         hit_indicator->position(nearest_neighbor.point);
                         hit_indicator->shape(Shape::Circle(0.1));
                         hit_indicator->color(glm::dvec4(0., 1., 0., 0.4));
-                        hit_indicator->lifetime(1000);
+                        hit_indicator->lifetime(1.s);
                         this->container->add_child(hit_indicator);
                     }
                 }
@@ -237,14 +237,14 @@ struct DemoScene : Scene {
             hit_indicator->position(res.point);
             hit_indicator->shape(Shape::Circle(0.1));
             hit_indicator->color(glm::dvec4(1., 0., 0., 0.4));
-            hit_indicator->lifetime(90);
+            hit_indicator->lifetime(0.09s);
             this->container->add_child(hit_indicator);
 
             auto hit_indicator_normal = make_node();
             hit_indicator_normal->position(res.normal);
             hit_indicator_normal->shape(Shape::Circle(0.1));
             hit_indicator_normal->color(glm::dvec4(1., 1., 0., 0.4));
-            hit_indicator_normal->lifetime(90);
+            hit_indicator_normal->lifetime(0.09s);
             hit_indicator->add_child(hit_indicator_normal);
         }
     }

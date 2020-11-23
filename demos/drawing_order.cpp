@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/clock.h"
 #include "kaacore/engine.h"
 #include "kaacore/input.h"
 #include "kaacore/log.h"
@@ -42,7 +43,7 @@ struct DemoScene : Scene {
         }
     }
 
-    void update(uint32_t dt) override {}
+    void update(Seconds dt) override {}
 };
 
 extern "C" int

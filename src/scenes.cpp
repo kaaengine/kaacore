@@ -38,7 +38,7 @@ Scene::camera()
 }
 
 void
-Scene::process_physics(uint32_t dt)
+Scene::process_physics(const Microseconds dt)
 {
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
@@ -46,7 +46,7 @@ Scene::process_physics(uint32_t dt)
 }
 
 void
-Scene::process_nodes(uint32_t dt)
+Scene::process_nodes(const Microseconds dt)
 {
     static std::deque<Node*> processing_queue;
     processing_queue.clear();
@@ -61,8 +61,8 @@ Scene::process_nodes(uint32_t dt)
             continue;
         }
 
-        if (node->_lifetime) {
-            if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0) {
+        if (node->_lifetime > 0us) {
+            if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0us) {
                 // ensure that node is cleaned-up before deletion
                 if (not node->_marked_to_delete) {
                     node->_mark_to_delete();
@@ -187,7 +187,7 @@ Scene::on_enter()
 {}
 
 void
-Scene::update(uint32_t dt)
+Scene::update(const Seconds dt)
 {}
 
 void

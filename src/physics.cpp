@@ -204,7 +204,6 @@ SpaceNode::SpaceNode()
         "Creating space node {} (cpSpace: {})", fmt::ptr(container_node(this)),
         fmt::ptr(this->_cp_space));
     cpSpaceSetUserData(this->_cp_space, this);
-    this->_time_acc = 0;
 }
 
 void
@@ -264,14 +263,18 @@ SpaceNode::add_post_step_callback(const SpacePostStepFunc& func)
 }
 
 void
-SpaceNode::simulate(const uint32_t dt)
+SpaceNode::simulate(const Microseconds dt)
 {
     ASSERT_VALID_SPACE_NODE(this);
     KAACORE_LOG_TRACE(
-        "Simulating SpaceNode({}) physics, dt = {}", fmt::ptr(this), dt);
-    uint32_t time_left = dt + this->_time_acc;
+        "Simulating SpaceNode({}) physics, dt = {}", fmt::ptr(this),
+        dt.count());
+    auto time_left = dt + this->_time_acc;
     while (time_left > default_simulation_step_size) {
-        cpSpaceStep(this->_cp_space, 0.001 * default_simulation_step_size);
+        cpSpaceStep(
+            this->_cp_space,
+            std::chrono::duration_cast<Seconds>(default_simulation_step_size)
+                .count());
         time_left -= default_simulation_step_size;
     }
     this->_time_acc = time_left;

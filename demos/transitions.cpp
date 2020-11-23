@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include "kaacore/clock.h"
 #include "kaacore/engine.h"
 #include "kaacore/node_transitions.h"
 #include "kaacore/nodes.h"
@@ -17,7 +18,7 @@ struct TransitionsDemoScene : Scene {
     {
         this->camera().position({0., 0.});
 
-        const double tr_time = 1500.;
+        const Seconds tr_time = 2.s;
         const std::vector<Shape> shapes = {
             Shape::Circle(2.5), Shape::Box({4., 4.}),
             Shape::Polygon({{-2., -2.}, {2., -2.}, {-2., 2.}})};
@@ -35,7 +36,7 @@ struct TransitionsDemoScene : Scene {
                          tr_time, TransitionWarping{}, Easing::back_in_out),
                      make_node_transition<NodeColorTransition>(
                          glm::dvec4(0., 1., 0., 1.),
-                         AttributeTransitionMethod::set, 0.,
+                         AttributeTransitionMethod::set, 0.s,
                          TransitionWarping{}),
                      make_node_transition<NodePositionTransition>(
                          glm::dvec2(-25., 0.), AttributeTransitionMethod::add,
@@ -81,7 +82,7 @@ struct TransitionsDemoScene : Scene {
         }
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
         for (auto const& event : this->get_events()) {
             auto keyboard_key = event.keyboard_key();

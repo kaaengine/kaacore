@@ -99,9 +99,9 @@ struct DemoScene : Scene {
         this->root_node.add_child(this->container_node);
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
-        KAACORE_APP_LOG_DEBUG("DemoScene update {}.", dt);
+        KAACORE_APP_LOG_DEBUG("DemoScene update {}s.", dt.count());
         auto texture = get_engine()->renderer->default_texture;
 
         for (auto const& event : this->get_events()) {

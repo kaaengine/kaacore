@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include "kaacore/clock.h"
 #include "kaacore/engine.h"
 #include "kaacore/geometry.h"
 #include "kaacore/node_transitions.h"
@@ -21,11 +22,11 @@ struct SpatialIndexingDemoScene : Scene {
 
         const auto movement_transition =
             make_node_transition<NodePositionTransition>(
-                glm::dvec2(100, 30), AttributeTransitionMethod::add, 10000.,
+                glm::dvec2(100, 30), AttributeTransitionMethod::add, 10.s,
                 TransitionWarping(0, true));
         const auto scaling_transition =
             make_node_transition<NodeScaleTransition>(
-                glm::dvec2(3.0, 3.5), AttributeTransitionMethod::set, 13000.,
+                glm::dvec2(3.0, 3.5), AttributeTransitionMethod::set, 13.s,
                 TransitionWarping(0, true));
 
         const std::vector<Shape> shapes{Shape::Circle(3.5),
@@ -58,7 +59,7 @@ struct SpatialIndexingDemoScene : Scene {
         }
     }
 
-    void update(uint32_t dt) override
+    void update(const Seconds dt) override
     {
         for (auto const& event : this->get_events()) {
             auto keyboard_key = event.keyboard_key();
