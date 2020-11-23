@@ -359,7 +359,6 @@ enum class EventType {
     channel_finished,
 
     // Private custom events
-    // _timer_fired,
     _sentinel,
 };
 

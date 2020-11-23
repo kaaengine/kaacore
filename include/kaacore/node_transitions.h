@@ -68,9 +68,6 @@ calculate_attribute_advancement(
             return origin_value + advance_value;
         case AttributeTransitionMethod::multiply:
             return origin_value * advance_value;
-        default:
-            return advance_value;
-
     }
 }
 
