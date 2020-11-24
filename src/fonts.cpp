@@ -332,8 +332,8 @@ Font::operator==(const Font& other)
 Font&
 get_default_font()
 {
-    static auto file_pair =
-        get_embedded_file_content("embedded_resources/font_munro/munro.ttf");
+    static auto file_pair = get_embedded_file_content(
+        embedded_assets_filesystem, "embedded_resources/font_munro/munro.ttf");
     static Font default_font{
         FontData::load_from_memory(file_pair.first, file_pair.second)};
     return default_font;
