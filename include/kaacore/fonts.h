@@ -29,6 +29,16 @@ const size_t font_baker_pixel_height = 80;
 const size_t font_baker_first_glyph = 32;
 const size_t font_baker_glyphs_count = 96;
 
+// padding field added around glyph
+const int font_sdf_padding = 5;
+
+// value of SDF exactly on glyphs edge
+const int font_sdf_edge_value = 180;
+
+// how much field value increases/decreases over 1 pixel
+const float font_sdf_pixel_dist_scale =
+    font_sdf_edge_value / double(font_sdf_padding);
+
 struct FontRenderGlyph {
     uint32_t character;
     glm::dvec2 offset;

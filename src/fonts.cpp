@@ -33,8 +33,9 @@ struct RasterizedSDFBitmap {
           offset({0, 0})
     {
         auto raw_data = stbtt_GetCodepointSDF(
-            &font_info, scale, codepoint, 5, 180, 36.0f, &dimensions.x,
-            &dimensions.y, &offset.x, &offset.y);
+            &font_info, scale, codepoint, font_sdf_padding, font_sdf_edge_value,
+            font_sdf_pixel_dist_scale, &dimensions.x, &dimensions.y, &offset.x,
+            &offset.y);
         this->data = {raw_data, [](unsigned char* sdf_data) {
                           stbtt_FreeSDF(sdf_data, nullptr);
                       }};
@@ -64,50 +65,6 @@ uninitialize_fonts()
     if (default_font._font_data->is_initialized) {
         default_font._font_data->_uninitialize();
     }
-}
-
-std::pair<bimg::ImageContainer*, BakedFontData>
-bake_font_texture_legacy(const uint8_t* font_file_content, const size_t size)
-{
-    if (memcmp(
-            font_file_content, "\x00\x01\x00\x00\x00", size >= 5 ? 5 : size) !=
-        0) {
-        throw kaacore::exception(
-            "Provided file is not TTF - magic number mismatched.");
-    }
-    std::vector<uint8_t> pixels_single;
-    pixels_single.resize(font_baker_texture_size * font_baker_texture_size);
-    stbtt_pack_context pack_ctx;
-    BakedFontData baked_font_data;
-    baked_font_data.resize(font_baker_glyphs_count);
-
-    stbtt_PackBegin(
-        &pack_ctx, pixels_single.data(), font_baker_texture_size,
-        font_baker_texture_size, 0, 1, nullptr);
-    stbtt_PackFontRange(
-        &pack_ctx, font_file_content, 0, font_baker_pixel_height,
-        font_baker_first_glyph, font_baker_glyphs_count,
-        baked_font_data.data());
-    stbtt_PackEnd(&pack_ctx);
-
-    std::vector<uint8_t> pixels_rgba(pixels_single.size() * 4);
-    for (size_t i = 0; i < pixels_single.size(); i++) {
-        const uint8_t& px_src = pixels_single[i];
-        uint8_t& px_dst_r = pixels_rgba[(i * 4) + 0];
-        uint8_t& px_dst_g = pixels_rgba[(i * 4) + 1];
-        uint8_t& px_dst_b = pixels_rgba[(i * 4) + 2];
-        uint8_t& px_dst_a = pixels_rgba[(i * 4) + 3];
-        px_dst_r = px_src;
-        px_dst_g = px_src;
-        px_dst_b = px_src;
-        px_dst_a = px_src;
-    }
-
-    bimg::ImageContainer* baked_font_image = load_raw_image(
-        bimg::TextureFormat::Enum::RGBA8, font_baker_texture_size,
-        font_baker_texture_size, pixels_rgba);
-
-    return std::make_pair(baked_font_image, baked_font_data);
 }
 
 std::pair<bimg::ImageContainer*, BakedFontData>
