@@ -124,18 +124,10 @@ TimersManager::process(const Microseconds dt)
             continue;
         }
 
-        Seconds next_interval;
-        auto result = state->callback();
-        if (std::holds_alternative<bool>(result)) {
-            if (std::get<bool>(result)) {
-                next_interval = it->interval;
-            } else {
-                this->_queue.data.pop_back();
-                continue;
-            }
-        } else {
-            next_interval = std::get<Seconds>(result);
-            _validate_interval(next_interval);
+        auto next_interval = state->callback(it->interval);
+        if (not (next_interval > 0.s)) {
+            this->_queue.data.pop_back();
+            continue;
         }
 
         it->triggered_at = now;

@@ -5,7 +5,6 @@
 #include <memory>
 #include <mutex>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "kaacore/clock.h"
@@ -13,8 +12,7 @@
 namespace kaacore {
 
 using TimerID = uint32_t;
-using TimerCallbackResult = std::variant<bool, Seconds>;
-using TimerCallback = std::function<TimerCallbackResult()>;
+using TimerCallback = std::function<Seconds(Seconds interval)>;
 
 struct _TimerState {
     // TODO: CHECK IF PYTHON CALLBACK IS COPIED OR MOVED

@@ -27,10 +27,10 @@ struct DemoScene : Scene {
         this->root_node.add_child(this->node);
         this->duration = 1.s;
 
-        this->timer = Timer([this]() -> TimerCallbackResult {
+        this->timer = Timer([this](Seconds interval) {
             KAACORE_APP_LOG_INFO("Timer callback called.");
             this->node->visible(not this->node->visible());
-            return true;
+            return interval;
         });
         this->timer.start(this->duration, this);
     }
