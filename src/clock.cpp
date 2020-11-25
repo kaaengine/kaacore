@@ -6,7 +6,7 @@ namespace kaacore {
 
 _DurationRingBuffer::_DurationRingBuffer(size_t size) : _size(size), _cursor(0)
 {
-    this->_data.reserve(size);
+    this->_data.resize(size, 0us);
 }
 
 void
@@ -18,10 +18,6 @@ _DurationRingBuffer::reset()
 void
 _DurationRingBuffer::push(const Microseconds duration)
 {
-    if (this->_data.size() < this->_size) {
-        this->_data.push_back(duration);
-        return;
-    }
     this->_cursor %= this->_size;
     this->_data[this->_cursor++] = duration;
 }
@@ -29,9 +25,6 @@ _DurationRingBuffer::push(const Microseconds duration)
 Microseconds
 _DurationRingBuffer::average() const
 {
-    if (not this->_data.size()) {
-        return 0us;
-    }
     auto sum = std::accumulate(this->_data.begin(), this->_data.end(), 0us);
     return sum / this->_data.size();
 }

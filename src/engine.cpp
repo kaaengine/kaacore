@@ -211,7 +211,11 @@ Engine::time_scale(const double scale)
 uint32_t
 Engine::fps() const
 {
-    return 1s / this->clock.average_duration();
+    auto duration = this->clock.average_duration();
+    if (duration > 0us) {
+        return 1s / duration;
+    }
+    return 0;
 }
 
 bgfx::Init
@@ -252,7 +256,7 @@ Engine::_scene_processing()
         this->_scene->on_enter();
         this->clock.touch();
         while (this->is_running) {
-            Seconds dt_sec = this->clock.measure();
+            Microseconds dt_sec = this->clock.measure();
             Microseconds dt = std::chrono::duration_cast<Microseconds>(
                 dt_sec * this->_time_scale);
             this->renderer->begin_frame();
