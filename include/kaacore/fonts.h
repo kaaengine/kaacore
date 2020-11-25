@@ -22,11 +22,15 @@ void
 uninitialize_fonts();
 
 typedef std::vector<stbtt_packedchar> BakedFontData;
+typedef uint32_t UnicodeCodepoint;
 
-const size_t font_baker_texture_size = 2048;
-const double font_baker_inverted_texture_size = 1. / font_baker_texture_size;
+// width of created font atlas texture
+const size_t font_baker_texture_width = 2048;
+// max height of created font atlas texture,
+// it will be trimmed to optimal after completion
+const size_t font_baker_texture_max_height = 10240;
 const size_t font_baker_pixel_height = 80;
-const size_t font_baker_first_glyph = 32;
+const UnicodeCodepoint font_baker_first_glyph = 32;
 const size_t font_baker_glyphs_count = 96;
 
 // padding field added around glyph
@@ -40,7 +44,7 @@ const float font_sdf_pixel_dist_scale =
     font_sdf_edge_value / double(font_sdf_padding);
 
 struct FontRenderGlyph {
-    uint32_t character;
+    UnicodeCodepoint codepoint;
     glm::dvec2 offset;
     glm::dvec2 size;
     glm::dvec2 position;
@@ -49,9 +53,11 @@ struct FontRenderGlyph {
     double advance;
 
     FontRenderGlyph(
-        uint32_t character, stbtt_packedchar glyph_data, double scale_factor);
+        UnicodeCodepoint codepoint, stbtt_packedchar glyph_data,
+        double scale_factor, const glm::dvec2 inv_texture_size);
     FontRenderGlyph(
-        uint32_t character, stbtt_packedchar glyph_data, double scale_factor,
+        UnicodeCodepoint codepoint, stbtt_packedchar glyph_data,
+        double scale_factor, const glm::dvec2 inv_texture_size,
         const FontRenderGlyph& other_glyph);
 
     static void arrange_glyphs(

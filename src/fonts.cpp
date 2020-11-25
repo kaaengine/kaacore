@@ -20,17 +20,19 @@ namespace kaacore {
 ResourcesRegistry<std::string, FontData> _fonts_registry;
 
 // SDF rasterization helper struct
-struct RasterizedSDFBitmap {
-    uint32_t codepoint;
+struct GlyphSDF {
+    UnicodeCodepoint codepoint;
     glm::ivec2 dimensions;
     glm::ivec2 offset;
+    double scale;
     std::unique_ptr<unsigned char[], std::function<void(unsigned char*)>> data;
     BitmapView<> bitmap_view;
 
-    RasterizedSDFBitmap(
-        stbtt_fontinfo& font_info, const uint32_t codepoint, const double scale)
+    GlyphSDF(
+        const stbtt_fontinfo& font_info, const UnicodeCodepoint codepoint,
+        const double scale)
         : codepoint(codepoint), data(nullptr), dimensions({0, 0}),
-          offset({0, 0})
+          offset({0, 0}), scale(scale)
     {
         auto raw_data = stbtt_GetCodepointSDF(
             &font_info, scale, codepoint, font_sdf_padding, font_sdf_edge_value,
@@ -67,82 +69,89 @@ uninitialize_fonts()
     }
 }
 
-std::pair<bimg::ImageContainer*, BakedFontData>
-_pack_and_bake_sdf_glyphs(
-    const uint8_t* font_file_content, const double font_baking_size,
-    const uint32_t first_glyph_index, const uint32_t glyphs_count)
+std::vector<GlyphSDF>
+_rasterize_sdf_bitmaps(
+    const stbtt_fontinfo& font_info, const double font_baking_size,
+    const UnicodeCodepoint first_glyph_index, const size_t glyphs_count)
 {
-    BakedFontData baked_font_data;
-    baked_font_data.reserve(glyphs_count);
-
-    stbtt_fontinfo font_info;
-    font_info.userdata = nullptr;
-    stbtt_InitFont(
-        &font_info, font_file_content,
-        stbtt_GetFontOffsetForIndex(font_file_content, 0));
+    std::vector<GlyphSDF> sdfs;
     const double font_specific_scale =
         stbtt_ScaleForPixelHeight(&font_info, font_baking_size);
 
-    std::vector<RasterizedSDFBitmap> sdfs;
-    for (uint32_t character = first_glyph_index;
-         character < (first_glyph_index + glyphs_count); character++) {
-        auto& sdf_bitmap =
-            sdfs.emplace_back(font_info, character, font_specific_scale);
+    for (UnicodeCodepoint codepoint = first_glyph_index;
+         codepoint < (first_glyph_index + glyphs_count); codepoint++) {
+        auto& sdf =
+            sdfs.emplace_back(font_info, codepoint, font_specific_scale);
         KAACORE_LOG_TRACE(
             "Generated SDF glyph for character: #{}, dimensions: ({}, {}), "
             "offset: ({}, {})",
-            character, sdf_bitmap.dimensions.x, sdf_bitmap.dimensions.y,
-            sdf_bitmap.offset.x, sdf_bitmap.offset.y);
+            codepoint, sdf.dimensions.x, sdf.dimensions.y, sdf.offset.x,
+            sdf.offset.y);
     }
 
+    return std::move(sdfs);
+}
+
+std::pair<bimg::ImageContainer*, BakedFontData>
+_pack_sdf_glyphs(
+    const stbtt_fontinfo& font_info, const std::vector<GlyphSDF>& sdfs)
+{
+    BakedFontData baked_font_data;
     std::vector<stbrp_rect> rects;
+    baked_font_data.reserve(sdfs.size());
     rects.reserve(sdfs.size());
 
-    for (const auto& sdf_bitmap : sdfs) {
+    for (const auto& sdf : sdfs) {
         auto& rect = rects.emplace_back();
-        rect.w = sdf_bitmap.dimensions.x;
-        rect.h = sdf_bitmap.dimensions.y;
+        rect.w = sdf.dimensions.x;
+        rect.h = sdf.dimensions.y;
     }
 
     stbtt_pack_context pack_ctx;
     stbtt_PackBegin(
-        &pack_ctx, nullptr, font_baker_texture_size, font_baker_texture_size, 0,
-        1, nullptr);
+        &pack_ctx, nullptr, font_baker_texture_width,
+        font_baker_texture_max_height, 0, 1, nullptr);
     stbtt_PackFontRangesPackRects(&pack_ctx, rects.data(), rects.size());
     stbtt_PackEnd(&pack_ctx);
 
-    Bitmap atlas_bitmap{{font_baker_texture_size, font_baker_texture_size}};
+    auto lowest_rect = *std::max_element(
+        rects.begin(), rects.end(),
+        [](const auto& a, const auto& b) { return a.y + a.h < b.y + b.h; });
+    auto actual_texture_height = lowest_rect.y + lowest_rect.h;
+    KAACORE_LOG_DEBUG(
+        "Generated font atlas size: ({}, {})", font_baker_texture_width,
+        actual_texture_height);
+    Bitmap atlas_bitmap{{font_baker_texture_width, actual_texture_height}};
 
     for (int i = 0; i < sdfs.size(); i++) {
         auto& rect = rects[i];
-        auto& sdf_gen = sdfs[i];
+        auto& sdf = sdfs[i];
 
         int horizontal_advance, left_side_bearing;
         stbtt_GetCodepointHMetrics(
-            &font_info, sdf_gen.codepoint, &horizontal_advance,
-            &left_side_bearing);
+            &font_info, sdf.codepoint, &horizontal_advance, &left_side_bearing);
 
         stbtt_packedchar glyph_data;
         glyph_data.x0 = rect.x;
         glyph_data.y0 = rect.y;
         glyph_data.x1 = rect.x + rect.w;
         glyph_data.y1 = rect.y + rect.h;
-        glyph_data.xoff = sdf_gen.offset.x;
-        glyph_data.yoff = sdf_gen.offset.y;
-        glyph_data.xoff2 = sdf_gen.offset.x + rect.w;
-        glyph_data.yoff2 = sdf_gen.offset.y + rect.h;
-        glyph_data.xadvance = horizontal_advance * font_specific_scale;
+        glyph_data.xoff = sdf.offset.x;
+        glyph_data.yoff = sdf.offset.y;
+        glyph_data.xoff2 = sdf.offset.x + rect.w;
+        glyph_data.yoff2 = sdf.offset.y + rect.h;
+        glyph_data.xadvance = horizontal_advance * sdf.scale;
 
         baked_font_data.push_back(glyph_data);
 
-        if (sdf_gen) {
-            atlas_bitmap.blit(sdfs[i].bitmap_view, {rect.x, rect.y});
+        if (sdf) {
+            atlas_bitmap.blit(sdf.bitmap_view, {rect.x, rect.y});
         }
     }
 
     bimg::ImageContainer* baked_font_image = load_raw_image(
-        bimg::TextureFormat::Enum::R8, font_baker_texture_size,
-        font_baker_texture_size, atlas_bitmap.container);
+        bimg::TextureFormat::Enum::R8, atlas_bitmap.dimensions.x,
+        atlas_bitmap.dimensions.y, atlas_bitmap.container);
 
     return {baked_font_image, baked_font_data};
 }
@@ -156,9 +165,17 @@ bake_font_texture(const uint8_t* font_file_content, const size_t size)
         throw kaacore::exception(
             "Provided file is not TTF - magic number mismatched.");
     }
-    return _pack_and_bake_sdf_glyphs(
-        font_file_content, font_baker_pixel_height, font_baker_first_glyph,
+
+    stbtt_fontinfo font_info;
+    font_info.userdata = nullptr;
+    stbtt_InitFont(
+        &font_info, font_file_content,
+        stbtt_GetFontOffsetForIndex(font_file_content, 0));
+
+    auto sdf_bitmaps = _rasterize_sdf_bitmaps(
+        font_info, font_baker_pixel_height, font_baker_first_glyph,
         font_baker_glyphs_count);
+    return _pack_sdf_glyphs(font_info, sdf_bitmaps);
 }
 
 std::pair<bimg::ImageContainer*, BakedFontData>
@@ -169,8 +186,9 @@ bake_font_texture(const RawFile& font_file)
 }
 
 FontRenderGlyph::FontRenderGlyph(
-    uint32_t character, stbtt_packedchar glyph_data, double scale_factor)
-    : character(character), position(0., 0.)
+    UnicodeCodepoint codepoint, stbtt_packedchar glyph_data,
+    double scale_factor, const glm::dvec2 inv_texture_size)
+    : codepoint(codepoint), position(0., 0.)
 {
     this->offset = glm::dvec2(glyph_data.xoff, glyph_data.yoff) * scale_factor;
     this->size = glm::dvec2(
@@ -179,16 +197,17 @@ FontRenderGlyph::FontRenderGlyph(
                  scale_factor;
     this->advance = glyph_data.xadvance * scale_factor;
 
-    this->texture_uv0 = glm::dvec2(glyph_data.x0, glyph_data.y0) *
-                        font_baker_inverted_texture_size;
-    this->texture_uv1 = glm::dvec2(glyph_data.x1, glyph_data.y1) *
-                        font_baker_inverted_texture_size;
+    this->texture_uv0 =
+        glm::dvec2(glyph_data.x0, glyph_data.y0) * inv_texture_size;
+    this->texture_uv1 =
+        glm::dvec2(glyph_data.x1, glyph_data.y1) * inv_texture_size;
 }
 
 FontRenderGlyph::FontRenderGlyph(
-    uint32_t character, stbtt_packedchar glyph_data, double scale_factor,
+    UnicodeCodepoint codepoint, stbtt_packedchar glyph_data,
+    double scale_factor, const glm::dvec2 inv_texture_size,
     const FontRenderGlyph& other_glyph)
-    : FontRenderGlyph(character, glyph_data, scale_factor)
+    : FontRenderGlyph(codepoint, glyph_data, scale_factor, inv_texture_size)
 {
     this->position.x = other_glyph.position.x + other_glyph.advance;
 }
@@ -202,13 +221,13 @@ FontRenderGlyph::arrange_glyphs(
     std::vector<FontRenderGlyph>::iterator word_start = render_glyphs.begin();
 
     for (auto it = word_start; it != render_glyphs.end(); it++) {
-        if (it->character == static_cast<uint32_t>(' ')) {
+        if (it->codepoint == static_cast<UnicodeCodepoint>(' ')) {
             word_start = it + 1;
             if (current_pos.x == 0.) {
                 continue;
             }
         }
-        if (it->character == static_cast<uint32_t>('\n')) {
+        if (it->codepoint == static_cast<UnicodeCodepoint>('\n')) {
             word_start = it + 1;
             current_pos.x = 0.;
             current_pos.y += line_height;
@@ -219,7 +238,7 @@ FontRenderGlyph::arrange_glyphs(
 
         if (current_pos.x > line_width and
             ((it + 1) == render_glyphs.end() or
-             (it + 1)->character == static_cast<uint32_t>(' '))) {
+             (it + 1)->codepoint == static_cast<UnicodeCodepoint>(' '))) {
             current_pos.x = 0.;
             current_pos.y += line_height;
 
@@ -345,27 +364,35 @@ FontData::generate_render_glyphs(
 {
     std::vector<FontRenderGlyph> render_glyphs;
     const double scale_factor = pixel_height / font_baker_pixel_height;
+    const glm::dvec2 inv_texture_size = {
+        1. / this->baked_texture->get_dimensions().x,
+        1. / this->baked_texture->get_dimensions().y};
 
     for (const auto ch : text) {
-        uint32_t ch_value;
+        UnicodeCodepoint ch_value;
         if (ch == '\n') {
-            ch_value = static_cast<uint32_t>(' ') - font_baker_first_glyph;
+            ch_value =
+                static_cast<UnicodeCodepoint>(' ') - font_baker_first_glyph;
         } else {
-            ch_value = static_cast<uint32_t>(ch) - font_baker_first_glyph;
+            ch_value =
+                static_cast<UnicodeCodepoint>(ch) - font_baker_first_glyph;
         }
 
         if (ch_value > font_baker_glyphs_count) {
             KAACORE_LOG_WARN("Unhadled font character: {}", ch_value);
-            ch_value = static_cast<uint32_t>('?') - font_baker_first_glyph;
+            ch_value =
+                static_cast<UnicodeCodepoint>('?') - font_baker_first_glyph;
         }
 
         auto glyph_data = this->baked_font.at(ch_value);
 
         if (not render_glyphs.empty()) {
             render_glyphs.emplace_back(
-                ch, glyph_data, scale_factor, render_glyphs.back());
+                ch, glyph_data, scale_factor, inv_texture_size,
+                render_glyphs.back());
         } else {
-            render_glyphs.emplace_back(ch, glyph_data, scale_factor);
+            render_glyphs.emplace_back(
+                ch, glyph_data, scale_factor, inv_texture_size);
         }
     }
 

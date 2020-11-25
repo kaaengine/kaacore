@@ -58,7 +58,7 @@ struct DemoFontsScene : Scene {
                  make_node_transition<NodePositionTransition>(
                      glm::dvec2(0., -0.), 2000.)}),
             make_node_transition<NodeColorTransition>(
-                glm::dvec4(1., 1., 1., 0.5), 10000.),
+                glm::dvec4(1., 1., 1., 1.), 10000.),
         }));
     }
 
