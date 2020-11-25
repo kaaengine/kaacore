@@ -9,13 +9,9 @@
 
 namespace kaacore {
 
-inline void
-_validate_interval(const Seconds interval)
-{
-    KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
-    KAACORE_CHECK(
-        not std::isinf(interval.count()), "Timer interval must not infinity.");
-}
+_TimerState::_TimerState(TimerID id, TimerCallback&& callback)
+    : id(id), callback(std::move(callback))
+{}
 
 Timer::Timer(TimerCallback callback)
 {
@@ -38,7 +34,9 @@ Timer::start_global(const Seconds interval)
 void
 Timer::_start(const Seconds interval, TimersManager& manager)
 {
-    _validate_interval(interval);
+    KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
+    KAACORE_CHECK(
+        not std::isinf(interval.count()), "Timer interval must not infinity.");
     if (this->is_running()) {
         this->stop();
     }
@@ -56,6 +54,13 @@ Timer::stop()
 {
     this->_state->is_running.store(false, std::memory_order_release);
 }
+
+TimersManager::_InvocationInstance::_InvocationInstance(
+    TimerID invocation_id, Seconds interval, TimePoint triggered_at,
+    std::weak_ptr<_TimerState>&& state)
+    : invocation_id(invocation_id), interval(interval),
+      triggered_at(triggered_at), state(state)
+{}
 
 void
 TimersManager::start(const Seconds interval, Timer& timer)
@@ -125,7 +130,7 @@ TimersManager::process(const Microseconds dt)
         }
 
         auto next_interval = state->callback(it->interval);
-        if (not (next_interval > 0.s)) {
+        if (not(next_interval > 0.s)) {
             this->_queue.data.pop_back();
             continue;
         }

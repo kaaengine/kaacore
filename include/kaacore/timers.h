@@ -16,9 +16,7 @@ using TimerCallback = std::function<Seconds(Seconds interval)>;
 
 struct _TimerState {
     // TODO: CHECK IF PYTHON CALLBACK IS COPIED OR MOVED
-    _TimerState(TimerID id, TimerCallback&& callback)
-        : id(id), callback(std::move(callback))
-    {}
+    _TimerState(TimerID id, TimerCallback&& callback);
 
     TimerID id;
     TimerCallback callback;
@@ -55,13 +53,11 @@ class TimersManager {
   private:
     using _AwaitingState =
         std::tuple<TimerID, Seconds, std::weak_ptr<_TimerState>>;
+
     struct _InvocationInstance {
         _InvocationInstance(
             TimerID invocation_id, Seconds interval, TimePoint triggered_at,
-            std::weak_ptr<_TimerState>&& state)
-            : invocation_id(invocation_id), interval(interval),
-              triggered_at(triggered_at), state(state)
-        {}
+            std::weak_ptr<_TimerState>&& state);
 
         TimerID invocation_id;
         Seconds interval;
@@ -74,9 +70,6 @@ class TimersManager {
                    std::chrono::duration_cast<Microseconds>(this->interval);
         }
     };
-
-    struct _TimersQueue;
-    struct _AwaitingTimersQueue;
 
     std::mutex _lock;
     Microseconds _dt_accumulator;
