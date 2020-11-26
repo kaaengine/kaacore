@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,6 +11,7 @@
 #include <bx/file.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/log.h"
 #include "kaacore/resources.h"
 
 namespace kaacore {
@@ -93,11 +95,12 @@ struct BitmapView {
             "Blitting size ({}) would overflow Y dimension ({})",
             source.dimensions.y + target_coords.y, this->dimensions.y);
 
-        for (size_t x = 0; x < source.dimensions.x; x++) {
-            for (size_t y = 0; y < source.dimensions.y; y++) {
-                this->at(target_coords.x + x, target_coords.y + y) =
-                    source.at(x, y);
-            }
+        for (size_t row = 0; row < source.dimensions.y; row++) {
+            std::memcpy(
+                this->content + (this->dimensions.x * (row + target_coords.y)) +
+                    target_coords.x,
+                source.content + (source.dimensions.x * row),
+                sizeof(T) * source.dimensions.x);
         }
     }
 
