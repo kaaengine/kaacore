@@ -196,18 +196,6 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
-double
-Engine::time_scale() const
-{
-    return this->_time_scale;
-}
-
-void
-Engine::time_scale(const double scale)
-{
-    this->_time_scale = scale;
-}
-
 uint32_t
 Engine::fps() const
 {
@@ -254,11 +242,8 @@ Engine::_scene_processing()
     try {
         KAACORE_LOG_INFO("Engine is running.");
         this->_scene->on_enter();
-        this->clock.touch();
         while (this->is_running) {
-            Microseconds dt_sec = this->clock.measure();
-            Microseconds dt = std::chrono::duration_cast<Microseconds>(
-                dt_sec * this->_time_scale);
+            auto dt = this->clock.measure();
             this->renderer->begin_frame();
 #if KAACORE_MULTITHREADING_MODE
             this->_event_processing_state.wait(EventProcessingState::ready);
@@ -267,15 +252,18 @@ Engine::_scene_processing()
             if (this->_next_scene) {
                 this->_swap_scenes();
             }
-            this->_scene->update(dt);
+            Seconds dt_sec = dt * this->_scene->time_scale();
+            auto scaled_dt = std::chrono::duration_cast<Microseconds>(dt_sec);
+            this->_scene->update(dt_sec);
 #if KAACORE_MULTITHREADING_MODE
             this->_event_processing_state.set(EventProcessingState::consumed);
 #endif
             this->_scene->resolve_dirty_nodes();
             this->_scene->process_nodes_drawing();
-            this->_scene->process_physics(dt);
-            this->_scene->process_nodes(dt);
-            this->_process_timers(dt);
+            this->_scene->process_physics(scaled_dt);
+            this->timers.process(dt);
+            this->_scene->timers.process(scaled_dt);
+            this->_scene->process_nodes(scaled_dt);
             this->renderer->end_frame();
         }
         this->_scene->on_exit();
@@ -331,13 +319,6 @@ Engine::_process_events()
     if (peep_status == -1) {
         throw kaacore::exception(SDL_GetError());
     }
-}
-
-void
-Engine::_process_timers(const Microseconds dt)
-{
-    this->timers.process(dt);
-    this->_scene->timers.process(dt);
 }
 
 #if KAACORE_MULTITHREADING_MODE

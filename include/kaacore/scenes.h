@@ -33,6 +33,8 @@ class Scene {
     void process_nodes_drawing();
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
+    double time_scale() const;
+    void time_scale(const double scale);
 
     virtual void on_attach();
     virtual void on_enter();
@@ -41,6 +43,9 @@ class Scene {
     virtual void on_detach();
 
     const std::vector<Event>& get_events() const;
+
+  private:
+    double _time_scale = 1.;
 };
 
 } // namespace kaacore

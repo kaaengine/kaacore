@@ -11,9 +11,9 @@ using Microseconds = std::chrono::microseconds;
 using DefaultClock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<DefaultClock, Microseconds>;
 
-class _DurationRingBuffer {
+class DurationRingBuffer {
   public:
-    _DurationRingBuffer(size_t size = 10);
+    DurationRingBuffer(size_t size = 10);
     void reset();
     void push(Microseconds duration);
     Microseconds average() const;
@@ -35,7 +35,7 @@ class Clock {
 
   private:
     TimePoint _last_measurement;
-    _DurationRingBuffer _buffer;
+    DurationRingBuffer _buffer;
 };
 
 }

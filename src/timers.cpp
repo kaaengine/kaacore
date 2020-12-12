@@ -55,6 +55,10 @@ Timer::stop()
     this->_state->is_running.store(false, std::memory_order_release);
 }
 
+TimersManager::TimersManager() : _scene(nullptr) {}
+
+TimersManager::TimersManager(Scene* const scene) : _scene(scene) {}
+
 TimersManager::_InvocationInstance::_InvocationInstance(
     TimerID invocation_id, Seconds interval, TimePoint triggered_at,
     std::weak_ptr<_TimerState>&& state)
@@ -129,7 +133,8 @@ TimersManager::process(const Microseconds dt)
             continue;
         }
 
-        auto next_interval = state->callback(it->interval);
+        struct TimerContext context = {it->interval, this->_scene};
+        auto next_interval = state->callback(context);
         if (not(next_interval > 0.s)) {
             this->_queue.data.pop_back();
             continue;

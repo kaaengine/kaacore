@@ -51,7 +51,8 @@ struct StandardVertexData {
     }
 };
 
-struct Renderer {
+class Renderer {
+  public:
     bgfx::VertexLayout vertex_layout;
 
     std::unique_ptr<Image> default_image;

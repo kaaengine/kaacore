@@ -216,7 +216,7 @@ NodeTransitionsSequence::process_time_point(
             it->state_prepared = true;
         }
 
-        const Seconds sub_abs_t = std::clamp(
+        const Seconds sub_abs_t = std::clamp<Seconds>(
             warped_tp.abs_t - it->starting_abs_t, 0.s, it->handle->duration);
         const TransitionTimePoint sub_tp =
             TransitionTimePoint{sub_abs_t, is_backing};

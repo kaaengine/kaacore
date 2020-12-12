@@ -15,7 +15,7 @@
 
 namespace kaacore {
 
-Scene::Scene()
+Scene::Scene() : timers(this)
 {
     this->root_node._scene = this;
     this->spatial_index.start_tracking(&this->root_node);
@@ -227,6 +227,18 @@ Scene::unregister_simulation(Node* node)
         pos != this->simulations_registry.end(),
         "Can't unregister from simulation, space node not in registry.");
     this->simulations_registry.erase(pos);
+}
+
+double
+Scene::time_scale() const
+{
+    return this->_time_scale;
+}
+
+void
+Scene::time_scale(const double scale)
+{
+    this->_time_scale = scale;
 }
 
 const std::vector<Event>&

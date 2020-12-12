@@ -11,8 +11,13 @@
 
 namespace kaacore {
 
+struct TimerContext {
+    const Seconds interval;
+    Scene* const scene;
+};
+
 using TimerID = uint32_t;
-using TimerCallback = std::function<Seconds(Seconds interval)>;
+using TimerCallback = std::function<Seconds(TimerContext context)>;
 
 struct _TimerState {
     // TODO: CHECK IF PYTHON CALLBACK IS COPIED OR MOVED
@@ -46,6 +51,8 @@ class Timer {
 
 class TimersManager {
   public:
+    TimersManager();
+    TimersManager(Scene* const scene);
     void start(const Seconds interval, Timer& timer);
     void process(const Microseconds dt);
     TimePoint time_point() const;
@@ -72,6 +79,7 @@ class TimersManager {
     };
 
     std::mutex _lock;
+    Scene* const _scene;
     Microseconds _dt_accumulator;
     struct {
         bool is_dirty = false;

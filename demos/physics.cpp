@@ -26,6 +26,7 @@ struct DemoScene : Scene {
     NodeOwnerPtr wall_t;
     NodeOwnerPtr wall_r;
     NodeOwnerPtr wall_b;
+    bool time_scaled = false;
 
     std::vector<NodePtr> balls;
 
@@ -168,6 +169,13 @@ struct DemoScene : Scene {
                 } else if (keyboard_key->key() == Keycode::a) {
                     this->container->position(
                         this->container->position() + glm::dvec2(-0.1, 0.));
+                } else if (keyboard_key->key() == Keycode::t) {
+                    if (this->time_scaled) {
+                        this->time_scale(1.);
+                    } else {
+                        this->time_scale(0.25);
+                    }
+                    this->time_scaled = not this->time_scaled;
                 } else if (keyboard_key->key() == Keycode::s) {
                     this->container->position(
                         this->container->position() + glm::dvec2(0., 0.1));
