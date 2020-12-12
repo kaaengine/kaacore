@@ -24,8 +24,8 @@ initialize_fonts()
 {
     _fonts_registry.initialze();
     auto& default_font = get_default_font();
-    if (not default_font._font_data->is_initialized) {
-        default_font._font_data->_initialize();
+    if (not default_font._font_data.res_ptr.get()->is_initialized) {
+        default_font._font_data.res_ptr.get()->_initialize();
     }
 }
 
@@ -297,8 +297,8 @@ FontData::generate_render_glyphs(
 void
 FontData::_initialize()
 {
-    if (not this->baked_texture->is_initialized) {
-        this->baked_texture->_initialize();
+    if (not this->baked_texture.res_ptr.get()->is_initialized) {
+        this->baked_texture.res_ptr.get()->_initialize();
     }
     this->is_initialized = true;
 }
@@ -306,8 +306,8 @@ FontData::_initialize()
 void
 FontData::_uninitialize()
 {
-    if (this->baked_texture->is_initialized) {
-        this->baked_texture->_uninitialize();
+    if (this->baked_texture.res_ptr.get()->is_initialized) {
+        this->baked_texture.res_ptr.get()->_uninitialize();
     }
     this->is_initialized = false;
 }
