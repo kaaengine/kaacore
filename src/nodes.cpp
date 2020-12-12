@@ -597,7 +597,7 @@ Node::transition(const NodeTransitionHandle& transition)
 Seconds
 Node::lifetime()
 {
-    return std::chrono::duration_cast<Seconds>(this->_lifetime);
+    return this->_lifetime;
 }
 
 void

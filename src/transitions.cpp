@@ -483,8 +483,7 @@ NodeTransitionRunner::step(NodePtr node, const Microseconds dt)
     this->current_time += dt;
     this->transition_handle->process_time_point(
         this->transition_state.get(), node,
-        TransitionTimePoint{
-            std::chrono::duration_cast<Seconds>(this->current_time)});
+        TransitionTimePoint{this->current_time});
     if (this->current_time >= this->transition_handle->duration) {
         return true;
     }

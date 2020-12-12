@@ -76,8 +76,7 @@ TimersManager::start(const Seconds interval, Timer& timer)
         state->id = invocation_id;
         state->is_running.store(true, std::memory_order_release);
         this->_awaiting_timers.data.emplace_back(
-            invocation_id, std::chrono::duration_cast<Microseconds>(interval),
-            state);
+            invocation_id, interval, state);
     }
     this->_awaiting_timers.is_dirty.store(true, std::memory_order_release);
 }
