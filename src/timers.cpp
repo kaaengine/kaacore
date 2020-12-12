@@ -105,7 +105,7 @@ TimersManager::process(const Microseconds dt)
         std::sort(
             this->_queue.data.begin(), this->_queue.data.end(),
             [](const auto& lhs, const auto& rhs) {
-                return lhs.fire_at() > rhs.fire_at();
+                return lhs.fire_at() < rhs.fire_at();
             });
         this->_queue.is_dirty = false;
     }
@@ -117,7 +117,7 @@ TimersManager::process(const Microseconds dt)
             break;
         }
 
-        auto invication_id = it->invocation_id;
+        auto invocation_id = it->invocation_id;
         auto state = it->state.lock();
         if (not state) {
             // timer deleted
@@ -126,7 +126,7 @@ TimersManager::process(const Microseconds dt)
         }
 
         if (not state->is_running.load(std::memory_order_acquire) or
-            state->id != invication_id) {
+            state->id != invocation_id) {
             // timer outdated
             this->_queue.data.pop_back();
             continue;
