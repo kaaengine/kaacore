@@ -373,7 +373,7 @@ NodeTransitionsParallel::process_time_point(
                 }
                 sub_fits = true;
             } else {
-                sub_abs_t = std::clamp(
+                sub_abs_t = std::clamp<Seconds>(
                     warped_tp.abs_t - sub_state.starting_abs_t, 0.s,
                     sub_state.handle->duration);
                 sub_fits =
