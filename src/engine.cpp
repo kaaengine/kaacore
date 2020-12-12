@@ -196,12 +196,12 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
-uint32_t
-Engine::fps() const
+double
+Engine::get_fps() const
 {
     auto duration = this->clock.average_duration();
     if (duration > 0us) {
-        return 1s / duration;
+        return 1.s / duration;
     }
     return 0;
 }

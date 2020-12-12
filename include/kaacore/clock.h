@@ -19,7 +19,7 @@ class DurationRingBuffer {
     Microseconds average() const;
 
   private:
-    uint32_t _size;
+    size_t _size;
     uint32_t _cursor;
     std::vector<Microseconds> _data;
 };

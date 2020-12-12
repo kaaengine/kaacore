@@ -76,7 +76,7 @@ class Engine {
     VirtualResolutionMode virtual_resolution_mode() const;
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
-    uint32_t fps() const;
+    double get_fps() const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 
