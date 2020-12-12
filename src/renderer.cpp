@@ -175,6 +175,7 @@ Renderer::~Renderer()
     // in registry, free them manually
     this->default_program.res_ptr.get()->vertex_shader->_uninitialize();
     this->default_program.res_ptr.get()->fragment_shader->_uninitialize();
+    this->default_program.res_ptr.get()->_uninitialize();
     bgfx::shutdown();
 }
 

@@ -227,7 +227,10 @@ Engine::_gather_platform_data()
     SDL_GetWindowWMInfo(this->window->_window, &wminfo);
 
 #if SDL_VIDEO_DRIVER_X11
-    bgfx_init_data.platformData.ndt = wminfo.info.x11.display;
+    // using sdl's provided ndt pointer might cause
+    // segfault during engine 2nd initialization,
+    // bgfx is capable of querying this info on it's own
+    bgfx_init_data.platformData.ndt = nullptr;
     bgfx_init_data.platformData.nwh =
         reinterpret_cast<void*>(wminfo.info.x11.window);
 #elif SDL_VIDEO_DRIVER_WINDOWS

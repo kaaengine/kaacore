@@ -10,6 +10,7 @@ option(KAACORE_SHARED "Build kaacore-shared" OFF)
 option(KAACORE_BUILD_DEMOS "Build kaacore demos" ON)
 option(KAACORE_BUILD_DEMOS_WITH_TSAN "Build kaacore demos with thread-sanitizer" OFF)
 option(KAACORE_MULTITHREADING_MODE "Build kaacore in multithreading mode" ON)
+option(KAACORE_BUILD_TESTS "Build kaacore tests" ON)
 
 set(KAACORE_MAX_VIEWS 32 CACHE STRING "")
 set(BGFX_MAX_VIEWS 64 CACHE STRING "")
@@ -74,6 +75,11 @@ set_target_properties(
 )
 
 target_link_libraries(kaacore PUBLIC kaacore_embedded_assets)
+
+if (KAACORE_BUILD_TESTS)
+    add_subdirectory(third_party/catch2)
+    add_subdirectory(tests)
+endif()
 
 if (KAACORE_BUILD_DEMOS)
     add_subdirectory(demos)
