@@ -499,6 +499,22 @@ InputManager::MouseManager::get_position() const
 }
 
 bool
+InputManager::MouseManager::cursor_shown() const
+{
+    InputManager* input_manager = container_of(this, &InputManager::mouse);
+    return get_engine()->make_call_from_main_thread<bool>(
+        [input_manager]() { return SDL_ShowCursor(SDL_QUERY); });
+}
+
+void
+InputManager::MouseManager::cursor_shown(const bool shown)
+{
+    InputManager* input_manager = container_of(this, &InputManager::mouse);
+    return get_engine()->make_call_from_main_thread<void>(
+        [input_manager, shown]() { return SDL_ShowCursor(shown); });
+}
+
+bool
 InputManager::MouseManager::relative_mode() const
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
