@@ -499,7 +499,7 @@ InputManager::MouseManager::get_position() const
 }
 
 bool
-InputManager::MouseManager::cursor_shown() const
+InputManager::MouseManager::cursor_visible() const
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
     return get_engine()->make_call_from_main_thread<bool>(
@@ -507,11 +507,11 @@ InputManager::MouseManager::cursor_shown() const
 }
 
 void
-InputManager::MouseManager::cursor_shown(const bool shown)
+InputManager::MouseManager::cursor_visible(const bool visible)
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
     return get_engine()->make_call_from_main_thread<void>(
-        [input_manager, shown]() { return SDL_ShowCursor(shown); });
+        [input_manager, visible]() { return SDL_ShowCursor(visible); });
 }
 
 bool
