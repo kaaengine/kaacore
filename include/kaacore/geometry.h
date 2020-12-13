@@ -164,7 +164,7 @@ struct BoundingBox {
         auto max_x = glm::min<T>(this->max_x, other.max_x);
         auto max_y = glm::min<T>(this->max_y, other.max_y);
 
-        if (min_x > max_y || min_y > max_y) {
+        if (min_x > max_x || min_y > max_y) {
             return BoundingBox<T>();
         }
         return BoundingBox<T>(min_x, min_y, max_x, max_y);
