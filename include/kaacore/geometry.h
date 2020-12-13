@@ -156,7 +156,8 @@ struct BoundingBox {
             this->min_y <= other.max_y and other.min_y <= this->max_y);
     }
 
-    BoundingBox intersection(const BoundingBox<T>& other) {
+    BoundingBox intersection(const BoundingBox<T>& other)
+    {
         auto min_x = glm::max<T>(this->min_x, other.min_x);
         auto min_y = glm::max<T>(this->min_y, other.min_y);
 
