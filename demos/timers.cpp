@@ -13,16 +13,16 @@
 using namespace kaacore;
 
 struct DemoScene : Scene {
-    NodeOwnerPtr node;
+    NodePtr node;
     Timer timer;
 
     DemoScene()
     {
-        this->node = make_node();
-        this->node->position({0, 0});
-        this->node->color({1., 0., 0., 1});
-        this->node->shape(Shape::Box({100., 100.}));
-        this->root_node.add_child(this->node);
+        auto node = make_node();
+        node->position({0, 0});
+        node->color({1., 0., 0., 1});
+        node->shape(Shape::Box({100., 100.}));
+        this->node = this->root_node.add_child(node);
 
         this->timer = Timer(
             [this]() {

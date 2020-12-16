@@ -96,14 +96,18 @@ Node::_mark_ordering_dirty()
 }
 
 void
-Node::_mark_to_delete()
+Node::_mark_to_delete(const bool triggered_internally)
 {
     KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to the tree.");
     this->_marked_to_delete = true;
+
+    if (triggered_internally and this->_node_wrapper) {
+        this->_node_wrapper->on_internal_delete();
+    }
     this->_scene->spatial_index.stop_tracking(this);
     for (auto child : this->_children) {
         if (not child->_marked_to_delete) {
-            child->_mark_to_delete();
+            child->_mark_to_delete(triggered_internally);
         }
     }
 
@@ -194,16 +198,14 @@ Node::_set_rotation(const double rotation)
     this->_rotation = normalized_rotation;
 }
 
-void
-Node::add_child(NodeOwnerPtr& child_node)
+NodePtr
+Node::add_child(NodeOwnerPtr& owned_ptr)
 {
-    KAACORE_CHECK(child_node->_parent == nullptr, "Node has a parent already.");
-    KAACORE_CHECK(
-        child_node._ownership_transferred == false,
-        "Node has a ownership already transferred");
+    KAACORE_CHECK(owned_ptr, "Cannot attach uninitialized/released node.");
+    KAACORE_CHECK(owned_ptr->_parent == nullptr, "Node has a parent already.");
 
+    auto child_node = owned_ptr.release();
     child_node->_parent = this;
-    child_node._ownership_transferred = true;
     this->_children.push_back(child_node.get());
 
     if (child_node->_node_wrapper) {
@@ -233,6 +235,7 @@ Node::add_child(NodeOwnerPtr& child_node)
     };
 
     initialize_node(child_node.get());
+    return child_node;
 }
 
 void
