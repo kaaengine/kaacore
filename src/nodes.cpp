@@ -96,24 +96,24 @@ Node::_mark_ordering_dirty()
 }
 
 void
-Node::_mark_to_delete(const bool triggered_internally)
+Node::_mark_to_delete()
 {
+    if (this->_marked_to_delete) {
+        return;
+    }
     KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to the tree.");
     this->_marked_to_delete = true;
-
-    if (triggered_internally and this->_node_wrapper) {
-        this->_node_wrapper->on_internal_delete();
+    if (this->_node_wrapper) {
+        this->_node_wrapper->on_detach();
     }
     this->_scene->spatial_index.stop_tracking(this);
     for (auto child : this->_children) {
-        if (not child->_marked_to_delete) {
-            child->_mark_to_delete(triggered_internally);
-        }
+        child->_mark_to_delete();
     }
 
     // Physics have side effect if we don't perform
     // deletion immediately, so we give it special
-    // treatment here by dettaching them from simulation.
+    // treatment here by detaching them from simulation.
     if (this->_type == NodeType::body) {
         this->body.detach_from_simulation();
     } else if (this->_type == NodeType::hitbox) {
@@ -221,6 +221,9 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
         n->_scene = this->_scene;
         if (added_to_scene) {
             n->_scene->spatial_index.start_tracking(n);
+            if (n->_node_wrapper) {
+                n->_node_wrapper->on_attach();
+            }
         }
         if (added_to_scene and n->_type == NodeType::space) {
             n->_scene->register_simulation(n);

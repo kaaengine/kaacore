@@ -32,7 +32,8 @@ struct ForeignNodeWrapper {
     virtual ~ForeignNodeWrapper() = default;
 
     virtual void on_add_to_parent() = 0;
-    virtual void on_internal_delete() = 0;
+    virtual void on_attach() = 0;
+    virtual void on_detach() = 0;
 };
 
 struct Scene;
@@ -162,7 +163,7 @@ class Node {
 
     void _mark_dirty();
     void _mark_ordering_dirty();
-    void _mark_to_delete(const bool triggered_internally = false);
+    void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(
         const Node* const ancestor = nullptr) const;

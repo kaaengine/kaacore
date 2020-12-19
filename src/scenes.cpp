@@ -65,7 +65,7 @@ Scene::process_nodes(uint32_t dt)
             if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0) {
                 // ensure that node is cleaned-up before deletion
                 if (not node->_marked_to_delete) {
-                    node->_mark_to_delete(true);
+                    node->_mark_to_delete();
                 }
                 delete node;
                 continue;
