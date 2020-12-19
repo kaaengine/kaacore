@@ -34,8 +34,7 @@ struct DemoFontsScene : Scene {
         background->color({0.5, 0.5, 0.5, 1.});
         background->z_index(-10);
         this->background = root_node.add_child(background);
-        auto font =
-            Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
+        auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
         auto node_text = make_node(NodeType::text);
         node_text->position({200., 0.});
         node_text->text.content(txt_lorem_ipsum);
