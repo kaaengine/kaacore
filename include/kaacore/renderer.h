@@ -58,6 +58,7 @@ struct Renderer {
 
     bgfx::UniformHandle texture_uniform;
     ResourceReference<Program> default_program;
+    ResourceReference<Program> sdf_font_program;
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
@@ -80,7 +81,8 @@ struct Renderer {
         const uint16_t view_index,
         const std::vector<StandardVertexData>& vertices,
         const std::vector<VertexIndex>& indices,
-        const bgfx::TextureHandle texture) const;
+        const bgfx::TextureHandle texture,
+        const ResourceReference<Program>& program) const;
 
   private:
     uint32_t _reset_flags = BGFX_RESET_VSYNC;
