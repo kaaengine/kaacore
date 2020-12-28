@@ -12,8 +12,8 @@
 namespace kaacore {
 
 struct TimerContext {
-    const Seconds interval;
-    Scene* const scene;
+    Seconds interval;
+    Scene* scene;
 };
 
 using TimerID = uint32_t;
