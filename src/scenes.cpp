@@ -171,9 +171,19 @@ Scene::process_nodes_drawing()
             [this, &renderer, &node](int16_t z_index) {
                 auto& view = this->views[z_index];
 
-                renderer->render_vertices(
-                    view.internal_index(), node->_render_data.computed_vertices,
-                    node->_shape.indices, node->_render_data.texture_handle);
+                if (node->type() == NodeType::text) {
+                    renderer->render_vertices(
+                        view.internal_index(),
+                        node->_render_data.computed_vertices,
+                        node->_shape.indices, node->_render_data.texture_handle,
+                        renderer->sdf_font_program);
+                } else {
+                    renderer->render_vertices(
+                        view.internal_index(),
+                        node->_render_data.computed_vertices,
+                        node->_shape.indices, node->_render_data.texture_handle,
+                        renderer->default_program);
+                }
             });
     }
 }

@@ -540,6 +540,8 @@ struct InputManager {
         bool is_released(const MouseButton mb) const;
         glm::dvec2 get_position() const;
 
+        bool cursor_visible() const;
+        void cursor_visible(const bool visible);
         bool relative_mode() const;
         void relative_mode(const bool rel);
     } mouse;

@@ -36,14 +36,8 @@ _release_used_container(void* _data, void* image_container)
     _used_containers.erase(key);
 }
 
-template<class T, size_t N>
-constexpr size_t array_size(T (&)[N])
-{
-    return N;
-}
-
 std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
-load_default_shaders(
+load_embedded_shaders(
     bgfx::RendererType::Enum renderer_type,
     const std::string vertex_shader_name,
     const std::string fragment_shader_name)
@@ -119,6 +113,23 @@ load_default_image()
     return image;
 }
 
+ResourceReference<Program>
+load_embedded_program(
+    bgfx::RendererType::Enum renderer_type,
+    const std::string vertex_shader_name,
+    const std::string fragment_shader_name)
+{
+    auto [loaded_shaders, vs_mem, fs_mem] = load_embedded_shaders(
+        renderer_type, vertex_shader_name, fragment_shader_name);
+    if (not loaded_shaders) {
+        KAACORE_LOG_ERROR("Can't find precompiled shaders for this platform!");
+        return {};
+    }
+    auto vs = Shader::load(vs_mem);
+    auto fs = Shader::load(fs_mem);
+    return Program::load(vs, fs);
+}
+
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
     KAACORE_LOG_INFO("Initializing bgfx.");
@@ -144,26 +155,12 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 
     auto renderer_type = bgfx::getRendererType();
 
-    const bgfx::Memory* vs_mem;
-    const bgfx::Memory* fs_mem;
-
-    bool found_defaults;
-    std::tie(found_defaults, vs_mem, fs_mem) =
-        load_default_shaders(renderer_type, "vs_default", "fs_default");
-    if (!found_defaults) {
-        KAACORE_LOG_ERROR("Can't find precompiled shaders for this platform!");
-        return;
-    }
-
-    auto vs = Shader::load(vs_mem);
-    auto fs = Shader::load(fs_mem);
-    KAACORE_LOG_INFO(
-        "Created shaders, VS: {}, FS: {}.", vs->_handle.idx, fs->_handle.idx);
-
-    this->default_program = Program::load(vs, fs);
-    KAACORE_LOG_INFO(
-        "Created program: {}.", this->default_program->_handle.idx);
-    KAACORE_LOG_INFO("Initializing renderer completed.");
+    KAACORE_LOG_INFO("Loading embedded default shader.");
+    this->default_program =
+        load_embedded_program(renderer_type, "vs_default", "fs_default");
+    KAACORE_LOG_INFO("Loading embedded sdf_font shader.");
+    this->sdf_font_program =
+        load_embedded_program(renderer_type, "vs_default", "fs_sdf_font");
 }
 
 Renderer::~Renderer()
@@ -173,9 +170,16 @@ Renderer::~Renderer()
     this->default_image.reset();
     // since default shaders are embeded and not present
     // in registry, free them manually
-    this->default_program.res_ptr.get()->vertex_shader->_uninitialize();
-    this->default_program.res_ptr.get()->fragment_shader->_uninitialize();
-    this->default_program.res_ptr.get()->_uninitialize();
+    if (this->default_program) {
+        this->default_program.res_ptr.get()->vertex_shader->_uninitialize();
+        this->default_program.res_ptr.get()->fragment_shader->_uninitialize();
+        this->default_program.res_ptr.get()->_uninitialize();
+    }
+    if (this->sdf_font_program) {
+        this->sdf_font_program.res_ptr.get()->vertex_shader->_uninitialize();
+        this->sdf_font_program.res_ptr.get()->fragment_shader->_uninitialize();
+        this->sdf_font_program.res_ptr.get()->_uninitialize();
+    }
     bgfx::shutdown();
 }
 
@@ -305,11 +309,16 @@ Renderer::process_view(View& view) const
 void
 Renderer::render_vertices(
     const uint16_t view_index, const std::vector<StandardVertexData>& vertices,
-    const std::vector<VertexIndex>& indices,
-    const bgfx::TextureHandle texture) const
+    const std::vector<VertexIndex>& indices, const bgfx::TextureHandle texture,
+    const ResourceReference<Program>& program) const
 {
     bgfx::TransientVertexBuffer vertices_buffer;
     bgfx::TransientIndexBuffer indices_buffer;
+    bgfx::ProgramHandle program_handle = BGFX_INVALID_HANDLE;
+
+    if (program) {
+        program_handle = program->_handle;
+    }
 
     bgfx::setState(
         BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
@@ -330,7 +339,7 @@ Renderer::render_vertices(
     bgfx::setIndexBuffer(&indices_buffer);
     bgfx::setTexture(0, this->texture_uniform, texture);
 
-    bgfx::submit(view_index, this->default_program->_handle, false);
+    bgfx::submit(view_index, program_handle, false);
 }
 
 } // namespace kaacore
