@@ -25,7 +25,6 @@ class Scene {
     Scene();
     virtual ~Scene();
 
-    Camera& camera();
     void reset_views();
     void process_physics(const Microseconds dt);
     void process_nodes(const Microseconds dt);
@@ -33,6 +32,8 @@ class Scene {
     void process_nodes_drawing();
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
+
+    Camera& camera();
     double time_scale() const;
     void time_scale(const double scale);
 

@@ -20,7 +20,6 @@ using TimerID = uint32_t;
 using TimerCallback = std::function<Seconds(TimerContext context)>;
 
 struct _TimerState {
-    // TODO: CHECK IF PYTHON CALLBACK IS COPIED OR MOVED
     _TimerState(TimerID id, TimerCallback&& callback);
 
     TimerID id;
