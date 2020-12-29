@@ -15,7 +15,6 @@ _TimerState::_TimerState(TimerID id, TimerCallback&& callback)
 
 Timer::Timer(TimerCallback callback)
 {
-    // TODO: CHECK IF PYTHON CALLBACK IS COPIED OR MOVED
     this->_state = std::make_shared<_TimerState>(0, std::move(callback));
 }
 
@@ -105,7 +104,7 @@ TimersManager::process(const Microseconds dt)
         std::sort(
             this->_queue.data.begin(), this->_queue.data.end(),
             [](const auto& lhs, const auto& rhs) {
-                return lhs.fire_at() < rhs.fire_at();
+                return rhs.fire_at() < lhs.fire_at();
             });
         this->_queue.is_dirty = false;
     }
