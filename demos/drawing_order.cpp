@@ -29,16 +29,14 @@ struct DemoScene : Scene {
         auto container_node = make_node();
         container_node->position({20., 20.});
         container_node->z_index(10);
-        this->root_node.add_child(container_node);
-        NodePtr parent_node = container_node;
+        NodePtr parent_node = this->root_node.add_child(container_node);
 
         for (const auto& color : colors) {
             auto node = make_node();
             node->position({10., 10.});
             node->color(color);
             node->shape(Shape::Box({30., 30.}));
-            parent_node->add_child(node);
-            parent_node = node;
+            parent_node = parent_node->add_child(node);
         }
     }
 
