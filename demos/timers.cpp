@@ -15,7 +15,7 @@ using namespace kaacore;
 
 struct DemoScene : Scene {
     NodePtr node;
-    Seconds duration;
+    Duration duration;
     Timer timer;
 
     DemoScene()
@@ -35,7 +35,7 @@ struct DemoScene : Scene {
         this->timer.start(this->duration, this);
     }
 
-    void update(const Seconds dt) override
+    void update(const Duration dt) override
     {
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {

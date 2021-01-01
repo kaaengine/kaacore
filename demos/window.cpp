@@ -22,7 +22,7 @@ struct WindowDemoScene : Scene {
         this->root_node.add_child(circle_node);
     }
 
-    void update(const Seconds dt) override
+    void update(const Duration dt) override
     {
         for (auto const& event : this->get_events()) {
             if (event.keyboard_key() and event.keyboard_key()->is_key_down()) {

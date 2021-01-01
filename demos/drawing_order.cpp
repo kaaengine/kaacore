@@ -41,7 +41,7 @@ struct DemoScene : Scene {
         }
     }
 
-    void update(Seconds dt) override {}
+    void update(Duration dt) override {}
 };
 
 extern "C" int

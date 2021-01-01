@@ -26,7 +26,7 @@ constexpr CollisionBitmask collision_bitmask_none = ~CP_ALL_CATEGORIES;
 
 typedef std::unique_ptr<cpShape, void (*)(cpShape*)> CpShapeUniquePtr;
 
-constexpr Microseconds default_simulation_step_size = 10000us; // 0.01s
+constexpr HighPrecisionDuration default_simulation_step_size = 10000us; // 0.01s
 
 class Node;
 class SpaceNode;
@@ -156,10 +156,10 @@ class SpaceNode {
     SpaceNode();
     ~SpaceNode();
 
-    void simulate(const Microseconds dt);
+    void simulate(const HighPrecisionDuration dt);
 
     cpSpace* _cp_space = nullptr;
-    Microseconds _time_acc = 0us;
+    HighPrecisionDuration _time_acc = 0us;
     std::vector<SpacePostStepFunc> _post_step_callbacks;
 
     friend class Node;

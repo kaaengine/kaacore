@@ -255,8 +255,9 @@ Engine::_scene_processing()
             if (this->_next_scene) {
                 this->_swap_scenes();
             }
-            Seconds dt_sec = dt * this->_scene->time_scale();
-            auto scaled_dt = std::chrono::duration_cast<Microseconds>(dt_sec);
+            Duration dt_sec = dt * this->_scene->time_scale();
+            auto scaled_dt =
+                std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
             this->_scene->update(dt_sec);
 #if KAACORE_MULTITHREADING_MODE
             this->_event_processing_state.set(EventProcessingState::consumed);

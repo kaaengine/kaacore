@@ -19,19 +19,19 @@ Timer::Timer(TimerCallback callback)
 }
 
 void
-Timer::start(const Seconds interval, Scene* const scene)
+Timer::start(const Duration interval, Scene* const scene)
 {
     this->_start(interval, scene->timers);
 }
 
 void
-Timer::start_global(const Seconds interval)
+Timer::start_global(const Duration interval)
 {
     get_engine()->timers.start(interval, *this);
 }
 
 void
-Timer::_start(const Seconds interval, TimersManager& manager)
+Timer::_start(const Duration interval, TimersManager& manager)
 {
     KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
     KAACORE_CHECK(
@@ -59,14 +59,14 @@ TimersManager::TimersManager() : _scene(nullptr) {}
 TimersManager::TimersManager(Scene* const scene) : _scene(scene) {}
 
 TimersManager::_InvocationInstance::_InvocationInstance(
-    TimerID invocation_id, Seconds interval, TimePoint triggered_at,
+    TimerID invocation_id, Duration interval, TimePoint triggered_at,
     std::weak_ptr<_TimerState>&& state)
     : invocation_id(invocation_id), interval(interval),
       triggered_at(triggered_at), state(state)
 {}
 
 void
-TimersManager::start(const Seconds interval, Timer& timer)
+TimersManager::start(const Duration interval, Timer& timer)
 {
     {
         std::unique_lock<std::mutex> lock{this->_lock};
@@ -81,7 +81,7 @@ TimersManager::start(const Seconds interval, Timer& timer)
 }
 
 void
-TimersManager::process(const Microseconds dt)
+TimersManager::process(const HighPrecisionDuration dt)
 {
     if (this->_awaiting_timers.is_dirty.load(std::memory_order_acquire)) {
         auto now = this->time_point();
@@ -103,8 +103,8 @@ TimersManager::process(const Microseconds dt)
     if (this->_queue.is_dirty) {
         std::sort(
             this->_queue.data.begin(), this->_queue.data.end(),
-            [](const auto& lhs, const auto& rhs) {
-                return rhs.fire_at() < lhs.fire_at();
+            [](const auto& lhs, const auto& rhs) -> bool {
+                return lhs.fire_at() > rhs.fire_at();
             });
         this->_queue.is_dirty = false;
     }

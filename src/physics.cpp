@@ -263,7 +263,7 @@ SpaceNode::add_post_step_callback(const SpacePostStepFunc& func)
 }
 
 void
-SpaceNode::simulate(const Microseconds dt)
+SpaceNode::simulate(const HighPrecisionDuration dt)
 {
     ASSERT_VALID_SPACE_NODE(this);
     KAACORE_LOG_TRACE(
@@ -273,7 +273,7 @@ SpaceNode::simulate(const Microseconds dt)
     while (time_left > default_simulation_step_size) {
         cpSpaceStep(
             this->_cp_space,
-            std::chrono::duration_cast<Seconds>(default_simulation_step_size)
+            std::chrono::duration_cast<Duration>(default_simulation_step_size)
                 .count());
         time_left -= default_simulation_step_size;
     }

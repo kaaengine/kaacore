@@ -151,7 +151,7 @@ struct DemoScene : Scene {
         this->box->body.angular_velocity(-0.10);
     }
 
-    void update(const Seconds dt) override
+    void update(const Duration dt) override
     {
         KAACORE_APP_LOG_DEBUG("DemoScene update, dt: {}s.", dt.count());
         auto texture = get_engine()->renderer->default_texture;

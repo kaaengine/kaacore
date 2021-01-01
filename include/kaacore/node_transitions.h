@@ -96,7 +96,7 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
   public:
     NodeAttributeTransition(
         T value_advance, const AttributeTransitionMethod& advance_method,
-        const Seconds duration,
+        const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeTransitionCustomizable(duration, warping, easing),
@@ -104,7 +104,7 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
     {}
 
     NodeAttributeTransition(
-        T value_advance, const Seconds duration,
+        T value_advance, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeAttributeTransition(
@@ -174,7 +174,8 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
   public:
     NodeAttributeSteppingTransition(
         const std::vector<T>& steps,
-        const AttributeTransitionMethod& advance_method, const Seconds duration,
+        const AttributeTransitionMethod& advance_method,
+        const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeTransitionCustomizable(duration, warping, easing), _steps(steps),
@@ -182,7 +183,7 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
     {}
 
     NodeAttributeSteppingTransition(
-        const std::vector<T>& steps, const Seconds duration,
+        const std::vector<T>& steps, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeAttributeSteppingTransition(
@@ -255,7 +256,7 @@ class NodeInoperableAttributeSteppingTransition
 
   public:
     NodeInoperableAttributeSteppingTransition(
-        const std::vector<T>& steps, const Seconds duration,
+        const std::vector<T>& steps, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeTransitionCustomizable(duration, warping, easing), _steps(steps)

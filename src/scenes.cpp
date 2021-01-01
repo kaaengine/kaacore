@@ -38,7 +38,7 @@ Scene::camera()
 }
 
 void
-Scene::process_physics(const Microseconds dt)
+Scene::process_physics(const HighPrecisionDuration dt)
 {
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
@@ -46,7 +46,7 @@ Scene::process_physics(const Microseconds dt)
 }
 
 void
-Scene::process_nodes(const Microseconds dt)
+Scene::process_nodes(const HighPrecisionDuration dt)
 {
     static std::deque<Node*> processing_queue;
     processing_queue.clear();
@@ -197,7 +197,7 @@ Scene::on_enter()
 {}
 
 void
-Scene::update(const Seconds dt)
+Scene::update(const Duration dt)
 {}
 
 void

@@ -25,7 +25,7 @@ struct TransitionStateBase {
 };
 
 struct TransitionTimePoint {
-    Seconds abs_t;
+    Duration abs_t;
     bool is_backing;
     uint32_t cycle_index;
 };
@@ -38,19 +38,19 @@ struct TransitionWarping {
 
     double duration_factor() const;
     TransitionTimePoint warp_time(
-        const TransitionTimePoint& tp, const Seconds internal_duration) const;
+        const TransitionTimePoint& tp, const Duration internal_duration) const;
 };
 
 class NodeTransitionBase {
   public:
-    Seconds duration;
-    Seconds internal_duration;
+    Duration duration;
+    Duration internal_duration;
 
     TransitionWarping warping;
 
     NodeTransitionBase();
     NodeTransitionBase(
-        const Seconds duration,
+        const Duration duration,
         const TransitionWarping& warping = TransitionWarping());
 
     virtual std::unique_ptr<TransitionStateBase> prepare_state(
@@ -64,7 +64,7 @@ class NodeTransitionCustomizable : public NodeTransitionBase {
   public:
     NodeTransitionCustomizable();
     NodeTransitionCustomizable(
-        const Seconds duration,
+        const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none);
 
@@ -80,12 +80,12 @@ class NodeTransitionCustomizable : public NodeTransitionBase {
 class NodeTransitionsGroupBase : public NodeTransitionBase {
     struct _SubTransition {
         NodeTransitionHandle handle;
-        Seconds starting_time;
-        Seconds ending_time;
+        Duration starting_time;
+        Duration ending_time;
 
         _SubTransition(
-            const NodeTransitionHandle& handle, const Seconds starting_time,
-            const Seconds ending_time)
+            const NodeTransitionHandle& handle, const Duration starting_time,
+            const Duration ending_time)
             : handle(handle), starting_time(starting_time),
               ending_time(ending_time)
         {}
@@ -122,7 +122,7 @@ class NodeTransitionsParallel : public NodeTransitionsGroupBase {
 
 class NodeTransitionDelay : public NodeTransitionBase {
   public:
-    NodeTransitionDelay(const Seconds duration);
+    NodeTransitionDelay(const Duration duration);
     void process_time_point(
         TransitionStateBase* state, NodePtr node,
         const TransitionTimePoint& tp) const;
@@ -144,7 +144,7 @@ struct NodeTransitionRunner {
     NodeTransitionHandle transition_handle;
     std::unique_ptr<TransitionStateBase> transition_state;
     bool transition_state_prepared = false;
-    Microseconds current_time = 0us;
+    HighPrecisionDuration current_time = 0us;
 
     NodeTransitionRunner(const NodeTransitionHandle& transition);
     ~NodeTransitionRunner() = default;
@@ -157,7 +157,7 @@ struct NodeTransitionRunner {
     NodeTransitionRunner& operator=(const NodeTransitionHandle& transition);
 
     void setup(const NodeTransitionHandle& transition);
-    bool step(NodePtr node, const Microseconds dt);
+    bool step(NodePtr node, const HighPrecisionDuration dt);
     operator bool() const;
 };
 
@@ -168,7 +168,7 @@ class NodeTransitionsManager {
     std::vector<std::pair<std::string, NodeTransitionHandle>> _enqueued_updates;
     bool _is_processing = false;
 
-    void step(NodePtr node, const Microseconds dt);
+    void step(NodePtr node, const HighPrecisionDuration dt);
 
   public:
     NodeTransitionHandle get(const std::string& name);

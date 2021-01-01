@@ -16,13 +16,13 @@ DurationRingBuffer::reset()
 }
 
 void
-DurationRingBuffer::push(const Microseconds duration)
+DurationRingBuffer::push(const HighPrecisionDuration duration)
 {
     this->_cursor %= this->_size;
     this->_data[this->_cursor++] = duration;
 }
 
-Microseconds
+HighPrecisionDuration
 DurationRingBuffer::average() const
 {
     auto sum = std::accumulate(this->_data.begin(), this->_data.end(), 0us);
@@ -34,7 +34,7 @@ Clock::Clock()
     this->touch();
 }
 
-Microseconds
+HighPrecisionDuration
 Clock::measure()
 {
     TimePoint now = this->now();
@@ -57,7 +57,7 @@ Clock::reset()
     this->_buffer.reset();
 }
 
-Microseconds
+HighPrecisionDuration
 Clock::average_duration() const
 {
     return this->_buffer.average();
@@ -66,7 +66,8 @@ Clock::average_duration() const
 TimePoint
 Clock::now()
 {
-    return std::chrono::time_point_cast<Microseconds>(DefaultClock::now());
+    return std::chrono::time_point_cast<HighPrecisionDuration>(
+        DefaultClock::now());
 }
 
 }

@@ -18,7 +18,7 @@ struct TransitionsDemoScene : Scene {
     {
         this->camera().position({0., 0.});
 
-        const Seconds tr_time = 2.s;
+        const Duration tr_time = 2.s;
         const std::vector<Shape> shapes = {
             Shape::Circle(2.5), Shape::Box({4., 4.}),
             Shape::Polygon({{-2., -2.}, {2., -2.}, {-2., 2.}})};
@@ -81,7 +81,7 @@ struct TransitionsDemoScene : Scene {
         }
     }
 
-    void update(const Seconds dt) override
+    void update(const Duration dt) override
     {
         for (auto const& event : this->get_events()) {
             auto keyboard_key = event.keyboard_key();

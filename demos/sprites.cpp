@@ -35,7 +35,7 @@ struct SpritesDemoScene : Scene {
         this->animating_node = this->root_node.add_child(animating_node);
     }
 
-    void update(const Seconds dt) override
+    void update(const Duration dt) override
     {
         KAACORE_APP_LOG_DEBUG("DemoScene update {}s.", dt.count());
 

@@ -12,12 +12,12 @@
 namespace kaacore {
 
 struct TimerContext {
-    Seconds interval;
+    Duration interval;
     Scene* scene;
 };
 
 using TimerID = uint32_t;
-using TimerCallback = std::function<Seconds(TimerContext context)>;
+using TimerCallback = std::function<Duration(TimerContext context)>;
 
 struct _TimerState {
     _TimerState(TimerID id, TimerCallback&& callback);
@@ -35,15 +35,15 @@ class Timer {
     Timer() = default;
     Timer(TimerCallback callback);
 
-    void start_global(const Seconds interval);
-    void start(const Seconds interval, Scene* const scene);
+    void start_global(const Duration interval);
+    void start(const Duration interval, Scene* const scene);
     bool is_running() const;
     void stop();
 
   private:
     std::shared_ptr<_TimerState> _state;
 
-    void _start(const Seconds interval, TimersManager& manager);
+    void _start(const Duration interval, TimersManager& manager);
 
     friend class TimersManager;
 };
@@ -52,34 +52,35 @@ class TimersManager {
   public:
     TimersManager();
     TimersManager(Scene* const scene);
-    void start(const Seconds interval, Timer& timer);
-    void process(const Microseconds dt);
+    void start(const Duration interval, Timer& timer);
+    void process(const HighPrecisionDuration dt);
     TimePoint time_point() const;
 
   private:
     using _AwaitingState =
-        std::tuple<TimerID, Seconds, std::weak_ptr<_TimerState>>;
+        std::tuple<TimerID, Duration, std::weak_ptr<_TimerState>>;
 
     struct _InvocationInstance {
         _InvocationInstance(
-            TimerID invocation_id, Seconds interval, TimePoint triggered_at,
+            TimerID invocation_id, Duration interval, TimePoint triggered_at,
             std::weak_ptr<_TimerState>&& state);
 
         TimerID invocation_id;
-        Seconds interval;
+        Duration interval;
         TimePoint triggered_at;
         std::weak_ptr<_TimerState> state;
 
         inline TimePoint fire_at() const
         {
             return this->triggered_at +
-                   std::chrono::duration_cast<Microseconds>(this->interval);
+                   std::chrono::duration_cast<HighPrecisionDuration>(
+                       this->interval);
         }
     };
 
     std::mutex _lock;
     Scene* const _scene;
-    Microseconds _dt_accumulator;
+    HighPrecisionDuration _dt_accumulator;
     struct {
         bool is_dirty = false;
         std::vector<_InvocationInstance> data;

@@ -26,8 +26,8 @@ class Scene {
     virtual ~Scene();
 
     void reset_views();
-    void process_physics(const Microseconds dt);
-    void process_nodes(const Microseconds dt);
+    void process_physics(const HighPrecisionDuration dt);
+    void process_nodes(const HighPrecisionDuration dt);
     void resolve_dirty_nodes();
     void process_nodes_drawing();
     void register_simulation(Node* node);
@@ -39,7 +39,7 @@ class Scene {
 
     virtual void on_attach();
     virtual void on_enter();
-    virtual void update(const Seconds dt);
+    virtual void update(const Duration dt);
     virtual void on_exit();
     virtual void on_detach();
 

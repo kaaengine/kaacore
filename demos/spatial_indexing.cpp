@@ -59,7 +59,7 @@ struct SpatialIndexingDemoScene : Scene {
         }
     }
 
-    void update(const Seconds dt) override
+    void update(const Duration dt) override
     {
         for (auto const& event : this->get_events()) {
             auto keyboard_key = event.keyboard_key();
