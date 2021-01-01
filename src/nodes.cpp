@@ -98,18 +98,22 @@ Node::_mark_ordering_dirty()
 void
 Node::_mark_to_delete()
 {
+    if (this->_marked_to_delete) {
+        return;
+    }
     KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to the tree.");
     this->_marked_to_delete = true;
+    if (this->_node_wrapper) {
+        this->_node_wrapper->on_detach();
+    }
     this->_scene->spatial_index.stop_tracking(this);
     for (auto child : this->_children) {
-        if (not child->_marked_to_delete) {
-            child->_mark_to_delete();
-        }
+        child->_mark_to_delete();
     }
 
     // Physics have side effect if we don't perform
     // deletion immediately, so we give it special
-    // treatment here by dettaching them from simulation.
+    // treatment here by detaching them from simulation.
     if (this->_type == NodeType::body) {
         this->body.detach_from_simulation();
     } else if (this->_type == NodeType::hitbox) {
@@ -194,16 +198,14 @@ Node::_set_rotation(const double rotation)
     this->_rotation = normalized_rotation;
 }
 
-void
-Node::add_child(NodeOwnerPtr& child_node)
+NodePtr
+Node::add_child(NodeOwnerPtr& owned_ptr)
 {
-    KAACORE_CHECK(child_node->_parent == nullptr, "Node has a parent already.");
-    KAACORE_CHECK(
-        child_node._ownership_transferred == false,
-        "Node has a ownership already transferred");
+    KAACORE_CHECK(owned_ptr, "Cannot attach uninitialized/released node.");
+    KAACORE_CHECK(owned_ptr->_parent == nullptr, "Node has a parent already.");
 
+    auto child_node = owned_ptr.release();
     child_node->_parent = this;
-    child_node._ownership_transferred = true;
     this->_children.push_back(child_node.get());
 
     if (child_node->_node_wrapper) {
@@ -219,6 +221,9 @@ Node::add_child(NodeOwnerPtr& child_node)
         n->_scene = this->_scene;
         if (added_to_scene) {
             n->_scene->spatial_index.start_tracking(n);
+            if (n->_node_wrapper) {
+                n->_node_wrapper->on_attach();
+            }
         }
         if (added_to_scene and n->_type == NodeType::space) {
             n->_scene->register_simulation(n);
@@ -233,6 +238,7 @@ Node::add_child(NodeOwnerPtr& child_node)
     };
 
     initialize_node(child_node.get());
+    return child_node;
 }
 
 void

@@ -14,7 +14,7 @@ using namespace kaacore;
 
 struct PolygonTesterDemoScene : Scene {
     std::vector<glm::dvec2> points;
-    NodeOwnerPtr shape_repr;
+    NodePtr shape_repr;
     Engine* engine;
 
     PolygonTesterDemoScene()
@@ -22,10 +22,10 @@ struct PolygonTesterDemoScene : Scene {
         this->engine = get_engine();
         this->camera().position({0., 0.});
 
-        this->shape_repr = make_node();
-        this->shape_repr->position({0, 0});
-        this->shape_repr->shape(Shape::Box({3, 3}));
-        this->root_node.add_child(this->shape_repr);
+        auto shape_repr = make_node();
+        shape_repr->position({0, 0});
+        shape_repr->shape(Shape::Box({3, 3}));
+        this->shape_repr = this->root_node.add_child(shape_repr);
     }
 
     void add_point(const glm::dvec2 p)

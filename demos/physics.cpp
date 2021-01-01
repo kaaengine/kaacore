@@ -20,12 +20,12 @@ constexpr uint32_t mask_polygon = 1 << 1;
 
 struct DemoScene : Scene {
     double box_size = 4.;
-    NodeOwnerPtr container;
-    NodeOwnerPtr box;
-    NodeOwnerPtr wall_l;
-    NodeOwnerPtr wall_t;
-    NodeOwnerPtr wall_r;
-    NodeOwnerPtr wall_b;
+    NodePtr container;
+    NodePtr box;
+    NodePtr wall_l;
+    NodePtr wall_t;
+    NodePtr wall_r;
+    NodePtr wall_b;
     bool time_scaled = false;
 
     std::vector<NodePtr> balls;
@@ -60,31 +60,31 @@ struct DemoScene : Scene {
 
         this->query_shape = Shape::Circle(1.2);
 
-        this->container = make_node(NodeType::space);
-        this->root_node.add_child(this->container);
+        auto container = make_node(NodeType::space);
+        this->container = this->root_node.add_child(container);
 
-        this->box = make_node(NodeType::body);
-        this->box->body.body_type(BodyNodeType::kinematic);
+        auto box = make_node(NodeType::body);
+        box->body.body_type(BodyNodeType::kinematic);
 
-        this->wall_l =
+        auto wall_l =
             this->init_wall({-box_size, +box_size}, {-box_size, -box_size});
-        this->wall_l->hitbox.surface_velocity({0., 1e12});
-        this->wall_t =
+        wall_l->hitbox.surface_velocity({0., 1e12});
+        auto wall_t =
             this->init_wall({-box_size, -box_size}, {+box_size, -box_size});
-        this->wall_t->hitbox.surface_velocity({-1e12, 0.});
-        this->wall_r =
+        wall_t->hitbox.surface_velocity({-1e12, 0.});
+        auto wall_r =
             this->init_wall({+box_size, -box_size}, {+box_size, +box_size});
-        this->wall_r->hitbox.surface_velocity({0., -1e12});
-        this->wall_b =
+        wall_r->hitbox.surface_velocity({0., -1e12});
+        auto wall_b =
             this->init_wall({+box_size, +box_size}, {-box_size, +box_size});
-        this->wall_b->hitbox.surface_velocity({1e12, 0.});
+        wall_b->hitbox.surface_velocity({1e12, 0.});
 
-        this->box->add_child(this->wall_l);
-        this->box->add_child(this->wall_t);
-        this->box->add_child(this->wall_r);
-        this->box->add_child(this->wall_b);
+        this->wall_l = box->add_child(wall_l);
+        this->wall_t = box->add_child(wall_t);
+        this->wall_r = box->add_child(wall_r);
+        this->wall_b = box->add_child(wall_b);
 
-        this->container->add_child(this->box);
+        this->box = this->container->add_child(box);
 
         for (int i = 0; i < 10; i++) {
             NodeOwnerPtr ball = make_node(NodeType::body);
@@ -114,9 +114,8 @@ struct DemoScene : Scene {
                 ball_hitbox->hitbox.mask(mask_circle);
             }
 
-            this->balls.push_back(ball);
-            container->add_child(ball);
             ball->add_child(ball_hitbox);
+            this->balls.push_back(this->container->add_child(ball));
         }
 
         this->container->space.set_collision_handler(
@@ -185,7 +184,9 @@ struct DemoScene : Scene {
                 } else if (keyboard_key->key() == Keycode::r) {
                     this->box.destroy();
                 } else if (keyboard_key->key() == Keycode::t) {
-                    this->container.destroy();
+                    for (auto child : this->container->children()) {
+                        NodePtr(child).destroy();
+                    }
                 } else if (keyboard_key->key() == Keycode::x) {
                     if (not this->balls.empty()) {
                         this->balls.back().destroy();
@@ -246,7 +247,6 @@ struct DemoScene : Scene {
             hit_indicator->shape(Shape::Circle(0.1));
             hit_indicator->color(glm::dvec4(1., 0., 0., 0.4));
             hit_indicator->lifetime(0.09s);
-            this->container->add_child(hit_indicator);
 
             auto hit_indicator_normal = make_node();
             hit_indicator_normal->position(res.normal);
@@ -254,6 +254,8 @@ struct DemoScene : Scene {
             hit_indicator_normal->color(glm::dvec4(1., 1., 0., 0.4));
             hit_indicator_normal->lifetime(0.09s);
             hit_indicator->add_child(hit_indicator_normal);
+
+            this->container->add_child(hit_indicator);
         }
     }
 };

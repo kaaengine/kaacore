@@ -24,28 +24,26 @@ static const std::string txt_lorem_ipsum =
     "amet tortor porttitor lobortis.";
 
 struct DemoFontsScene : Scene {
-    NodeOwnerPtr background;
-    NodeOwnerPtr node_text;
+    NodePtr background;
+    NodePtr node_text;
 
     DemoFontsScene()
     {
-        this->background = make_node();
-        this->background->shape(Shape::Box({700, 570}));
-        this->background->color({0.5, 0.5, 0.5, 1.});
-        this->background->z_index(-10);
-        this->root_node.add_child(this->background);
-
-        auto font =
-            Font::load("kaacore/demos/assets/fonts/Roboto/Roboto-Regular.ttf");
-        this->node_text = make_node(NodeType::text);
-        this->node_text->position({200., 0.});
-        this->node_text->text.content(txt_lorem_ipsum);
-        this->node_text->text.font_size(24.);
-        this->node_text->text.line_width(270.);
-        this->node_text->text.font(font);
-        this->node_text->text.first_line_indent(15.);
-        this->node_text->color({0., 0., 0., 1.});
-        this->root_node.add_child(this->node_text);
+        auto background = make_node();
+        background->shape(Shape::Box({700, 570}));
+        background->color({0.5, 0.5, 0.5, 1.});
+        background->z_index(-10);
+        this->background = root_node.add_child(background);
+        auto font = Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
+        auto node_text = make_node(NodeType::text);
+        node_text->position({200., 0.});
+        node_text->text.content(txt_lorem_ipsum);
+        node_text->text.font_size(24.);
+        node_text->text.line_width(270.);
+        node_text->text.font(font);
+        node_text->text.first_line_indent(15.);
+        node_text->color({0., 0., 0., 1.});
+        this->node_text = this->root_node.add_child(node_text);
 
         this->node_text->transition(make_node_transitions_parallel({
             make_node_transitions_sequence(

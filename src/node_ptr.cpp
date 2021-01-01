@@ -21,7 +21,7 @@ _NodePtrBase::operator==(const Node* node) const
 bool
 _NodePtrBase::is_marked_to_delete() const
 {
-    KAACORE_ASSERT(this->_node != nullptr, "Node already deleted.");
+    KAACORE_ASSERT(this->_node != nullptr, "Node already deleted/released.");
     return this->_node->_marked_to_delete;
 }
 
@@ -33,7 +33,7 @@ _NodePtrBase::get() const
 
 Node* _NodePtrBase::operator->() const
 {
-    KAACORE_CHECK(this->_node != nullptr, "Node already deleted.");
+    KAACORE_CHECK(this->_node != nullptr, "Node already deleted/released.");
     KAACORE_CHECK(
         not this->_node->_marked_to_delete, "Node marked for deletion.");
     return this->_node;
@@ -53,51 +53,55 @@ _NodePtrBase::destroy()
     }
 
     this->_node->_mark_to_delete();
+    this->_node = nullptr;
 }
 
 NodePtr::NodePtr(Node* node) : _NodePtrBase(node) {}
 
-NodeOwnerPtr::NodeOwnerPtr(Node* node)
-    : _NodePtrBase(node), _ownership_transferred(false)
+NodeOwnerPtr::NodeOwnerPtr(Node* node) : _NodePtrBase(node)
 {
     if (node) {
         KAACORE_LOG_DEBUG(
-            "Created/moved ownership of node ({}).", fmt::ptr(this->_node));
+            "Created ownership of node ({}).", fmt::ptr(this->_node));
     }
 }
 
 NodeOwnerPtr::~NodeOwnerPtr()
 {
-    if (this->_node != nullptr and not this->_ownership_transferred) {
+    if (this->_node != nullptr) {
         KAACORE_LOG_DEBUG(
-            "Ownership of node ({}) destroyed it.", fmt::ptr(this->_node));
+            "Ownership of node ({}) destroyed.", fmt::ptr(this->_node));
         delete this->_node;
         this->_node = nullptr;
-    } else if (this->_node != nullptr) {
-        KAACORE_LOG_DEBUG(
-            "Ownership of node ({}) released without destroying it.",
-            fmt::ptr(this->_node));
     }
 }
 
 NodeOwnerPtr::NodeOwnerPtr(NodeOwnerPtr&& other) : NodeOwnerPtr(other._node)
 {
-    this->_ownership_transferred = other._ownership_transferred;
     other._node = nullptr;
+    KAACORE_LOG_DEBUG("Moved ownership of node ({}).", fmt::ptr(this->_node));
 }
 
 NodeOwnerPtr&
 NodeOwnerPtr::operator=(NodeOwnerPtr&& other)
 {
     this->_node = other._node;
-    this->_ownership_transferred = other._ownership_transferred;
     other._node = nullptr;
+    KAACORE_LOG_DEBUG("Moved ownership of node ({}).", fmt::ptr(this->_node));
     return *this;
 }
 
 NodeOwnerPtr::operator NodePtr() const
 {
     return NodePtr(this->_node);
+}
+
+NodePtr
+NodeOwnerPtr::release()
+{
+    auto result = this->_node;
+    this->_node = nullptr;
+    return result;
 }
 
 } // namespace kaacore

@@ -13,10 +13,10 @@
 using namespace kaacore;
 
 struct DemoScene : Scene {
-    NodeOwnerPtr background;
-    NodeOwnerPtr node1;
-    NodeOwnerPtr node2;
-    NodeOwnerPtr container_node;
+    NodePtr background;
+    NodePtr node1;
+    NodePtr node2;
+    NodePtr container_node;
     Shape specific_shape;
     Shape polygon_shape;
 
@@ -36,53 +36,51 @@ struct DemoScene : Scene {
         this->polygon_shape =
             Shape::Polygon({{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}});
 
-        this->background = make_node();
-        this->background->shape(Shape::Box({1e4, 1e4}));
-        this->background->color({0.5, 0.5, 0.5, 0.25});
-        this->background->z_index(-100);
+        auto background = make_node();
+        background->shape(Shape::Box({1e4, 1e4}));
+        background->color({0.5, 0.5, 0.5, 0.25});
+        background->z_index(-100);
 
-        this->root_node.add_child(this->background);
+        this->background = this->root_node.add_child(background);
 
-        this->node1 = make_node();
-        this->node1->position({3., 3.});
-        this->node1->rotation(1.);
-        this->node1->scale({
+        auto node1 = make_node();
+        node1->position({3., 3.});
+        node1->rotation(1.);
+        node1->scale({
             1.,
             3.,
         });
-        this->node1->color({1., 0., 0., 1});
-        this->node1->shape(Shape::Box({2., 1.}));
-        this->node1->z_index(10);
-        this->node1->recalculate_model_matrix();
-        this->node1->recalculate_render_data();
+        node1->color({1., 0., 0., 1});
+        node1->shape(Shape::Box({2., 1.}));
+        node1->z_index(10);
+        node1->recalculate_model_matrix();
+        node1->recalculate_render_data();
 
-        this->root_node.add_child(this->node1);
+        this->node1 = this->root_node.add_child(node1);
 
-        this->node2 = make_node();
-        this->node2->position({-3., 3.});
-        this->node2->rotation(10.);
-        this->node2->scale({1., 1.});
-        this->node2->color({0., 1., 0., 1});
-        // this->node2->shape = Shape::Circle({0., 0.}, 1.5);
-        this->node2->shape(Shape::Segment({-5., -5.}, {2., 2.}));
-        this->node2->z_index(10);
-        this->node2->recalculate_model_matrix();
-        this->node2->recalculate_render_data();
-
-        this->root_node.add_child(this->node2);
+        auto node2 = make_node();
+        node2->position({-3., 3.});
+        node2->rotation(10.);
+        node2->scale({1., 1.});
+        node2->color({0., 1., 0., 1});
+        node2->shape(Shape::Segment({-5., -5.}, {2., 2.}));
+        node2->z_index(10);
+        node2->recalculate_model_matrix();
+        node2->recalculate_render_data();
+        this->node2 = this->root_node.add_child(node2);
 
         std::vector<glm::dvec2> positions = {{-2., -2.}, {0., -2.}, {2., -2.},
                                              {-2., 0.},  {0., 0.},  {2., 0.},
                                              {-2., 2.},  {0., 2.},  {2., 2.}};
 
-        this->container_node = make_node();
-        this->container_node->position({0., 0.});
-        this->container_node->shape(Shape::Box({9., 9.}));
-        this->container_node->recalculate_model_matrix();
-        this->container_node->recalculate_render_data();
+        auto container_node = make_node();
+        container_node->position({0., 0.});
+        container_node->shape(Shape::Box({9., 9.}));
+        container_node->recalculate_model_matrix();
+        container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
-            NodeOwnerPtr inner_node = make_node();
+            auto inner_node = make_node();
             inner_node->position(p);
             inner_node->color({0., 0., 1., 1});
             inner_node->scale({0.5, 0.5});
@@ -93,10 +91,10 @@ struct DemoScene : Scene {
                 inner_node->z_index(-10);
             }
 
-            this->container_node->add_child(inner_node);
+            container_node->add_child(inner_node);
         }
 
-        this->root_node.add_child(this->container_node);
+        this->container_node = this->root_node.add_child(container_node);
     }
 
     void update(const Seconds dt) override

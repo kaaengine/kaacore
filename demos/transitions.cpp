@@ -12,7 +12,7 @@
 using namespace kaacore;
 
 struct TransitionsDemoScene : Scene {
-    std::vector<NodeOwnerPtr> objects;
+    std::vector<NodePtr> objects;
 
     TransitionsDemoScene()
     {
@@ -77,8 +77,7 @@ struct TransitionsDemoScene : Scene {
             node->color({1., 1., 1., 1.});
             node->transition(movement_transitions_par);
 
-            this->root_node.add_child(node);
-            this->objects.push_back(std::move(node));
+            this->objects.push_back(this->root_node.add_child(node));
         }
     }
 

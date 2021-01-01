@@ -5,6 +5,7 @@
 #include "kaacore/clock.h"
 #include "kaacore/engine.h"
 #include "kaacore/geometry.h"
+#include "kaacore/log.h"
 #include "kaacore/node_transitions.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
@@ -13,8 +14,8 @@
 using namespace kaacore;
 
 struct SpatialIndexingDemoScene : Scene {
-    NodeOwnerPtr stats_text_node;
-    NodeOwnerPtr shapes_tree;
+    NodePtr stats_text_node;
+    NodePtr shapes_tree;
 
     SpatialIndexingDemoScene()
     {
@@ -33,28 +34,27 @@ struct SpatialIndexingDemoScene : Scene {
                                         Shape::Box({4., 6.}),
                                         Shape::Segment({-4., 1.}, {1., 2.})};
 
-        this->stats_text_node = make_node(NodeType::text);
-        this->stats_text_node->text.content("");
-        this->stats_text_node->text.font_size(8.);
-        this->stats_text_node->position({-48., -48});
-        this->stats_text_node->z_index(10);
-        this->stats_text_node->origin_alignment(Alignment::top_left);
-        this->root_node.add_child(this->stats_text_node);
+        auto stats_text_node = make_node(NodeType::text);
+        stats_text_node->text.content("");
+        stats_text_node->text.font_size(8.);
+        stats_text_node->position({-48., -48});
+        stats_text_node->z_index(10);
+        stats_text_node->origin_alignment(Alignment::top_left);
+        this->stats_text_node = this->root_node.add_child(stats_text_node);
 
-        this->shapes_tree = make_node();
+        auto shapes_tree = make_node();
         shapes_tree->scale({0.5, 0.5});
         shapes_tree->transition(scaling_transition);
-        this->root_node.add_child(shapes_tree);
+        this->shapes_tree = this->root_node.add_child(shapes_tree);
 
         for (int i = -20; i <= 20; i++) {
             for (int j = -20; j <= 20; j++) {
                 NodeOwnerPtr node = make_node();
-
                 node->shape(shapes[(i + j) % shapes.size()]);
                 node->position({10. * i, 10. * j});
                 node->color({0.5, 0.5, 0.5, 1.0});
                 node->transition(movement_transition);
-                shapes_tree->add_child(node);
+                this->shapes_tree->add_child(node);
             }
         }
     }
@@ -67,8 +67,8 @@ struct SpatialIndexingDemoScene : Scene {
                 get_engine()->quit();
                 break;
             } else if (keyboard_key and keyboard_key->key() == Keycode::r) {
-                log<LogLevel::info, LogCategory::application>(
-                    "Resetting non-indexable nodes...");
+                KAACORE_APP_LOG_INFO("Resetting non-indexable nodes...");
+
                 int count = 0;
                 for (auto node : this->shapes_tree->children()) {
                     if (not node->indexable()) {
@@ -77,8 +77,7 @@ struct SpatialIndexingDemoScene : Scene {
                         count++;
                     }
                 }
-                log<LogLevel::info, LogCategory::application>(
-                    "Reset nodes: %d", count);
+                KAACORE_APP_LOG_INFO("Reset nodes: %d", count);
             }
 
             if (auto mouse_button = event.mouse_button()) {
@@ -87,7 +86,7 @@ struct SpatialIndexingDemoScene : Scene {
                     mouse_button->button() == MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
                     auto query_results = this->spatial_index.query_point(pos);
-                    log<LogLevel::info, LogCategory::application>(
+                    KAACORE_APP_LOG_INFO(
                         "Clicked %ld nodes", query_results.size());
                     for (auto& node : query_results) {
                         node->color({1., 0., 0., 1.});
@@ -97,7 +96,7 @@ struct SpatialIndexingDemoScene : Scene {
                     mouse_button->button() == MouseButton::right) {
                     pos = this->camera().unproject_position(pos);
                     auto query_results = this->spatial_index.query_point(pos);
-                    log<LogLevel::info, LogCategory::application>(
+                    KAACORE_APP_LOG_INFO(
                         "Clicked %ld nodes", query_results.size());
                     for (auto& node : query_results) {
                         node->color({0., 0.5, 1., 1.});

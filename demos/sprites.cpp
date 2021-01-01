@@ -16,7 +16,7 @@ using namespace kaacore;
 using std::atoi;
 
 struct SpritesDemoScene : Scene {
-    NodeOwnerPtr animating_node;
+    NodePtr animating_node;
     ResourceReference<Image> image_file;
 
     SpritesDemoScene(
@@ -28,12 +28,11 @@ struct SpritesDemoScene : Scene {
         auto frames = split_spritesheet(
             sprite, {frame_w, frame_h}, 0, 0, {padding_x, padding_y});
 
-        this->animating_node = make_node();
-        this->animating_node->shape(Shape::Box({3, 3}));
-        this->animating_node->transition(
-            make_node_transition<NodeSpriteTransition>(
-                frames, 5.s, TransitionWarping(0, true)));
-        this->root_node.add_child(this->animating_node);
+        auto animating_node = make_node();
+        animating_node->shape(Shape::Box({3, 3}));
+        animating_node->transition(make_node_transition<NodeSpriteTransition>(
+            frames, 5.s, TransitionWarping(0, true)));
+        this->animating_node = this->root_node.add_child(animating_node);
     }
 
     void update(const Seconds dt) override

@@ -32,6 +32,8 @@ struct ForeignNodeWrapper {
     virtual ~ForeignNodeWrapper() = default;
 
     virtual void on_add_to_parent() = 0;
+    virtual void on_attach() = 0;
+    virtual void on_detach() = 0;
 };
 
 struct Scene;
@@ -48,7 +50,7 @@ class Node {
     Node(NodeType type = NodeType::basic);
     ~Node();
 
-    void add_child(NodeOwnerPtr& child_node);
+    NodePtr add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
     void recalculate_render_data();
     void recalculate_ordering_data();
