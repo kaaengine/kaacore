@@ -11,21 +11,20 @@
 #include "kaacore/utils.h"
 
 using namespace std;
-using namespace kaacore;
 
 extern "C" int
 main(int argc, char* argv[])
 {
-    Engine eng({10, 10});
+    kaacore::Engine eng({10, 10});
     eng.window->show();
     bool running = true;
 
     bgfx::TextureHandle texture;
-    ResourceReference<Image> res;
+    kaacore::ResourceReference<kaacore::Image> res;
     if (argc < 2) {
         texture = eng.renderer->default_texture;
     } else {
-        res = Image::load(argv[1]);
+        res = kaacore::Image::load(argv[1]);
         texture = res->texture_handle;
     }
 

@@ -199,18 +199,23 @@ emit_log_dynamic(
     KAACORE_LOG_FULL(spdlog::level::trace, _log_category_app, __VA_ARGS__)
 
 #define KAACORE_APP_LOG_DEBUG(...)                                             \
-    KAACORE_LOG_FULL(spdlog::level::debug, _log_category_app, __VA_ARGS__)
+    KAACORE_LOG_FULL(                                                          \
+        spdlog::level::debug, kaacore::_log_category_app, __VA_ARGS__)
 
 #define KAACORE_APP_LOG_INFO(...)                                              \
-    KAACORE_LOG_FULL(spdlog::level::info, _log_category_app, __VA_ARGS__)
+    KAACORE_LOG_FULL(                                                          \
+        spdlog::level::info, kaacore::_log_category_app, __VA_ARGS__)
 
 #define KAACORE_APP_LOG_WARN(...)                                              \
-    KAACORE_LOG_FULL(spdlog::level::warn, _log_category_app, __VA_ARGS__)
+    KAACORE_LOG_FULL(                                                          \
+        spdlog::level::warn, kaacore::_log_category_app, __VA_ARGS__)
 
 #define KAACORE_APP_LOG_ERROR(...)                                             \
-    KAACORE_LOG_FULL(spdlog::level::err, _log_category_app, __VA_ARGS__)
+    KAACORE_LOG_FULL(                                                          \
+        spdlog::level::err, kaacore::_log_category_app, __VA_ARGS__)
 
 #define KAACORE_APP_LOG_CRITICAL(...)                                          \
-    KAACORE_LOG_FULL(spdlog::level::critical, _log_category_app, __VA_ARGS__)
+    KAACORE_LOG_FULL(                                                          \
+        spdlog::level::critical, kaacore::_log_category_app, __VA_ARGS__)
 
 } // namespace kaacore
