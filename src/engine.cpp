@@ -14,7 +14,6 @@
 #include "kaacore/input.h"
 #include "kaacore/log.h"
 #include "kaacore/scenes.h"
-#include "kaacore/timers.h"
 
 #include "kaacore/engine.h"
 
@@ -111,7 +110,6 @@ Engine::~Engine()
 #endif
 
     this->window.reset();
-    destroy_timers();
     SDL_Quit();
     engine = nullptr;
 }
@@ -198,6 +196,16 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
+double
+Engine::get_fps() const
+{
+    auto duration = this->clock.average_duration();
+    if (duration > 0us) {
+        return 1.s / duration;
+    }
+    return 0;
+}
+
 bgfx::Init
 Engine::_gather_platform_data()
 {
@@ -237,12 +245,8 @@ Engine::_scene_processing()
     try {
         KAACORE_LOG_INFO("Engine is running.");
         this->_scene->on_enter();
-        uint32_t ticks = SDL_GetTicks();
         while (this->is_running) {
-            uint32_t ticks_now = SDL_GetTicks();
-            uint32_t dt = ticks_now - ticks;
-            ticks = ticks_now;
-
+            auto dt = this->clock.measure();
             this->renderer->begin_frame();
 #if KAACORE_MULTITHREADING_MODE
             this->_event_processing_state.wait(EventProcessingState::ready);
@@ -251,15 +255,19 @@ Engine::_scene_processing()
             if (this->_next_scene) {
                 this->_swap_scenes();
             }
-            this->_scene->update(dt);
+            Duration dt_sec = dt * this->_scene->time_scale();
+            auto scaled_dt =
+                std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
+            this->_scene->update(dt_sec);
 #if KAACORE_MULTITHREADING_MODE
             this->_event_processing_state.set(EventProcessingState::consumed);
 #endif
             this->_scene->resolve_dirty_nodes();
             this->_scene->process_nodes_drawing();
-            this->_scene->process_physics(dt);
-            this->_scene->process_nodes(dt);
-
+            this->_scene->process_physics(scaled_dt);
+            this->timers.process(dt);
+            this->_scene->timers.process(scaled_dt);
+            this->_scene->process_nodes(scaled_dt);
             this->renderer->end_frame();
         }
         this->_scene->on_exit();
@@ -300,10 +308,7 @@ Engine::_process_events()
     int peep_status;
     while ((peep_status = SDL_PeepEvents(
                 &event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) > 0) {
-        if (event.type == EventType::_timer_fired) {
-            auto timer_id = reinterpret_cast<TimerID>(event.user.data1);
-            resolve_timer(timer_id);
-        } else if (event.type == EventType::music_finished) {
+        if (event.type == EventType::music_finished) {
             this->audio_manager->_handle_music_finished();
         } else if (event.type == EventType::channel_finished) {
             this->audio_manager->_handle_channel_finished(event.user.code);

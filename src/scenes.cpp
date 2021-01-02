@@ -15,7 +15,7 @@
 
 namespace kaacore {
 
-Scene::Scene()
+Scene::Scene() : timers(this)
 {
     this->root_node._scene = this;
     this->spatial_index.start_tracking(&this->root_node);
@@ -38,7 +38,7 @@ Scene::camera()
 }
 
 void
-Scene::process_physics(uint32_t dt)
+Scene::process_physics(const HighPrecisionDuration dt)
 {
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
@@ -46,7 +46,7 @@ Scene::process_physics(uint32_t dt)
 }
 
 void
-Scene::process_nodes(uint32_t dt)
+Scene::process_nodes(const HighPrecisionDuration dt)
 {
     static std::deque<Node*> processing_queue;
     processing_queue.clear();
@@ -61,8 +61,8 @@ Scene::process_nodes(uint32_t dt)
             continue;
         }
 
-        if (node->_lifetime) {
-            if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0) {
+        if (node->_lifetime > 0us) {
+            if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0us) {
                 // ensure that node is cleaned-up before deletion
                 if (not node->_marked_to_delete) {
                     node->_mark_to_delete();
@@ -197,7 +197,7 @@ Scene::on_enter()
 {}
 
 void
-Scene::update(uint32_t dt)
+Scene::update(const Duration dt)
 {}
 
 void
@@ -237,6 +237,18 @@ Scene::unregister_simulation(Node* node)
         pos != this->simulations_registry.end(),
         "Can't unregister from simulation, space node not in registry.");
     this->simulations_registry.erase(pos);
+}
+
+double
+Scene::time_scale() const
+{
+    return this->_time_scale;
+}
+
+void
+Scene::time_scale(const double scale)
+{
+    this->_time_scale = scale;
 }
 
 const std::vector<Event>&

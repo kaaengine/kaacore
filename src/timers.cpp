@@ -1,181 +1,153 @@
+#include <algorithm>
 #include <unordered_map>
 
+#include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/input.h"
 #include "kaacore/log.h"
-
+#include "kaacore/scenes.h"
 #include "kaacore/timers.h"
 
 namespace kaacore {
 
-struct _TimerData {
-    uint32_t interval;
-    TimerCallback callback;
-    uint32_t next_trigger_time;
-    SDL_TimerID internal_timer_id;
-};
-
-struct {
-    _TimerData& operator[](const TimerID timer_id)
-    {
-        return this->_timer_data_map[timer_id];
-    }
-
-    bool contains(TimerID timer_id)
-    {
-        auto index = this->_timer_data_map.find(timer_id);
-        return index != this->_timer_data_map.end();
-    }
-
-    void remove(TimerID timer_id) { this->_timer_data_map.erase(timer_id); }
-
-    void clear() { this->_timer_data_map.clear(); }
-
-  private:
-    std::unordered_map<TimerID, _TimerData> _timer_data_map;
-
-} _timers_manager;
-
-static uint32_t
-_timer_callback_wrapper(uint32_t interval, void* encoded_id)
-{
-    SDL_Event event;
-    event.type = static_cast<uint32_t>(EventType::_timer_fired);
-    event.user.data1 = encoded_id;
-    SDL_PushEvent(&event);
-    return 0;
-}
-
-SDL_TimerID
-_spawn_sdl_timer(TimerID timer_id, uint32_t interval)
-{
-    auto encoded_timer_id = reinterpret_cast<void*>(timer_id);
-    auto internal_timer_id =
-        SDL_AddTimer(interval, _timer_callback_wrapper, encoded_timer_id);
-
-    if (!internal_timer_id) {
-        throw kaacore::exception(SDL_GetError());
-    }
-
-    return internal_timer_id;
-}
-
-void
-resolve_timer(TimerID timer_id)
-{
-    if (!_timers_manager.contains(timer_id)) {
-        return;
-    }
-
-    auto& timer_data = _timers_manager[timer_id];
-    timer_data.callback();
-
-    if (timer_data.next_trigger_time == 0) {
-        _timers_manager.remove(timer_id);
-        return;
-    }
-
-    // compensate for time lost due to events processing delay
-    auto now = SDL_GetTicks();
-    int64_t diff = now - timer_data.next_trigger_time;
-    auto next_interval = timer_data.interval - diff;
-    timer_data.next_trigger_time = now + next_interval;
-    timer_data.internal_timer_id = _spawn_sdl_timer(timer_id, next_interval);
-}
-
-void
-destroy_timers()
-{
-    _timers_manager.clear();
-}
-
-Timer::Timer(
-    TimerCallback callback, const uint32_t interval, const bool single_shot)
-    : _callback(std::move(callback)), _interval(interval),
-      _single_shot(single_shot), _timer_id(++_last_timer_id)
+_TimerState::_TimerState(TimerID id, TimerCallback&& callback)
+    : id(id), callback(std::move(callback))
 {}
 
-Timer::~Timer()
+Timer::Timer(TimerCallback callback)
 {
-    this->stop();
+    this->_state = std::make_shared<_TimerState>(0, std::move(callback));
 }
 
 void
-Timer::_start()
+Timer::start(const Duration interval, Scene* const scene)
 {
-    uint32_t next_trigger_time = 0;
-    if (!this->_single_shot) {
-        next_trigger_time = SDL_GetTicks() + this->_interval;
-    }
-
-    _TimerData timer_data(
-        {this->_interval, this->_callback, next_trigger_time, 0});
-
-    timer_data.internal_timer_id =
-        _spawn_sdl_timer(this->_timer_id, this->_interval);
-    _timers_manager[this->_timer_id] = std::move(timer_data);
+    this->_start(interval, scene->timers);
 }
 
 void
-Timer::start()
+Timer::start_global(const Duration interval)
 {
+    get_engine()->timers.start(interval, *this);
+}
+
+void
+Timer::_start(const Duration interval, TimersManager& manager)
+{
+    KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
     KAACORE_CHECK(
-        this->_interval, "Interval must be set before starting the timer.");
+        not std::isinf(interval.count()), "Timer interval must not infinity.");
     if (this->is_running()) {
-        this->_stop();
+        this->stop();
     }
-
-    this->_start();
+    manager.start(interval, *this);
 }
 
 bool
-Timer::is_running()
+Timer::is_running() const
 {
-    return _timers_manager.contains(this->_timer_id);
-}
-
-void
-Timer::_stop()
-{
-    SDL_RemoveTimer(_timers_manager[this->_timer_id].internal_timer_id);
-    _timers_manager.remove(this->_timer_id);
+    return this->_state->is_running.load(std::memory_order_acquire);
 }
 
 void
 Timer::stop()
 {
-    if (!this->is_running()) {
-        return;
+    this->_state->is_running.store(false, std::memory_order_release);
+}
+
+TimersManager::TimersManager() : _scene(nullptr) {}
+
+TimersManager::TimersManager(Scene* const scene) : _scene(scene) {}
+
+TimersManager::_InvocationInstance::_InvocationInstance(
+    TimerID invocation_id, Duration interval, TimePoint triggered_at,
+    std::weak_ptr<_TimerState>&& state)
+    : invocation_id(invocation_id), interval(interval),
+      triggered_at(triggered_at), state(state)
+{}
+
+void
+TimersManager::start(const Duration interval, Timer& timer)
+{
+    {
+        std::unique_lock<std::mutex> lock{this->_lock};
+        auto state = timer._state;
+        TimerID invocation_id = ++this->_last_timer_id;
+        state->id = invocation_id;
+        state->is_running.store(true, std::memory_order_release);
+        this->_awaiting_timers.data.emplace_back(
+            invocation_id, interval, state);
     }
-    this->_stop();
-}
-
-uint32_t
-Timer::interval()
-{
-    return this->_interval;
+    this->_awaiting_timers.is_dirty.store(true, std::memory_order_release);
 }
 
 void
-Timer::interval(const uint32_t value)
+TimersManager::process(const HighPrecisionDuration dt)
 {
-    KAACORE_CHECK(
-        not this->is_running(), "Can't modify timer while it's running.");
-    this->_interval = value;
+    if (this->_awaiting_timers.is_dirty.load(std::memory_order_acquire)) {
+        auto now = this->time_point();
+        {
+            std::unique_lock<std::mutex> lock{this->_lock};
+            for (auto& awaiting_state : this->_awaiting_timers.data) {
+                auto& [invocation_id, interval, weak_state] = awaiting_state;
+                this->_queue.data.emplace_back(
+                    invocation_id, interval, now, std::move(weak_state));
+            }
+            this->_awaiting_timers.data.clear();
+        }
+        this->_queue.is_dirty = true;
+        this->_awaiting_timers.is_dirty.store(false, std::memory_order_release);
+    }
+
+    this->_dt_accumulator += dt;
+
+    if (this->_queue.is_dirty) {
+        std::sort(
+            this->_queue.data.begin(), this->_queue.data.end(),
+            [](const auto& lhs, const auto& rhs) -> bool {
+                return lhs.fire_at() > rhs.fire_at();
+            });
+        this->_queue.is_dirty = false;
+    }
+
+    auto now = this->time_point();
+    for (auto it = this->_queue.data.rbegin(); it != this->_queue.data.rend();
+         ++it) {
+        if (it->fire_at() > now) {
+            break;
+        }
+
+        auto invocation_id = it->invocation_id;
+        auto state = it->state.lock();
+        if (not state) {
+            // timer deleted
+            this->_queue.data.pop_back();
+            continue;
+        }
+
+        if (not state->is_running.load(std::memory_order_acquire) or
+            state->id != invocation_id) {
+            // timer outdated
+            this->_queue.data.pop_back();
+            continue;
+        }
+
+        struct TimerContext context = {it->interval, this->_scene};
+        auto next_interval = state->callback(context);
+        if (not(next_interval > 0.s)) {
+            this->_queue.data.pop_back();
+            continue;
+        }
+
+        it->triggered_at = now;
+        it->interval = next_interval;
+        this->_queue.is_dirty = true;
+    }
 }
 
-bool
-Timer::single_shot()
+TimePoint
+TimersManager::time_point() const
 {
-    return this->_single_shot;
-}
-
-void
-Timer::single_shot(const bool value)
-{
-    KAACORE_CHECK(
-        not this->is_running(), "Can't modify timer while it's running.");
-    this->_single_shot = value;
+    return TimePoint(this->_dt_accumulator);
 }
 
 }

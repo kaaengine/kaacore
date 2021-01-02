@@ -1,3 +1,4 @@
+#include <chrono>
 #include <memory>
 #include <vector>
 
@@ -10,41 +11,42 @@
 #include "kaacore/scenes.h"
 #include "kaacore/timers.h"
 
-using namespace kaacore;
+using namespace std::chrono_literals;
 
-struct DemoScene : Scene {
-    NodePtr node;
-    Timer timer;
+struct DemoScene : kaacore::Scene {
+    kaacore::NodePtr node;
+    kaacore::Duration duration;
+    kaacore::Timer timer;
 
     DemoScene()
     {
-        auto node = make_node();
+        auto node = kaacore::make_node();
         node->position({0, 0});
         node->color({1., 0., 0., 1});
-        node->shape(Shape::Box({100., 100.}));
+        node->shape(kaacore::Shape::Box({100., 100.}));
         this->node = this->root_node.add_child(node);
+        this->duration = 1.s;
 
-        this->timer = Timer(
-            [this]() {
-                KAACORE_APP_LOG_INFO("Timer callback called.");
-                this->node->visible(not this->node->visible());
-            },
-            1000, false);
-        this->timer.start();
+        this->timer = kaacore::Timer([this](kaacore::TimerContext context) {
+            KAACORE_APP_LOG_INFO("Timer callback called.");
+            this->node->visible(not this->node->visible());
+            return context.interval;
+        });
+        this->timer.start(this->duration, this);
     }
 
-    void update(uint32_t dt) override
+    void update(const kaacore::Duration dt) override
     {
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {
                 if (keyboard_key->is_key_down()) {
-                    if (keyboard_key->key() == Keycode::q) {
-                        get_engine()->quit();
-                    } else if (keyboard_key->key() == Keycode::s) {
+                    if (keyboard_key->key() == kaacore::Keycode::q) {
+                        kaacore::get_engine()->quit();
+                    } else if (keyboard_key->key() == kaacore::Keycode::s) {
                         if (this->timer.is_running()) {
                             this->timer.stop();
                         } else {
-                            this->timer.start();
+                            this->timer.start(this->duration, this);
                         }
                     }
                 }
@@ -56,7 +58,7 @@ struct DemoScene : Scene {
 extern "C" int
 main(int argc, char* argv[])
 {
-    Engine eng({800, 600});
+    kaacore::Engine eng({800, 600});
     DemoScene scene;
     scene.camera().position({0., 0.});
     eng.run(&scene);

@@ -1,45 +1,95 @@
 #pragma once
 
-#include <functional>
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
-#include <SDL.h>
+#include "kaacore/clock.h"
 
 namespace kaacore {
 
-typedef std::uintptr_t TimerID;
-typedef std::function<void()> TimerCallback;
+struct TimerContext {
+    Duration interval;
+    Scene* scene;
+};
 
-extern uint32_t KAACORE_Timer;
-void
-resolve_timer(TimerID timer_id);
-void
-destroy_timers();
+using TimerID = uint32_t;
+using TimerCallback = std::function<Duration(TimerContext context)>;
+
+struct _TimerState {
+    _TimerState(TimerID id, TimerCallback&& callback);
+
+    TimerID id;
+    TimerCallback callback;
+    std::atomic<bool> is_running;
+};
+
+class Scene;
+class TimersManager;
 
 class Timer {
   public:
     Timer() = default;
-    Timer(
-        TimerCallback callback, const uint32_t interval = 0,
-        const bool single_shot = true);
-    ~Timer();
+    Timer(TimerCallback callback);
 
-    void start();
-    bool is_running();
+    void start_global(const Duration interval);
+    void start(const Duration interval, Scene* const scene);
+    bool is_running() const;
     void stop();
 
-    uint32_t interval();
-    void interval(const uint32_t value);
-    bool single_shot();
-    void single_shot(const bool value);
+  private:
+    std::shared_ptr<_TimerState> _state;
+
+    void _start(const Duration interval, TimersManager& manager);
+
+    friend class TimersManager;
+};
+
+class TimersManager {
+  public:
+    TimersManager();
+    TimersManager(Scene* const scene);
+    void start(const Duration interval, Timer& timer);
+    void process(const HighPrecisionDuration dt);
+    TimePoint time_point() const;
 
   private:
-    void _start();
-    void _stop();
+    using _AwaitingState =
+        std::tuple<TimerID, Duration, std::weak_ptr<_TimerState>>;
 
-    bool _single_shot;
-    TimerID _timer_id;
-    uint32_t _interval;
-    TimerCallback _callback;
+    struct _InvocationInstance {
+        _InvocationInstance(
+            TimerID invocation_id, Duration interval, TimePoint triggered_at,
+            std::weak_ptr<_TimerState>&& state);
+
+        TimerID invocation_id;
+        Duration interval;
+        TimePoint triggered_at;
+        std::weak_ptr<_TimerState> state;
+
+        inline TimePoint fire_at() const
+        {
+            return this->triggered_at +
+                   std::chrono::duration_cast<HighPrecisionDuration>(
+                       this->interval);
+        }
+    };
+
+    std::mutex _lock;
+    Scene* const _scene;
+    HighPrecisionDuration _dt_accumulator;
+    struct {
+        bool is_dirty = false;
+        std::vector<_InvocationInstance> data;
+    } _queue;
+    struct {
+        std::atomic<bool> is_dirty = false;
+        std::vector<_AwaitingState> data;
+    } _awaiting_timers;
+
     static inline TimerID _last_timer_id = 0;
 };
 

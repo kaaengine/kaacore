@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 
+#include "kaacore/clock.h"
 #include "kaacore/easings.h"
 #include "kaacore/node_ptr.h"
 #include "kaacore/nodes.h"
@@ -67,6 +68,8 @@ calculate_attribute_advancement(
             return origin_value + advance_value;
         case AttributeTransitionMethod::multiply:
             return origin_value * advance_value;
+        default:
+            throw kaacore::exception("Unknown transition method.");
     }
 }
 
@@ -93,7 +96,7 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
   public:
     NodeAttributeTransition(
         T value_advance, const AttributeTransitionMethod& advance_method,
-        const double duration,
+        const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeTransitionCustomizable(duration, warping, easing),
@@ -101,7 +104,7 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
     {}
 
     NodeAttributeTransition(
-        T value_advance, const double duration,
+        T value_advance, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeAttributeTransition(
@@ -171,7 +174,8 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
   public:
     NodeAttributeSteppingTransition(
         const std::vector<T>& steps,
-        const AttributeTransitionMethod& advance_method, const double duration,
+        const AttributeTransitionMethod& advance_method,
+        const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeTransitionCustomizable(duration, warping, easing), _steps(steps),
@@ -179,7 +183,7 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
     {}
 
     NodeAttributeSteppingTransition(
-        const std::vector<T>& steps, const double duration,
+        const std::vector<T>& steps, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeAttributeSteppingTransition(
@@ -252,7 +256,7 @@ class NodeInoperableAttributeSteppingTransition
 
   public:
     NodeInoperableAttributeSteppingTransition(
-        const std::vector<T>& steps, const double duration,
+        const std::vector<T>& steps, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
         const Easing easing = Easing::none)
         : NodeTransitionCustomizable(duration, warping, easing), _steps(steps)

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include "kaacore/clock.h"
 #include "kaacore/engine.h"
 #include "kaacore/geometry.h"
 #include "kaacore/log.h"
@@ -10,45 +11,45 @@
 #include "kaacore/scenes.h"
 #include "kaacore/transitions.h"
 
-using namespace kaacore;
+using namespace std::chrono_literals;
 
-struct SpatialIndexingDemoScene : Scene {
-    NodePtr stats_text_node;
-    NodePtr shapes_tree;
+struct SpatialIndexingDemoScene : kaacore::Scene {
+    kaacore::NodePtr stats_text_node;
+    kaacore::NodePtr shapes_tree;
 
     SpatialIndexingDemoScene()
     {
         this->camera().position({0., 0.});
 
         const auto movement_transition =
-            make_node_transition<NodePositionTransition>(
-                glm::dvec2(100, 30), AttributeTransitionMethod::add, 10000.,
-                TransitionWarping(0, true));
+            kaacore::make_node_transition<kaacore::NodePositionTransition>(
+                glm::dvec2(100, 30), kaacore::AttributeTransitionMethod::add,
+                10.s, kaacore::TransitionWarping(0, true));
         const auto scaling_transition =
-            make_node_transition<NodeScaleTransition>(
-                glm::dvec2(3.0, 3.5), AttributeTransitionMethod::set, 13000.,
-                TransitionWarping(0, true));
+            kaacore::make_node_transition<kaacore::NodeScaleTransition>(
+                glm::dvec2(3.0, 3.5), kaacore::AttributeTransitionMethod::set,
+                13.s, kaacore::TransitionWarping(0, true));
 
-        const std::vector<Shape> shapes{Shape::Circle(3.5),
-                                        Shape::Box({4., 6.}),
-                                        Shape::Segment({-4., 1.}, {1., 2.})};
+        const std::vector<kaacore::Shape> shapes{
+            kaacore::Shape::Circle(3.5), kaacore::Shape::Box({4., 6.}),
+            kaacore::Shape::Segment({-4., 1.}, {1., 2.})};
 
-        auto stats_text_node = make_node(NodeType::text);
+        auto stats_text_node = kaacore::make_node(kaacore::NodeType::text);
         stats_text_node->text.content("");
         stats_text_node->text.font_size(8.);
         stats_text_node->position({-48., -48});
         stats_text_node->z_index(10);
-        stats_text_node->origin_alignment(Alignment::top_left);
+        stats_text_node->origin_alignment(kaacore::Alignment::top_left);
         this->stats_text_node = this->root_node.add_child(stats_text_node);
 
-        auto shapes_tree = make_node();
+        auto shapes_tree = kaacore::make_node();
         shapes_tree->scale({0.5, 0.5});
         shapes_tree->transition(scaling_transition);
         this->shapes_tree = this->root_node.add_child(shapes_tree);
 
         for (int i = -20; i <= 20; i++) {
             for (int j = -20; j <= 20; j++) {
-                NodeOwnerPtr node = make_node();
+                kaacore::NodeOwnerPtr node = kaacore::make_node();
                 node->shape(shapes[(i + j) % shapes.size()]);
                 node->position({10. * i, 10. * j});
                 node->color({0.5, 0.5, 0.5, 1.0});
@@ -58,14 +59,15 @@ struct SpatialIndexingDemoScene : Scene {
         }
     }
 
-    void update(uint32_t dt) override
+    void update(const kaacore::Duration dt) override
     {
         for (auto const& event : this->get_events()) {
             auto keyboard_key = event.keyboard_key();
-            if (keyboard_key and keyboard_key->key() == Keycode::q) {
-                get_engine()->quit();
+            if (keyboard_key and keyboard_key->key() == kaacore::Keycode::q) {
+                kaacore::get_engine()->quit();
                 break;
-            } else if (keyboard_key and keyboard_key->key() == Keycode::r) {
+            } else if (
+                keyboard_key and keyboard_key->key() == kaacore::Keycode::r) {
                 KAACORE_APP_LOG_INFO("Resetting non-indexable nodes...");
 
                 int count = 0;
@@ -82,7 +84,7 @@ struct SpatialIndexingDemoScene : Scene {
             if (auto mouse_button = event.mouse_button()) {
                 auto pos = mouse_button->position();
                 if (mouse_button->is_button_down() and
-                    mouse_button->button() == MouseButton::left) {
+                    mouse_button->button() == kaacore::MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
                     auto query_results = this->spatial_index.query_point(pos);
                     KAACORE_APP_LOG_INFO(
@@ -92,7 +94,7 @@ struct SpatialIndexingDemoScene : Scene {
                     }
                 } else if (
                     mouse_button->is_button_down() and
-                    mouse_button->button() == MouseButton::right) {
+                    mouse_button->button() == kaacore::MouseButton::right) {
                     pos = this->camera().unproject_position(pos);
                     auto query_results = this->spatial_index.query_point(pos);
                     KAACORE_APP_LOG_INFO(
@@ -106,10 +108,10 @@ struct SpatialIndexingDemoScene : Scene {
         }
 
         auto query_results = this->spatial_index.query_bounding_box(
-            BoundingBox{-50., -50., 50., 50.}, true);
+            kaacore::BoundingBox{-50., -50., 50., 50.}, true);
         auto query_results_for_drawing =
             this->spatial_index.query_bounding_box_for_drawing(
-                BoundingBox{-50., -50., 50., 50.});
+                kaacore::BoundingBox{-50., -50., 50., 50.});
         this->stats_text_node->text.content(
             "Nodes visible (normal/drawing):\n" +
             std::to_string(query_results.size()) + "/" +
@@ -120,7 +122,7 @@ struct SpatialIndexingDemoScene : Scene {
 extern "C" int
 main(int argc, char* argv[])
 {
-    Engine eng({100, 100});
+    kaacore::Engine eng({100, 100});
     eng.window->size({800, 600});
     eng.window->center();
     SpatialIndexingDemoScene scene;

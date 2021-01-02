@@ -12,11 +12,13 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/audio.h"
+#include "kaacore/clock.h"
 #include "kaacore/config.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources_manager.h"
 #include "kaacore/threading.h"
+#include "kaacore/timers.h"
 #include "kaacore/window.h"
 
 #define KAACORE_ASSERT_MAIN_THREAD()                                           \
@@ -47,6 +49,8 @@ class Engine {
     VirtualResolutionMode _virtual_resolution_mode =
         VirtualResolutionMode::adaptive_stretch;
 
+    Clock clock;
+    TimersManager timers;
     // use pointers so we can have more controll over destruction order
     std::unique_ptr<Window> window;
     std::unique_ptr<Renderer> renderer;
@@ -71,6 +75,8 @@ class Engine {
 
     VirtualResolutionMode virtual_resolution_mode() const;
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
+
+    double get_fps() const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 

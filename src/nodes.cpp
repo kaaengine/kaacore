@@ -600,16 +600,17 @@ Node::transition(const NodeTransitionHandle& transition)
     this->_transitions_manager.set(default_transition_name, transition);
 }
 
-uint32_t
+Duration
 Node::lifetime()
 {
     return this->_lifetime;
 }
 
 void
-Node::lifetime(const uint32_t& lifetime)
+Node::lifetime(const Duration& lifetime)
 {
-    this->_lifetime = lifetime;
+    this->_lifetime =
+        std::chrono::duration_cast<HighPrecisionDuration>(lifetime);
 }
 
 NodeTransitionsManager&
