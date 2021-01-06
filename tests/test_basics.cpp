@@ -64,6 +64,26 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
     }
 }
 
+TEST_CASE("Parse compiled file name", "[basics][logging_utils][no_engine]")
+{
+    REQUIRE(_strip_module_name("/absolute/path/file.cpp") == "file");
+    REQUIRE(_strip_module_name("/absolute/path/file.h") == "file");
+
+    REQUIRE(_strip_module_name("C:\\absolute\\path\\file.cpp") == "file");
+    REQUIRE(_strip_module_name("C:\\absolute\\path\\file.h") == "file");
+
+    REQUIRE(_strip_module_name("relative_path/file.cpp") == "file");
+    REQUIRE(_strip_module_name("relative_path/file.h") == "file");
+    REQUIRE(_strip_module_name("relative_path/x/y/z/file.cpp") == "file");
+    REQUIRE(_strip_module_name("relative_path/x/y/z/file.h") == "file");
+
+    REQUIRE(_strip_module_name("relative_path\\file.cpp") == "file");
+    REQUIRE(_strip_module_name("relative_path\\file.h") == "file");
+
+    REQUIRE(_strip_module_name("file.cpp") == "file");
+    REQUIRE(_strip_module_name("file.h") == "file");
+}
+
 TEST_CASE("Engine start/stop", "[basics][engine_start_stop]")
 {
     REQUIRE_FALSE(is_engine_initialized());
