@@ -6,7 +6,7 @@ SAMPLER2D(s_texture, 0);
 
 
 // value based on font_sdf_edge_value from kaacore/fonts.h
-const float edge_value = 180 / 255.;
+#define edge_value 0.705882  // 180 / 255
 
 vec4 sample_sub16(vec2 coord)
 {
