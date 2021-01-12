@@ -74,27 +74,28 @@ initialize_logging()
         for (size_t index = 0; index < _log_categories.size(); index++) {
             auto logger_name = std::string(_log_categories[index]);
             auto logger = spdlog::stderr_color_mt(logger_name);
-            logger->debug("Initialized new logger (index: {})", index);
+            std::optional<std::string_view> requested_level_name;
             if (logging_settings_env != nullptr) {
-                auto requested_level_name =
+                requested_level_name =
                     _unpack_logging_settings(logging_settings_env, logger_name);
-                if (requested_level_name) {
-                    logger->info(
-                        "Found requested logger level: {}",
-                        requested_level_name.value());
-                    auto requested_level =
-                        _parse_logging_level_name(requested_level_name.value());
-                    if (requested_level) {
-                        logger->set_level(requested_level.value());
-                    } else {
-                        logger->warn(
-                            "Unrecognized requested logger level: {}",
-                            requested_level_name.value());
-                    }
-                } else {
-                    logger->set_level(default_level);
-                }
             }
+            if (requested_level_name) {
+                logger->info(
+                    "Found requested logger level: {}",
+                    requested_level_name.value());
+                auto requested_level =
+                    _parse_logging_level_name(requested_level_name.value());
+                if (requested_level) {
+                    logger->set_level(requested_level.value());
+                } else {
+                    logger->warn(
+                        "Unrecognized requested logger level: {}",
+                        requested_level_name.value());
+                }
+            } else {
+                logger->set_level(default_level);
+            }
+            logger->debug("Initialized new logger (index: {})", index);
             _loggers[index] = logger;
         }
 
