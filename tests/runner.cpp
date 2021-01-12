@@ -18,7 +18,7 @@ main(int argc, char* argv[])
 }
 
 void
-TestingScene::update(uint32_t dt)
+TestingScene::update(const Duration dt)
 {
     if (this->frames_left == 0) {
         get_engine()->quit();

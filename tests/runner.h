@@ -11,10 +11,10 @@ using namespace kaacore;
 typedef std::function<void(uint32_t)> TestingSceneUpdateFunction;
 
 struct TestingScene : Scene {
-    void update(uint32_t dt);
+    void update(const Duration dt) override;
     void run_on_engine(uint32_t frames);
 
-    std::function<void(uint32_t)> update_function = nullptr;
+    std::function<void(const Duration dt)> update_function = nullptr;
     uint32_t frames_left = 0;
 };
 
