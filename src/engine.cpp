@@ -196,6 +196,19 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
+bool
+Engine::vertical_sync() const
+{
+    return this->renderer->_vertical_sync;
+}
+
+void
+Engine::vertical_sync(const bool vsync)
+{
+    this->renderer->_vertical_sync = vsync;
+    this->renderer->reset();
+}
+
 double
 Engine::get_fps() const
 {

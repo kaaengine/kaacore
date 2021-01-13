@@ -235,7 +235,7 @@ Renderer::reset()
 {
     KAACORE_LOG_DEBUG("Calling Renderer::reset()");
     auto window_size = get_engine()->window->_peek_size();
-    bgfx::reset(window_size.x, window_size.y, this->_reset_flags);
+    bgfx::reset(window_size.x, window_size.y, this->_calculate_reset_flags());
 
     glm::uvec2 view_size, border_size;
     auto virtual_resolution = get_engine()->virtual_resolution();
@@ -340,6 +340,12 @@ Renderer::render_vertices(
     bgfx::setTexture(0, this->texture_uniform, texture);
 
     bgfx::submit(view_index, program_handle, false);
+}
+
+uint32_t
+Renderer::_calculate_reset_flags() const
+{
+    return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
 }
 
 } // namespace kaacore
