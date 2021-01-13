@@ -59,10 +59,10 @@ Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
     const std::vector<glm::dvec2> points = {a, b};
 
     const std::vector<StandardVertexData> vertices = {
-        StandardVertexData(a0.x, a0.y, 0., 0.),
-        StandardVertexData(b0.x, b0.y, 1., 0.),
-        StandardVertexData(b1.x, b1.y, 1., 1.),
-        StandardVertexData(a1.x, a1.y, 0., 1.)};
+        StandardVertexData::XY_UV(a0.x, a0.y, 0., 0.),
+        StandardVertexData::XY_UV(b0.x, b0.y, 1., 0.),
+        StandardVertexData::XY_UV(b1.x, b1.y, 1., 1.),
+        StandardVertexData::XY_UV(a1.x, a1.y, 0., 1.)};
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
