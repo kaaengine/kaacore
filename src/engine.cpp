@@ -357,8 +357,7 @@ Engine::_main_thread_entrypoint()
         this->_event_processing_state.set(EventProcessingState::ready);
         do {
             this->_synced_syscall_queue.finalize_calls();
-        } while (this->is_running and
-                 bgfx::renderFrame(
+        } while (bgfx::renderFrame(
                      std::chrono::duration_cast<std::chrono::milliseconds>(
                          threads_sync_timeout)
                          .count()) == bgfx::RenderFrame::Enum::Timeout);
@@ -401,6 +400,9 @@ Engine::_engine_thread_entrypoint()
             KAACORE_LOG_INFO("Engine API loop stopped with exception.");
         }
         this->_engine_loop_state.set(EngineLoopState::stopping);
+        KAACORE_LOG_DEBUG("Rendering final frame.");
+        // render one more frame to stop waiting renderFrame() from main thread
+        this->renderer->end_frame();
         KAACORE_LOG_INFO("Engine loop stopped.");
     }
 }
