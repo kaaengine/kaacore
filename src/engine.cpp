@@ -114,7 +114,6 @@ Engine::~Engine()
     engine = nullptr;
 }
 
-
 void
 Engine::run(Scene* scene)
 {
@@ -207,15 +206,15 @@ Engine::get_displays()
     });
 }
 
- std::filesystem::path
- Engine::get_writable_path(const std::string org, const std::string app) const
- {
+std::filesystem::path
+Engine::get_writable_path(const std::string org, const std::string app) const
+{
     std::unique_ptr<char[]> path(SDL_GetPrefPath(org.c_str(), app.c_str()));
     if (not path) {
         throw kaacore::exception(SDL_GetError());
     }
     return path.get();
- }
+}
 
 bgfx::Init
 Engine::_gather_platform_data()

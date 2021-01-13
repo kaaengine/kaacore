@@ -1,11 +1,11 @@
 #pragma once
 
-#include <mutex>
 #include <atomic>
+#include <condition_variable>
+#include <filesystem>
+#include <mutex>
 #include <string>
 #include <thread>
-#include <filesystem>
-#include <condition_variable>
 
 #include <SDL.h>
 
@@ -78,7 +78,8 @@ class Engine {
 
     double get_fps() const;
     std::vector<Display> get_displays();
-    std::filesystem::path get_writable_path(std::string org, std::string app) const;
+    std::filesystem::path get_writable_path(
+        std::string org, std::string app) const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 
