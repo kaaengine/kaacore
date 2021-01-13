@@ -1,10 +1,11 @@
 #pragma once
 
-#include <atomic>
-#include <condition_variable>
 #include <mutex>
+#include <atomic>
 #include <string>
 #include <thread>
+#include <filesystem>
+#include <condition_variable>
 
 #include <SDL.h>
 
@@ -64,7 +65,6 @@ class Engine {
             VirtualResolutionMode::adaptive_stretch) noexcept(false);
     ~Engine();
 
-    std::vector<Display> get_displays();
     void run(Scene* scene);
     void change_scene(Scene* scene);
     Scene* current_scene();
@@ -77,6 +77,8 @@ class Engine {
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
     double get_fps() const;
+    std::vector<Display> get_displays();
+    std::filesystem::path get_writable_path(std::string org, std::string app) const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 

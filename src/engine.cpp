@@ -114,26 +114,6 @@ Engine::~Engine()
     engine = nullptr;
 }
 
-std::vector<Display>
-Engine::get_displays()
-{
-    return this->make_call_from_main_thread<std::vector<Display>>([this]() {
-        std::vector<Display> displays;
-        SDL_Rect rect;
-        int32_t displays_num = SDL_GetNumVideoDisplays();
-        displays.resize(displays_num);
-        for (int32_t i = 0; i < displays_num; i++) {
-            SDL_GetDisplayUsableBounds(i, &rect);
-            Display& display = displays[i];
-            display.index = i;
-            display.position = {rect.x, rect.y};
-            display.size = {rect.w, rect.h};
-            display.name = SDL_GetDisplayName(i);
-        }
-
-        return displays;
-    });
-}
 
 void
 Engine::run(Scene* scene)
@@ -205,6 +185,37 @@ Engine::get_fps() const
     }
     return 0;
 }
+
+std::vector<Display>
+Engine::get_displays()
+{
+    return this->make_call_from_main_thread<std::vector<Display>>([this]() {
+        std::vector<Display> displays;
+        SDL_Rect rect;
+        int32_t displays_num = SDL_GetNumVideoDisplays();
+        displays.resize(displays_num);
+        for (int32_t i = 0; i < displays_num; i++) {
+            SDL_GetDisplayUsableBounds(i, &rect);
+            Display& display = displays[i];
+            display.index = i;
+            display.position = {rect.x, rect.y};
+            display.size = {rect.w, rect.h};
+            display.name = SDL_GetDisplayName(i);
+        }
+
+        return displays;
+    });
+}
+
+ std::filesystem::path
+ Engine::get_writable_path(const std::string org, const std::string app) const
+ {
+    std::unique_ptr<char[]> path(SDL_GetPrefPath(org.c_str(), app.c_str()));
+    if (not path) {
+        throw kaacore::exception(SDL_GetError());
+    }
+    return path.get();
+ }
 
 bgfx::Init
 Engine::_gather_platform_data()
