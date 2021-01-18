@@ -86,7 +86,11 @@ class Renderer {
         const ResourceReference<Program>& program) const;
 
   private:
-    uint32_t _reset_flags = BGFX_RESET_VSYNC;
+    uint32_t _calculate_reset_flags() const;
+
+    bool _vertical_sync = true;
+
+    friend class Engine;
 };
 
 } // namespace kaacore
