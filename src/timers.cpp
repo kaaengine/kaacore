@@ -135,6 +135,7 @@ TimersManager::process(const HighPrecisionDuration dt)
         auto next_interval = state->callback(context);
         if (not(next_interval > 0.s)) {
             this->_queue.data.pop_back();
+            state->is_running.store(false, std::memory_order_release);
             continue;
         }
 
