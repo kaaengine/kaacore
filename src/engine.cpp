@@ -14,6 +14,7 @@
 #include "kaacore/input.h"
 #include "kaacore/log.h"
 #include "kaacore/scenes.h"
+#include "kaacore/statistics.h"
 
 #include "kaacore/engine.h"
 
@@ -80,6 +81,7 @@ Engine::Engine(
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
     this->window->show();
+    this->udp_stats_exporter = try_make_udp_stats_exporter();
 }
 
 Engine::~Engine()
@@ -260,28 +262,40 @@ Engine::_scene_processing()
         this->_scene->on_enter();
         while (this->is_running) {
             auto dt = this->clock.measure();
-            this->renderer->begin_frame();
+            {
+                StopwatchStatAutoPusher stopwatch{"engine.frame:time"};
+                this->renderer->begin_frame();
 #if KAACORE_MULTITHREADING_MODE
-            this->_event_processing_state.wait(EventProcessingState::ready);
+                this->_event_processing_state.wait(EventProcessingState::ready);
 #endif
-            this->_process_events();
-            if (this->_next_scene) {
-                this->_swap_scenes();
+                this->_process_events();
+                if (this->_next_scene) {
+                    this->_swap_scenes();
+                }
+                Duration dt_sec = dt * this->_scene->time_scale();
+                auto scaled_dt =
+                    std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
+                {
+                    StopwatchStatAutoPusher stopwatch{"scene.update:time"};
+                    this->_scene->update(dt_sec);
+                }
+#if KAACORE_MULTITHREADING_MODE
+                this->_event_processing_state.set(
+                    EventProcessingState::consumed);
+#endif
+                this->_scene->resolve_dirty_nodes();
+                this->_scene->process_nodes_drawing();
+                this->_scene->process_physics(scaled_dt);
+                this->timers.process(dt);
+                this->_scene->timers.process(scaled_dt);
+                this->_scene->process_nodes(scaled_dt);
+                this->renderer->end_frame();
             }
-            Duration dt_sec = dt * this->_scene->time_scale();
-            auto scaled_dt =
-                std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
-            this->_scene->update(dt_sec);
-#if KAACORE_MULTITHREADING_MODE
-            this->_event_processing_state.set(EventProcessingState::consumed);
-#endif
-            this->_scene->resolve_dirty_nodes();
-            this->_scene->process_nodes_drawing();
-            this->_scene->process_physics(scaled_dt);
-            this->timers.process(dt);
-            this->_scene->timers.process(scaled_dt);
-            this->_scene->process_nodes(scaled_dt);
-            this->renderer->end_frame();
+
+            if (this->udp_stats_exporter) {
+                this->udp_stats_exporter->send_sync(
+                    get_global_statistics_manager().get_last_all());
+            }
         }
         this->_scene->on_exit();
         KAACORE_LOG_INFO("Engine stopped.");
