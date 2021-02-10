@@ -182,9 +182,14 @@ Node::_recalculate_model_matrix_cumulative()
 void
 Node::_set_position(const glm::dvec2& position)
 {
-    if (position != this->_position) {
-        this->_mark_dirty();
+    if (this->_position == position) {
+        return;
     }
+    this->recursive_call([](Node* n) {
+        n->_draw_unit_data.updated_vertices_indices_info = true;
+    });
+    // TODO optimize/replace _mark_dirty()
+    this->_mark_dirty();
     this->_position = position;
 }
 
@@ -192,9 +197,13 @@ void
 Node::_set_rotation(const double rotation)
 {
     auto normalized_rotation = _normalize_angle(rotation);
-    if (normalized_rotation != this->_rotation) {
-        this->_mark_dirty();
+    if (normalized_rotation == this->_rotation) {
+        return;
     }
+    this->recursive_call([](Node* n) {
+        n->_draw_unit_data.updated_vertices_indices_info = true;
+    });
+    this->_mark_dirty();
     this->_rotation = normalized_rotation;
 }
 
@@ -251,6 +260,7 @@ Node::recalculate_model_matrix()
     this->_recalculate_model_matrix();
 }
 
+// TODO remove
 void
 Node::recalculate_render_data()
 {
@@ -286,6 +296,46 @@ Node::recalculate_render_data()
     this->_render_data.is_dirty = false;
 }
 
+VerticesIndicesVectorPair
+Node::recalculate_vertices_indices_data()
+{
+    KAACORE_ASSERT(
+        this->_shape,
+        "Node has no shape set to calcualte vertices and indices data");
+
+    std::vector<StandardVertexData> computed_vertices;
+    computed_vertices.resize(this->_shape.vertices.size());
+
+    glm::dvec2 pos_realignment = calculate_realignment_vector(
+        this->_origin_alignment, this->_shape.vertices_bbox);
+
+    std::optional<std::pair<glm::dvec2, glm::dvec2>> uv_rect;
+    if (this->_sprite.has_texture()) {
+        uv_rect = this->_sprite.get_display_rect();
+    }
+
+    std::transform(
+        this->_shape.vertices.cbegin(), this->_shape.vertices.cend(),
+        computed_vertices.begin(),
+        [this, &uv_rect, pos_realignment](
+            const StandardVertexData& orig_vt) -> StandardVertexData {
+            StandardVertexData vt;
+            vt.xyz =
+                this->_model_matrix.value *
+                (glm::fvec4{orig_vt.xyz.x, orig_vt.xyz.y, orig_vt.xyz.z, 1.} +
+                 glm::fvec4{pos_realignment.x, pos_realignment.y, 0., 0.});
+
+            if (uv_rect) {
+                vt.uv = glm::mix(uv_rect->first, uv_rect->second, orig_vt.uv);
+            }
+            vt.mn = orig_vt.mn;
+            vt.rgba *= this->_color;
+            return vt;
+        });
+
+    return {computed_vertices, this->_shape.indices};
+}
+
 void
 Node::recalculate_ordering_data()
 {
@@ -318,6 +368,98 @@ Node::recalculate_ordering_data()
             this->_parent->_ordering_data.calculated_z_index;
     }
     this->_ordering_data.is_dirty = false;
+}
+
+bool
+Node::has_draw_unit_updates() const
+{
+    return (
+        this->_draw_unit_data.is_new or
+        this->_draw_unit_data.updated_bucket_key or
+        this->_draw_unit_data.updated_vertices_indices_info);
+}
+
+std::optional<DrawUnitModification>
+Node::calculate_draw_unit_removal() const
+{
+    if (this->_draw_unit_data.is_new) {
+        return std::nullopt;
+    }
+
+    DrawUnitModification remove_mod{};
+    remove_mod.lookup_key = this->_draw_unit_data.current_key;
+    remove_mod.id = reinterpret_cast<size_t>(this);
+    remove_mod.type = DrawUnitModification::Type::remove;
+    return remove_mod;
+}
+
+DrawUnitModificationPair
+Node::calculate_draw_unit_updates()
+{
+    KAACORE_ASSERT(
+        this->has_draw_unit_updates(), "Node has no draw unit modifications");
+
+    DrawUnitModification update_mod{};
+    std::optional<DrawUnitModification> remove_mod_opt{std::nullopt};
+    update_mod.id = reinterpret_cast<size_t>(this);
+
+    DrawBucketKey lookup_key;
+
+    this->recalculate_model_matrix();
+    this->recalculate_ordering_data();
+
+    if (this->_draw_unit_data.updated_bucket_key) {
+        if (not this->_draw_unit_data.is_new) {
+            // draw unit needs to be removed from previous bucket
+            remove_mod_opt = DrawUnitModification{};
+            remove_mod_opt->lookup_key = this->_draw_unit_data.current_key;
+            remove_mod_opt->id = reinterpret_cast<size_t>(this);
+            remove_mod_opt->type = DrawUnitModification::Type::remove;
+        }
+
+        lookup_key.views = this->_ordering_data.calculated_views;
+        lookup_key.z_index = this->_ordering_data.calculated_z_index;
+        lookup_key.root_distance = this->_root_distance;
+        lookup_key.texture_raw_ptr = this->_sprite.texture.res_ptr.get();
+        lookup_key.program_raw_ptr = nullptr; // TODO fonts shader
+        lookup_key.state_flags = 0u;
+        lookup_key.stencil_flags = 0u;
+    } else {
+        lookup_key = this->_draw_unit_data.current_key;
+    }
+
+    update_mod.lookup_key = lookup_key;
+    if (this->_draw_unit_data.updated_bucket_key or
+        this->_draw_unit_data.is_new) {
+        update_mod.type = DrawUnitModification::Type::insert;
+    } else {
+        update_mod.type = DrawUnitModification::Type::update;
+    }
+
+    if (this->_draw_unit_data.updated_vertices_indices_info) {
+        update_mod.updated_vertices_indices = true;
+        if (this->_shape) { // TODO handle visible
+            auto vertices_indices_pair =
+                this->recalculate_vertices_indices_data();
+            update_mod.state_update.vertices =
+                std::move(vertices_indices_pair.first);
+            update_mod.state_update.indices =
+                std::move(vertices_indices_pair.second);
+        }
+    } else {
+        update_mod.updated_vertices_indices = false;
+    }
+
+    return {update_mod, remove_mod_opt};
+}
+
+void
+Node::clear_draw_unit_updates(const DrawBucketKey& key)
+{
+    this->_draw_unit_data.current_key = key;
+    this->_draw_unit_data.is_new = false;
+    this->_draw_unit_data.updated_bucket_key = false;
+    this->_draw_unit_data.updated_vertices_indices_info = false;
 }
 
 const NodeType
@@ -435,10 +577,14 @@ Node::absolute_scale()
 void
 Node::scale(const glm::dvec2& scale)
 {
-    if (scale != this->_scale) {
-        this->_mark_dirty();
+    if (scale == this->_scale) {
+        return;
     }
+    this->_mark_dirty();
     this->_scale = scale;
+    this->recursive_call([](Node* n) {
+        n->_draw_unit_data.updated_vertices_indices_info = true;
+    });
     if (this->_type == NodeType::body) {
         for (const auto& n : this->_children) {
             if (n->_type == NodeType::hitbox) {
@@ -495,7 +641,11 @@ Node::z_index()
 void
 Node::z_index(const std::optional<int16_t>& z_index)
 {
+    if (this->_z_index == z_index) {
+        return;
+    }
     this->_z_index = z_index;
+    this->_draw_unit_data.updated_bucket_key = true;
     this->_mark_ordering_dirty();
 }
 
@@ -521,6 +671,9 @@ Node::shape(const Shape& shape)
 void
 Node::shape(const Shape& shape, bool is_auto_shape)
 {
+    if (this->_shape == shape) {
+        return;
+    }
     this->_shape = shape;
     if (not shape) {
         this->_auto_shape = true;
@@ -531,7 +684,7 @@ Node::shape(const Shape& shape, bool is_auto_shape)
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
-    // TODO: check if we aren't setting the same shape before marking it dirty
+    this->_draw_unit_data.updated_vertices_indices_info = true;
     this->_render_data.is_dirty = true;
     this->_spatial_data.is_dirty = true;
 }
@@ -545,6 +698,14 @@ Node::sprite()
 void
 Node::sprite(const Sprite& sprite)
 {
+    if (this->_sprite == sprite) {
+        return;
+    }
+    if (this->_sprite.texture != sprite.texture) {
+        this->_draw_unit_data.updated_bucket_key = true;
+    }
+    this->_draw_unit_data.updated_vertices_indices_info = true;
+
     this->_sprite = sprite;
     if (this->_auto_shape) {
         if (sprite) {
@@ -553,7 +714,6 @@ Node::sprite(const Sprite& sprite)
             this->shape(Shape{});
         }
     }
-    // TODO: check if we aren't setting the same sprite before marking it dirty
     this->_render_data.is_dirty = true;
 }
 
@@ -566,9 +726,11 @@ Node::color()
 void
 Node::color(const glm::dvec4& color)
 {
-    if (color != this->_color) {
-        this->_render_data.is_dirty = true;
+    if (color == this->_color) {
+        return;
     }
+    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->_render_data.is_dirty = true;
     this->_color = color;
 }
 
@@ -581,6 +743,7 @@ Node::visible()
 void
 Node::visible(const bool& visible)
 {
+    // TODO handle draw_unit_data
     if (visible and visible != this->_visible) {
         this->_mark_dirty();
     }
@@ -596,9 +759,11 @@ Node::origin_alignment()
 void
 Node::origin_alignment(const Alignment& alignment)
 {
-    if (alignment != this->_origin_alignment) {
-        this->_render_data.is_dirty = true;
+    if (alignment == this->_origin_alignment) {
+        return;
     }
+    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->_render_data.is_dirty = true;
     this->_origin_alignment = alignment;
 }
 

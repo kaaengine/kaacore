@@ -60,6 +60,15 @@ Scene::process_nodes(const HighPrecisionDuration dt)
         processing_queue.pop_front();
 
         if (node->_marked_to_delete) {
+            // TODO optimize flow
+            node->recursive_call([this](const Node* n) {
+                if (auto draw_unit_removal = n->calculate_draw_unit_removal()) {
+                    KAACORE_LOG_TRACE(
+                        "Removing node from draw queue: {}", fmt::ptr(n));
+                    this->draw_queue.enqueue_modification(
+                        std::move(*draw_unit_removal));
+                }
+            });
             delete node;
             continue;
         }
@@ -70,6 +79,16 @@ Scene::process_nodes(const HighPrecisionDuration dt)
                 if (not node->_marked_to_delete) {
                     node->_mark_to_delete();
                 }
+                // TODO optimize flow
+                node->recursive_call([this](const Node* n) {
+                    if (auto draw_unit_removal =
+                            n->calculate_draw_unit_removal()) {
+                        KAACORE_LOG_TRACE(
+                            "Removing node from draw queue: {}", fmt::ptr(n));
+                        this->draw_queue.enqueue_modification(
+                            std::move(*draw_unit_removal));
+                    }
+                });
                 delete node;
                 continue;
             }
@@ -107,6 +126,13 @@ Scene::resolve_dirty_nodes()
         processing_queue.pop_front();
 
         if (node->_marked_to_delete) {
+            // TODO optimize flow
+            if (auto draw_unit_removal = node->calculate_draw_unit_removal()) {
+                KAACORE_LOG_TRACE(
+                    "Removing node from draw queue: {}", fmt::ptr(node));
+                this->draw_queue.enqueue_modification(
+                    std::move(*draw_unit_removal));
+            }
             delete node;
             continue;
         }
@@ -127,71 +153,59 @@ void
 Scene::process_nodes_drawing()
 {
     static std::deque<Node*> processing_queue;
-    static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
-
+    static std::deque<Node*> rendering_queue;
+    KAACORE_LOG_TRACE("Starting process_nodes_drawing()");
     StopwatchStatAutoPusher stopwatch{"scene.nodes_drawing:time"};
-
+    CounterStatAutoPusher dq_inserts_count{"scene.draw_queue:inserts:count"};
+    CounterStatAutoPusher dq_updates_count{"scene.draw_queue:updates:count"};
+    CounterStatAutoPusher dq_removals_count{"scene.draw_queue:removals:count"};
     processing_queue.clear();
     rendering_queue.clear();
     processing_queue.push_back(&this->root_node);
-    auto renderer = get_engine()->renderer.get();
     while (not processing_queue.empty()) {
         Node* node = processing_queue.front();
         processing_queue.pop_front();
-
-        if (not node->_visible) {
-            continue;
-        }
+        rendering_queue.push_back(node);
 
         for (const auto child_node : node->_children) {
             processing_queue.push_back(child_node);
         }
-
-        node->recalculate_render_data();
-        node->recalculate_ordering_data();
-
-        rendering_queue.emplace_back(
-            std::abs(std::numeric_limits<int16_t>::min()) +
-                node->_ordering_data.calculated_z_index,
-            node);
     }
 
-    std::stable_sort(
-        rendering_queue.begin(), rendering_queue.end(),
-        [](const std::pair<uint64_t, Node*> a,
-           const std::pair<uint64_t, Node*> b) {
-            return std::get<uint64_t>(a) < std::get<uint64_t>(b);
-        });
+    for (auto* node : rendering_queue) {
+        if (node->has_draw_unit_updates()) {
+            // KAACORE_LOG_TRACE("Update for node: {}", fmt::ptr(node));
+            auto [mod_1, mod_2] = node->calculate_draw_unit_updates();
+            node->clear_draw_unit_updates(mod_1.lookup_key);
+            this->draw_queue.enqueue_modification(std::move(mod_1));
+            switch (mod_1.type) {
+                case DrawUnitModification::Type::insert:
+                    dq_inserts_count += 1;
+                    break;
+                case DrawUnitModification::Type::update:
+                    dq_updates_count += 1;
+                    break;
+                case DrawUnitModification::Type::remove:
+                    dq_removals_count += 1;
+                    break;
+            }
+            if (mod_2) {
+                KAACORE_ASSERT(
+                    mod_2->type == DrawUnitModification::Type::remove, "");
+                this->draw_queue.enqueue_modification(std::move(*mod_2));
+                dq_removals_count += 1;
+            }
+
+            // TODO handle removal
+        }
+    }
 
     for (auto& view : this->views) {
-        renderer->process_view(view);
+        get_engine()->renderer->process_view(view);
     }
 
-    for (const auto& qn : rendering_queue) {
-        auto node = std::get<Node*>(qn);
-        if (node->_render_data.computed_vertices.empty()) {
-            continue;
-        }
-
-        node->_ordering_data.calculated_views.each_active_z_index(
-            [this, &renderer, &node](int16_t z_index) {
-                auto& view = this->views[z_index];
-
-                if (node->type() == NodeType::text) {
-                    renderer->render_vertices(
-                        view.internal_index(),
-                        node->_render_data.computed_vertices,
-                        node->_shape.indices, node->_render_data.texture_handle,
-                        renderer->sdf_font_program);
-                } else {
-                    renderer->render_vertices(
-                        view.internal_index(),
-                        node->_render_data.computed_vertices,
-                        node->_shape.indices, node->_render_data.texture_handle,
-                        renderer->default_program);
-                }
-            });
-    }
+    this->draw_queue.process_modifications();
+    get_engine()->renderer->render_draw_queue(this->draw_queue);
 }
 
 void

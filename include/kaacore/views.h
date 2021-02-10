@@ -69,6 +69,8 @@ class ViewIndexSet {
     operator std::vector<int16_t>() const;
 
     std::bitset<KAACORE_MAX_VIEWS>::reference operator[](size_t pos);
+    bool operator==(const ViewIndexSet& other) const;
+    bool operator<(const ViewIndexSet& other) const;
     ViewIndexSet operator|(const ViewIndexSet& other) const;
     ViewIndexSet operator&(const ViewIndexSet& other) const;
     ViewIndexSet& operator|=(const ViewIndexSet& other);
@@ -79,11 +81,14 @@ class ViewIndexSet {
     bool none() const;
 
     void each_active_z_index(const std::function<void(int16_t)>) const;
+    void each_active_internal_index(const std::function<void(int16_t)>) const;
 
   private:
     ViewIndexSet(std::bitset<KAACORE_MAX_VIEWS> _bitset);
 
     std::bitset<KAACORE_MAX_VIEWS> _views_bitset;
+
+    friend struct std::hash<ViewIndexSet>;
 };
 
 class View {
@@ -145,3 +150,13 @@ class ViewsManager {
 };
 
 } // namespace kaacore
+
+namespace std {
+template<>
+struct hash<kaacore::ViewIndexSet> {
+    size_t operator()(const kaacore::ViewIndexSet& views) const
+    {
+        return std::hash<std::bitset<KAACORE_MAX_VIEWS>>{}(views._views_bitset);
+    }
+};
+}

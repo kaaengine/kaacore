@@ -58,6 +58,21 @@ std::bitset<KAACORE_MAX_VIEWS>::reference ViewIndexSet::operator[](size_t pos)
     return this->_views_bitset[pos + views_z_index_to_internal_offset];
 }
 
+bool
+ViewIndexSet::operator==(const ViewIndexSet& other) const
+{
+    return this->_views_bitset == other._views_bitset;
+}
+
+bool
+ViewIndexSet::operator<(const ViewIndexSet& other) const
+{
+    // make sure that all bits can be contained in `unsigned long`
+    // during comparison
+    static_assert(sizeof(unsigned long) * 8 >= KAACORE_MAX_VIEWS);
+    return this->_views_bitset.to_ulong() < other._views_bitset.to_ulong();
+}
+
 ViewIndexSet
 ViewIndexSet::operator|(const ViewIndexSet& other) const
 {
@@ -107,6 +122,17 @@ ViewIndexSet::each_active_z_index(const std::function<void(int16_t)> func) const
     for (auto i = 0; i < this->_views_bitset.size(); i++) {
         if (this->_views_bitset.test(i)) {
             func(i - views_z_index_to_internal_offset);
+        }
+    }
+}
+
+void
+ViewIndexSet::each_active_internal_index(
+    const std::function<void(int16_t)> func) const
+{
+    for (auto i = 0; i < this->_views_bitset.size(); i++) {
+        if (this->_views_bitset.test(i)) {
+            func(i + views_offset);
         }
     }
 }

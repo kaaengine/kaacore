@@ -219,7 +219,11 @@ Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 
 void
 Renderer::begin_frame()
-{}
+{
+    for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
+        bgfx::setViewMode(i, bgfx::ViewMode::DepthAscending);
+    }
+}
 
 void
 Renderer::end_frame()
@@ -368,6 +372,103 @@ Renderer::render_vertices(
     bgfx::setTexture(0, this->texture_uniform, texture);
 
     bgfx::submit(view_index, program_handle, false);
+}
+
+void
+Renderer::render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit)
+{
+    bgfx::TransientVertexBuffer vertices_buffer;
+    bgfx::TransientIndexBuffer indices_buffer;
+
+    bgfx::allocTransientVertexBuffer(
+        &vertices_buffer, draw_unit.details.vertices.size(),
+        this->vertex_layout);
+    bgfx::allocTransientIndexBuffer(
+        &indices_buffer, draw_unit.details.indices.size());
+
+    std::memcpy(
+        vertices_buffer.data, draw_unit.details.vertices.data(),
+        sizeof(StandardVertexData) * draw_unit.details.vertices.size());
+    std::memcpy(
+        indices_buffer.data, draw_unit.details.indices.data(),
+        sizeof(VertexIndex) * draw_unit.details.indices.size());
+
+    bgfx::setVertexBuffer(0, &vertices_buffer);
+    bgfx::setIndexBuffer(&indices_buffer);
+    this->_submit_draw_bucket_state(key);
+}
+
+void
+Renderer::render_draw_bucket(
+    const DrawBucketKey& key, const DrawBucket& draw_bucket)
+{
+    DrawBucket::Range range = draw_bucket.find_range();
+    while (not range.empty()) {
+        bgfx::TransientVertexBuffer vertices_buffer;
+        bgfx::TransientIndexBuffer indices_buffer;
+        KAACORE_LOG_TRACE(
+            "Available transient vertex/index buffer size: {}/{}",
+            bgfx::getAvailTransientVertexBuffer(
+                0xFFFFFFFF, this->vertex_layout),
+            bgfx::getAvailTransientIndexBuffer(0xFFFFFFFF));
+        bgfx::allocTransientVertexBuffer(
+            &vertices_buffer, range.vertices_count, this->vertex_layout);
+        bgfx::allocTransientIndexBuffer(&indices_buffer, range.indices_count);
+
+        draw_bucket.copy_range_details_to_transient_buffers(
+            range, vertices_buffer, indices_buffer);
+
+        bgfx::setVertexBuffer(0, &vertices_buffer);
+        bgfx::setIndexBuffer(&indices_buffer);
+        this->_submit_draw_bucket_state(key);
+
+        range = draw_bucket.find_range(range.end);
+    }
+}
+
+void
+Renderer::render_draw_queue(const DrawQueue& draw_queue)
+{
+    for (const auto [key, draw_bucket] : draw_queue) {
+        this->render_draw_bucket(key, draw_bucket);
+    }
+}
+
+void
+Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
+{
+    bgfx::ProgramHandle program_handle;
+    bgfx::TextureHandle texture_handle;
+
+    if (key.program_raw_ptr) {
+        program_handle = key.program_raw_ptr->_handle;
+    } else {
+        program_handle = this->default_program->handle();
+    }
+
+    if (key.texture_raw_ptr) {
+        texture_handle = key.texture_raw_ptr->texture_handle;
+    } else {
+        texture_handle = this->default_texture;
+    }
+
+    bgfx::setState(
+        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | key.state_flags);
+    bgfx::setStencil(key.stencil_flags);
+    bgfx::setTexture(0, this->texture_uniform, texture_handle);
+
+    uint32_t sorting_value =
+        (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
+    sorting_value <<= 16;
+    sorting_value |= key.root_distance;
+    key.views.each_active_internal_index([&](uint16_t view_internal_index) {
+        // TODO calculate bgfx-depth value based on key
+        bgfx::submit(
+            view_internal_index, program_handle, sorting_value,
+            BGFX_DISCARD_NONE);
+    });
+    bgfx::discard(BGFX_DISCARD_ALL);
 }
 
 uint32_t

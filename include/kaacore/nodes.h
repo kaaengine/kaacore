@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -8,6 +9,7 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 
+#include "kaacore/draw_unit.h"
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"
 #include "kaacore/node_ptr.h"
@@ -39,6 +41,12 @@ struct ForeignNodeWrapper {
 
 struct Scene;
 
+/* Node parent-children drawable data updating rules:
+ *  - changing position/rotation/scale recurses onto children,
+ *    sets TODO dirty flag to true
+ *  - chaning z_index/views
+ */
+
 class Node {
   public:
     union {
@@ -55,6 +63,12 @@ class Node {
     void recalculate_model_matrix();
     void recalculate_render_data();
     void recalculate_ordering_data();
+    VerticesIndicesVectorPair recalculate_vertices_indices_data();
+
+    bool has_draw_unit_updates() const;
+    std::optional<DrawUnitModification> calculate_draw_unit_removal() const;
+    DrawUnitModificationPair calculate_draw_unit_updates();
+    void clear_draw_unit_updates(const DrawBucketKey& key);
 
     const NodeType type() const;
 
@@ -124,6 +138,21 @@ class Node {
 
     BoundingBox<double> bounding_box();
 
+    template<typename Func>
+    void recursive_call(Func&& func)
+    {
+        thread_local std::deque<Node*> nodes_to_process;
+        nodes_to_process.push_back(this);
+        while (not nodes_to_process.empty()) {
+            Node* node = nodes_to_process.front();
+            nodes_to_process.pop_front();
+            func(node);
+            nodes_to_process.insert(
+                nodes_to_process.end(), node->children().begin(),
+                node->children().end());
+        }
+    }
+
   private:
     const NodeType _type = NodeType::basic;
     glm::dvec2 _position = {0., 0.};
@@ -161,6 +190,12 @@ class Node {
         int16_t calculated_z_index;
         bool is_dirty = true;
     } _ordering_data;
+    struct {
+        bool is_new = true;
+        bool updated_bucket_key = true;
+        bool updated_vertices_indices_info = true;
+        DrawBucketKey current_key;
+    } _draw_unit_data;
 
     bool _indexable = true;
     NodeSpatialData _spatial_data;

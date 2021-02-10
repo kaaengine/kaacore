@@ -5,6 +5,7 @@
 
 #include "kaacore/camera.h"
 #include "kaacore/clock.h"
+#include "kaacore/draw_queue.h"
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"
 #include "kaacore/physics.h"
@@ -21,6 +22,7 @@ class Scene {
     TimersManager timers;
     SpatialIndex spatial_index;
     std::set<Node*> simulations_registry;
+    DrawQueue draw_queue;
 
     Scene();
     virtual ~Scene();

@@ -47,6 +47,8 @@ set(SRC_CXX_FILES
     shaders.cpp
     clock.cpp
     statistics.cpp
+    draw_unit.cpp
+    draw_queue.cpp
 )
 
 set(SRC_H_FILES
@@ -80,6 +82,8 @@ set(SRC_H_FILES
     ../include/kaacore/shaders.h
     ../include/kaacore/clock.h
     ../include/kaacore/statistics.h
+    ../include/kaacore/draw_unit.h
+    ../include/kaacore/draw_queue.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
