@@ -130,7 +130,6 @@ Scene::process_nodes_drawing()
     static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
 
     StopwatchStatAutoPusher stopwatch{"scene.nodes_drawing:time"};
-    CounterStatAutoPusher draw_calls_counter{"scene.draw_calls"};
 
     processing_queue.clear();
     rendering_queue.clear();
@@ -175,10 +174,9 @@ Scene::process_nodes_drawing()
         }
 
         node->_ordering_data.calculated_views.each_active_z_index(
-            [this, &renderer, &node, &draw_calls_counter](int16_t z_index) {
+            [this, &renderer, &node](int16_t z_index) {
                 auto& view = this->views[z_index];
 
-                draw_calls_counter += 1;
                 if (node->type() == NodeType::text) {
                     renderer->render_vertices(
                         view.internal_index(),

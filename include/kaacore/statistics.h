@@ -44,7 +44,7 @@ class FrameStatisticTracker {
 class StatisticsManager {
   public:
     void push_value(const std::string& stat_name, const double value);
-    std::vector<std::pair<std::string, StatisticAnalysis>> get_report_all();
+    std::vector<std::pair<std::string, StatisticAnalysis>> get_analysis_all();
     std::vector<std::pair<std::string, double>> get_last_all();
 
   private:

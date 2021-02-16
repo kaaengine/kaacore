@@ -92,7 +92,7 @@ StatisticsManager::push_value(const std::string& stat_name, const double value)
 }
 
 std::vector<std::pair<std::string, StatisticAnalysis>>
-StatisticsManager::get_report_all()
+StatisticsManager::get_analysis_all()
 {
     std::vector<std::pair<std::string, StatisticAnalysis>> report;
     std::lock_guard lock{this->_mutex};

@@ -293,6 +293,7 @@ Engine::_scene_processing()
             }
 
             if (this->udp_stats_exporter) {
+                this->renderer->push_statistics();
                 this->udp_stats_exporter->send_sync(
                     get_global_statistics_manager().get_last_all());
             }

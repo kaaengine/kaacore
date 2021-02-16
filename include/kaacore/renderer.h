@@ -76,6 +76,7 @@ class Renderer {
     void destroy_texture(const bgfx::TextureHandle& handle) const;
     void begin_frame();
     void end_frame();
+    void push_statistics() const;
     void reset();
     void process_view(View& view) const;
     void render_vertices(
