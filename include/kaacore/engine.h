@@ -20,6 +20,7 @@
 #include "kaacore/threading.h"
 #include "kaacore/timers.h"
 #include "kaacore/window.h"
+#include "statistics.h"
 
 #define KAACORE_ASSERT_MAIN_THREAD()                                           \
     do {                                                                       \
@@ -57,6 +58,7 @@ class Engine {
     std::unique_ptr<InputManager> input_manager;
     std::unique_ptr<AudioManager> audio_manager;
     std::unique_ptr<ResourcesManager> resources_manager;
+    std::unique_ptr<UDPStatsExporter> udp_stats_exporter;
 
     Engine(
         const glm::uvec2& virtual_resolution,
