@@ -155,9 +155,8 @@ emit_log_dynamic(
         spdlog::warn("Logging subsystem was not initialized.");
         spdlog::log(log_level, std::forward<Args>(args)...);
         return;
-
-        _loggers[logger_index]->log(log_level, std::forward<Args>(args)...);
     }
+    _loggers[logger_index]->log(log_level, std::forward<Args>(args)...);
 }
 
 #define KAACORE_LOG_FULL(LEVEL, LOGGER_INDEX, ...)                             \
