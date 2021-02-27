@@ -110,13 +110,17 @@ struct DrawUnitModification {
         remove = 3,
     };
 
+    DrawUnitModification() = default;
+    DrawUnitModification(
+        const DrawUnitModification::Type type, const DrawBucketKey& lookup_key,
+        const DrawUnitId id)
+        : lookup_key(lookup_key), id(id), type(type)
+    {}
+
     inline bool operator<(const DrawUnitModification& other) const
     {
         return std::tie(this->lookup_key, this->id, this->type) <
                std::tie(other.lookup_key, other.id, other.type);
-        // return (this->lookup_key < other.lookup_key
-        //         and this->id < other.id
-        //         and this->type < other.type);
     }
 
     DrawBucketKey lookup_key;
@@ -145,7 +149,8 @@ struct DrawUnit {
     DrawUnitDetails details;
 };
 
-typedef std::pair<DrawUnitModification, std::optional<DrawUnitModification>>
+typedef std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
     DrawUnitModificationPair;
 
 struct DrawBucket {

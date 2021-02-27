@@ -429,7 +429,7 @@ Renderer::render_draw_bucket(
 void
 Renderer::render_draw_queue(const DrawQueue& draw_queue)
 {
-    for (const auto [key, draw_bucket] : draw_queue) {
+    for (const auto& [key, draw_bucket] : draw_queue) {
         this->render_draw_bucket(key, draw_bucket);
     }
 }

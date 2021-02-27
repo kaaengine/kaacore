@@ -41,12 +41,6 @@ struct ForeignNodeWrapper {
 
 struct Scene;
 
-/* Node parent-children drawable data updating rules:
- *  - changing position/rotation/scale recurses onto children,
- *    sets TODO dirty flag to true
- *  - chaning z_index/views
- */
-
 class Node {
   public:
     union {
@@ -63,12 +57,13 @@ class Node {
     void recalculate_model_matrix();
     void recalculate_render_data();
     void recalculate_ordering_data();
+    void recalculate_visibility_data();
     VerticesIndicesVectorPair recalculate_vertices_indices_data();
 
     bool has_draw_unit_updates() const;
     std::optional<DrawUnitModification> calculate_draw_unit_removal() const;
     DrawUnitModificationPair calculate_draw_unit_updates();
-    void clear_draw_unit_updates(const DrawBucketKey& key);
+    void clear_draw_unit_updates(const std::optional<const DrawBucketKey> key);
 
     const NodeType type() const;
 
@@ -136,21 +131,47 @@ class Node {
 
     uint16_t root_distance() const;
 
+    uint64_t scene_tree_id() const;
+
     BoundingBox<double> bounding_box();
 
     template<typename Func>
     void recursive_call(Func&& func)
     {
         thread_local std::deque<Node*> nodes_to_process;
+        nodes_to_process.clear();
+
         nodes_to_process.push_back(this);
         while (not nodes_to_process.empty()) {
             Node* node = nodes_to_process.front();
             nodes_to_process.pop_front();
-            func(node);
+            if constexpr (std::is_same_v<
+                              std::invoke_result_t<Func, Node*>, void>) {
+                // if provided Func does return void then
+                // always proceed with the recursive calling to children
+                func(node);
+            } else if (not func(node)) {
+                // returning false stops recursive calling
+                // for this node's children
+                continue;
+            }
             nodes_to_process.insert(
                 nodes_to_process.end(), node->children().begin(),
                 node->children().end());
         }
+    }
+
+    template<typename Pred>
+    std::vector<Node*> build_inheritance_chain(Pred&& pred)
+    {
+        std::vector<Node*> inheritance_chain;
+        Node* node = this;
+        while (node != nullptr and pred(node)) {
+            inheritance_chain.push_back(node);
+            node = node->_parent;
+        }
+
+        return inheritance_chain;
     }
 
   private:
@@ -169,6 +190,7 @@ class Node {
     NodeTransitionsManager _transitions_manager;
 
     Scene* _scene = nullptr;
+    uint64_t _scene_tree_id = 0;
     Node* _parent = nullptr;
     std::vector<Node*> _children;
     std::optional<ViewIndexSet> _views = std::nullopt;
@@ -191,10 +213,13 @@ class Node {
         bool is_dirty = true;
     } _ordering_data;
     struct {
-        bool is_new = true;
+        bool calculated_visible;
+        bool is_dirty = true;
+    } _visibility_data;
+    struct {
         bool updated_bucket_key = true;
         bool updated_vertices_indices_info = true;
-        DrawBucketKey current_key;
+        std::optional<DrawBucketKey> current_key;
     } _draw_unit_data;
 
     bool _indexable = true;
@@ -212,6 +237,8 @@ class Node {
     void _recalculate_model_matrix_cumulative();
     void _set_position(const glm::dvec2& position);
     void _set_rotation(const double rotation);
+
+    DrawBucketKey _make_draw_bucket_key() const;
 
     friend class _NodePtrBase;
     friend class NodePtr;

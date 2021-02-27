@@ -17,12 +17,10 @@ TEST_CASE(
 
     TestingScene scene;
     scene.camera().position({0., 0.});
-    // auto test_shape = kaacore::Shape::Box({1., 1.});
 
     scene.update_function = [&](auto dt) {
         auto test_shape1 =
             kaacore::Shape::Circle(7.5, {-35. + 0.15 * scene.frames_left, 0.});
-        // auto test_shape1 = kaacore::Shape::Circle(7.5);
         kaacore::DrawBucketKey dbk1;
         dbk1.views = kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}};
         dbk1.z_index = 0;
@@ -79,7 +77,6 @@ TEST_CASE(
     scene.update_function = [&](auto dt) {
         auto test_shape1 =
             kaacore::Shape::Circle(7.5, {-35. + 0.15 * scene.frames_left, 25.});
-        // auto test_shape1 = kaacore::Shape::Circle(7.5);
         kaacore::DrawBucketKey dbk;
         dbk.views = kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}};
         dbk.z_index = 0;
@@ -131,7 +128,7 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
     const auto simulate_frame_step = [](const kaacore::NodePtr node) {
         if (node->has_draw_unit_updates()) {
             auto node_mod = node->calculate_draw_unit_updates().first;
-            node->clear_draw_unit_updates(node_mod.lookup_key);
+            node->clear_draw_unit_updates(node_mod->lookup_key);
         }
     };
 
@@ -145,32 +142,31 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
     SECTION("Test insert")
     {
         REQUIRE(node_1->has_draw_unit_updates());
-        auto [node_1_mod_1, node_1_mod_2_opt] =
+        auto [node_1_mod_1, node_1_mod_2] =
             node_1->calculate_draw_unit_updates();
 
+        REQUIRE(node_1_mod_1.has_value());
         REQUIRE(
-            node_1_mod_1.type == kaacore::DrawUnitModification::Type::insert);
-        REQUIRE(node_1_mod_1.updated_vertices_indices == true);
-        REQUIRE(not node_1_mod_1.state_update.vertices.empty());
-        REQUIRE(not node_1_mod_1.state_update.indices.empty());
+            node_1_mod_1->type == kaacore::DrawUnitModification::Type::insert);
+        REQUIRE(node_1_mod_1->updated_vertices_indices == true);
+        REQUIRE(not node_1_mod_1->state_update.vertices.empty());
+        REQUIRE(not node_1_mod_1->state_update.indices.empty());
 
         REQUIRE(
-            node_1_mod_1.lookup_key.views ==
+            node_1_mod_1->lookup_key.views ==
             kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}});
-        REQUIRE(node_1_mod_1.lookup_key.z_index == 0);
-        REQUIRE(node_1_mod_1.lookup_key.root_distance == 1);
-        REQUIRE(node_1_mod_1.lookup_key.texture_raw_ptr == nullptr);
-        REQUIRE(node_1_mod_1.lookup_key.program_raw_ptr == nullptr);
-        REQUIRE(node_1_mod_1.lookup_key.state_flags == 0u);
-        REQUIRE(node_1_mod_1.lookup_key.stencil_flags == 0u);
+        REQUIRE(node_1_mod_1->lookup_key.z_index == 0);
+        REQUIRE(node_1_mod_1->lookup_key.root_distance == 1);
+        REQUIRE(node_1_mod_1->lookup_key.texture_raw_ptr == nullptr);
+        REQUIRE(node_1_mod_1->lookup_key.program_raw_ptr == nullptr);
+        REQUIRE(node_1_mod_1->lookup_key.state_flags == 0u);
+        REQUIRE(node_1_mod_1->lookup_key.stencil_flags == 0u);
 
         // no remove
-        REQUIRE(not node_1_mod_2_opt);
+        REQUIRE(not node_1_mod_2.has_value());
 
-        node_1->clear_draw_unit_updates(node_1_mod_1.lookup_key);
+        node_1->clear_draw_unit_updates(node_1_mod_1->lookup_key);
         REQUIRE(not node_1->has_draw_unit_updates());
-
-        // TODO node_2
     }
 
     SECTION("Test remove")
@@ -178,21 +174,17 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         simulate_frame_step(node_1);
         simulate_frame_step(node_2);
 
-        auto node_1_remove_mod_opt = node_1->calculate_draw_unit_removal();
-        auto node_2_remove_mod_opt = node_2->calculate_draw_unit_removal();
-        REQUIRE(node_1_remove_mod_opt.has_value());
+        auto node_1_remove_mod = node_1->calculate_draw_unit_removal();
+        auto node_2_remove_mod = node_2->calculate_draw_unit_removal();
+        REQUIRE(node_1_remove_mod.has_value());
+        REQUIRE(node_1_remove_mod->id == node_1->scene_tree_id());
         REQUIRE(
-            node_1_remove_mod_opt->id ==
-            reinterpret_cast<size_t>(node_1.get()));
-        REQUIRE(
-            node_1_remove_mod_opt->type ==
+            node_1_remove_mod->type ==
             kaacore::DrawUnitModification::Type::remove);
-        REQUIRE(node_2_remove_mod_opt.has_value());
+        REQUIRE(node_2_remove_mod.has_value());
+        REQUIRE(node_2_remove_mod->id == node_2->scene_tree_id());
         REQUIRE(
-            node_2_remove_mod_opt->id ==
-            reinterpret_cast<size_t>(node_2.get()));
-        REQUIRE(
-            node_2_remove_mod_opt->type ==
+            node_2_remove_mod->type ==
             kaacore::DrawUnitModification::Type::remove);
     }
 
@@ -252,16 +244,13 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         REQUIRE(node_1->has_draw_unit_updates());
         REQUIRE(not node_2->has_draw_unit_updates());
 
-        auto [mod_1, mod_2_opt] = node_1->calculate_draw_unit_updates();
-        REQUIRE(mod_1.type == kaacore::DrawUnitModification::Type::insert);
-        REQUIRE(mod_1.lookup_key.z_index == 100);
-        REQUIRE(mod_2_opt.has_value());
-        REQUIRE(mod_2_opt->type == kaacore::DrawUnitModification::Type::remove);
-        REQUIRE(mod_2_opt->lookup_key.z_index == 0);
+        auto [mod_1, mod_2] = node_1->calculate_draw_unit_updates();
+        REQUIRE(mod_1->type == kaacore::DrawUnitModification::Type::insert);
+        REQUIRE(mod_1->lookup_key.z_index == 100);
+        REQUIRE(mod_2.has_value());
+        REQUIRE(mod_2->type == kaacore::DrawUnitModification::Type::remove);
+        REQUIRE(mod_2->lookup_key.z_index == 0);
     }
-
-    // scene.camera().position({0., 0.});
-    // scene.run_on_engine(500);
 }
 
 TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
@@ -302,8 +291,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
             if (node->has_draw_unit_updates()) {
                 auto [node_mod_1, node_mod_2_opt] =
                     node->calculate_draw_unit_updates();
-                node->clear_draw_unit_updates(node_mod_1.lookup_key);
-                out.push_back(node_mod_1);
+                node->clear_draw_unit_updates(node_mod_1->lookup_key);
+                out.push_back(*node_mod_1);
                 if (node_mod_2_opt) {
                     out.push_back(*node_mod_2_opt);
                 }
@@ -319,7 +308,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                     std::find_if(
                         db.draw_units.begin(), db.draw_units.end(),
                         [&n](const auto& du) {
-                            return du.id == reinterpret_cast<size_t>(n.get());
+                            return du.id == n->scene_tree_id();
                         }) != db.draw_units.end());
             }
         };
@@ -399,7 +388,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                        kaacore::DrawUnitModification::Type::insert;
             });
         REQUIRE(insert_mod_it != modifications.end());
-        REQUIRE(insert_mod_it->id == reinterpret_cast<size_t>(node_3.get()));
+        REQUIRE(insert_mod_it->id == node_3->scene_tree_id());
         REQUIRE(insert_mod_it->lookup_key.z_index == 15);
         modifications.erase(insert_mod_it);
 
@@ -487,7 +476,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                        kaacore::DrawUnitModification::Type::insert;
             });
         REQUIRE(insert_mod_it != modifications.end());
-        REQUIRE(insert_mod_it->id == reinterpret_cast<size_t>(node_3.get()));
+        REQUIRE(insert_mod_it->id == node_3->scene_tree_id());
         REQUIRE(insert_mod_it->lookup_key.z_index == 15);
         modifications.erase(insert_mod_it);
 

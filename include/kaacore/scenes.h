@@ -16,6 +16,8 @@
 namespace kaacore {
 
 class Scene {
+    using NodesQueue = std::vector<Node*>;
+
   public:
     Node root_node;
     ViewsManager views;
@@ -28,12 +30,19 @@ class Scene {
     virtual ~Scene();
 
     void reset_views();
+    NodesQueue& build_processing_queue();
     void process_physics(const HighPrecisionDuration dt);
-    void process_nodes(const HighPrecisionDuration dt);
-    void resolve_dirty_nodes();
-    void process_nodes_drawing();
+    void process_nodes(
+        const HighPrecisionDuration dt, const NodesQueue& processing_queue);
+    void resolve_dirty_nodes(const NodesQueue& processing_queue);
+    void update_nodes_drawing_queue(const NodesQueue& processing_queue);
+    void process_drawing();
+    void remove_marked_nodes();
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
+
+    void handle_add_node_to_tree(Node* node);
+    void handle_remove_node_from_tree(Node* node);
 
     Camera& camera();
     double time_scale() const;
@@ -49,6 +58,8 @@ class Scene {
 
   private:
     double _time_scale = 1.;
+    NodesQueue _nodes_remove_queue;
+    std::atomic<uint64_t> _node_scene_tree_id_counter = 0;
 };
 
 } // namespace kaacore

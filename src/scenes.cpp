@@ -19,7 +19,7 @@ namespace kaacore {
 Scene::Scene() : timers(this)
 {
     this->root_node._scene = this;
-    this->spatial_index.start_tracking(&this->root_node);
+    this->handle_add_node_to_tree(&this->root_node);
 }
 
 Scene::~Scene()
@@ -38,6 +38,25 @@ Scene::camera()
     return this->views[views_default_z_index].camera;
 }
 
+std::vector<Node*>&
+Scene::build_processing_queue()
+{
+    static std::vector<Node*> processing_queue;
+    processing_queue.clear();
+    KAACORE_LOG_TRACE("Building processing queue");
+
+    processing_queue.push_back(&this->root_node);
+    size_t i = 0;
+    while (i < processing_queue.size()) {
+        Node* node = processing_queue[i];
+        for (auto child_node : node->children()) {
+            processing_queue.push_back(child_node);
+        }
+        i++;
+    }
+    return processing_queue;
+}
+
 void
 Scene::process_physics(const HighPrecisionDuration dt)
 {
@@ -48,48 +67,23 @@ Scene::process_physics(const HighPrecisionDuration dt)
 }
 
 void
-Scene::process_nodes(const HighPrecisionDuration dt)
+Scene::process_nodes(
+    const HighPrecisionDuration dt, const Scene::NodesQueue& processing_queue)
 {
     StopwatchStatAutoPusher stopwatch{"scene.process_nodes:time"};
-    static std::deque<Node*> processing_queue;
-    processing_queue.clear();
-
-    processing_queue.push_back(&this->root_node);
-    while (not processing_queue.empty()) {
-        Node* node = processing_queue.front();
-        processing_queue.pop_front();
-
+    CounterStatAutoPusher transitions_counter{
+        "scene.transitions_processed:count"};
+    CounterStatAutoPusher spatial_updates_counter{
+        "scene.spatial_index_updates:count"};
+    for (Node* node : processing_queue) {
         if (node->_marked_to_delete) {
-            // TODO optimize flow
-            node->recursive_call([this](const Node* n) {
-                if (auto draw_unit_removal = n->calculate_draw_unit_removal()) {
-                    KAACORE_LOG_TRACE(
-                        "Removing node from draw queue: {}", fmt::ptr(n));
-                    this->draw_queue.enqueue_modification(
-                        std::move(*draw_unit_removal));
-                }
-            });
-            delete node;
             continue;
         }
 
         if (node->_lifetime > 0us) {
             if ((node->_lifetime -= std::min(dt, node->_lifetime)) == 0us) {
-                // ensure that node is cleaned-up before deletion
-                if (not node->_marked_to_delete) {
-                    node->_mark_to_delete();
-                }
-                // TODO optimize flow
-                node->recursive_call([this](const Node* n) {
-                    if (auto draw_unit_removal =
-                            n->calculate_draw_unit_removal()) {
-                        KAACORE_LOG_TRACE(
-                            "Removing node from draw queue: {}", fmt::ptr(n));
-                        this->draw_queue.enqueue_modification(
-                            std::move(*draw_unit_removal));
-                    }
-                });
-                delete node;
+                KAACORE_ASSERT(not node->_marked_to_delete, "");
+                node->_mark_to_delete();
                 continue;
             }
         }
@@ -101,39 +95,22 @@ Scene::process_nodes(const HighPrecisionDuration dt)
 
         if (node->_transitions_manager) {
             node->_transitions_manager.step(node, dt);
+            transitions_counter += 1;
         }
 
         if (node->_spatial_data.is_dirty) {
             this->spatial_index.update_single(node);
-        }
-
-        for (const auto child_node : node->_children) {
-            processing_queue.push_back(child_node);
+            spatial_updates_counter += 1;
         }
     }
 }
 
 void
-Scene::resolve_dirty_nodes()
+Scene::resolve_dirty_nodes(const Scene::NodesQueue& processing_queue)
 {
-    static std::deque<Node*> processing_queue;
     StopwatchStatAutoPusher stopwatch{"scene.resolve_nodes:time"};
-    processing_queue.clear();
-
-    processing_queue.push_back(&this->root_node);
-    while (not processing_queue.empty()) {
-        Node* node = processing_queue.front();
-        processing_queue.pop_front();
-
+    for (Node* node : processing_queue) {
         if (node->_marked_to_delete) {
-            // TODO optimize flow
-            if (auto draw_unit_removal = node->calculate_draw_unit_removal()) {
-                KAACORE_LOG_TRACE(
-                    "Removing node from draw queue: {}", fmt::ptr(node));
-                this->draw_queue.enqueue_modification(
-                    std::move(*draw_unit_removal));
-            }
-            delete node;
             continue;
         }
 
@@ -142,70 +119,56 @@ Scene::resolve_dirty_nodes()
         if (node->_spatial_data.is_dirty) {
             this->spatial_index.update_single(node);
         }
+    }
+}
 
-        for (const auto child_node : node->_children) {
-            processing_queue.push_back(child_node);
+void
+Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
+{
+    KAACORE_LOG_TRACE("Starting process_nodes_drawing()");
+    StopwatchStatAutoPusher stopwatch{"scene.nodes_drawing:time"};
+
+    for (Node* node : processing_queue) {
+        if (not node->_marked_to_delete and node->has_draw_unit_updates()) {
+            KAACORE_LOG_TRACE(
+                "DrawUnit modifications detected for node: {}", fmt::ptr(node));
+            auto [mod_1, mod_2] = node->calculate_draw_unit_updates();
+            if (mod_1) {
+                this->draw_queue.enqueue_modification(std::move(*mod_1));
+                node->clear_draw_unit_updates(mod_1->lookup_key);
+            } else {
+                node->clear_draw_unit_updates(std::nullopt);
+            }
+            if (mod_2) {
+                KAACORE_ASSERT(
+                    mod_2->type == DrawUnitModification::Type::remove,
+                    "Expected modification type == remove");
+                this->draw_queue.enqueue_modification(std::move(*mod_2));
+            }
         }
     }
 }
 
 void
-Scene::process_nodes_drawing()
+Scene::process_drawing()
 {
-    static std::deque<Node*> processing_queue;
-    static std::deque<Node*> rendering_queue;
-    KAACORE_LOG_TRACE("Starting process_nodes_drawing()");
-    StopwatchStatAutoPusher stopwatch{"scene.nodes_drawing:time"};
-    CounterStatAutoPusher dq_inserts_count{"scene.draw_queue:inserts:count"};
-    CounterStatAutoPusher dq_updates_count{"scene.draw_queue:updates:count"};
-    CounterStatAutoPusher dq_removals_count{"scene.draw_queue:removals:count"};
-    processing_queue.clear();
-    rendering_queue.clear();
-    processing_queue.push_back(&this->root_node);
-    while (not processing_queue.empty()) {
-        Node* node = processing_queue.front();
-        processing_queue.pop_front();
-        rendering_queue.push_back(node);
-
-        for (const auto child_node : node->_children) {
-            processing_queue.push_back(child_node);
-        }
-    }
-
-    for (auto* node : rendering_queue) {
-        if (node->has_draw_unit_updates()) {
-            // KAACORE_LOG_TRACE("Update for node: {}", fmt::ptr(node));
-            auto [mod_1, mod_2] = node->calculate_draw_unit_updates();
-            node->clear_draw_unit_updates(mod_1.lookup_key);
-            this->draw_queue.enqueue_modification(std::move(mod_1));
-            switch (mod_1.type) {
-                case DrawUnitModification::Type::insert:
-                    dq_inserts_count += 1;
-                    break;
-                case DrawUnitModification::Type::update:
-                    dq_updates_count += 1;
-                    break;
-                case DrawUnitModification::Type::remove:
-                    dq_removals_count += 1;
-                    break;
-            }
-            if (mod_2) {
-                KAACORE_ASSERT(
-                    mod_2->type == DrawUnitModification::Type::remove, "");
-                this->draw_queue.enqueue_modification(std::move(*mod_2));
-                dq_removals_count += 1;
-            }
-
-            // TODO handle removal
-        }
-    }
-
     for (auto& view : this->views) {
         get_engine()->renderer->process_view(view);
     }
 
     this->draw_queue.process_modifications();
     get_engine()->renderer->render_draw_queue(this->draw_queue);
+}
+
+void
+Scene::remove_marked_nodes()
+{
+    // iterate in reverse order to delete children nodes first
+    for (auto it = this->_nodes_remove_queue.rbegin();
+         it != this->_nodes_remove_queue.rend(); it++) {
+        delete (*it);
+    }
+    this->_nodes_remove_queue.clear();
 }
 
 void
@@ -257,6 +220,32 @@ Scene::unregister_simulation(Node* node)
         pos != this->simulations_registry.end(),
         "Can't unregister from simulation, space node not in registry.");
     this->simulations_registry.erase(pos);
+}
+
+void
+Scene::handle_add_node_to_tree(Node* node)
+{
+    KAACORE_LOG_DEBUG("Adding node to scene tree: {}", fmt::ptr(node));
+    KAACORE_ASSERT(node->_scene != nullptr, "Node does not belong to a scene");
+    this->spatial_index.start_tracking(node);
+    node->_scene_tree_id = this->_node_scene_tree_id_counter.fetch_add(
+                               1, std::memory_order_relaxed) +
+                           1;
+}
+
+void
+Scene::handle_remove_node_from_tree(Node* node)
+{
+    KAACORE_LOG_DEBUG("Removing node from scene tree: {}", fmt::ptr(node));
+    KAACORE_ASSERT(node->_marked_to_delete, "Node should be marked to delete");
+    this->_nodes_remove_queue.push_back(node);
+    this->spatial_index.stop_tracking(node);
+
+    if (auto mod = node->calculate_draw_unit_removal()) {
+        KAACORE_LOG_DEBUG("Removing node from draw queue: {}", fmt::ptr(node));
+        KAACORE_ASSERT(mod->type == DrawUnitModification::Type::remove, "");
+        this->draw_queue.enqueue_modification(std::move(*mod));
+    }
 }
 
 double

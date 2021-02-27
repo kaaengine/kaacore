@@ -20,10 +20,6 @@ DrawBucket::find_range() const
 DrawBucket::Range
 DrawBucket::find_range(const DrawBucket::DrawUnitIter start_pos) const
 {
-    // XXX currently it's guaranteed that all `DrawUnit`s in
-    // a bucket will be compatible to put in a single
-    // draw call.
-
     DrawBucket::Range range;
     range.begin = start_pos;
     range.vertices_count = 0;
@@ -136,13 +132,23 @@ DrawBucket::consume_modifications(
 
         switch (mod_it->type) {
             case DrawUnitModification::Type::insert:
+                KAACORE_LOG_TRACE(
+                    "Inserting new draw unit with id: {:0x}", mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->updated_vertices_indices,
                     "Invalid flag state for DrawUnit insertion");
+                KAACORE_ASSERT(
+                    draw_unit_it == this->draw_units.end() or
+                        mod_it->id != draw_unit_it->id,
+                    "DrawUnit ({:0x}) - with given id already exists in draw "
+                    "bucket",
+                    draw_unit_it->id);
                 draw_unit_it = this->draw_units.emplace(
                     draw_unit_it, mod_it->id, std::move(mod_it->state_update));
                 break;
             case DrawUnitModification::Type::update:
+                KAACORE_LOG_TRACE(
+                    "Updating draw unit with id: {:0x}", mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawUnit ({}) - DrawUnitModification ({}) id mismatch",
@@ -153,6 +159,8 @@ DrawBucket::consume_modifications(
                 draw_unit_it->details = std::move(mod_it->state_update);
                 break;
             case DrawUnitModification::Type::remove:
+                KAACORE_LOG_TRACE(
+                    "Removing draw unit with id: {:0x}", mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawUnit ({}) - DrawUnitModification ({}) id mismatch",

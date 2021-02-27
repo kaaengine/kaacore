@@ -44,6 +44,7 @@ Node::Node(NodeType type) : _type(type)
 
 Node::~Node()
 {
+    KAACORE_LOG_DEBUG("Destroying node: {}", fmt::ptr(this));
     if (this->_parent != nullptr) {
         auto pos_in_parent = std::find(
             this->_parent->_children.begin(), this->_parent->_children.end(),
@@ -101,12 +102,14 @@ Node::_mark_to_delete()
     if (this->_marked_to_delete) {
         return;
     }
+    KAACORE_LOG_DEBUG("Marking node to delete: {}", fmt::ptr(this));
     KAACORE_ASSERT(this->_scene != nullptr, "Node not attached to the tree.");
     this->_marked_to_delete = true;
     if (this->_node_wrapper) {
         this->_node_wrapper->on_detach();
     }
-    this->_scene->spatial_index.stop_tracking(this);
+    this->_scene->handle_remove_node_from_tree(this);
+    // TODO ensure that parent can't access the removed node
     for (auto child : this->_children) {
         child->_mark_to_delete();
     }
@@ -207,6 +210,26 @@ Node::_set_rotation(const double rotation)
     this->_rotation = normalized_rotation;
 }
 
+DrawBucketKey
+Node::_make_draw_bucket_key() const
+{
+    DrawBucketKey key;
+    key.views = this->_ordering_data.calculated_views;
+    key.z_index = this->_ordering_data.calculated_z_index;
+    key.root_distance = this->_root_distance;
+    key.texture_raw_ptr = this->_sprite.texture.res_ptr.get();
+    if (this->_type == NodeType::text) {
+        key.program_raw_ptr =
+            get_engine()->renderer->sdf_font_program.res_ptr.get();
+    } else {
+        key.program_raw_ptr = nullptr;
+    }
+    key.state_flags = 0u;
+    key.stencil_flags = 0u;
+
+    return key;
+}
+
 NodePtr
 Node::add_child(NodeOwnerPtr& owned_ptr)
 {
@@ -230,7 +253,8 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
             (n->_scene == nullptr and this->_scene != nullptr);
         n->_scene = this->_scene;
         if (added_to_scene) {
-            n->_scene->spatial_index.start_tracking(n);
+            this->_scene->handle_add_node_to_tree(n);
+
             if (n->_node_wrapper) {
                 n->_node_wrapper->on_attach();
             }
@@ -370,11 +394,41 @@ Node::recalculate_ordering_data()
     this->_ordering_data.is_dirty = false;
 }
 
+void
+Node::recalculate_visibility_data()
+{
+    if (not this->_visibility_data.is_dirty) {
+        return;
+    }
+
+    auto inheritance_chain = this->build_inheritance_chain(
+        [](Node* n) { return n->_visibility_data.is_dirty; });
+
+    for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
+         it++) {
+        Node* node = *it;
+        if (not node->_visible) {
+            node->_visibility_data.calculated_visible = false;
+        } else if (node->is_root()) {
+            node->_visibility_data.calculated_visible = true;
+        } else {
+            KAACORE_ASSERT(
+                node->_parent != nullptr,
+                "Nodes ({}) parent is not set, cannot determine "
+                "inheritance-based value",
+                fmt::ptr(node));
+            node->_visibility_data.calculated_visible =
+                node->_parent->_visibility_data.calculated_visible;
+        }
+
+        node->_visibility_data.is_dirty = false;
+    }
+}
+
 bool
 Node::has_draw_unit_updates() const
 {
     return (
-        this->_draw_unit_data.is_new or
         this->_draw_unit_data.updated_bucket_key or
         this->_draw_unit_data.updated_vertices_indices_info);
 }
@@ -382,13 +436,16 @@ Node::has_draw_unit_updates() const
 std::optional<DrawUnitModification>
 Node::calculate_draw_unit_removal() const
 {
-    if (this->_draw_unit_data.is_new) {
+    KAACORE_ASSERT(
+        this->_scene_tree_id != 0u, "Node ({}) has no scene tree id",
+        fmt::ptr(this));
+    if (not this->_draw_unit_data.current_key) {
         return std::nullopt;
     }
 
     DrawUnitModification remove_mod{};
-    remove_mod.lookup_key = this->_draw_unit_data.current_key;
-    remove_mod.id = reinterpret_cast<size_t>(this);
+    remove_mod.lookup_key = *this->_draw_unit_data.current_key;
+    remove_mod.id = this->_scene_tree_id;
     remove_mod.type = DrawUnitModification::Type::remove;
     return remove_mod;
 }
@@ -397,48 +454,45 @@ DrawUnitModificationPair
 Node::calculate_draw_unit_updates()
 {
     KAACORE_ASSERT(
+        this->_scene_tree_id != 0u, "Node ({}) has no scene tree id",
+        fmt::ptr(this));
+    KAACORE_ASSERT(
         this->has_draw_unit_updates(), "Node has no draw unit modifications");
-
-    DrawUnitModification update_mod{};
-    std::optional<DrawUnitModification> remove_mod_opt{std::nullopt};
-    update_mod.id = reinterpret_cast<size_t>(this);
-
-    DrawBucketKey lookup_key;
 
     this->recalculate_model_matrix();
     this->recalculate_ordering_data();
+    this->recalculate_visibility_data();
 
-    if (this->_draw_unit_data.updated_bucket_key) {
-        if (not this->_draw_unit_data.is_new) {
-            // draw unit needs to be removed from previous bucket
-            remove_mod_opt = DrawUnitModification{};
-            remove_mod_opt->lookup_key = this->_draw_unit_data.current_key;
-            remove_mod_opt->id = reinterpret_cast<size_t>(this);
-            remove_mod_opt->type = DrawUnitModification::Type::remove;
-        }
+    std::optional<DrawUnitModification> remove_mod_opt{std::nullopt};
 
-        lookup_key.views = this->_ordering_data.calculated_views;
-        lookup_key.z_index = this->_ordering_data.calculated_z_index;
-        lookup_key.root_distance = this->_root_distance;
-        lookup_key.texture_raw_ptr = this->_sprite.texture.res_ptr.get();
-        lookup_key.program_raw_ptr = nullptr; // TODO fonts shader
-        lookup_key.state_flags = 0u;
-        lookup_key.stencil_flags = 0u;
-    } else {
-        lookup_key = this->_draw_unit_data.current_key;
+    if (this->_draw_unit_data.updated_bucket_key and
+        this->_draw_unit_data.current_key) {
+        // draw unit needs to be removed from previous bucket
+        remove_mod_opt = DrawUnitModification{
+            DrawUnitModification::Type::remove,
+            *this->_draw_unit_data.current_key, this->_scene_tree_id};
     }
 
-    update_mod.lookup_key = lookup_key;
+    // skip inserting/updating if node will node be visible
+    if (not this->_shape or not this->_visibility_data.calculated_visible) {
+        return {std::nullopt, remove_mod_opt};
+    }
+
+    DrawBucketKey lookup_key;
+    DrawUnitModification::Type mod_type;
     if (this->_draw_unit_data.updated_bucket_key or
-        this->_draw_unit_data.is_new) {
-        update_mod.type = DrawUnitModification::Type::insert;
+        not this->_draw_unit_data.current_key) {
+        lookup_key = this->_make_draw_bucket_key();
+        mod_type = DrawUnitModification::Type::insert;
     } else {
-        update_mod.type = DrawUnitModification::Type::update;
+        lookup_key = *this->_draw_unit_data.current_key;
+        mod_type = DrawUnitModification::Type::update;
     }
+    DrawUnitModification update_mod{mod_type, lookup_key, this->_scene_tree_id};
 
     if (this->_draw_unit_data.updated_vertices_indices_info) {
         update_mod.updated_vertices_indices = true;
-        if (this->_shape) { // TODO handle visible
+        if (this->_shape and this->_visibility_data.calculated_visible) {
             auto vertices_indices_pair =
                 this->recalculate_vertices_indices_data();
             update_mod.state_update.vertices =
@@ -454,10 +508,9 @@ Node::calculate_draw_unit_updates()
 }
 
 void
-Node::clear_draw_unit_updates(const DrawBucketKey& key)
+Node::clear_draw_unit_updates(const std::optional<const DrawBucketKey> key)
 {
     this->_draw_unit_data.current_key = key;
-    this->_draw_unit_data.is_new = false;
     this->_draw_unit_data.updated_bucket_key = false;
     this->_draw_unit_data.updated_vertices_indices_info = false;
 }
@@ -748,6 +801,13 @@ Node::visible(const bool& visible)
         this->_mark_dirty();
     }
     this->_visible = visible;
+    this->recursive_call([](Node* node) {
+        if (node->_visibility_data.is_dirty) {
+            return false;
+        }
+        node->_visibility_data.is_dirty = true;
+        return true;
+    });
 }
 
 Alignment
@@ -867,6 +927,12 @@ uint16_t
 Node::root_distance() const
 {
     return this->_root_distance;
+}
+
+uint64_t
+Node::scene_tree_id() const
+{
+    return this->_scene_tree_id;
 }
 
 BoundingBox<double>
