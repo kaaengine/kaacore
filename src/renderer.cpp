@@ -11,8 +11,8 @@
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
 #include "kaacore/images.h"
-#include "kaacore/statistics.h"
 #include "kaacore/log.h"
+#include "kaacore/statistics.h"
 
 #include "kaacore/renderer.h"
 
@@ -238,17 +238,23 @@ Renderer::push_statistics() const
     auto* bgfx_stats = bgfx::getStats();
 
     stats_manager.push_value("bgfx.draw_calls:count", bgfx_stats->numDraw);
-    stats_manager.push_value("bgfx.textures:memory",
+    stats_manager.push_value(
+        "bgfx.textures:memory",
         float(bgfx_stats->textureMemoryUsed) / (1024. * 1024.));
-    stats_manager.push_value("bgfx.transient_vb:memory",
+    stats_manager.push_value(
+        "bgfx.transient_vb:memory",
         float(bgfx_stats->transientVbUsed) / (1024. * 1024.));
-    stats_manager.push_value("bgfx.transient_ib:memory",
+    stats_manager.push_value(
+        "bgfx.transient_ib:memory",
         float(bgfx_stats->transientIbUsed) / (1024. * 1024.));
-    stats_manager.push_value("bgfx.cpu_frame:time",
+    stats_manager.push_value(
+        "bgfx.cpu_frame:time",
         float(bgfx_stats->cpuTimeFrame) / bgfx_stats->cpuTimerFreq);
-    stats_manager.push_value("bgfx.wait_submit:time",
+    stats_manager.push_value(
+        "bgfx.wait_submit:time",
         float(bgfx_stats->waitSubmit) / bgfx_stats->cpuTimerFreq);
-    stats_manager.push_value("bgfx.wait_render:time",
+    stats_manager.push_value(
+        "bgfx.wait_render:time",
         float(bgfx_stats->waitRender) / bgfx_stats->cpuTimerFreq);
 }
 

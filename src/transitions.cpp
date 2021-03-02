@@ -146,7 +146,7 @@ NodeTransitionsSequence::NodeTransitionsSequence(
                             "subtransition on non last position");
         }
 
-        if (std::isinf(tr->duration.count())) {
+        if (tr->duration.count() == INFINITY) {
             sub_duration = tr->internal_duration;
             has_infinite_subs = true;
         } else {
@@ -297,7 +297,7 @@ NodeTransitionsParallel::NodeTransitionsParallel(
         Duration sub_duration;
         KAACORE_CHECK(
             tr->duration >= 0.s, "Duration must be greater than zero.");
-        if (std::isinf(tr->duration.count())) {
+        if (tr->duration.count() == INFINITY) {
             sub_duration = tr->internal_duration;
             has_infinite_subs = true;
         } else {
