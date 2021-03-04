@@ -283,7 +283,7 @@ Engine::_scene_processing()
                 this->_event_processing_state.set(
                     EventProcessingState::consumed);
 #endif
-                auto& nodes_processing_queue =
+                const auto& nodes_processing_queue =
                     this->_scene->build_processing_queue();
                 this->_scene->resolve_dirty_nodes(nodes_processing_queue);
                 this->_scene->update_nodes_drawing_queue(

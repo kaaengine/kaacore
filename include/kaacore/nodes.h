@@ -55,7 +55,6 @@ class Node {
 
     NodePtr add_child(NodeOwnerPtr& child_node);
     void recalculate_model_matrix();
-    void recalculate_render_data();
     void recalculate_ordering_data();
     void recalculate_visibility_data();
     VerticesIndicesVectorPair recalculate_vertices_indices_data();
@@ -162,9 +161,18 @@ class Node {
     }
 
     template<typename Pred>
-    std::vector<Node*> build_inheritance_chain(Pred&& pred)
+    const std::vector<Node*>& build_inheritance_chain(Pred&& pred)
+    // Builds an inheritance chain vector going up to the root.
+    // It continues as long as currently processed node
+    // meets the predicate `pred` - if it fails node won't
+    // be added to chain and processing stops.
+    // Nodes in vector are ordered desecending by `root_distance` -
+    // starting node will at the first position (if not empty).
+
     {
-        std::vector<Node*> inheritance_chain;
+        thread_local std::vector<Node*> inheritance_chain;
+        inheritance_chain.clear();
+
         Node* node = this;
         while (node != nullptr and pred(node)) {
             inheritance_chain.push_back(node);
@@ -229,6 +237,7 @@ class Node {
 
     void _mark_dirty();
     void _mark_ordering_dirty();
+    void _mark_draw_unit_vertices_indices_dirty();
     void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(

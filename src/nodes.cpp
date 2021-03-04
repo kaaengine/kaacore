@@ -75,25 +75,40 @@ Node::~Node()
 void
 Node::_mark_dirty()
 {
-    this->_render_data.is_dirty = true;
-    this->_model_matrix.is_dirty = true;
-    this->_spatial_data.is_dirty = true;
-    for (auto child : this->_children) {
-        if (not child->_model_matrix.is_dirty) {
-            child->_mark_dirty();
+    this->recursive_call([](Node* node) {
+        bool descend = true;
+        if (node->_model_matrix.is_dirty) {
+            descend = false;
         }
-    }
+        node->_render_data.is_dirty = true;
+        node->_model_matrix.is_dirty = true;
+        node->_spatial_data.is_dirty = true;
+        return descend;
+    });
 }
 
 void
 Node::_mark_ordering_dirty()
 {
-    this->_ordering_data.is_dirty = true;
-    for (auto child : this->_children) {
-        if (not child->_ordering_data.is_dirty) {
-            child->_mark_ordering_dirty();
+    this->recursive_call([](Node* node) {
+        if (node->_ordering_data.is_dirty) {
+            return false;
         }
-    }
+        node->_ordering_data.is_dirty = true;
+        return true;
+    });
+}
+
+void
+Node::_mark_draw_unit_vertices_indices_dirty()
+{
+    this->recursive_call([](Node* node) {
+        if (node->_draw_unit_data.updated_vertices_indices_info) {
+            return false;
+        }
+        node->_draw_unit_data.updated_vertices_indices_info = true;
+        return true;
+    });
 }
 
 void
@@ -188,11 +203,8 @@ Node::_set_position(const glm::dvec2& position)
     if (this->_position == position) {
         return;
     }
-    this->recursive_call([](Node* n) {
-        n->_draw_unit_data.updated_vertices_indices_info = true;
-    });
-    // TODO optimize/replace _mark_dirty()
     this->_mark_dirty();
+    this->_mark_draw_unit_vertices_indices_dirty();
     this->_position = position;
 }
 
@@ -203,10 +215,8 @@ Node::_set_rotation(const double rotation)
     if (normalized_rotation == this->_rotation) {
         return;
     }
-    this->recursive_call([](Node* n) {
-        n->_draw_unit_data.updated_vertices_indices_info = true;
-    });
     this->_mark_dirty();
+    this->_mark_draw_unit_vertices_indices_dirty();
     this->_rotation = normalized_rotation;
 }
 
@@ -282,42 +292,6 @@ Node::recalculate_model_matrix()
         return;
     }
     this->_recalculate_model_matrix();
-}
-
-// TODO remove
-void
-Node::recalculate_render_data()
-{
-    if (not this->_render_data.is_dirty) {
-        return;
-    }
-
-    // TODO optimize
-    glm::dvec2 pos_realignment = calculate_realignment_vector(
-        this->_origin_alignment, this->_shape.vertices_bbox);
-    this->_render_data.computed_vertices = this->_shape.vertices;
-    for (auto& vertex : this->_render_data.computed_vertices) {
-        glm::dvec4 pos = {vertex.xyz.x + pos_realignment.x,
-                          vertex.xyz.y + pos_realignment.y, vertex.xyz.z, 1.};
-        pos = this->_model_matrix.value * pos;
-        vertex.xyz = {pos.x, pos.y, pos.z};
-
-        if (this->_sprite.has_texture()) {
-            auto uv_rect = this->_sprite.get_display_rect();
-            vertex.uv = glm::mix(uv_rect.first, uv_rect.second, vertex.uv);
-        }
-
-        vertex.rgba *= this->_color;
-    }
-
-    if (this->_sprite.has_texture()) {
-        this->_render_data.texture_handle =
-            this->_sprite.texture->texture_handle;
-    } else {
-        this->_render_data.texture_handle =
-            get_engine()->renderer->default_texture;
-    }
-    this->_render_data.is_dirty = false;
 }
 
 VerticesIndicesVectorPair
@@ -401,7 +375,7 @@ Node::recalculate_visibility_data()
         return;
     }
 
-    auto inheritance_chain = this->build_inheritance_chain(
+    const auto& inheritance_chain = this->build_inheritance_chain(
         [](Node* n) { return n->_visibility_data.is_dirty; });
 
     for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
@@ -473,7 +447,7 @@ Node::calculate_draw_unit_updates()
             *this->_draw_unit_data.current_key, this->_scene_tree_id};
     }
 
-    // skip inserting/updating if node will node be visible
+    // skip inserting/updating if node will not be rendered
     if (not this->_shape or not this->_visibility_data.calculated_visible) {
         return {std::nullopt, remove_mod_opt};
     }
@@ -490,16 +464,14 @@ Node::calculate_draw_unit_updates()
     }
     DrawUnitModification update_mod{mod_type, lookup_key, this->_scene_tree_id};
 
-    if (this->_draw_unit_data.updated_vertices_indices_info) {
+    if (this->_draw_unit_data.updated_vertices_indices_info or
+        this->_draw_unit_data.updated_bucket_key) {
         update_mod.updated_vertices_indices = true;
-        if (this->_shape and this->_visibility_data.calculated_visible) {
-            auto vertices_indices_pair =
-                this->recalculate_vertices_indices_data();
-            update_mod.state_update.vertices =
-                std::move(vertices_indices_pair.first);
-            update_mod.state_update.indices =
-                std::move(vertices_indices_pair.second);
-        }
+        auto vertices_indices_pair = this->recalculate_vertices_indices_data();
+        update_mod.state_update.vertices =
+            std::move(vertices_indices_pair.first);
+        update_mod.state_update.indices =
+            std::move(vertices_indices_pair.second);
     } else {
         update_mod.updated_vertices_indices = false;
     }
@@ -634,10 +606,9 @@ Node::scale(const glm::dvec2& scale)
         return;
     }
     this->_mark_dirty();
+    this->_mark_draw_unit_vertices_indices_dirty();
     this->_scale = scale;
-    this->recursive_call([](Node* n) {
-        n->_draw_unit_data.updated_vertices_indices_info = true;
-    });
+
     if (this->_type == NodeType::body) {
         for (const auto& n : this->_children) {
             if (n->_type == NodeType::hitbox) {
@@ -878,8 +849,9 @@ Node::views(const std::optional<std::unordered_set<int16_t>>& z_indices)
             z_indices->size() <= KAACORE_MAX_VIEWS, "Invalid indices size.");
     }
 
-    this->_views = z_indices;
     this->_mark_ordering_dirty();
+    this->_draw_unit_data.updated_bucket_key = true;
+    this->_views = z_indices;
 }
 
 const std::optional<std::vector<int16_t>>

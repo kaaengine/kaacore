@@ -25,8 +25,6 @@ DrawBucket::find_range(const DrawBucket::DrawUnitIter start_pos) const
     range.vertices_count = 0;
     range.indices_count = 0;
 
-    // TODO include buffer limits:
-    // - index-buffer
     if (start_pos == this->draw_units.end()) {
         range.end = this->draw_units.end();
         return range;
@@ -34,7 +32,7 @@ DrawBucket::find_range(const DrawBucket::DrawUnitIter start_pos) const
     DrawBucket::DrawUnitIter it;
     for (it = start_pos; it < this->draw_units.end(); it++) {
         const auto& unit = *it;
-        // check limits
+        // check buffer limits
         if (range.vertices_count + unit.details.vertices.size() >
                 range_max_vertices_count or
             range.indices_count + unit.details.indices.size() >
@@ -65,16 +63,22 @@ DrawBucket::copy_range_details_to_transient_buffers(
     uint8_t* vertex_writer_pos = vertex_buffer.data;
     uint8_t* index_writer_pos = index_buffer.data;
     size_t indices_offset = 0;
-    size_t _vertices_cnt = 0;
-    size_t _indices_cnt = 0;
+    size_t vertices_count = 0;
+    size_t indices_count = 0;
     for (DrawBucket::DrawUnitIter it = range.begin; it < range.end; it++) {
         const auto& unit = *it;
 
-        _vertices_cnt += unit.details.vertices.size();
-        _indices_cnt += unit.details.indices.size();
+        vertices_count += unit.details.vertices.size();
+        indices_count += unit.details.indices.size();
 
-        KAACORE_ASSERT(_vertices_cnt <= range.vertices_count, "");
-        KAACORE_ASSERT(_indices_cnt <= range.indices_count, "");
+        KAACORE_ASSERT(
+            vertices_count <= range.vertices_count,
+            "Vertices count exceeded declared count ({} > {})", vertices_count,
+            range.vertices_count);
+        KAACORE_ASSERT(
+            indices_count <= range.indices_count,
+            "Indices count exceeded declared count ({} > {})", indices_count,
+            range.indices_count);
 
         size_t vertex_data_size =
             unit.details.vertices.size() * sizeof(StandardVertexData);
@@ -133,22 +137,21 @@ DrawBucket::consume_modifications(
         switch (mod_it->type) {
             case DrawUnitModification::Type::insert:
                 KAACORE_LOG_TRACE(
-                    "Inserting new draw unit with id: {:0x}", mod_it->id);
+                    "Inserting new draw unit with id: {}", mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->updated_vertices_indices,
                     "Invalid flag state for DrawUnit insertion");
                 KAACORE_ASSERT(
                     draw_unit_it == this->draw_units.end() or
                         mod_it->id != draw_unit_it->id,
-                    "DrawUnit ({:0x}) - with given id already exists in draw "
+                    "DrawUnit ({}) - with given id already exists in draw "
                     "bucket",
                     draw_unit_it->id);
                 draw_unit_it = this->draw_units.emplace(
                     draw_unit_it, mod_it->id, std::move(mod_it->state_update));
                 break;
             case DrawUnitModification::Type::update:
-                KAACORE_LOG_TRACE(
-                    "Updating draw unit with id: {:0x}", mod_it->id);
+                KAACORE_LOG_TRACE("Updating draw unit with id: {}", mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawUnit ({}) - DrawUnitModification ({}) id mismatch",
@@ -159,8 +162,7 @@ DrawBucket::consume_modifications(
                 draw_unit_it->details = std::move(mod_it->state_update);
                 break;
             case DrawUnitModification::Type::remove:
-                KAACORE_LOG_TRACE(
-                    "Removing draw unit with id: {:0x}", mod_it->id);
+                KAACORE_LOG_TRACE("Removing draw unit with id: {}", mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawUnit ({}) - DrawUnitModification ({}) id mismatch",

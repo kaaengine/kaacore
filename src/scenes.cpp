@@ -60,7 +60,7 @@ Scene::build_processing_queue()
 void
 Scene::process_physics(const HighPrecisionDuration dt)
 {
-    StopwatchStatAutoPusher stopwatch{"scene.physics_sync:time"};
+    StopwatchStatAutoPusher stopwatch{"scene.process_physics:time"};
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
     }
@@ -73,8 +73,6 @@ Scene::process_nodes(
     StopwatchStatAutoPusher stopwatch{"scene.process_nodes:time"};
     CounterStatAutoPusher transitions_counter{
         "scene.transitions_processed:count"};
-    CounterStatAutoPusher spatial_updates_counter{
-        "scene.spatial_index_updates:count"};
     for (Node* node : processing_queue) {
         if (node->_marked_to_delete) {
             continue;
@@ -97,11 +95,6 @@ Scene::process_nodes(
             node->_transitions_manager.step(node, dt);
             transitions_counter += 1;
         }
-
-        if (node->_spatial_data.is_dirty) {
-            this->spatial_index.update_single(node);
-            spatial_updates_counter += 1;
-        }
     }
 }
 
@@ -109,6 +102,8 @@ void
 Scene::resolve_dirty_nodes(const Scene::NodesQueue& processing_queue)
 {
     StopwatchStatAutoPusher stopwatch{"scene.resolve_nodes:time"};
+    CounterStatAutoPusher spatial_updates_counter{
+        "scene.spatial_index_updates:count"};
     for (Node* node : processing_queue) {
         if (node->_marked_to_delete) {
             continue;
@@ -118,6 +113,7 @@ Scene::resolve_dirty_nodes(const Scene::NodesQueue& processing_queue)
 
         if (node->_spatial_data.is_dirty) {
             this->spatial_index.update_single(node);
+            spatial_updates_counter += 1;
         }
     }
 }
