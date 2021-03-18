@@ -17,7 +17,7 @@ constexpr auto views_z_index_to_internal_offset = -views_min_z_index;
 constexpr auto views_default_z_index = 0;
 
 inline constexpr bool
-validate_view_z_index(int16_t z_index)
+validate_view_z_index(const int16_t z_index)
 {
     return (views_min_z_index <= z_index) and (z_index <= views_max_z_index);
 }

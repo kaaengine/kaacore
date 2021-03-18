@@ -1,4 +1,3 @@
-#include "spdlog/common.h"
 #pragma once
 
 #include <array>
