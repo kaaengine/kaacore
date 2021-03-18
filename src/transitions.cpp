@@ -1,4 +1,5 @@
 #include <list>
+#include <optional>
 
 #include <spdlog/fmt/fmt.h>
 

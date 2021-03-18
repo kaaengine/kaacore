@@ -1,11 +1,12 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
-#include <glm/glm.hpp>
 #include <memory>
 #include <optional>
 #include <unordered_set>
 #include <vector>
+
+#include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
 
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"

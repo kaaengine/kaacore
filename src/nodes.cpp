@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <iostream>
+#include <optional>
 #include <unordered_set>
 
 #include <glm/gtc/matrix_transform.hpp>
