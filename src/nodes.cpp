@@ -767,16 +767,20 @@ Node::visible()
 void
 Node::visible(const bool& visible)
 {
-    // TODO handle draw_unit_data
-    if (visible and visible != this->_visible) {
+    if (visible == this->_visible) {
+        return;
+    }
+    if (visible) {
         this->_mark_dirty();
     }
     this->_visible = visible;
     this->recursive_call([](Node* node) {
-        if (node->_visibility_data.is_dirty) {
+        if (node->_visibility_data.is_dirty and
+            node->_draw_unit_data.updated_bucket_key) {
             return false;
         }
         node->_visibility_data.is_dirty = true;
+        node->_draw_unit_data.updated_bucket_key = true;
         return true;
     });
 }

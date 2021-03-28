@@ -289,12 +289,16 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         [](const kaacore::NodePtr node,
            std::vector<kaacore::DrawUnitModification>& out) {
             if (node->has_draw_unit_updates()) {
-                auto [node_mod_1, node_mod_2_opt] =
+                auto [node_mod_1, node_mod_2] =
                     node->calculate_draw_unit_updates();
-                node->clear_draw_unit_updates(node_mod_1->lookup_key);
-                out.push_back(*node_mod_1);
-                if (node_mod_2_opt) {
-                    out.push_back(*node_mod_2_opt);
+                if (node_mod_1) {
+                    out.push_back(*node_mod_1);
+                    node->clear_draw_unit_updates(node_mod_1->lookup_key);
+                } else {
+                    node->clear_draw_unit_updates(std::nullopt);
+                }
+                if (node_mod_2) {
+                    out.push_back(*node_mod_2);
                 }
             }
         };
@@ -486,5 +490,39 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_4, node_5});
+    }
+
+    SECTION("Test lifecycle - toggle visibility")
+    {
+        for (auto n : {node_2, node_3, node_4}) {
+            REQUIRE(n->has_draw_unit_updates());
+            gather_modifications(n, modifications);
+        }
+
+        std::sort(modifications.begin(), modifications.end());
+        draw_bucket.consume_modifications(
+            modifications.begin(), modifications.end());
+        modifications.clear();
+
+        validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
+
+        node_2->visible(false);
+        node_3->visible(true);
+        node_4->visible(false);
+
+        for (auto n : {node_2, node_4}) {
+            REQUIRE(n->has_draw_unit_updates());
+            gather_modifications(n, modifications);
+        }
+        REQUIRE(not node_3->has_draw_unit_updates());
+
+        REQUIRE(modifications.size() == 2);
+
+        std::sort(modifications.begin(), modifications.end());
+        draw_bucket.consume_modifications(
+            modifications.begin(), modifications.end());
+        modifications.clear();
+
+        validate_bucket_content(draw_bucket, {node_3});
     }
 }
