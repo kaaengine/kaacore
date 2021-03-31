@@ -9,7 +9,7 @@
 
 namespace kaacore {
 
-ResourcesRegistry<std::string, Shader> _shaders_registry;
+ResourcesRegistry<ShaderKey, Shader> _shaders_registry;
 ResourcesRegistry<ProgramKey, Program> _programs_registry;
 
 void
@@ -26,22 +26,24 @@ uninitialize_shaders()
     _shaders_registry.uninitialze();
 }
 
-const bgfx::Memory*
+Memory
 _load_shader(const std::string& path)
 {
-    RawFile file(path);
-    return bgfx::copy(file.content.data(), file.content.size());
+    File file(path);
+    return Memory::copy(
+        reinterpret_cast<std::byte*>(file.content.data()), file.content.size());
 }
 
-Shader::Shader(const std::string& path)
-    : path(path), _memory(_load_shader(path))
+Shader::Shader(const ShaderModelMemoryMap& memory_map, const ShaderType type)
+    : _models(memory_map), _type(type)
 {
     if (is_engine_initialized()) {
         this->_initialize();
     }
 }
 
-Shader::Shader(const bgfx::Memory* memory) : _memory(memory)
+Shader::Shader(ShaderModelMemoryMap&& memory_map, const ShaderType type)
+    : _models(std::move(memory_map)), _type(type)
 {
     if (is_engine_initialized()) {
         this->_initialize();
@@ -53,39 +55,61 @@ Shader::~Shader()
     if (this->is_initialized) {
         this->_uninitialize();
     }
-}
-
-bgfx::ShaderHandle
-Shader::handle()
-{
-    return this->_handle;
+    // TODO: releaseFn
 }
 
 ResourceReference<Shader>
-Shader::load(const std::string& path)
+Shader::load(const ShaderType type, const ShaderModelMap& model_map)
 {
+    ShaderKey key;
+    key.reserve(model_map.size());
+    for (auto& kv_pair : model_map) {
+        key.push_back(kv_pair.second);
+    }
     std::shared_ptr<Shader> shader;
-    if ((shader = _shaders_registry.get_resource(path))) {
+    if ((shader = _shaders_registry.get_resource(key))) {
         return shader;
     }
-    shader = std::shared_ptr<Shader>(new Shader(path));
-    _shaders_registry.register_resource(path, shader);
+
+    ShaderModelMemoryMap memory_map;
+    for (auto& kv_pair : model_map) {
+        memory_map[kv_pair.first] = std::move(_load_shader(kv_pair.second));
+    }
+
+    shader = std::shared_ptr<Shader>(new Shader(std::move(memory_map), type));
+    _shaders_registry.register_resource(key, shader);
     return shader;
 }
 
 ResourceReference<Shader>
-Shader::load(const bgfx::Memory* memory)
+Shader::create(const ShaderType type, const ShaderModelMemoryMap memory_map)
 {
-    return std::shared_ptr<Shader>(new Shader(memory));
+    return std::shared_ptr<Shader>(new Shader(memory_map, type));
+}
+
+ShaderType
+Shader::type() const
+{
+    return this->_type;
 }
 
 void
 Shader::_initialize()
 {
-    this->_handle = bgfx::createShader(this->_memory);
+    auto model = get_engine()->renderer->shader_model();
+    if (this->_models.find(model) == this->_models.end()) {
+        auto msg = fmt::format(
+            "No suitable shader provided for renderer type: {}.",
+            get_engine()->renderer->type());
+        throw kaacore::exception(msg);
+    }
+
+    auto& memory = this->_models[model];
+    // TODO: releaseFn
+    auto bgfx_memory = bgfx::makeRef(memory.get(), memory.size());
+    this->_handle = bgfx::createShader(bgfx_memory);
     if (not bgfx::isValid(this->_handle)) {
-        throw kaacore::exception(
-            "Can't create shader (path:" + this->path + ").");
+        throw kaacore::exception("Can't create shader TODO.");
     }
     this->is_initialized = true;
 }
@@ -116,19 +140,14 @@ Program::~Program()
     }
 }
 
-bgfx::ProgramHandle
-Program::handle()
-{
-    return this->_handle;
-}
-
 ResourceReference<Program>
-Program::load(
+Program::create(
     const ResourceReference<Shader>& vertex,
     const ResourceReference<Shader>& fragment)
 {
     std::shared_ptr<Program> program;
-    ProgramKey key = std::make_pair(vertex->_handle.idx, fragment->_handle.idx);
+    ProgramKey key =
+        std::make_pair(vertex.res_ptr.get(), fragment.res_ptr.get());
 
     if ((program = _programs_registry.get_resource(key))) {
         return program;

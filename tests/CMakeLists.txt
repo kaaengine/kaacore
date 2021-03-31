@@ -5,6 +5,7 @@ set(TEST_SRC_CXX_FILES
     test_basics.cpp
     test_shapes.cpp
     test_images.cpp
+    test_materials.cpp
 )
 
 add_executable(runner runner.cpp ${TEST_SRC_CXX_FILES})

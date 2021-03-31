@@ -46,6 +46,9 @@ set(SRC_CXX_FILES
     easings.cpp
     shaders.cpp
     clock.cpp
+    materials.cpp
+    memory.cpp
+    platform.cpp
 )
 
 set(SRC_H_FILES
@@ -78,6 +81,9 @@ set(SRC_H_FILES
     ../include/kaacore/easings.h
     ../include/kaacore/shaders.h
     ../include/kaacore/clock.h
+    ../include/kaacore/materials.h
+    ../include/kaacore/memory.h
+    ../include/kaacore/platform.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

@@ -179,7 +179,7 @@ bake_font_texture(const uint8_t* font_file_content, const size_t size)
 }
 
 std::pair<bimg::ImageContainer*, BakedFontData>
-bake_font_texture(const RawFile& font_file)
+bake_font_texture(const File& font_file)
 {
     return bake_font_texture(
         font_file.content.data(), font_file.content.size());
@@ -306,7 +306,7 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
 
 FontData::FontData(const std::string& path) : path(path)
 {
-    RawFile file(this->path);
+    File file(this->path);
     auto [baked_font_image, baked_font_data] = bake_font_texture(file);
     this->baked_texture = Image::load(baked_font_image);
     this->baked_font = std::move(baked_font_data);
@@ -342,10 +342,11 @@ FontData::load(const std::string& path)
 }
 
 ResourceReference<FontData>
-FontData::load_from_memory(const uint8_t* font_file_content, const size_t size)
+FontData::load_from_memory(const Memory& memory)
 {
+    auto raw_memory = reinterpret_cast<const uint8_t*>(memory.get());
     auto [baked_font_image, baked_font_data] =
-        bake_font_texture(font_file_content, size);
+        bake_font_texture(raw_memory, memory.size());
 
     return std::shared_ptr<FontData>(
         new FontData(Image::load(baked_font_image), baked_font_data));
@@ -437,10 +438,9 @@ Font::operator==(const Font& other)
 Font&
 get_default_font()
 {
-    static auto file_pair = get_embedded_file_content(
+    static auto memory = get_embedded_file_content(
         embedded_assets_filesystem, "embedded_resources/font_munro/munro.ttf");
-    static Font default_font{
-        FontData::load_from_memory(file_pair.first, file_pair.second)};
+    static Font default_font{FontData::load_from_memory(memory)};
     return default_font;
 }
 

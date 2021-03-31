@@ -543,6 +543,18 @@ Node::sprite(const Sprite& sprite)
     this->_render_data.is_dirty = true;
 }
 
+ResourceReference<Material>&
+Node::material()
+{
+    return this->_material;
+}
+
+void
+Node::material(const ResourceReference<Material>& material)
+{
+    this->_material = material;
+}
+
 glm::dvec4
 Node::color()
 {

@@ -47,10 +47,10 @@ load_image(const uint8_t* data, size_t size)
 }
 
 bimg::ImageContainer*
-load_image(const char* path)
+load_image(const std::string& path)
 {
     KAACORE_LOG_INFO("Loading image from file: {}", path);
-    RawFile file(path);
+    File file(path);
     KAACORE_LOG_INFO("Loaded file size: {}", file.content.size());
     return load_image(file.content.data(), file.content.size());
 }
@@ -71,7 +71,7 @@ load_raw_image(
 Image::Image(const std::string& path, uint64_t flags) : path(path), flags(flags)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
-        load_image(path.c_str()), _destroy_image_container);
+        load_image(path), _destroy_image_container);
     if (is_engine_initialized()) {
         this->_initialize();
     }

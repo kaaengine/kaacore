@@ -11,6 +11,7 @@
 #include "kaacore/files.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/materials.h"
 #include "kaacore/resources.h"
 #include "kaacore/shaders.h"
 #include "kaacore/utils.h"
@@ -51,15 +52,24 @@ struct StandardVertexData {
     }
 };
 
+enum class RendererType {
+    noop = bgfx::RendererType::Noop,
+    dx9 = bgfx::RendererType::Direct3D9,
+    dx11 = bgfx::RendererType::Direct3D11,
+    dx12 = bgfx::RendererType::Direct3D12,
+    metal = bgfx::RendererType::Metal,
+    opengl = bgfx::RendererType::OpenGL,
+    vulkan = bgfx::RendererType::Vulkan,
+    unsupported
+};
+
 class Renderer {
   public:
     bgfx::VertexLayout vertex_layout;
-
     std::unique_ptr<Image> default_image;
-
     bgfx::UniformHandle texture_uniform;
-    ResourceReference<Program> default_program;
-    ResourceReference<Program> sdf_font_program;
+    ResourceReference<Material> default_material;
+    ResourceReference<Material> sdf_font_material;
     // TODO replace with default_image
     bgfx::TextureHandle default_texture;
 
@@ -73,6 +83,9 @@ class Renderer {
     bgfx::TextureHandle make_texture(
         std::shared_ptr<bimg::ImageContainer> image_container,
         const uint64_t flags) const;
+    RendererType type() const;
+    ShaderModel shader_model() const;
+
     void destroy_texture(const bgfx::TextureHandle& handle) const;
     void begin_frame();
     void end_frame();
@@ -83,10 +96,13 @@ class Renderer {
         const std::vector<StandardVertexData>& vertices,
         const std::vector<VertexIndex>& indices,
         const bgfx::TextureHandle texture,
-        const ResourceReference<Program>& program) const;
+        const ResourceReference<Material>& material) const;
 
   private:
     uint32_t _calculate_reset_flags() const;
+    void _bind_material(
+        const ResourceReference<Material>& material,
+        bgfx::TextureHandle texture) const;
 
     bool _vertical_sync = true;
 

@@ -166,24 +166,23 @@ Scene::process_nodes_drawing()
         if (node->_render_data.computed_vertices.empty()) {
             continue;
         }
-
         node->_ordering_data.calculated_views.each_active_z_index(
-            [this, &renderer, &node](int16_t z_index) {
+            [this, &node](int16_t z_index) {
                 auto& view = this->views[z_index];
-
-                if (node->type() == NodeType::text) {
-                    renderer->render_vertices(
-                        view.internal_index(),
-                        node->_render_data.computed_vertices,
-                        node->_shape.indices, node->_render_data.texture_handle,
-                        renderer->sdf_font_program);
-                } else {
-                    renderer->render_vertices(
-                        view.internal_index(),
-                        node->_render_data.computed_vertices,
-                        node->_shape.indices, node->_render_data.texture_handle,
-                        renderer->default_program);
+                auto& material = node->_material;
+                auto renderer = get_engine()->renderer.get();
+                if (not material) {
+                    if (node->type() == NodeType::text) {
+                        material = renderer->sdf_font_material;
+                    } else {
+                        material = renderer->default_material;
+                    }
                 }
+
+                renderer->render_vertices(
+                    view.internal_index(), node->_render_data.computed_vertices,
+                    node->_shape.indices, node->_render_data.texture_handle,
+                    material);
             });
     }
 }

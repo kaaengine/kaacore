@@ -12,12 +12,15 @@
 #include "kaacore/files.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/memory.h"
+#include "kaacore/platform.h"
 
 #include "kaacore/renderer.h"
 
 namespace kaacore {
 
 constexpr uint16_t _internal_view_index = 0;
+constexpr uint8_t _internal_sampler_stage_index = 0;
 
 // Since the memory that is used to load texture to bgfx should be available
 // for at least two frames, we bump up its ref count by storing it in a set.
@@ -36,69 +39,77 @@ _release_used_container(void* _data, void* image_container)
     _used_containers.erase(key);
 }
 
-std::tuple<bool, const bgfx::Memory*, const bgfx::Memory*>
+std::string
+get_shader_model_tag(ShaderModel model)
+{
+    switch (model) {
+        case ShaderModel::glsl:
+            return "glsl";
+        case ShaderModel::spriv:
+            return "spirv";
+        case ShaderModel::metal:
+            return "metal";
+        case ShaderModel::hlsl_dx9:
+            return "dx9";
+        case ShaderModel::hlsl_dx11:
+            return "dx11";
+        default:
+            return "unknown";
+    }
+}
+
+Memory
+load_embedded_shader(const std::string& path)
+{
+    try {
+        return get_embedded_file_content(embedded_shaders_filesystem, path);
+    } catch (embedded_file_error& err) {
+        KAACORE_LOG_ERROR(
+            "Failed to load embedded binary shader: {} ({})", path, err.what());
+        throw;
+    }
+}
+
+std::pair<ResourceReference<Shader>, ResourceReference<Shader>>
 load_embedded_shaders(
-    bgfx::RendererType::Enum renderer_type,
     const std::string vertex_shader_name,
     const std::string fragment_shader_name)
 {
-    const bgfx::Memory* vs_mem = nullptr;
-    const bgfx::Memory* fs_mem = nullptr;
-    std::string shader_platform_tag;
-
     KAACORE_LOG_DEBUG(
         "Loading embedded shaders: {}, {}", vertex_shader_name,
         fragment_shader_name);
+    KAACORE_LOG_TRACE("Detected platform : {}", get_platform_name());
 
-    switch (renderer_type) {
-        case bgfx::RendererType::Noop:
-            return {false, nullptr, nullptr};
-        case bgfx::RendererType::Direct3D9:
-            shader_platform_tag = "dx9";
+    std::vector<ShaderModel> models;
+    switch (get_platform()) {
+        case PlatforType::linux:
+            models = {ShaderModel::glsl, ShaderModel::spriv};
             break;
-        case bgfx::RendererType::Direct3D11:
-        case bgfx::RendererType::Direct3D12:
-            shader_platform_tag = "dx11";
+        case PlatforType::osx:
+            models = {ShaderModel::metal, ShaderModel::glsl,
+                      ShaderModel::spriv};
             break;
-        case bgfx::RendererType::Metal:
-            shader_platform_tag = "metal";
-            break;
-        case bgfx::RendererType::OpenGL:
-            shader_platform_tag = "glsl";
-            break;
-        case bgfx::RendererType::Vulkan:
-            shader_platform_tag = "spirv";
+        case PlatforType::windows:
+            models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
+                      ShaderModel::glsl, ShaderModel::spriv};
             break;
         default:
             KAACORE_LOG_ERROR(
-                "Can't load embedded shaders for unsupported renderer: #{}",
-                renderer_type);
-            return {false, nullptr, nullptr};
+                "Unsupported platform! Can't load embedded shaders.");
     }
-    KAACORE_LOG_TRACE("Detected shader platform tag: {}", shader_platform_tag);
 
-    try {
-        auto [vs_data, vs_data_size] = get_embedded_file_content(
-            embedded_shaders_filesystem,
-            fmt::format("{}/{}.bin", shader_platform_tag, vertex_shader_name));
-        vs_mem = bgfx::makeRef(vs_data, vs_data_size);
-    } catch (embedded_file_error& err) {
-        KAACORE_LOG_ERROR(
-            "Failed to load embedded binary shader: {} ({})",
-            vertex_shader_name, err.what());
+    std::string path;
+    ShaderModelMemoryMap vertex_memory_map;
+    ShaderModelMemoryMap fragment_memory_map;
+    for (auto model : models) {
+        auto shader_model_tag = get_shader_model_tag(model);
+        path = fmt::format("{}/{}.bin", shader_model_tag, vertex_shader_name);
+        vertex_memory_map[model] = load_embedded_shader(path);
+        path = fmt::format("{}/{}.bin", shader_model_tag, fragment_shader_name);
+        fragment_memory_map[model] = load_embedded_shader(path);
     }
-    try {
-        auto [fs_data, fs_data_size] = get_embedded_file_content(
-            embedded_shaders_filesystem,
-            fmt::format(
-                "{}/{}.bin", shader_platform_tag, fragment_shader_name));
-        fs_mem = bgfx::makeRef(fs_data, fs_data_size);
-    } catch (embedded_file_error& err) {
-        KAACORE_LOG_ERROR(
-            "Failed to load embedded binary shader: {} ({})",
-            fragment_shader_name, err.what());
-    }
-    return {vs_mem != nullptr and fs_mem != nullptr, vs_mem, fs_mem};
+    return {Shader::create(ShaderType::vertex, vertex_memory_map),
+            Shader::create(ShaderType::fragment, fragment_memory_map)};
 }
 
 std::unique_ptr<Image>
@@ -115,19 +126,12 @@ load_default_image()
 
 ResourceReference<Program>
 load_embedded_program(
-    bgfx::RendererType::Enum renderer_type,
-    const std::string vertex_shader_name,
-    const std::string fragment_shader_name)
+    const std::string& vertex_shader_name,
+    const std::string& fragment_shader_name)
 {
-    auto [loaded_shaders, vs_mem, fs_mem] = load_embedded_shaders(
-        renderer_type, vertex_shader_name, fragment_shader_name);
-    if (not loaded_shaders) {
-        KAACORE_LOG_ERROR("Can't find precompiled shaders for this platform!");
-        return {};
-    }
-    auto vs = Shader::load(vs_mem);
-    auto fs = Shader::load(fs_mem);
-    return Program::load(vs, fs);
+    auto [vs, fs] =
+        load_embedded_shaders(vertex_shader_name, fragment_shader_name);
+    return Program::create(vs, fs);
 }
 
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
@@ -153,14 +157,12 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
     this->default_image = load_default_image();
     this->default_texture = this->default_image->texture_handle;
 
-    auto renderer_type = bgfx::getRendererType();
-
     KAACORE_LOG_INFO("Loading embedded default shader.");
-    this->default_program =
-        load_embedded_program(renderer_type, "vs_default", "fs_default");
+    auto default_program = load_embedded_program("vs_default", "fs_default");
     KAACORE_LOG_INFO("Loading embedded sdf_font shader.");
-    this->sdf_font_program =
-        load_embedded_program(renderer_type, "vs_default", "fs_sdf_font");
+    auto sdf_font_program = load_embedded_program("vs_default", "fs_sdf_font");
+    this->default_material = Material::create(default_program);
+    this->sdf_font_material = Material::create(sdf_font_program);
 }
 
 Renderer::~Renderer()
@@ -168,18 +170,33 @@ Renderer::~Renderer()
     KAACORE_LOG_INFO("Destroying renderer");
     bgfx::destroy(this->texture_uniform);
     this->default_image.reset();
+
     // since default shaders are embeded and not present
     // in registry, free them manually
-    if (this->default_program) {
-        this->default_program.res_ptr.get()->vertex_shader->_uninitialize();
-        this->default_program.res_ptr.get()->fragment_shader->_uninitialize();
-        this->default_program.res_ptr.get()->_uninitialize();
+    if (this->default_material) {
+        this->default_material.res_ptr.get()
+            ->program.res_ptr.get()
+            ->vertex_shader->_uninitialize();
+        this->default_material.res_ptr.get()
+            ->program.res_ptr.get()
+            ->fragment_shader->_uninitialize();
+        this->default_material.res_ptr.get()
+            ->program.res_ptr.get()
+            ->_uninitialize();
     }
-    if (this->sdf_font_program) {
-        this->sdf_font_program.res_ptr.get()->vertex_shader->_uninitialize();
-        this->sdf_font_program.res_ptr.get()->fragment_shader->_uninitialize();
-        this->sdf_font_program.res_ptr.get()->_uninitialize();
+
+    if (this->sdf_font_material) {
+        this->sdf_font_material.res_ptr.get()
+            ->program.res_ptr.get()
+            ->vertex_shader->_uninitialize();
+        this->sdf_font_material.res_ptr.get()
+            ->program.res_ptr.get()
+            ->fragment_shader->_uninitialize();
+        this->sdf_font_material.res_ptr.get()
+            ->program.res_ptr.get()
+            ->_uninitialize();
     }
+
     bgfx::shutdown();
 }
 
@@ -206,6 +223,49 @@ Renderer::make_texture(
     KAACORE_ASSERT(bgfx::isValid(handle), "Failed to create texture.");
     _used_containers.insert(std::move(image_container));
     return handle;
+}
+
+RendererType
+Renderer::type() const
+{
+    switch (bgfx::getRendererType()) {
+        case bgfx::RendererType::Noop:
+            return RendererType::noop;
+        case bgfx::RendererType::Direct3D9:
+            return RendererType::dx9;
+        case bgfx::RendererType::Direct3D11:
+            return RendererType::dx11;
+        case bgfx::RendererType::Direct3D12:
+            return RendererType::dx12;
+        case bgfx::RendererType::Metal:
+            return RendererType::metal;
+        case bgfx::RendererType::OpenGL:
+            return RendererType::opengl;
+        case bgfx::RendererType::Vulkan:
+            return RendererType::vulkan;
+        default:
+            return RendererType::unsupported;
+    }
+}
+
+ShaderModel
+Renderer::shader_model() const
+{
+    switch (this->type()) {
+        case RendererType::dx9:
+            return ShaderModel::hlsl_dx9;
+        case RendererType::dx11:
+        case RendererType::dx12:
+            return ShaderModel::hlsl_dx11;
+        case RendererType::metal:
+            return ShaderModel::metal;
+        case RendererType::opengl:
+            return ShaderModel::glsl;
+        case RendererType::vulkan:
+            return ShaderModel::spriv;
+        default:
+            return ShaderModel::unknown;
+    }
 }
 
 void
@@ -310,19 +370,15 @@ void
 Renderer::render_vertices(
     const uint16_t view_index, const std::vector<StandardVertexData>& vertices,
     const std::vector<VertexIndex>& indices, const bgfx::TextureHandle texture,
-    const ResourceReference<Program>& program) const
+    const ResourceReference<Material>& material) const
 {
     bgfx::TransientVertexBuffer vertices_buffer;
     bgfx::TransientIndexBuffer indices_buffer;
-    bgfx::ProgramHandle program_handle = BGFX_INVALID_HANDLE;
-
-    if (program) {
-        program_handle = program->_handle;
-    }
 
     bgfx::setState(
         BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
         BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA);
+    this->_bind_material(material, texture);
 
     bgfx::allocTransientVertexBuffer(
         &vertices_buffer, vertices.size(), this->vertex_layout);
@@ -337,15 +393,24 @@ Renderer::render_vertices(
 
     bgfx::setVertexBuffer(0, &vertices_buffer);
     bgfx::setIndexBuffer(&indices_buffer);
-    bgfx::setTexture(0, this->texture_uniform, texture);
 
-    bgfx::submit(view_index, program_handle, false);
+    bgfx::submit(view_index, material->program->_handle, false);
 }
 
 uint32_t
 Renderer::_calculate_reset_flags() const
 {
     return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
+}
+
+void
+Renderer::_bind_material(
+    const ResourceReference<Material>& material,
+    bgfx::TextureHandle texture) const
+{
+    bgfx::setTexture(
+        _internal_sampler_stage_index, this->texture_uniform, texture);
+    material->_bind();
 }
 
 } // namespace kaacore
