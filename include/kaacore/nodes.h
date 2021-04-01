@@ -1,11 +1,12 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
-#include <glm/glm.hpp>
 #include <memory>
 #include <optional>
 #include <unordered_set>
 #include <vector>
+
+#include <bgfx/bgfx.h>
+#include <glm/glm.hpp>
 
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"
@@ -80,6 +81,7 @@ class Node {
 
     std::optional<int16_t> z_index();
     void z_index(const std::optional<int16_t>& z_index);
+    int16_t effective_z_index();
 
     Shape shape();
     void shape(const Shape& shape);
@@ -115,12 +117,15 @@ class Node {
 
     void views(const std::optional<std::unordered_set<int16_t>>& z_indices);
     const std::optional<std::vector<int16_t>> views() const;
+    const std::vector<int16_t> effective_views();
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
 
     void indexable(const bool indexable_flag);
     bool indexable() const;
+
+    uint16_t root_distance() const;
 
     BoundingBox<double> bounding_box();
 
@@ -144,6 +149,7 @@ class Node {
     Node* _parent = nullptr;
     std::vector<Node*> _children;
     std::optional<ViewIndexSet> _views = std::nullopt;
+    uint16_t _root_distance = 0;
 
     std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
 

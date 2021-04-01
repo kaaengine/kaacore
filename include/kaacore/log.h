@@ -1,4 +1,3 @@
-#include "spdlog/common.h"
 #pragma once
 
 #include <array>
@@ -25,7 +24,7 @@ constexpr std::array _log_categories{
     "resources"sv, "resources_manager"sv, "sprites"sv, "window"sv, "geometry"sv,
     "fonts"sv, "timers"sv, "transitions"sv, "node_transitions"sv, "camera"sv,
     "views"sv, "spatial_index"sv, "threading"sv, "utils"sv, "embedded_data"sv,
-    "easings"sv, "shaders"sv,
+    "easings"sv, "shaders"sv, "statistics"sv,
     // special-purpose categories
     "other"sv, "app"sv, "wrapper"sv};
 
@@ -155,9 +154,8 @@ emit_log_dynamic(
         spdlog::warn("Logging subsystem was not initialized.");
         spdlog::log(log_level, std::forward<Args>(args)...);
         return;
-
-        _loggers[logger_index]->log(log_level, std::forward<Args>(args)...);
     }
+    _loggers[logger_index]->log(log_level, std::forward<Args>(args)...);
 }
 
 #define KAACORE_LOG_FULL(LEVEL, LOGGER_INDEX, ...)                             \

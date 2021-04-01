@@ -6,6 +6,8 @@ set(TEST_SRC_CXX_FILES
     test_shapes.cpp
     test_images.cpp
     test_materials.cpp
+    test_statistics.cpp
+    test_transitions.cpp
 )
 
 add_executable(runner runner.cpp ${TEST_SRC_CXX_FILES})

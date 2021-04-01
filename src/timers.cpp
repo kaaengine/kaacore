@@ -35,7 +35,7 @@ Timer::_start(const Duration interval, TimersManager& manager)
 {
     KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
     KAACORE_CHECK(
-        not std::isinf(interval.count()), "Timer interval must not infinity.");
+        interval.count() != INFINITY, "Timer interval cannot be infinity.");
     if (this->is_running()) {
         this->stop();
     }

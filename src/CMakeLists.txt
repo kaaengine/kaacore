@@ -49,6 +49,7 @@ set(SRC_CXX_FILES
     materials.cpp
     memory.cpp
     platform.cpp
+    statistics.cpp
 )
 
 set(SRC_H_FILES
@@ -84,6 +85,7 @@ set(SRC_H_FILES
     ../include/kaacore/materials.h
     ../include/kaacore/memory.h
     ../include/kaacore/platform.h
+    ../include/kaacore/statistics.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h
@@ -135,7 +137,7 @@ target_include_directories(kaacore PUBLIC
 target_link_libraries(
     kaacore PUBLIC
     SDL2 SDL_mixer bgfx chipmunk_static glm $<TARGET_OBJECTS:SDL_mixer>
-    stb $<TARGET_OBJECTS:stb> spdlog
+    stb $<TARGET_OBJECTS:stb> spdlog kissnet
 )
 
 if (KAACORE_SHARED)

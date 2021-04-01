@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
-#include <iostream>
+#include <optional>
 #include <unordered_set>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -216,6 +216,7 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
     // TODO optimize (replace with iterator?)
     std::function<void(Node*)> initialize_node;
     initialize_node = [&initialize_node, this](Node* n) {
+        n->_root_distance = n->_parent->_root_distance + 1;
         bool added_to_scene =
             (n->_scene == nullptr and this->_scene != nullptr);
         n->_scene = this->_scene;
@@ -492,6 +493,13 @@ Node::z_index(const std::optional<int16_t>& z_index)
     this->_mark_ordering_dirty();
 }
 
+int16_t
+Node::effective_z_index()
+{
+    this->recalculate_ordering_data();
+    return this->_ordering_data.calculated_z_index;
+}
+
 Shape
 Node::shape()
 {
@@ -661,6 +669,13 @@ Node::views() const
     return this->_views;
 }
 
+const std::vector<int16_t>
+Node::effective_views()
+{
+    this->recalculate_ordering_data();
+    return this->_ordering_data.calculated_views;
+}
+
 void
 Node::setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper)
 {
@@ -687,6 +702,12 @@ bool
 Node::indexable() const
 {
     return this->_indexable;
+}
+
+uint16_t
+Node::root_distance() const
+{
+    return this->_root_distance;
 }
 
 BoundingBox<double>

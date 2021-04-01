@@ -9,6 +9,7 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
+#include "kaacore/statistics.h"
 #include "kaacore/views.h"
 
 #include "kaacore/scenes.h"
@@ -40,6 +41,7 @@ Scene::camera()
 void
 Scene::process_physics(const HighPrecisionDuration dt)
 {
+    StopwatchStatAutoPusher stopwatch{"scene.physics_sync:time"};
     for (Node* space_node : this->simulations_registry) {
         space_node->space.simulate(dt);
     }
@@ -48,6 +50,7 @@ Scene::process_physics(const HighPrecisionDuration dt)
 void
 Scene::process_nodes(const HighPrecisionDuration dt)
 {
+    StopwatchStatAutoPusher stopwatch{"scene.process_nodes:time"};
     static std::deque<Node*> processing_queue;
     processing_queue.clear();
 
@@ -95,6 +98,7 @@ void
 Scene::resolve_dirty_nodes()
 {
     static std::deque<Node*> processing_queue;
+    StopwatchStatAutoPusher stopwatch{"scene.resolve_nodes:time"};
     processing_queue.clear();
 
     processing_queue.push_back(&this->root_node);
@@ -124,6 +128,8 @@ Scene::process_nodes_drawing()
 {
     static std::deque<Node*> processing_queue;
     static std::vector<std::pair<uint64_t, Node*>> rendering_queue;
+
+    StopwatchStatAutoPusher stopwatch{"scene.nodes_drawing:time"};
 
     processing_queue.clear();
     rendering_queue.clear();

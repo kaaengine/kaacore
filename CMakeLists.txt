@@ -51,6 +51,7 @@ set(GLM_TEST_ENABLE OFF CACHE BOOL "")
 add_subdirectory(third_party/glm)
 
 add_subdirectory(third_party/stb)
+add_subdirectory(third_party/kissnet)
 
 add_subdirectory(third_party/spdlog)
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
