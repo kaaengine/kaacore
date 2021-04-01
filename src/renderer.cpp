@@ -14,8 +14,8 @@
 #include "kaacore/log.h"
 #include "kaacore/memory.h"
 #include "kaacore/platform.h"
-#include "kaacore/statistics.h"
 #include "kaacore/renderer.h"
+#include "kaacore/statistics.h"
 
 namespace kaacore {
 
