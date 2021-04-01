@@ -225,12 +225,13 @@ class Material : public Resource {
     ResourceReference<Material> clone() const;
 
     UniformSpecificationMap uniforms() const;
-    void set_sampler_value(
+    void set_uniform_texture(
         const std::string& name, const ResourceReference<Image>& texture,
         const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
-    void set_sampler_value(const std::string& name, const SamplerValue& value);
-    SamplerValue get_sampler_value(const std::string& name) const;
+    void set_uniform_texture(
+        const std::string& name, const SamplerValue& value);
+    SamplerValue get_uniform_texture(const std::string& name) const;
 
     template<typename T>
     std::vector<T> get_uniform_value(const std::string& name) const

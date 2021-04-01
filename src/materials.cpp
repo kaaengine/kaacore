@@ -254,8 +254,8 @@ Material::clone() const
         const auto& [name, uniform] = kv_pair;
         switch (uniform.type()) {
             case UniformType::sampler:
-                material->set_sampler_value(
-                    name, this->get_sampler_value(name));
+                material->set_uniform_texture(
+                    name, this->get_uniform_texture(name));
                 break;
             case UniformType::vec4:
                 material->set_uniform_value<glm::fvec4>(
@@ -292,7 +292,7 @@ Material::uniforms() const
 }
 
 void
-Material::set_sampler_value(
+Material::set_uniform_texture(
     const std::string& name, const ResourceReference<Image>& texture,
     const uint8_t stage, const uint32_t flags)
 {
@@ -302,7 +302,8 @@ Material::set_sampler_value(
 }
 
 void
-Material::set_sampler_value(const std::string& name, const SamplerValue& value)
+Material::set_uniform_texture(
+    const std::string& name, const SamplerValue& value)
 {
     KAACORE_CHECK(
         this->_name_in_registry(name), "Unknown uniform name: {}.", name);
@@ -310,7 +311,7 @@ Material::set_sampler_value(const std::string& name, const SamplerValue& value)
 }
 
 SamplerValue
-Material::get_sampler_value(const std::string& name) const
+Material::get_uniform_texture(const std::string& name) const
 {
     KAACORE_CHECK(
         this->_name_in_registry(name), "Unknown uniform name: {}.", name);

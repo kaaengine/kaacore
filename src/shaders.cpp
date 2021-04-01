@@ -55,7 +55,6 @@ Shader::~Shader()
     if (this->is_initialized) {
         this->_uninitialize();
     }
-    // TODO: releaseFn
 }
 
 ResourceReference<Shader>
@@ -105,7 +104,6 @@ Shader::_initialize()
     }
 
     auto& memory = this->_models[model];
-    // TODO: releaseFn
     auto bgfx_memory = bgfx::makeRef(memory.get(), memory.size());
     this->_handle = bgfx::createShader(bgfx_memory);
     if (not bgfx::isValid(this->_handle)) {

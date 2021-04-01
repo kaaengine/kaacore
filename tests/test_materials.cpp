@@ -38,14 +38,14 @@ TEST_CASE("Test materials")
         glm::fvec4 vector({1.f, 1.f, 0, 0});
         glm::fvec4 vector2({1.f, 1.f, 1.f, 0});
 
-        material->set_sampler_value("sampler", image, 11, 11);
+        material->set_uniform_texture("sampler", image, 11, 11);
         material->set_uniform_value<glm::vec4>("vector", vector);
         material->set_uniform_value<glm::vec4>(
             "vector2", std::vector<glm::fvec4>({vector, vector2}));
 
         // sampler
         kaacore::SamplerValue sampler_value =
-            material->get_sampler_value("sampler");
+            material->get_uniform_texture("sampler");
         REQUIRE(sampler_value.stage == 11);
         REQUIRE(sampler_value.flags == 11);
         REQUIRE(sampler_value.texture == image);
@@ -71,24 +71,24 @@ TEST_CASE("Test materials")
             program, {{"sampler", kaacore::UniformSpecification(
                                       kaacore::UniformType::sampler)}});
 
-        material->set_sampler_value("sampler", image, 11, 11);
-        REQUIRE(material->get_sampler_value("sampler").stage == 11);
-        REQUIRE(material->get_sampler_value("sampler").flags == 11);
-        REQUIRE(material->get_sampler_value("sampler").texture == image);
+        material->set_uniform_texture("sampler", image, 11, 11);
+        REQUIRE(material->get_uniform_texture("sampler").stage == 11);
+        REQUIRE(material->get_uniform_texture("sampler").flags == 11);
+        REQUIRE(material->get_uniform_texture("sampler").texture == image);
 
         auto material2 = material->clone();
-        REQUIRE(material2->get_sampler_value("sampler").stage == 11);
-        REQUIRE(material2->get_sampler_value("sampler").flags == 11);
-        REQUIRE(material2->get_sampler_value("sampler").texture == image);
+        REQUIRE(material2->get_uniform_texture("sampler").stage == 11);
+        REQUIRE(material2->get_uniform_texture("sampler").flags == 11);
+        REQUIRE(material2->get_uniform_texture("sampler").texture == image);
 
-        material2->set_sampler_value("sampler", image, 12, 12);
-        REQUIRE(material2->get_sampler_value("sampler").stage == 12);
-        REQUIRE(material2->get_sampler_value("sampler").flags == 12);
-        REQUIRE(material2->get_sampler_value("sampler").texture == image);
+        material2->set_uniform_texture("sampler", image, 12, 12);
+        REQUIRE(material2->get_uniform_texture("sampler").stage == 12);
+        REQUIRE(material2->get_uniform_texture("sampler").flags == 12);
+        REQUIRE(material2->get_uniform_texture("sampler").texture == image);
 
-        REQUIRE(material->get_sampler_value("sampler").stage == 11);
-        REQUIRE(material->get_sampler_value("sampler").flags == 11);
-        REQUIRE(material->get_sampler_value("sampler").texture == image);
+        REQUIRE(material->get_uniform_texture("sampler").stage == 11);
+        REQUIRE(material->get_uniform_texture("sampler").flags == 11);
+        REQUIRE(material->get_uniform_texture("sampler").texture == image);
     }
 
     SECTION("errors")
@@ -101,8 +101,8 @@ TEST_CASE("Test materials")
         glm::fvec4 vector2({1.f, 1.f, 1.f, 0});
 
         // nonexistent uniform
-        REQUIRE_THROWS(material->set_sampler_value("missing", image, 1));
-        REQUIRE_THROWS(material->get_sampler_value("missing"));
+        REQUIRE_THROWS(material->set_uniform_texture("missing", image, 1));
+        REQUIRE_THROWS(material->get_uniform_texture("missing"));
 
         material = kaacore::Material::create(
             program,
@@ -112,7 +112,7 @@ TEST_CASE("Test materials")
               kaacore::UniformSpecification(kaacore::UniformType::vec4)}});
 
         // stage 0 is reserved for internal use
-        REQUIRE_THROWS(material->set_sampler_value("sampler", image, 0));
+        REQUIRE_THROWS(material->set_uniform_texture("sampler", image, 0));
 
         // invalid number of elements
         REQUIRE_THROWS(material->set_uniform_value<glm::fvec4>(
