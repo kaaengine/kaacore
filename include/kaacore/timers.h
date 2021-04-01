@@ -91,8 +91,7 @@ class TimersManager {
         std::vector<_AwaitingState> data;
     } _awaiting_timers;
 
-    // FIXME not thread safe
-    static inline TimerID _last_timer_id = 0;
+    static inline std::atomic<TimerID> _last_id = 0u;
 };
 
 }
