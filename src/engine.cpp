@@ -62,7 +62,8 @@ get_persistent_path(
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
     const VirtualResolutionMode vr_mode) noexcept(false)
-    : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
+    : _virtual_resolution(virtual_resolution),
+      _virtual_resolution_mode(vr_mode), _runtime_session(nullptr)
 {
     std::scoped_lock<std::mutex> lock(init_mutex);
     KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
@@ -154,9 +155,12 @@ Engine::~Engine()
 }
 
 void
-Engine::run(Scene* scene)
+Engine::run(
+    Scene* scene, uint32_t frames_limit,
+    CapturingAdapterBase* capturing_adapter)
 {
-    this->_scene = scene;
+    _RuntimeSession runtime_session{this, scene, frames_limit,
+                                    capturing_adapter};
 
     this->window->_activate();
 #if KAACORE_MULTITHREADING_MODE
@@ -292,6 +296,9 @@ Engine::_gather_platform_data()
     bgfx_init_data.platformData.backBuffer = nullptr;
     bgfx_init_data.platformData.backBufferDS = nullptr;
     bgfx_init_data.debug = true;
+
+    bgfx_init_data.callback = &this->_capture_callback;
+
     return bgfx_init_data;
 }
 
@@ -299,6 +306,7 @@ void
 Engine::_scene_processing()
 {
     this->is_running = true;
+    uint32_t frames_count = 0;
     try {
         KAACORE_LOG_INFO("Engine is running.");
         this->_scene->on_enter();
@@ -346,6 +354,10 @@ Engine::_scene_processing()
                 this->renderer->push_statistics();
                 this->udp_stats_exporter->send_sync(
                     get_global_statistics_manager().get_last_all());
+            }
+
+            if (this->_runtime_session->frames_limit() == ++frames_count) {
+                break;
             }
         }
         this->_scene->on_exit();
@@ -469,7 +481,7 @@ Engine::_engine_thread_entrypoint()
         this->_engine_loop_state.set(EngineLoopState::stopping);
         KAACORE_LOG_DEBUG("Rendering final frame.");
         // render one more frame to stop waiting renderFrame() from main thread
-        this->renderer->end_frame();
+        this->renderer->final_frame();
         KAACORE_LOG_INFO("Engine loop stopped.");
     }
 }
@@ -540,6 +552,41 @@ Scene*
 Engine::_ScenePointerWrapper::data()
 {
     return this->_scene_ptr;
+}
+
+Engine::_RuntimeSession::_RuntimeSession(
+    Engine* engine, Scene* initial_scene, uint32_t frames_limit,
+    CapturingAdapterBase* capturing_adapter)
+    : _engine(engine), _frames_limit(frames_limit),
+      _capture_enabled(capturing_adapter != nullptr)
+{
+    KAACORE_ASSERT(
+        this->_engine->_runtime_session == nullptr,
+        "engine_scene_runtime should be NULL");
+    this->_engine->_runtime_session = this;
+
+    this->_engine->_scene = initial_scene;
+
+    if (this->_capture_enabled) {
+        this->_engine->_capture_callback.setup_capturing_adapter(
+            capturing_adapter);
+        this->_engine->renderer->_capture = true;
+        this->_engine->renderer->_needs_reset = true;
+    }
+}
+
+Engine::_RuntimeSession::~_RuntimeSession()
+{
+    KAACORE_ASSERT_TERMINATE(
+        this->_engine->_runtime_session != nullptr,
+        "engine_scene_runtime cannot NULL");
+    this->_engine->_runtime_session = nullptr;
+
+    if (this->_capture_enabled) {
+        this->_engine->_capture_callback.clear_capturing_adapter();
+        this->_engine->renderer->_capture = false;
+        this->_engine->renderer->_needs_reset = true;
+    }
 }
 
 } // namespace kaacore

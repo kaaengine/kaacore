@@ -311,6 +311,10 @@ Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 void
 Renderer::begin_frame()
 {
+    if (this->_needs_reset) {
+        this->reset();
+        this->_needs_reset = false;
+    }
     for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
         bgfx::setViewMode(i, bgfx::ViewMode::DepthAscending);
     }
@@ -323,6 +327,13 @@ Renderer::end_frame()
     for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
         bgfx::touch(i);
     }
+    bgfx::frame();
+}
+
+void
+Renderer::final_frame()
+{
+    this->reset(true);
     bgfx::frame();
 }
 
@@ -354,11 +365,13 @@ Renderer::push_statistics() const
 }
 
 void
-Renderer::reset()
+Renderer::reset(bool no_flags)
 {
     KAACORE_LOG_DEBUG("Calling Renderer::reset()");
     auto window_size = get_engine()->window->_peek_size();
-    bgfx::reset(window_size.x, window_size.y, this->_calculate_reset_flags());
+    bgfx::reset(
+        window_size.x, window_size.y,
+        no_flags ? 0 : this->_calculate_reset_flags());
 
     glm::uvec2 view_size, border_size;
     auto virtual_resolution = get_engine()->virtual_resolution();
@@ -546,7 +559,8 @@ Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
 uint32_t
 Renderer::_calculate_reset_flags() const
 {
-    return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
+    return (this->_capture ? BGFX_RESET_CAPTURE : 0) |
+           (this->_vertical_sync ? BGFX_RESET_VSYNC : 0);
 }
 
 bgfx::RendererType::Enum

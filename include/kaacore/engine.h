@@ -13,11 +13,13 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/audio.h"
+#include "kaacore/capture.h"
 #include "kaacore/clock.h"
 #include "kaacore/config.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources_manager.h"
+#include "kaacore/statistics.h"
 #include "kaacore/threading.h"
 #include "kaacore/timers.h"
 #include "kaacore/window.h"
@@ -55,6 +57,8 @@ class Engine {
     VirtualResolutionMode _virtual_resolution_mode =
         VirtualResolutionMode::adaptive_stretch;
 
+    CaptureCallback _capture_callback;
+
     Clock clock;
     TimersManager timers;
     // use pointers so we can have more controll over destruction order
@@ -71,7 +75,9 @@ class Engine {
             VirtualResolutionMode::adaptive_stretch) noexcept(false);
     ~Engine();
 
-    void run(Scene* scene);
+    void run(
+        Scene* scene, uint32_t frames_limit = 0,
+        CapturingAdapterBase* capturing_adapter = nullptr);
     void change_scene(Scene* scene);
     Scene* current_scene();
     void quit();
@@ -136,6 +142,28 @@ class Engine {
     _ScenePointerWrapper _next_scene;
 
     Duration _total_time = 0s;
+
+    class _RuntimeSession {
+      public:
+        _RuntimeSession(
+            Engine* engine, Scene* initial_scene, uint32_t frames_limit,
+            CapturingAdapterBase* capturing_adapter);
+        ~_RuntimeSession();
+        _RuntimeSession(const _RuntimeSession&) = delete;
+        _RuntimeSession(_RuntimeSession&&) = delete;
+        _RuntimeSession& operator=(const _RuntimeSession&) = delete;
+        _RuntimeSession& operator=(_RuntimeSession&&) = delete;
+
+        inline uint32_t frames_limit() const { return this->_frames_limit; }
+
+      private:
+        Engine* _engine;
+        uint32_t _frames_limit;
+        bool _capture_enabled;
+    };
+
+    const _RuntimeSession* _runtime_session;
+
     std::thread::id _main_thread_id;
     SyncedSyscallQueue _synced_syscall_queue;
 

@@ -66,8 +66,9 @@ class Renderer {
     void destroy_texture(const bgfx::TextureHandle& handle) const;
     void begin_frame();
     void end_frame();
+    void final_frame();
     void push_statistics() const;
-    void reset();
+    void reset(bool no_flags = false);
     void process_view(View& view) const;
     void render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit);
     void render_draw_bucket(
@@ -77,12 +78,14 @@ class Renderer {
     static std::unordered_set<std::string>& reserved_uniform_names();
 
   private:
-    bool _vertical_sync = true;
-
     uint32_t _calculate_reset_flags() const;
     void _submit_draw_bucket_state(const DrawBucketKey& key);
     bgfx::RendererType::Enum _choose_bgfx_renderer(
         const std::string& name) const;
+
+    bool _needs_reset = false;
+    bool _vertical_sync = true;
+    bool _capture = false;
 
     friend class Engine;
 };
