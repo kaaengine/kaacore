@@ -6,7 +6,7 @@ namespace kaacore {
 
 class Memory {
   public:
-    Memory() = default;
+    Memory();
     Memory(Memory&& other);
     ~Memory();
     Memory(const Memory& other);
@@ -23,7 +23,7 @@ class Memory {
   private:
     const std::byte* _memory;
     std::size_t _size;
-    bool _owning = false;
+    bool _owning;
 
     Memory(const std::byte* memory, const std::size_t size, const bool owning);
 

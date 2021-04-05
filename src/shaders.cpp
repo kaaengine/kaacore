@@ -5,6 +5,7 @@
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
+#include "kaacore/renderer.h"
 #include "kaacore/shaders.h"
 
 namespace kaacore {
@@ -95,11 +96,17 @@ Shader::type() const
 void
 Shader::_initialize()
 {
-    auto model = get_engine()->renderer->shader_model();
+    auto renderer = get_engine()->renderer.get();
+    auto model = renderer->shader_model();
+    if (renderer->type() == RendererType::noop) {
+        // Grab the first model, it doesn't matter which one
+        //  since rendering is disabled.
+        model = this->_models.begin()->first;
+    }
     if (this->_models.find(model) == this->_models.end()) {
         auto msg = fmt::format(
             "No suitable shader provided for renderer type: {}.",
-            get_engine()->renderer->type());
+            renderer->type());
         throw kaacore::exception(msg);
     }
 

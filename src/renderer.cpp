@@ -136,9 +136,18 @@ load_embedded_program(
 
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
+    KAACORE_LOG_INFO("Initializing video.");
+    KAACORE_CHECK(
+        SDL_InitSubSystem(SDL_INIT_VIDEO) == 0,
+        "Failed to initialize video subsystem: {}.", SDL_GetError());
     KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
     bgfx_init_data.resolution.height = window_size.y;
+
+    if (auto renderer_name = SDL_getenv("KAACORE_RENDERER")) {
+        bgfx_init_data.type = this->_choose_renderer(renderer_name);
+    }
+
     bgfx::init(bgfx_init_data);
     KAACORE_LOG_INFO("Initializing bgfx completed.");
     KAACORE_LOG_INFO("Initializing renderer.");
@@ -428,6 +437,29 @@ uint32_t
 Renderer::_calculate_reset_flags() const
 {
     return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
+}
+
+bgfx::RendererType::Enum
+Renderer::_choose_renderer(const std::string& renderer_name) const
+{
+    if (renderer_name == "noop") {
+        return bgfx::RendererType::Noop;
+    } else if (renderer_name == "dx9") {
+        return bgfx::RendererType::Direct3D9;
+    } else if (renderer_name == "dx11") {
+        return bgfx::RendererType::Direct3D11;
+    } else if (renderer_name == "dx12") {
+        return bgfx::RendererType::Direct3D12;
+    } else if (renderer_name == "metal") {
+        return bgfx::RendererType::Metal;
+    } else if (renderer_name == "opengl") {
+        return bgfx::RendererType::OpenGL;
+    } else if (renderer_name == "vulkan") {
+        return bgfx::RendererType::Vulkan;
+    } else {
+        throw exception(
+            fmt::format("Unsupported renderer: {}.\n", renderer_name));
+    }
 }
 
 void

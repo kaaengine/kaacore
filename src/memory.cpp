@@ -5,6 +5,8 @@
 
 namespace kaacore {
 
+Memory::Memory() : _memory(nullptr), _size(0), _owning(false) {}
+
 Memory::Memory(
     const std::byte* memory, const std::size_t size, const bool owning)
     : _size(size), _owning(owning)

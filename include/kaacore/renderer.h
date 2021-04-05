@@ -100,12 +100,13 @@ class Renderer {
         const ResourceReference<Material>& material) const;
 
   private:
+    bool _vertical_sync = true;
+
     uint32_t _calculate_reset_flags() const;
+    bgfx::RendererType::Enum _choose_renderer(const std::string& name) const;
     void _bind_material(
         const ResourceReference<Material>& material,
         bgfx::TextureHandle texture) const;
-
-    bool _vertical_sync = true;
 
     friend class Engine;
 };

@@ -335,6 +335,8 @@ Material::_bind()
 void
 Material::_initialize()
 {
+    // TODO: check against uniforms used in shaders using
+    // bgfx::getShaderUniforms?
     for (auto& kv_pair : this->_uniforms) {
         std::visit(
             [](auto&& variant) { variant._initialize(); }, kv_pair.second);
