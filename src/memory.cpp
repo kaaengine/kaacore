@@ -5,36 +5,33 @@
 
 namespace kaacore {
 
-Memory::Memory() : _memory(nullptr), _size(0), _owning(false) {}
+Memory::Memory() : _reference(nullptr), _size(0) {}
 
-Memory::Memory(
-    const std::byte* memory, const std::size_t size, const bool owning)
-    : _size(size), _owning(owning)
-{
-    this->_copy_or_referene(memory);
-}
+Memory::Memory(const std::byte* memory, const std::size_t size)
+    : _reference(memory), _size(size)
+{}
 
-Memory::~Memory()
-{
-    this->destroy();
-}
+Memory::Memory(std::shared_ptr<std::byte>&& memory, const std::size_t size)
+    : _owned_memory(std::move(memory)), _size(size)
+{}
 
-Memory::Memory(const Memory& other) : _size(other._size), _owning(other._owning)
+Memory::Memory(const Memory& other)
 {
-    KAACORE_LOG_DEBUG("Copying Memory: {}.", fmt::ptr(this->_memory));
-    this->_copy_or_referene(other._memory);
+    KAACORE_LOG_DEBUG("Copying Memory: {}.", fmt::ptr(other.get()));
+    this->_size = other._size;
+    this->_reference = other._reference;
+    this->_owned_memory = other._owned_memory;
 }
 
 Memory::Memory(Memory&& other)
 {
-    KAACORE_LOG_DEBUG("Moving Memory: {}.", fmt::ptr(this->_memory));
+    KAACORE_LOG_DEBUG("Moving Memory: {}.", fmt::ptr(other.get()));
     this->_size = other._size;
-    this->_memory = other._memory;
-    this->_owning = other._owning;
+    this->_reference = other._reference;
+    this->_owned_memory = std::move(other._owned_memory);
 
     other._size = 0;
-    other._memory = nullptr;
-    other._owning = false;
+    other._reference = nullptr;
 }
 
 Memory&
@@ -44,14 +41,10 @@ Memory::operator=(const Memory& other)
         return *this;
     }
 
-    KAACORE_LOG_DEBUG("Copying Memory: {}.", fmt::ptr(this->_memory));
-    if (this->_owning) {
-        this->destroy();
-    }
-
+    KAACORE_LOG_DEBUG("Copying Memory: {}.", fmt::ptr(other.get()));
     this->_size = other._size;
-    this->_owning = other._owning;
-    this->_copy_or_referene(other._memory);
+    this->_reference = other._reference;
+    this->_owned_memory = other._owned_memory;
     return *this;
 }
 
@@ -62,71 +55,62 @@ Memory::operator=(Memory&& other)
         return *this;
     }
 
-    KAACORE_LOG_DEBUG("Moving Memory: {}.", fmt::ptr(this->_memory));
-    if (this->_owning) {
-        this->destroy();
-    }
-
+    KAACORE_LOG_DEBUG("Moving Memory: {}.", fmt::ptr(other.get()));
     this->_size = other._size;
-    this->_memory = other._memory;
-    this->_owning = other._owning;
+    this->_reference = other._reference;
+    this->_owned_memory = std::move(other._owned_memory);
 
     other._size = 0;
-    other._memory = nullptr;
-    other._owning = false;
-
+    other._reference = nullptr;
     return *this;
+}
+
+Memory::operator bool() const
+{
+    return bool(this->get());
+}
+
+bool
+Memory::operator==(const Memory& other)
+{
+    return this->get() == other.get();
 }
 
 Memory
 Memory::copy(const std::byte* memory, std::size_t size)
 {
-    return Memory(memory, size, true);
+    auto destination_memory = new std::byte[size];
+    std::memcpy(destination_memory, memory, size);
+    return Memory(std::shared_ptr<std::byte>(destination_memory), size);
 }
 
 Memory
 Memory::reference(const std::byte* memory, std::size_t size)
 {
-    return Memory(memory, size, false);
+    return Memory(memory, size);
 }
 
 void
 Memory::destroy()
 {
-    if (this->_memory and this->_owning) {
-        delete[] this->_memory;
-    }
+    this->_reference = nullptr;
+    this->_owned_memory.reset();
+    this->_size = 0;
 }
 
 const std::byte*
 Memory::get() const
 {
-    return this->_memory;
+    if (this->_owned_memory) {
+        return this->_owned_memory.get();
+    }
+    return this->_reference;
 }
 
 const std::size_t
 Memory::size() const
 {
     return this->_size;
-}
-
-const std::byte*
-Memory::release()
-{
-    this->_owning = false;
-    return this->get();
-}
-
-void
-Memory::_copy_or_referene(const std::byte* memory)
-{
-    if (this->_owning) {
-        auto destination_memory = new std::byte[this->_size];
-        std::memcpy(destination_memory, memory, this->_size);
-        this->_memory = destination_memory;
-    } else {
-        this->_memory = memory;
-    }
 }
 
 } // namespace kaacore

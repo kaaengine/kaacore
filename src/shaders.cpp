@@ -12,6 +12,7 @@ namespace kaacore {
 
 ResourcesRegistry<ShaderKey, Shader> _shaders_registry;
 ResourcesRegistry<ProgramKey, Program> _programs_registry;
+std::unordered_set<Memory> _used_memory;
 
 void
 initialize_shaders()
@@ -25,6 +26,13 @@ uninitialize_shaders()
 {
     _programs_registry.uninitialze();
     _shaders_registry.uninitialze();
+}
+
+void
+_release_used_memory(void* memory, void* _user_data)
+{
+    auto key = Memory::reference(static_cast<std::byte*>(memory), 0);
+    _used_memory.erase(key);
 }
 
 Memory
@@ -111,10 +119,12 @@ Shader::_initialize()
     }
 
     auto& memory = this->_models[model];
-    auto bgfx_memory = bgfx::makeRef(memory.get(), memory.size());
+    _used_memory.insert(memory);
+    auto bgfx_memory =
+        bgfx::makeRef(memory.get(), memory.size(), _release_used_memory);
     this->_handle = bgfx::createShader(bgfx_memory);
     if (not bgfx::isValid(this->_handle)) {
-        throw kaacore::exception("Can't create shader TODO.");
+        throw kaacore::exception("Can't create shader.");
     }
     this->is_initialized = true;
 }
