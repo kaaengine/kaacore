@@ -3,6 +3,7 @@
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -39,6 +40,7 @@ class UniformSpecification {
     UniformSpecification() = default;
     UniformSpecification(
         const UniformType type, const uint16_t number_of_elements = 1u);
+    bool operator==(const UniformSpecification& other);
     UniformType type() const;
     uint16_t number_of_elements() const;
 
@@ -89,7 +91,7 @@ class Sampler : public UniformBase {
     Sampler(Sampler&& other);
     Sampler& operator=(Sampler&& other);
 
-    SamplerValue get() const;
+    std::optional<SamplerValue> get() const;
     void set(
         const ResourceReference<Image>& texture, const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
@@ -231,7 +233,8 @@ class Material : public Resource {
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
     void set_uniform_texture(
         const std::string& name, const SamplerValue& value);
-    SamplerValue get_uniform_texture(const std::string& name) const;
+    std::optional<SamplerValue> get_uniform_texture(
+        const std::string& name) const;
 
     template<typename T>
     std::vector<T> get_uniform_value(const std::string& name) const

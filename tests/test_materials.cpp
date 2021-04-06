@@ -45,7 +45,7 @@ TEST_CASE("Test materials")
 
         // sampler
         kaacore::SamplerValue sampler_value =
-            material->get_uniform_texture("sampler");
+            material->get_uniform_texture("sampler").value();
         REQUIRE(sampler_value.stage == 11);
         REQUIRE(sampler_value.flags == 11);
         REQUIRE(sampler_value.texture == image);
@@ -72,23 +72,27 @@ TEST_CASE("Test materials")
                                       kaacore::UniformType::sampler)}});
 
         material->set_uniform_texture("sampler", image, 11, 11);
-        REQUIRE(material->get_uniform_texture("sampler").stage == 11);
-        REQUIRE(material->get_uniform_texture("sampler").flags == 11);
-        REQUIRE(material->get_uniform_texture("sampler").texture == image);
+        REQUIRE(material->get_uniform_texture("sampler").value().stage == 11);
+        REQUIRE(material->get_uniform_texture("sampler").value().flags == 11);
+        REQUIRE(
+            material->get_uniform_texture("sampler").value().texture == image);
 
         auto material2 = material->clone();
-        REQUIRE(material2->get_uniform_texture("sampler").stage == 11);
-        REQUIRE(material2->get_uniform_texture("sampler").flags == 11);
-        REQUIRE(material2->get_uniform_texture("sampler").texture == image);
+        REQUIRE(material2->get_uniform_texture("sampler").value().stage == 11);
+        REQUIRE(material2->get_uniform_texture("sampler").value().flags == 11);
+        REQUIRE(
+            material2->get_uniform_texture("sampler").value().texture == image);
 
         material2->set_uniform_texture("sampler", image, 12, 12);
-        REQUIRE(material2->get_uniform_texture("sampler").stage == 12);
-        REQUIRE(material2->get_uniform_texture("sampler").flags == 12);
-        REQUIRE(material2->get_uniform_texture("sampler").texture == image);
+        REQUIRE(material2->get_uniform_texture("sampler").value().stage == 12);
+        REQUIRE(material2->get_uniform_texture("sampler").value().flags == 12);
+        REQUIRE(
+            material2->get_uniform_texture("sampler").value().texture == image);
 
-        REQUIRE(material->get_uniform_texture("sampler").stage == 11);
-        REQUIRE(material->get_uniform_texture("sampler").flags == 11);
-        REQUIRE(material->get_uniform_texture("sampler").texture == image);
+        REQUIRE(material->get_uniform_texture("sampler").value().stage == 11);
+        REQUIRE(material->get_uniform_texture("sampler").value().flags == 11);
+        REQUIRE(
+            material->get_uniform_texture("sampler").value().texture == image);
     }
 
     SECTION("errors")

@@ -1,5 +1,4 @@
 #include <functional>
-#include <string_view>
 
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
@@ -8,7 +7,7 @@
 
 namespace kaacore {
 
-File::File(const std::string path) noexcept(false) : path(path)
+File::File(const std::string& path) noexcept(false) : path(path)
 {
     KAACORE_LOG_INFO("Reading file: {}", path);
     std::ifstream f(path, std::ifstream::binary);

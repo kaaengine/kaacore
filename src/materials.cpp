@@ -27,9 +27,16 @@ UniformSpecification::UniformSpecification(
 {
     if (type == UniformType::sampler) {
         KAACORE_CHECK(
-            number_of_elements == 1, "",
+            number_of_elements == 1,
             "Sampler uniform must not have multiple elements.");
     }
+}
+
+bool
+UniformSpecification::operator==(const UniformSpecification& other)
+{
+    return this->_type == other._type and
+           this->_number_of_elements == other._number_of_elements;
 }
 
 UniformType
@@ -164,10 +171,14 @@ Sampler::operator=(Sampler&& other)
     return *this;
 }
 
-SamplerValue
+std::optional<SamplerValue>
 Sampler::get() const
 {
-    return {this->_stage, this->_flags, this->_texture.lock()};
+    auto texture = this->_texture.lock();
+    if (texture) {
+        return SamplerValue{this->_stage, this->_flags, this->_texture.lock()};
+    }
+    return std::nullopt;
 }
 
 void
@@ -254,8 +265,9 @@ Material::clone() const
         const auto& [name, uniform] = kv_pair;
         switch (uniform.type()) {
             case UniformType::sampler:
-                material->set_uniform_texture(
-                    name, this->get_uniform_texture(name));
+                if (auto sampler_value = this->get_uniform_texture(name)) {
+                    material->set_uniform_texture(name, sampler_value.value());
+                }
                 break;
             case UniformType::vec4:
                 material->set_uniform_value<glm::fvec4>(
@@ -310,7 +322,7 @@ Material::set_uniform_texture(
     std::get<Sampler>(this->_uniforms[name]).set(value);
 }
 
-SamplerValue
+std::optional<SamplerValue>
 Material::get_uniform_texture(const std::string& name) const
 {
     KAACORE_CHECK(

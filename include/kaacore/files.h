@@ -14,7 +14,7 @@ class File {
     const std::string path;
     std::vector<uint8_t> content;
 
-    File(const std::string path) noexcept(false);
+    File(const std::string& path) noexcept(false);
 };
 
 } // namespace kaacore
