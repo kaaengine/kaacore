@@ -7,11 +7,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "kaacore/capture.h"
 #include "kaacore/draw_queue.h"
 #include "kaacore/draw_unit.h"
 #include "kaacore/files.h"
 #include "kaacore/log.h"
 #include "kaacore/materials.h"
+#include "kaacore/renderer_callbacks.h"
 #include "kaacore/resources.h"
 #include "kaacore/shaders.h"
 #include "kaacore/textures.h"
@@ -76,6 +78,8 @@ class Renderer {
     void render_draw_queue(const DrawQueue& draw_queue);
     void set_global_uniforms(const float last_dt, const float scene_time);
     static std::unordered_set<std::string>& reserved_uniform_names();
+    void setup_capture(CapturingAdapterBase* capturing_adapter);
+    void clear_capture();
 
   private:
     uint32_t _calculate_reset_flags() const;
@@ -86,6 +90,8 @@ class Renderer {
     bool _needs_reset = false;
     bool _vertical_sync = true;
     bool _capture = false;
+
+    RendererCallbacks _renderer_callbacks;
 
     friend class Engine;
 };

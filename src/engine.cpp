@@ -297,8 +297,6 @@ Engine::_gather_platform_data()
     bgfx_init_data.platformData.backBufferDS = nullptr;
     bgfx_init_data.debug = true;
 
-    bgfx_init_data.callback = &this->_capture_callback;
-
     return bgfx_init_data;
 }
 
@@ -568,10 +566,7 @@ Engine::_RuntimeSession::_RuntimeSession(
     this->_engine->_scene = initial_scene;
 
     if (this->_capture_enabled) {
-        this->_engine->_capture_callback.setup_capturing_adapter(
-            capturing_adapter);
-        this->_engine->renderer->_capture = true;
-        this->_engine->renderer->_needs_reset = true;
+        this->_engine->renderer->setup_capture(capturing_adapter);
     }
 }
 
@@ -583,9 +578,7 @@ Engine::_RuntimeSession::~_RuntimeSession()
     this->_engine->_runtime_session = nullptr;
 
     if (this->_capture_enabled) {
-        this->_engine->_capture_callback.clear_capturing_adapter();
-        this->_engine->renderer->_capture = false;
-        this->_engine->renderer->_needs_reset = true;
+        this->_engine->renderer->clear_capture();
     }
 }
 

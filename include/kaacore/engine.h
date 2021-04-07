@@ -57,8 +57,6 @@ class Engine {
     VirtualResolutionMode _virtual_resolution_mode =
         VirtualResolutionMode::adaptive_stretch;
 
-    CaptureCallback _capture_callback;
-
     Clock clock;
     TimersManager timers;
     // use pointers so we can have more controll over destruction order

@@ -173,6 +173,7 @@ DefaultShadingContext::destroy()
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
     KAACORE_LOG_INFO("Initializing bgfx.");
+    bgfx_init_data.callback = &this->_renderer_callbacks;
     bgfx_init_data.resolution.width = window_size.x;
     bgfx_init_data.resolution.height = window_size.y;
 
@@ -584,6 +585,28 @@ Renderer::_choose_bgfx_renderer(const std::string& renderer_name) const
         throw exception(
             fmt::format("Unsupported renderer: {}.\n", renderer_name));
     }
+}
+
+void
+Renderer::setup_capture(CapturingAdapterBase* capturing_adapter)
+{
+    KAACORE_ASSERT(
+        this->_renderer_callbacks.capturing_adapter == nullptr,
+        "capturing_adapter already set");
+    this->_renderer_callbacks.capturing_adapter = capturing_adapter;
+    this->_capture = true;
+    this->_needs_reset = true;
+}
+
+void
+Renderer::clear_capture()
+{
+    KAACORE_ASSERT(
+        this->_renderer_callbacks.capturing_adapter != nullptr,
+        "capturing_adapter is not set");
+    this->_renderer_callbacks.capturing_adapter = nullptr;
+    this->_capture = false;
+    this->_needs_reset = true;
 }
 
 } // namespace kaacore

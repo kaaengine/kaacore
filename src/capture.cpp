@@ -132,48 +132,4 @@ MemoryVectorCapturingAdapter::frames_uint8() const
     return frames_vector;
 }
 
-void
-CaptureCallback::captureBegin(
-    uint32_t _width, uint32_t _height, uint32_t _pitch,
-    bgfx::TextureFormat::Enum _format, bool _yflip)
-{
-    KAACORE_LOG_TRACE("CaptureCallback::captureBegin");
-    if (this->_capturing_adapter) {
-        this->_capturing_adapter->initialize_capture_parameters(
-            _width, _height, _pitch, _format, _yflip);
-    }
-}
-
-void
-CaptureCallback::captureEnd()
-{
-    KAACORE_LOG_TRACE("CaptureCallback::captureEnd");
-}
-
-void
-CaptureCallback::captureFrame(const void* data, uint32_t size)
-{
-    KAACORE_LOG_TRACE("CaptureCallback::captureFrame, size: {}", size);
-    if (this->_capturing_adapter) {
-        this->_capturing_adapter->process_raw_frame(data, size);
-    }
-}
-
-void
-CaptureCallback::setup_capturing_adapter(
-    CapturingAdapterBase* capturing_adapter)
-{
-    KAACORE_ASSERT(
-        this->_capturing_adapter == nullptr, "capturing_adapter already set");
-    this->_capturing_adapter = capturing_adapter;
-}
-
-void
-CaptureCallback::clear_capturing_adapter()
-{
-    KAACORE_ASSERT(
-        this->_capturing_adapter != nullptr, "capturing_adapter is not set");
-    this->_capturing_adapter = nullptr;
-}
-
 } // namespace kaacore

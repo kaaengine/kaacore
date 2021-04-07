@@ -53,6 +53,7 @@ set(SRC_CXX_FILES
     statistics.cpp
     draw_unit.cpp
     draw_queue.cpp
+    renderer_callbacks.cpp
     capture.cpp
 )
 
@@ -93,6 +94,7 @@ set(SRC_H_FILES
     ../include/kaacore/statistics.h
     ../include/kaacore/draw_unit.h
     ../include/kaacore/draw_queue.h
+    ../include/kaacore/renderer_callbacks.h
     ../include/kaacore/capture.h
 
     ../include/kaacore/utils.h
