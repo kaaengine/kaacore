@@ -28,7 +28,7 @@ get_embedded_file_content(
     }
     auto file = filesystem.open(path);
     return Memory::reference(
-        reinterpret_cast<const std::byte*>(file.begin()), file.size());
+        reinterpret_cast<const std::byte*>(file.cbegin()), file.size());
 }
 
 } // namespace kaacore

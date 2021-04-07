@@ -24,7 +24,7 @@ get_platform()
 std::string
 get_platform_name()
 {
-    std::string name = SDL_GetPlatform();
+    std::string name(SDL_GetPlatform());
     if (name == "Linux") {
         return name;
     } else if (name == "Mac OS X") {

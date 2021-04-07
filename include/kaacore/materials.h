@@ -31,8 +31,7 @@ enum class UniformType {
     sampler = bgfx::UniformType::Sampler,
     vec4 = bgfx::UniformType::Vec4,
     mat3 = bgfx::UniformType::Mat3,
-    mat4 = bgfx::UniformType::Mat4,
-    count
+    mat4 = bgfx::UniformType::Mat4
 };
 
 class UniformSpecification {
@@ -53,7 +52,7 @@ class UniformBase {
   public:
     UniformBase(
         const std::string& name, const UniformType type,
-        const uint16_t number_of_elements = 1);
+        const uint16_t number_of_elements = 1u);
     UniformBase(const UniformBase& other);
     UniformBase(UniformBase&& other);
     UniformBase& operator=(UniformBase&& other);
@@ -90,6 +89,7 @@ class Sampler : public UniformBase {
     Sampler(const Sampler& other);
     Sampler(Sampler&& other);
     Sampler& operator=(Sampler&& other);
+    Sampler& operator=(const Sampler& other) = delete;
 
     std::optional<SamplerValue> get() const;
     void set(
@@ -162,6 +162,7 @@ class FloatUniform : public UniformBase {
     FloatUniform(FloatUniform&& other)
         : UniformBase(other), _value(std::move(other._value))
     {}
+    FloatUniform& operator=(const FloatUniform& other) = delete;
     FloatUniform& operator=(FloatUniform&& other)
     {
         if (this == &other) {

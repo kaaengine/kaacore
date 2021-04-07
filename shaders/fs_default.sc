@@ -8,7 +8,7 @@ void main()
 {
 	vec2 tmp = abs(v_texcoord1);
 	tmp = tmp * tmp;
-	gl_FragColor = vec4(texture2D(s_texture, v_texcoord0).rgba) * v_color0;
+	gl_FragColor = texture2D(s_texture, v_texcoord0).rgba * v_color0;
 	if (tmp.x + tmp.y > 0.26) {
 		discard;
 	} else if (tmp.x + tmp.y > 0.24) {

@@ -39,7 +39,7 @@ class Shader : public Resource {
     static ResourceReference<Shader> load(
         const ShaderType type, const ShaderModelMap& model_map);
     static ResourceReference<Shader> create(
-        const ShaderType type, const ShaderModelMemoryMap memory_map);
+        const ShaderType type, const ShaderModelMemoryMap& memory_map);
 
   private:
     ShaderType _type;

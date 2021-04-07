@@ -90,7 +90,7 @@ Shader::load(const ShaderType type, const ShaderModelMap& model_map)
 }
 
 ResourceReference<Shader>
-Shader::create(const ShaderType type, const ShaderModelMemoryMap memory_map)
+Shader::create(const ShaderType type, const ShaderModelMemoryMap& memory_map)
 {
     return std::shared_ptr<Shader>(new Shader(memory_map, type));
 }
