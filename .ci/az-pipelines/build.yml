@@ -47,3 +47,18 @@ steps:
     env:
       MACOSX_DEPLOYMENT_TARGET: '10.14'
     displayName: 'Build kaacore'
+
+  - bash: |
+      if [[ $(system_name) == "windows" ]]
+      then
+        RUNNER="runner.exe"
+      else
+        RUNNER="runner"
+      fi
+
+      ls ./cmake_build/tests
+      KAACORE_RENDERER=noop \
+      SDL_VIDEODRIVER=dummy \
+      SDL_AUDIODRIVER=dummy \
+      ./cmake_build/tests/${RUNNER}
+    displayName: 'Test kaacore'
