@@ -107,7 +107,7 @@ class Node {
 
     Scene* const scene() const;
     NodePtr parent() const;
-    const std::vector<Node*>& children();
+    std::vector<Node*> children();
     bool is_root() const;
 
     void views(const std::optional<std::unordered_set<int16_t>>& z_indices);
