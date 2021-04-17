@@ -131,6 +131,12 @@ Arbiter::Arbiter(
     : phase(phase), cp_arbiter(cp_arbiter), space(container_node(space_phys))
 {}
 
+bool
+Arbiter::first_contact() const
+{
+    return cpArbiterIsFirstContact(this->cp_arbiter);
+}
+
 double
 Arbiter::total_kinetic_energy() const
 {

@@ -47,6 +47,7 @@ struct Arbiter {
     NodePtr space;
 
     Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
+    bool first_contact() const;
     double total_kinetic_energy() const;
 };
 
