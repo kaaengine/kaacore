@@ -131,6 +131,15 @@ Arbiter::Arbiter(
     : phase(phase), cp_arbiter(cp_arbiter), space(container_node(space_phys))
 {}
 
+double
+Arbiter::total_kinetic_energy() const
+{
+    if (this->phase == CollisionPhase::post_solve) {
+        return cpArbiterTotalKE(this->cp_arbiter);
+    }
+    return 0;
+}
+
 CollisionPair::CollisionPair(BodyNode* body, HitboxNode* hitbox)
     : body_node(container_node(body)), hitbox_node(container_node(hitbox))
 {}
@@ -851,6 +860,13 @@ BodyNode::gravity()
         return convert_vector(this->_gravity.value());
     }
     return std::nullopt;
+}
+
+double
+BodyNode::kinetic_energy() const
+{
+    ASSERT_VALID_BODY_NODE(this);
+    return cpBodyKineticEnergy(this->_cp_body);
 }
 
 bool

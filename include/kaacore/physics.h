@@ -47,6 +47,7 @@ struct Arbiter {
     NodePtr space;
 
     Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
+    double total_kinetic_energy() const;
 };
 
 uint8_t
@@ -228,6 +229,8 @@ class BodyNode {
 
     void gravity(const std::optional<glm::dvec2>& gravity);
     std::optional<glm::dvec2> gravity();
+
+    double kinetic_energy() const;
 
     bool sleeping();
     void sleeping(const bool sleeping);
