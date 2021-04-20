@@ -13,16 +13,19 @@ strategy:
       image_name: 'ubuntu-18.04'
       cmake_generator: 'Unix Makefiles'
       cmake_generator_platform: ''
+      build_exe_directory: './'
     windows:
       system_name: 'windows'
       image_name: 'windows-2019'
       cmake_generator: 'Visual Studio 16 2019'
       cmake_generator_platform: 'x64'
+      build_exe_directory: './Release/'
     macos:
       system_name: 'macos'
       image_name: 'macOS-10.14'
       cmake_generator: 'Unix Makefiles'
       cmake_generator_platform: ''
+      build_exe_directory: './'
 
 pool:
   vmImage: $(image_name)
@@ -43,10 +46,14 @@ steps:
       cmake -B ./cmake_build -DCMAKE_BUILD_TYPE=Release \
       -G "$(cmake_generator)" \
       -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
-      cmake --build ./cmake_build -j 5
+      cmake --build ./cmake_build --config Release -j 5
     env:
       MACOSX_DEPLOYMENT_TARGET: '10.14'
     displayName: 'Build kaacore'
+
+  - bash: cp ./cmake_build/third_party/sdl2/$(build_exe_directory)/SDL2.dll .
+    displayName: 'Prepare runtime libraries'
+    condition: eq(variables['system_name'], 'windows')
 
   - bash: |
       if [[ $(system_name) == "windows" ]]
@@ -60,5 +67,5 @@ steps:
       KAACORE_RENDERER=noop \
       SDL_VIDEODRIVER=dummy \
       SDL_AUDIODRIVER=dummy \
-      ./cmake_build/tests/${RUNNER}
+      ./cmake_build/tests/$(build_exe_directory)/${RUNNER}
     displayName: 'Test kaacore'
