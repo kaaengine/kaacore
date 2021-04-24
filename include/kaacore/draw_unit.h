@@ -6,7 +6,9 @@
 #include <unordered_map>
 #include <vector>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+#undef GLM_ENABLE_EXPERIMENTAL
 
 #include "kaacore/images.h"
 #include "kaacore/resources.h"
@@ -31,12 +33,12 @@ struct StandardVertexData {
         float a = 1.)
         : xyz(x, y, z), uv(u, v), mn(m, n), rgba(r, g, b, a){};
 
-    static inline StandardVertexData XY_UV(float x, float y, float u, float v)
+    static inline StandardVertexData xy_uv(float x, float y, float u, float v)
     {
         return StandardVertexData(x, y, 0., u, v);
     }
 
-    static inline StandardVertexData XY_UV_MN(
+    static inline StandardVertexData xy_uv_mn(
         float x, float y, float u, float v, float m, float n)
     {
         return StandardVertexData(x, y, 0., u, v, m, n);
@@ -169,7 +171,6 @@ struct DrawBucket {
         }
     };
 
-    void update_bucket(const ModsIter begin, const ModsIter end);
     Range find_range() const;
     Range find_range(const DrawUnitIter start_pos) const;
     void copy_range_details_to_transient_buffers(

@@ -34,7 +34,7 @@ class Scene {
     void process_physics(const HighPrecisionDuration dt);
     void process_nodes(
         const HighPrecisionDuration dt, const NodesQueue& processing_queue);
-    void resolve_dirty_nodes(const NodesQueue& processing_queue);
+    void resolve_spatial_index_changes(const NodesQueue& processing_queue);
     void update_nodes_drawing_queue(const NodesQueue& processing_queue);
     void process_drawing();
     void remove_marked_nodes();

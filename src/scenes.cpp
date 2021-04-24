@@ -99,7 +99,7 @@ Scene::process_nodes(
 }
 
 void
-Scene::resolve_dirty_nodes(const Scene::NodesQueue& processing_queue)
+Scene::resolve_spatial_index_changes(const Scene::NodesQueue& processing_queue)
 {
     StopwatchStatAutoPusher stopwatch{"scene.resolve_nodes:time"};
     CounterStatAutoPusher spatial_updates_counter{
@@ -108,8 +108,6 @@ Scene::resolve_dirty_nodes(const Scene::NodesQueue& processing_queue)
         if (node->_marked_to_delete) {
             continue;
         }
-
-        node->recalculate_model_matrix();
 
         if (node->_spatial_data.is_dirty) {
             this->spatial_index.update_single(node);
@@ -128,18 +126,18 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
         if (not node->_marked_to_delete and node->has_draw_unit_updates()) {
             KAACORE_LOG_TRACE(
                 "DrawUnit modifications detected for node: {}", fmt::ptr(node));
-            auto [mod_1, mod_2] = node->calculate_draw_unit_updates();
-            if (mod_1) {
-                this->draw_queue.enqueue_modification(std::move(*mod_1));
-                node->clear_draw_unit_updates(mod_1->lookup_key);
+            auto [upsert_mod, remove_mod] = node->calculate_draw_unit_updates();
+            if (upsert_mod) {
+                this->draw_queue.enqueue_modification(std::move(*upsert_mod));
+                node->clear_draw_unit_updates(upsert_mod->lookup_key);
             } else {
                 node->clear_draw_unit_updates(std::nullopt);
             }
-            if (mod_2) {
+            if (remove_mod) {
                 KAACORE_ASSERT(
-                    mod_2->type == DrawUnitModification::Type::remove,
+                    remove_mod->type == DrawUnitModification::Type::remove,
                     "Expected modification type == remove");
-                this->draw_queue.enqueue_modification(std::move(*mod_2));
+                this->draw_queue.enqueue_modification(std::move(*remove_mod));
             }
         }
     }
@@ -148,8 +146,9 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
 void
 Scene::process_drawing()
 {
+    auto& renderer = get_engine()->renderer;
     for (auto& view : this->views) {
-        get_engine()->renderer->process_view(view);
+        renderer->process_view(view);
     }
 
     this->draw_queue.process_modifications();

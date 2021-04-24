@@ -285,10 +285,11 @@ Engine::_scene_processing()
 #endif
                 const auto& nodes_processing_queue =
                     this->_scene->build_processing_queue();
-                this->_scene->resolve_dirty_nodes(nodes_processing_queue);
                 this->_scene->update_nodes_drawing_queue(
                     nodes_processing_queue);
                 this->_scene->process_drawing();
+                this->_scene->resolve_spatial_index_changes(
+                    nodes_processing_queue);
                 this->_scene->process_physics(scaled_dt);
                 this->timers.process(dt);
                 this->_scene->timers.process(scaled_dt);

@@ -232,7 +232,8 @@ Node::_make_draw_bucket_key() const
         key.program_raw_ptr =
             get_engine()->renderer->sdf_font_program.res_ptr.get();
     } else {
-        key.program_raw_ptr = nullptr;
+        key.program_raw_ptr =
+            get_engine()->renderer->default_program.res_ptr.get();
     }
     key.state_flags = 0u;
     key.stencil_flags = 0u;
@@ -417,11 +418,9 @@ Node::calculate_draw_unit_removal() const
         return std::nullopt;
     }
 
-    DrawUnitModification remove_mod{};
-    remove_mod.lookup_key = *this->_draw_unit_data.current_key;
-    remove_mod.id = this->_scene_tree_id;
-    remove_mod.type = DrawUnitModification::Type::remove;
-    return remove_mod;
+    return DrawUnitModification{DrawUnitModification::Type::remove,
+                                *this->_draw_unit_data.current_key,
+                                this->_scene_tree_id};
 }
 
 DrawUnitModificationPair
@@ -442,9 +441,7 @@ Node::calculate_draw_unit_updates()
     if (this->_draw_unit_data.updated_bucket_key and
         this->_draw_unit_data.current_key) {
         // draw unit needs to be removed from previous bucket
-        remove_mod_opt = DrawUnitModification{
-            DrawUnitModification::Type::remove,
-            *this->_draw_unit_data.current_key, this->_scene_tree_id};
+        remove_mod_opt = this->calculate_draw_unit_removal().value();
     }
 
     // skip inserting/updating if node will not be rendered
@@ -769,9 +766,6 @@ Node::visible(const bool& visible)
 {
     if (visible == this->_visible) {
         return;
-    }
-    if (visible) {
-        this->_mark_dirty();
     }
     this->_visible = visible;
     this->recursive_call([](Node* node) {

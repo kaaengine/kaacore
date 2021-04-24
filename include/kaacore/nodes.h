@@ -155,8 +155,8 @@ class Node {
                 continue;
             }
             nodes_to_process.insert(
-                nodes_to_process.end(), node->children().begin(),
-                node->children().end());
+                nodes_to_process.end(), node->_children.begin(),
+                node->_children.end());
         }
     }
 

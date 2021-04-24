@@ -440,11 +440,9 @@ Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
     bgfx::ProgramHandle program_handle;
     bgfx::TextureHandle texture_handle;
 
-    if (key.program_raw_ptr) {
-        program_handle = key.program_raw_ptr->_handle;
-    } else {
-        program_handle = this->default_program->handle();
-    }
+    KAACORE_ASSERT(
+        key.program_raw_ptr != nullptr, "Program pointer must be set");
+    program_handle = key.program_raw_ptr->_handle;
 
     if (key.texture_raw_ptr) {
         texture_handle = key.texture_raw_ptr->texture_handle;

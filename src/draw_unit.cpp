@@ -121,61 +121,97 @@ DrawBucket::consume_modifications(
     const std::vector<DrawUnitModification>::iterator src_begin,
     const std::vector<DrawUnitModification>::iterator src_end)
 {
-    // XXX expensive assertion
-    KAACORE_ASSERT(
-        std::is_sorted(src_begin, src_end), "Modifications are not sorted");
+    thread_local std::vector<DrawUnit> tmp_buffer;
+    tmp_buffer.clear();
 
     auto draw_unit_it = this->draw_units.begin();
+    auto draw_unit_copy_it = draw_unit_it;
+
     for (auto mod_it = src_begin; mod_it != src_end; mod_it++) {
         KAACORE_ASSERT(
             mod_it->lookup_key == src_begin->lookup_key,
-            "DrawUnitModification has different lookup_key, position: {}",
-            mod_it - src_begin);
+            "DrawBucket ({}): DrawUnitModification has different lookup_key, "
+            "position: {}",
+            fmt::ptr(this), mod_it - src_begin);
         draw_unit_it =
             std::lower_bound(draw_unit_it, this->draw_units.end(), *mod_it);
+
+        // copy all draw units up to found one
+        if (draw_unit_it != draw_unit_copy_it) {
+            KAACORE_LOG_TRACE(
+                "DrawBucket ({}): copying {} non-modified draw units",
+                fmt::ptr(this), draw_unit_it - draw_unit_copy_it);
+            tmp_buffer.insert(
+                tmp_buffer.end(), draw_unit_copy_it, draw_unit_it);
+            draw_unit_copy_it = draw_unit_it;
+        }
 
         switch (mod_it->type) {
             case DrawUnitModification::Type::insert:
                 KAACORE_LOG_TRACE(
-                    "Inserting new draw unit with id: {}", mod_it->id);
+                    "DrawBucket ({}): Inserting new draw unit with id: {}",
+                    fmt::ptr(this), mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->updated_vertices_indices,
-                    "Invalid flag state for DrawUnit insertion");
+                    "DrawBucket ({}): Invalid flag state for DrawUnit "
+                    "insertion",
+                    fmt::ptr(this));
                 KAACORE_ASSERT(
                     draw_unit_it == this->draw_units.end() or
                         mod_it->id != draw_unit_it->id,
-                    "DrawUnit ({}) - with given id already exists in draw "
+                    "DrawBucket ({}): DrawUnit ({}) - with given id already "
+                    "exists in draw "
                     "bucket",
-                    draw_unit_it->id);
-                draw_unit_it = this->draw_units.emplace(
-                    draw_unit_it, mod_it->id, std::move(mod_it->state_update));
+                    fmt::ptr(this), draw_unit_it->id);
+                tmp_buffer.emplace_back(
+                    mod_it->id, std::move(mod_it->state_update));
                 break;
             case DrawUnitModification::Type::update:
-                KAACORE_LOG_TRACE("Updating draw unit with id: {}", mod_it->id);
+                KAACORE_LOG_TRACE(
+                    "DrawBucket ({}): updating draw unit with id: {}",
+                    fmt::ptr(this), mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
-                    "DrawUnit ({}) - DrawUnitModification ({}) id mismatch",
-                    draw_unit_it->id, mod_it->id);
+                    "DrawBucket ({}): DrawUnit ({}) - DrawUnitModification "
+                    "({}) id mismatch",
+                    fmt::ptr(this), draw_unit_it->id, mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->updated_vertices_indices,
-                    "Invalid flag state for DrawUnit update");
-                draw_unit_it->details = std::move(mod_it->state_update);
+                    "DrawBucket ({}): Invalid flag state for DrawUnit update",
+                    fmt::ptr(this));
+                tmp_buffer.emplace_back(
+                    mod_it->id, std::move(mod_it->state_update));
+                draw_unit_it++;
+                draw_unit_copy_it++;
                 break;
             case DrawUnitModification::Type::remove:
-                KAACORE_LOG_TRACE("Removing draw unit with id: {}", mod_it->id);
+                KAACORE_LOG_TRACE(
+                    "DrawBucket ({}): Removing draw unit with id: {}",
+                    fmt::ptr(this), mod_it->id);
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
-                    "DrawUnit ({}) - DrawUnitModification ({}) id mismatch",
-                    draw_unit_it->id, mod_it->id);
-                draw_unit_it = this->draw_units.erase(draw_unit_it);
+                    "DrawBucket ({}): DrawUnit ({}) - DrawUnitModification "
+                    "({}) id mismatch",
+                    fmt::ptr(this), draw_unit_it->id, mod_it->id);
+                draw_unit_it++;
+                draw_unit_copy_it++;
                 break;
         }
     }
 
-    // XXX expensive assertion
-    KAACORE_ASSERT(
-        std::is_sorted(this->draw_units.begin(), this->draw_units.end()),
-        "DrawBucket content is not sorted");
+    // copy remaining draw units after modifications queue is exhausted
+    if (draw_unit_it != this->draw_units.end()) {
+        KAACORE_LOG_TRACE(
+            "DrawBucket ({}): copying {} non-modified draw units (tail)",
+            fmt::ptr(this), this->draw_units.end() - draw_unit_it);
+        tmp_buffer.insert(
+            tmp_buffer.end(), draw_unit_it, this->draw_units.end());
+    }
+
+    std::swap(tmp_buffer, this->draw_units);
+    KAACORE_LOG_TRACE(
+        "DrawBucket ({}): size after modifications: {}", fmt::ptr(this),
+        this->draw_units.size());
 }
 
 } // namespace kaacore

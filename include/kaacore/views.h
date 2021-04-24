@@ -16,6 +16,9 @@ constexpr auto views_max_z_index = ((KAACORE_MAX_VIEWS / 2) - 1);
 constexpr auto views_z_index_to_internal_offset = -views_min_z_index;
 constexpr auto views_default_z_index = 0;
 
+// index 0 is reserved for internal use
+constexpr int views_reserved_offset = 1;
+
 inline constexpr bool
 validate_view_z_index(const int16_t z_index)
 {
@@ -80,8 +83,25 @@ class ViewIndexSet {
     bool any() const;
     bool none() const;
 
-    void each_active_z_index(const std::function<void(int16_t)>) const;
-    void each_active_internal_index(const std::function<void(int16_t)>) const;
+    template<typename Func>
+    void each_active_z_index(Func&& func) const
+    {
+        for (auto i = 0; i < this->_views_bitset.size(); i++) {
+            if (this->_views_bitset.test(i)) {
+                func(i - views_z_index_to_internal_offset);
+            }
+        }
+    }
+
+    template<typename Func>
+    void each_active_internal_index(Func&& func) const
+    {
+        for (auto i = 0; i < this->_views_bitset.size(); i++) {
+            if (this->_views_bitset.test(i)) {
+                func(i + views_reserved_offset);
+            }
+        }
+    }
 
   private:
     ViewIndexSet(std::bitset<KAACORE_MAX_VIEWS> _bitset);
