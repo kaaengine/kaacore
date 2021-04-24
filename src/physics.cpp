@@ -143,7 +143,8 @@ Arbiter::total_kinetic_energy() const
     if (this->phase == CollisionPhase::post_solve) {
         return cpArbiterTotalKE(this->cp_arbiter);
     }
-    return 0;
+    throw kaacore::exception(
+        "Kinetic energy may only be retrieved in the post_solve phase.");
 }
 
 CollisionPair::CollisionPair(BodyNode* body, HitboxNode* hitbox)
