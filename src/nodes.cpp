@@ -326,10 +326,16 @@ Node::type() const
     return this->_type;
 }
 
-const std::vector<Node*>&
+std::vector<Node*>
 Node::children()
 {
-    return this->_children;
+    std::vector<Node*> result;
+    for (auto node : this->_children) {
+        if (not node->_marked_to_delete) {
+            result.push_back(node);
+        }
+    }
+    return result;
 }
 
 bool
