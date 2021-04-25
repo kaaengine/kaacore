@@ -45,7 +45,7 @@ get_shader_model_tag(ShaderModel model)
     switch (model) {
         case ShaderModel::glsl:
             return "glsl";
-        case ShaderModel::spriv:
+        case ShaderModel::spirv:
             return "spirv";
         case ShaderModel::metal:
             return "metal";
@@ -82,16 +82,16 @@ load_embedded_shaders(
 
     std::vector<ShaderModel> models;
     switch (get_platform()) {
-        case PlatforType::linux:
-            models = {ShaderModel::glsl, ShaderModel::spriv};
+        case PlatformType::linux:
+            models = {ShaderModel::glsl, ShaderModel::spirv};
             break;
-        case PlatforType::osx:
+        case PlatformType::osx:
             models = {ShaderModel::metal, ShaderModel::glsl,
-                      ShaderModel::spriv};
+                      ShaderModel::spirv};
             break;
-        case PlatforType::windows:
+        case PlatformType::windows:
             models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
-                      ShaderModel::glsl, ShaderModel::spriv};
+                      ShaderModel::glsl, ShaderModel::spirv};
             break;
         default:
             KAACORE_LOG_ERROR(
@@ -184,26 +184,18 @@ Renderer::~Renderer()
     // in registry, free them manually
     if (this->default_material) {
         this->default_material.res_ptr.get()
-            ->program.res_ptr.get()
-            ->vertex_shader->_uninitialize();
+            ->program.res_ptr->vertex_shader->_uninitialize();
         this->default_material.res_ptr.get()
-            ->program.res_ptr.get()
-            ->fragment_shader->_uninitialize();
-        this->default_material.res_ptr.get()
-            ->program.res_ptr.get()
-            ->_uninitialize();
+            ->program.res_ptr->fragment_shader->_uninitialize();
+        this->default_material.res_ptr.get()->program.res_ptr->_uninitialize();
     }
 
     if (this->sdf_font_material) {
         this->sdf_font_material.res_ptr.get()
-            ->program.res_ptr.get()
-            ->vertex_shader->_uninitialize();
+            ->program.res_ptr->vertex_shader->_uninitialize();
         this->sdf_font_material.res_ptr.get()
-            ->program.res_ptr.get()
-            ->fragment_shader->_uninitialize();
-        this->sdf_font_material.res_ptr.get()
-            ->program.res_ptr.get()
-            ->_uninitialize();
+            ->program.res_ptr->fragment_shader->_uninitialize();
+        this->sdf_font_material.res_ptr.get()->program.res_ptr->_uninitialize();
     }
 
     bgfx::shutdown();
@@ -271,7 +263,7 @@ Renderer::shader_model() const
         case RendererType::opengl:
             return ShaderModel::glsl;
         case RendererType::vulkan:
-            return ShaderModel::spriv;
+            return ShaderModel::spirv;
         default:
             return ShaderModel::unknown;
     }

@@ -63,7 +63,6 @@ steps:
         RUNNER="runner"
       fi
 
-      ls ./cmake_build/tests
       KAACORE_RENDERER=noop \
       SDL_VIDEODRIVER=dummy \
       SDL_AUDIODRIVER=dummy \

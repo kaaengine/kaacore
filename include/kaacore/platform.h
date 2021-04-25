@@ -4,9 +4,9 @@
 
 namespace kaacore {
 
-enum class PlatforType { linux, osx, windows, unsupported };
+enum class PlatformType { linux, osx, windows, unsupported };
 
-PlatforType
+PlatformType
 get_platform();
 std::string
 get_platform_name();

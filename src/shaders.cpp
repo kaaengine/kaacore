@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <sstream>
 #include <utility>
@@ -74,6 +75,7 @@ Shader::load(const ShaderType type, const ShaderModelMap& model_map)
     for (auto& kv_pair : model_map) {
         key.push_back(kv_pair.second);
     }
+    std::sort(key.begin(), key.end());
     std::shared_ptr<Shader> shader;
     if ((shader = _shaders_registry.get_resource(key))) {
         return shader;

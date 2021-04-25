@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 namespace kaacore {
 
 class ResourcesManager {
