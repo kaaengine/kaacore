@@ -45,6 +45,8 @@ class Scene {
     void handle_remove_node_from_tree(Node* node);
 
     Camera& camera();
+    Duration total_time() const;
+
     double time_scale() const;
     void time_scale(const double scale);
 
@@ -58,8 +60,11 @@ class Scene {
 
   private:
     double _time_scale = 1.;
+    Duration _total_time = 0s;
     NodesQueue _nodes_remove_queue;
     std::atomic<uint64_t> _node_scene_tree_id_counter = 0;
+
+    friend class Engine;
 };
 
 } // namespace kaacore
