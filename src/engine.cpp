@@ -283,13 +283,19 @@ Engine::_scene_processing()
                 this->_event_processing_state.set(
                     EventProcessingState::consumed);
 #endif
-                this->_scene->resolve_dirty_nodes();
-                this->_scene->process_nodes_drawing();
+                const auto& nodes_processing_queue =
+                    this->_scene->build_processing_queue();
+                this->_scene->update_nodes_drawing_queue(
+                    nodes_processing_queue);
+                this->_scene->process_drawing();
+                this->_scene->resolve_spatial_index_changes(
+                    nodes_processing_queue);
                 this->_scene->process_physics(scaled_dt);
                 this->timers.process(dt);
                 this->_scene->timers.process(scaled_dt);
-                this->_scene->process_nodes(scaled_dt);
+                this->_scene->process_nodes(scaled_dt, nodes_processing_queue);
                 this->renderer->end_frame();
+                this->_scene->remove_marked_nodes();
             }
 
             if (this->udp_stats_exporter) {

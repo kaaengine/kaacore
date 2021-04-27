@@ -33,6 +33,11 @@ struct ResourceReference {
         return this->res_ptr == other.res_ptr;
     }
 
+    bool operator!=(const ResourceReference<T>& other)
+    {
+        return this->res_ptr != other.res_ptr;
+    }
+
     T* operator->() const
     {
         auto ptr = this->res_ptr;

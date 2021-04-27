@@ -6,8 +6,9 @@
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
 
+#include "kaacore/draw_queue.h"
+#include "kaacore/draw_unit.h"
 #include "kaacore/files.h"
 #include "kaacore/images.h"
 #include "kaacore/log.h"
@@ -17,39 +18,6 @@
 #include "kaacore/views.h"
 
 namespace kaacore {
-
-typedef uint16_t VertexIndex;
-
-struct StandardVertexData {
-    glm::fvec3 xyz;
-    glm::fvec2 uv;
-    glm::fvec2 mn;
-    glm::fvec4 rgba;
-
-    StandardVertexData(
-        float x = 0., float y = 0., float z = 0., float u = 0., float v = 0.,
-        float m = 0., float n = 0., float r = 1., float g = 1., float b = 1.,
-        float a = 1.)
-        : xyz(x, y, z), uv(u, v), mn(m, n), rgba(r, g, b, a){};
-
-    static inline StandardVertexData XY_UV(float x, float y, float u, float v)
-    {
-        return StandardVertexData(x, y, 0., u, v);
-    }
-
-    static inline StandardVertexData XY_UV_MN(
-        float x, float y, float u, float v, float m, float n)
-    {
-        return StandardVertexData(x, y, 0., u, v, m, n);
-    }
-
-    inline bool operator==(const StandardVertexData& other) const
-    {
-        return (
-            this->xyz == other.xyz and this->uv == other.uv and
-            this->mn == other.mn and this->rgba == other.rgba);
-    }
-};
 
 class Renderer {
   public:
@@ -85,8 +53,13 @@ class Renderer {
         const std::vector<VertexIndex>& indices,
         const bgfx::TextureHandle texture,
         const ResourceReference<Program>& program) const;
+    void render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit);
+    void render_draw_bucket(
+        const DrawBucketKey& key, const DrawBucket& draw_bucket);
+    void render_draw_queue(const DrawQueue& draw_queue);
 
   private:
+    void _submit_draw_bucket_state(const DrawBucketKey& key);
     uint32_t _calculate_reset_flags() const;
 
     bool _vertical_sync = true;
@@ -95,16 +68,3 @@ class Renderer {
 };
 
 } // namespace kaacore
-
-namespace std {
-using kaacore::hash_combined;
-using kaacore::StandardVertexData;
-
-template<>
-struct hash<StandardVertexData> {
-    size_t operator()(const StandardVertexData& svd) const
-    {
-        return hash_combined(svd.xyz, svd.uv, svd.mn, svd.rgba);
-    }
-};
-}
