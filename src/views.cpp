@@ -6,9 +6,6 @@
 
 namespace kaacore {
 
-// index 0 is reserved for internal use
-constexpr int views_offset = 1;
-
 uint16_t
 operator~(ClearFlag flag)
 {
@@ -58,6 +55,21 @@ std::bitset<KAACORE_MAX_VIEWS>::reference ViewIndexSet::operator[](size_t pos)
     return this->_views_bitset[pos + views_z_index_to_internal_offset];
 }
 
+bool
+ViewIndexSet::operator==(const ViewIndexSet& other) const
+{
+    return this->_views_bitset == other._views_bitset;
+}
+
+bool
+ViewIndexSet::operator<(const ViewIndexSet& other) const
+{
+    // make sure that all bits can be contained in `unsigned long`
+    // during comparison
+    static_assert(sizeof(unsigned long) * 8 >= KAACORE_MAX_VIEWS);
+    return this->_views_bitset.to_ulong() < other._views_bitset.to_ulong();
+}
+
 ViewIndexSet
 ViewIndexSet::operator|(const ViewIndexSet& other) const
 {
@@ -101,16 +113,6 @@ ViewIndexSet::operator std::vector<int16_t>() const
     return active_views_vector;
 }
 
-void
-ViewIndexSet::each_active_z_index(const std::function<void(int16_t)> func) const
-{
-    for (auto i = 0; i < this->_views_bitset.size(); i++) {
-        if (this->_views_bitset.test(i)) {
-            func(i - views_z_index_to_internal_offset);
-        }
-    }
-}
-
 View::View()
     : _dimensions(get_engine()->virtual_resolution()), _is_dirty(true),
       _requires_clean(false)
@@ -125,7 +127,7 @@ View::internal_index() const
 int16_t
 View::z_index() const
 {
-    return this->_index - views_offset - (KAACORE_MAX_VIEWS / 2);
+    return this->_index - views_reserved_offset - (KAACORE_MAX_VIEWS / 2);
 }
 
 bool
@@ -242,7 +244,7 @@ View::_refresh()
 ViewsManager::ViewsManager()
 {
     for (uint16_t view_index = 0; view_index < this->size(); ++view_index) {
-        this->_views[view_index]._index = view_index + views_offset;
+        this->_views[view_index]._index = view_index + views_reserved_offset;
     }
 }
 

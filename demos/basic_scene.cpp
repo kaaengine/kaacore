@@ -51,8 +51,6 @@ struct DemoScene : kaacore::Scene {
         node1->color({1., 0., 0., 1});
         node1->shape(kaacore::Shape::Box({2., 1.}));
         node1->z_index(10);
-        node1->recalculate_model_matrix();
-        node1->recalculate_render_data();
 
         this->node1 = this->root_node.add_child(node1);
 
@@ -63,8 +61,6 @@ struct DemoScene : kaacore::Scene {
         node2->color({0., 1., 0., 1});
         node2->shape(kaacore::Shape::Segment({-5., -5.}, {2., 2.}));
         node2->z_index(10);
-        node2->recalculate_model_matrix();
-        node2->recalculate_render_data();
         this->node2 = this->root_node.add_child(node2);
 
         std::vector<glm::dvec2> positions = {{-2., -2.}, {0., -2.}, {2., -2.},
@@ -74,8 +70,6 @@ struct DemoScene : kaacore::Scene {
         auto container_node = kaacore::make_node();
         container_node->position({0., 0.});
         container_node->shape(kaacore::Shape::Box({9., 9.}));
-        container_node->recalculate_model_matrix();
-        container_node->recalculate_render_data();
 
         for (const auto& p : positions) {
             auto inner_node = kaacore::make_node();

@@ -98,6 +98,7 @@ SpatialIndex::start_tracking(Node* node)
 {
     KAACORE_ASSERT(
         not node->_spatial_data.is_indexed, "Node is already indexed.");
+    KAACORE_LOG_DEBUG("Starting to track node: {}", fmt::ptr(node));
     if (node->_indexable) {
         this->_add_to_cp_index(node);
     } else {
@@ -110,6 +111,7 @@ void
 SpatialIndex::stop_tracking(Node* node)
 {
     KAACORE_ASSERT(node->_spatial_data.is_indexed, "Node is not indexed.");
+    KAACORE_LOG_DEBUG("Stopping to track node: {}", fmt::ptr(node));
     if (node->_indexable) {
         this->_remove_from_cp_index(node);
     } else {
