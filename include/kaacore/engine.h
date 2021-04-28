@@ -83,6 +83,7 @@ class Engine {
     void vertical_sync(const bool vsync);
 
     double get_fps() const;
+    Duration total_time() const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 
@@ -130,6 +131,7 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
+    Duration _total_time = 0s;
     std::thread::id _main_thread_id;
     SyncedSyscallQueue _synced_syscall_queue;
 

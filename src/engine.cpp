@@ -221,6 +221,12 @@ Engine::get_fps() const
     return 0;
 }
 
+Duration
+Engine::total_time() const
+{
+    return this->_total_time;
+}
+
 bgfx::Init
 Engine::_gather_platform_data()
 {
@@ -272,12 +278,15 @@ Engine::_scene_processing()
                 if (this->_next_scene) {
                     this->_swap_scenes();
                 }
-                Duration dt_sec = dt * this->_scene->time_scale();
+                Duration scaled_dt_sec = dt * this->_scene->_time_scale;
                 auto scaled_dt =
-                    std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
+                    std::chrono::duration_cast<HighPrecisionDuration>(
+                        scaled_dt_sec);
+                this->_total_time += scaled_dt_sec;
+                this->_scene->_total_time += scaled_dt_sec;
                 {
                     StopwatchStatAutoPusher stopwatch{"scene.update:time"};
-                    this->_scene->update(dt_sec);
+                    this->_scene->update(scaled_dt_sec);
                 }
 #if KAACORE_MULTITHREADING_MODE
                 this->_event_processing_state.set(
