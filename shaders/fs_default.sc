@@ -1,8 +1,6 @@
 $input v_color0, v_texcoord0, v_texcoord1
 
-#include <bgfx_shader.sh>
-
-SAMPLER2D(s_texture, 0);
+#include <kaa.sh>
 
 void main()
 {

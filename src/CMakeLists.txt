@@ -46,10 +46,13 @@ set(SRC_CXX_FILES
     easings.cpp
     shaders.cpp
     clock.cpp
+    uniforms.cpp
     materials.cpp
     memory.cpp
     platform.cpp
     statistics.cpp
+    draw_unit.cpp
+    draw_queue.cpp
 )
 
 set(SRC_H_FILES
@@ -82,10 +85,13 @@ set(SRC_H_FILES
     ../include/kaacore/easings.h
     ../include/kaacore/shaders.h
     ../include/kaacore/clock.h
+    ../include/kaacore/uniforms.h
     ../include/kaacore/materials.h
     ../include/kaacore/memory.h
     ../include/kaacore/platform.h
     ../include/kaacore/statistics.h
+    ../include/kaacore/draw_unit.h
+    ../include/kaacore/draw_queue.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

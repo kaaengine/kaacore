@@ -222,6 +222,12 @@ Engine::get_fps() const
     return 0;
 }
 
+Duration
+Engine::total_time() const
+{
+    return this->_total_time;
+}
+
 bgfx::Init
 Engine::_gather_platform_data()
 {
@@ -272,24 +278,32 @@ Engine::_scene_processing()
                 if (this->_next_scene) {
                     this->_swap_scenes();
                 }
-                Duration dt_sec = dt * this->_scene->time_scale();
+                Duration scaled_dt_sec = dt * this->_scene->_time_scale;
                 auto scaled_dt =
-                    std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
+                    std::chrono::duration_cast<HighPrecisionDuration>(
+                        scaled_dt_sec);
+                this->_total_time += scaled_dt_sec;
                 {
                     StopwatchStatAutoPusher stopwatch{"scene.update:time"};
-                    this->_scene->update(dt_sec);
+                    this->_scene->process_update(scaled_dt_sec);
                 }
 #if KAACORE_MULTITHREADING_MODE
                 this->_event_processing_state.set(
                     EventProcessingState::consumed);
 #endif
-                this->_scene->resolve_dirty_nodes();
-                this->_scene->process_nodes_drawing();
+                const auto& nodes_processing_queue =
+                    this->_scene->build_processing_queue();
+                this->_scene->update_nodes_drawing_queue(
+                    nodes_processing_queue);
+                this->_scene->process_drawing();
+                this->_scene->resolve_spatial_index_changes(
+                    nodes_processing_queue);
                 this->_scene->process_physics(scaled_dt);
                 this->timers.process(dt);
                 this->_scene->timers.process(scaled_dt);
-                this->_scene->process_nodes(scaled_dt);
+                this->_scene->process_nodes(scaled_dt, nodes_processing_queue);
                 this->renderer->end_frame();
+                this->_scene->remove_marked_nodes();
             }
 
             if (this->udp_stats_exporter) {

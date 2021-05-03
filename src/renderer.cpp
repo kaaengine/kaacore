@@ -21,6 +21,10 @@ namespace kaacore {
 
 constexpr uint16_t _internal_view_index = 0;
 constexpr uint8_t _internal_sampler_stage_index = 0;
+const UniformSpecificationMap _default_uniforms = {
+    {"s_texture", UniformSpecification(UniformType::sampler)},
+    {"u_vec4_slot1", UniformSpecification(UniformType::vec4)},
+};
 
 // Since the memory that is used to load texture to bgfx should be available
 // for at least two frames, we bump up its ref count by storing it in a set.
@@ -134,12 +138,39 @@ load_embedded_program(
     return Program::create(vs, fs);
 }
 
+DefaultShadingContext::DefaultShadingContext(const UniformSpecificationMap& uniforms)
+    : ShadingContext(uniforms)
+{}
+
+DefaultShadingContext&
+DefaultShadingContext::operator=(DefaultShadingContext&& other)
+{
+    if (this == &other) {
+        return *this;
+    }
+    this->_uniforms = std::move(other._uniforms);
+    return *this;
+}
+
+void
+DefaultShadingContext::set_uniform_texture(
+    const std::string& name, const Image* texture, const uint8_t stage,
+    const uint32_t flags)
+{
+    KAACORE_CHECK(
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+    std::get<Sampler>(this->_uniforms[name]).set(texture, stage, flags);
+}
+
+void
+DefaultShadingContext::destroy()
+{
+    this->_uninitialize();
+    this->_uniforms.clear();
+}
+
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
-    KAACORE_LOG_INFO("Initializing video.");
-    KAACORE_CHECK(
-        SDL_InitSubSystem(SDL_INIT_VIDEO) == 0,
-        "Failed to initialize video subsystem: {}.", SDL_GetError());
     KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
     bgfx_init_data.resolution.height = window_size.y;
@@ -158,44 +189,43 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
         .add(bgfx::Attrib::Enum::Color0, 4, bgfx::AttribType::Enum::Float)
         .end();
 
-    this->texture_uniform =
-        bgfx::createUniform("s_texture", bgfx::UniformType::Enum::Sampler, 1);
-
     this->reset();
-
     this->default_image = load_default_image();
-    this->default_texture = this->default_image->texture_handle;
-
     KAACORE_LOG_INFO("Loading embedded default shader.");
     auto default_program = load_embedded_program("vs_default", "fs_default");
     KAACORE_LOG_INFO("Loading embedded sdf_font shader.");
     auto sdf_font_program = load_embedded_program("vs_default", "fs_sdf_font");
     this->default_material = Material::create(default_program);
     this->sdf_font_material = Material::create(sdf_font_program);
+    this->shading_context = std::move(DefaultShadingContext(_default_uniforms));
 }
 
 Renderer::~Renderer()
 {
     KAACORE_LOG_INFO("Destroying renderer");
-    bgfx::destroy(this->texture_uniform);
     this->default_image.reset();
+    this->shading_context.destroy();
 
     // since default shaders are embeded and not present
     // in registry, free them manually
     if (this->default_material) {
-        this->default_material.res_ptr.get()
-            ->program.res_ptr->vertex_shader->_uninitialize();
-        this->default_material.res_ptr.get()
-            ->program.res_ptr->fragment_shader->_uninitialize();
-        this->default_material.res_ptr.get()->program.res_ptr->_uninitialize();
+        this->default_material.get()
+            ->program.get()
+            ->vertex_shader->_uninitialize();
+        this->default_material.get()
+            ->program.get()
+            ->fragment_shader->_uninitialize();
+        this->default_material.get()->program.get()->_uninitialize();
     }
 
     if (this->sdf_font_material) {
-        this->sdf_font_material.res_ptr.get()
-            ->program.res_ptr->vertex_shader->_uninitialize();
-        this->sdf_font_material.res_ptr.get()
-            ->program.res_ptr->fragment_shader->_uninitialize();
-        this->sdf_font_material.res_ptr.get()->program.res_ptr->_uninitialize();
+        this->sdf_font_material.get()
+            ->program.get()
+            ->vertex_shader->_uninitialize();
+        this->sdf_font_material.get()
+            ->program.get()
+            ->fragment_shader->_uninitialize();
+        this->sdf_font_material.get()->program.get()->_uninitialize();
     }
 
     bgfx::shutdown();
@@ -279,7 +309,11 @@ Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 
 void
 Renderer::begin_frame()
-{}
+{
+    for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
+        bgfx::setViewMode(i, bgfx::ViewMode::DepthAscending);
+    }
+}
 
 void
 Renderer::end_frame()
@@ -395,34 +429,118 @@ Renderer::process_view(View& view) const
 }
 
 void
-Renderer::render_vertices(
-    const uint16_t view_index, const std::vector<StandardVertexData>& vertices,
-    const std::vector<VertexIndex>& indices, const bgfx::TextureHandle texture,
-    const ResourceReference<Material>& material) const
+Renderer::render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit)
 {
     bgfx::TransientVertexBuffer vertices_buffer;
     bgfx::TransientIndexBuffer indices_buffer;
 
-    bgfx::setState(
-        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA);
-    this->_bind_material(material, texture);
-
     bgfx::allocTransientVertexBuffer(
-        &vertices_buffer, vertices.size(), this->vertex_layout);
-    bgfx::allocTransientIndexBuffer(&indices_buffer, indices.size());
+        &vertices_buffer, draw_unit.details.vertices.size(),
+        this->vertex_layout);
+    bgfx::allocTransientIndexBuffer(
+        &indices_buffer, draw_unit.details.indices.size());
 
     std::memcpy(
-        vertices_buffer.data, vertices.data(),
-        sizeof(StandardVertexData) * vertices.size());
+        vertices_buffer.data, draw_unit.details.vertices.data(),
+        sizeof(StandardVertexData) * draw_unit.details.vertices.size());
     std::memcpy(
-        indices_buffer.data, indices.data(),
-        sizeof(VertexIndex) * indices.size());
+        indices_buffer.data, draw_unit.details.indices.data(),
+        sizeof(VertexIndex) * draw_unit.details.indices.size());
 
     bgfx::setVertexBuffer(0, &vertices_buffer);
     bgfx::setIndexBuffer(&indices_buffer);
+    this->_submit_draw_bucket_state(key);
+}
 
-    bgfx::submit(view_index, material->program->_handle, false);
+void
+Renderer::render_draw_bucket(
+    const DrawBucketKey& key, const DrawBucket& draw_bucket)
+{
+    DrawBucket::Range range = draw_bucket.find_range();
+    while (not range.empty()) {
+        bgfx::TransientVertexBuffer vertices_buffer;
+        bgfx::TransientIndexBuffer indices_buffer;
+        KAACORE_LOG_TRACE(
+            "Available transient vertex/index buffer size: {}/{}",
+            bgfx::getAvailTransientVertexBuffer(
+                0xFFFFFFFF, this->vertex_layout),
+            bgfx::getAvailTransientIndexBuffer(0xFFFFFFFF));
+        bgfx::allocTransientVertexBuffer(
+            &vertices_buffer, range.vertices_count, this->vertex_layout);
+        bgfx::allocTransientIndexBuffer(&indices_buffer, range.indices_count);
+
+        draw_bucket.copy_range_details_to_transient_buffers(
+            range, vertices_buffer, indices_buffer);
+
+        bgfx::setVertexBuffer(0, &vertices_buffer);
+        bgfx::setIndexBuffer(&indices_buffer);
+        this->_submit_draw_bucket_state(key);
+
+        range = draw_bucket.find_range(range.end);
+    }
+}
+
+void
+Renderer::render_draw_queue(const DrawQueue& draw_queue)
+{
+    for (const auto& [key, draw_bucket] : draw_queue) {
+        this->render_draw_bucket(key, draw_bucket);
+    }
+}
+
+void
+Renderer::set_global_uniforms(const float last_dt, const float scene_time)
+{
+    glm::vec4 u_vec4_slot1{last_dt, scene_time, 0, 0};
+    this->shading_context.set_uniform_value<glm::vec4>(
+        "u_vec4_slot1", u_vec4_slot1);
+    this->shading_context.bind("u_vec4_slot1");
+}
+
+std::unordered_set<std::string>&
+Renderer::reserved_uniform_names()
+{
+    static std::unordered_set<std::string> reserved_names;
+    if (not reserved_names.size()) {
+        for (auto& kv_pair : _default_uniforms) {
+            reserved_names.insert(kv_pair.first);
+        }
+    }
+    return reserved_names;
+}
+
+void
+Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
+{
+    bgfx::ProgramHandle program_handle;
+    bgfx::TextureHandle texture_handle;
+    auto texture =
+        key.texture_raw_ptr ? key.texture_raw_ptr : this->default_image.get();
+    this->shading_context.set_uniform_texture(
+        "s_texture", texture, _internal_sampler_stage_index);
+    SamplerValue s;
+    this->shading_context.bind("s_texture");
+    auto material = key.material_raw_ptr ? key.material_raw_ptr
+                                         : this->default_material.get();
+    material->bind();
+    program_handle = material->program->_handle;
+
+    bgfx::setState(
+        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | key.state_flags);
+    bgfx::setStencil(key.stencil_flags);
+
+    uint32_t sorting_value =
+        (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
+    sorting_value <<= 16;
+    sorting_value |= key.root_distance;
+    key.views.each_active_internal_index([&](uint16_t view_internal_index) {
+        // TODO calculate bgfx-depth value based on key
+        bgfx::submit(
+            view_internal_index, program_handle, sorting_value,
+            BGFX_DISCARD_NONE);
+    });
+    bgfx::discard(BGFX_DISCARD_ALL);
 }
 
 uint32_t
@@ -452,16 +570,6 @@ Renderer::_choose_renderer(const std::string& renderer_name) const
         throw exception(
             fmt::format("Unsupported renderer: {}.\n", renderer_name));
     }
-}
-
-void
-Renderer::_bind_material(
-    const ResourceReference<Material>& material,
-    bgfx::TextureHandle texture) const
-{
-    bgfx::setTexture(
-        _internal_sampler_stage_index, this->texture_uniform, texture);
-    material->_bind();
 }
 
 } // namespace kaacore

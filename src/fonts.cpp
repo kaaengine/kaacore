@@ -271,24 +271,24 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
 
         vertices.push_back(
             // Left-top vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x, rg.position.y + rg.offset.y,
                 rg.texture_uv0.x, rg.texture_uv0.y));
         vertices.push_back(
             // Right-top vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x + rg.size.x,
                 rg.position.y + rg.offset.y, rg.texture_uv1.x,
                 rg.texture_uv0.y));
         vertices.push_back(
             // Left-bottom vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x,
                 rg.position.y + rg.offset.y + rg.size.y, rg.texture_uv0.x,
                 rg.texture_uv1.y));
         vertices.push_back(
             // Right-bottom vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x + rg.size.x,
                 rg.position.y + rg.offset.y + rg.size.y, rg.texture_uv1.x,
                 rg.texture_uv1.y));

@@ -27,14 +27,16 @@ struct ResourceReference {
     ResourceReference() : res_ptr(nullptr) {}
     ResourceReference(const std::shared_ptr<T>& ptr) : res_ptr(ptr) {}
     inline operator bool() const { return bool(this->res_ptr); }
-    T* get() const
+    T* get() const { return this->res_ptr.get(); }
+
+    T* get_valid() const
     {
-        if ((not this->res_ptr) or
+        if (not this->res_ptr or
             (this->res_ptr and not this->res_ptr->is_initialized)) {
             throw kaacore::exception(
                 "Detected access to uninitialized resource.");
         }
-        return this->res_ptr.get();
+        return this->get();
     }
 
     bool operator==(const ResourceReference<T>& other)
@@ -42,7 +44,12 @@ struct ResourceReference {
         return this->res_ptr == other.res_ptr;
     }
 
-    T* operator->() const { return this->get(); }
+    bool operator!=(const ResourceReference<T>& other)
+    {
+        return this->res_ptr != other.res_ptr;
+    }
+
+    T* operator->() const { return this->get_valid(); }
 };
 
 template<typename Key_T, typename Resource_T>

@@ -41,7 +41,7 @@ TEST_CASE("Test materials")
         material->set_uniform_texture("sampler", image, 11, 11);
         material->set_uniform_value<glm::vec4>("vector", vector);
         material->set_uniform_value<glm::vec4>(
-            "vector2", std::vector<glm::fvec4>({vector, vector2}));
+            "vector2", std::vector<glm::vec4>({vector, vector2}));
 
         // sampler
         kaacore::SamplerValue sampler_value =

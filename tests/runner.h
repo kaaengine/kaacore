@@ -17,4 +17,4 @@ struct TestingScene : kaacore::Scene {
 };
 
 std::unique_ptr<kaacore::Engine>
-initialize_testing_engine();
+initialize_testing_engine(bool window_visible = false);

@@ -34,7 +34,11 @@ TestingScene::run_on_engine(uint32_t frames)
 }
 
 std::unique_ptr<kaacore::Engine>
-initialize_testing_engine()
+initialize_testing_engine(bool window_visible)
 {
-    return std::make_unique<kaacore::Engine>(glm::dvec2{1, 1});
+    auto engine = std::make_unique<kaacore::Engine>(glm::dvec2{1, 1});
+    if (not window_visible) {
+        engine->window->hide();
+    }
+    return engine;
 }
