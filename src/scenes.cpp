@@ -243,6 +243,12 @@ Scene::handle_remove_node_from_tree(Node* node)
     }
 }
 
+Duration
+Scene::total_time() const
+{
+    return this->_total_time;
+}
+
 double
 Scene::time_scale() const
 {
