@@ -9,16 +9,15 @@ namespace kaacore {
 PlatformType
 get_platform()
 {
-    auto name = get_platform_name();
-    if (name == "Linux") {
-        return PlatformType::linux;
-    } else if (name == "OSX") {
-        return PlatformType::osx;
-    } else if (name == "Windows") {
-        return PlatformType::windows;
-    } else {
-        return PlatformType::unsupported;
-    }
+#if __LINUX__
+    return PlatformType::linux;
+#elif __MACOSX__
+    return PlatformType::osx;
+#elif __WIN32__ or __WINRT__
+    return PlatformType::windows;
+#else
+    return PlatformType::unsupported;
+#endif
 }
 
 std::string

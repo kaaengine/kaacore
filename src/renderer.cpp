@@ -138,7 +138,8 @@ load_embedded_program(
     return Program::create(vs, fs);
 }
 
-DefaultShadingContext::DefaultShadingContext(const UniformSpecificationMap& uniforms)
+DefaultShadingContext::DefaultShadingContext(
+    const UniformSpecificationMap& uniforms)
     : ShadingContext(uniforms)
 {}
 
@@ -176,7 +177,7 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
     bgfx_init_data.resolution.height = window_size.y;
 
     if (auto renderer_name = SDL_getenv("KAACORE_RENDERER")) {
-        bgfx_init_data.type = this->_choose_renderer(renderer_name);
+        bgfx_init_data.type = this->_choose_bgfx_renderer(renderer_name);
     }
 
     bgfx::init(bgfx_init_data);
@@ -518,7 +519,6 @@ Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
         key.texture_raw_ptr ? key.texture_raw_ptr : this->default_image.get();
     this->shading_context.set_uniform_texture(
         "s_texture", texture, _internal_sampler_stage_index);
-    SamplerValue s;
     this->shading_context.bind("s_texture");
     auto material = key.material_raw_ptr ? key.material_raw_ptr
                                          : this->default_material.get();
@@ -550,7 +550,7 @@ Renderer::_calculate_reset_flags() const
 }
 
 bgfx::RendererType::Enum
-Renderer::_choose_renderer(const std::string& renderer_name) const
+Renderer::_choose_bgfx_renderer(const std::string& renderer_name) const
 {
     if (renderer_name == "noop") {
         return bgfx::RendererType::Noop;

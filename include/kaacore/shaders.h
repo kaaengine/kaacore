@@ -47,8 +47,8 @@ class Shader : public Resource {
     ShaderModel _used_model = ShaderModel::unknown;
     bgfx::ShaderHandle _handle = BGFX_INVALID_HANDLE;
 
-    Shader(const ShaderModelMemoryMap& model_map, const ShaderType);
-    Shader(ShaderModelMemoryMap&& model_map, const ShaderType);
+    Shader(const ShaderModelMemoryMap& model_map, const ShaderType type);
+    Shader(ShaderModelMemoryMap&& model_map, const ShaderType type);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 

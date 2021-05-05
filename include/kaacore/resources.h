@@ -75,14 +75,14 @@ class ResourcesRegistry {
     }
 
     void register_resource(
-        const Key_T& key, const std::weak_ptr<Resource_T>& resource)
+        const Key_T& key, const std::weak_ptr<Resource_T> resource)
     {
         auto it = this->_registry.find(key);
         if (it != this->_registry.end() and it->second.lock()) {
             throw kaacore::exception(
                 "An attempt to register resource with already existing key.");
         }
-        this->_registry[key] = resource;
+        this->_registry[key] = std::move(resource);
     }
 
     std::shared_ptr<Resource_T> get_resource(const Key_T& key)

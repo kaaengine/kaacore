@@ -91,7 +91,7 @@ class TimersManager {
         std::vector<_AwaitingState> data;
     } _awaiting_timers;
 
-    static inline std::atomic<TimerID> _last_id = 0u;
+    static inline std::atomic<TimerID> _last_id = 0;
 };
 
 }

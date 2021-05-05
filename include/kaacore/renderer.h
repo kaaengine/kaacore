@@ -81,7 +81,8 @@ class Renderer {
 
     uint32_t _calculate_reset_flags() const;
     void _submit_draw_bucket_state(const DrawBucketKey& key);
-    bgfx::RendererType::Enum _choose_renderer(const std::string& name) const;
+    bgfx::RendererType::Enum _choose_bgfx_renderer(
+        const std::string& name) const;
 
     friend class Engine;
 };

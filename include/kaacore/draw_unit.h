@@ -11,9 +11,8 @@
 #undef GLM_ENABLE_EXPERIMENTAL
 
 #include "kaacore/images.h"
-#include "kaacore/resources.h"
-// #include "kaacore/shaders.h"
 #include "kaacore/materials.h"
+#include "kaacore/resources.h"
 #include "kaacore/utils.h"
 #include "kaacore/views.h"
 

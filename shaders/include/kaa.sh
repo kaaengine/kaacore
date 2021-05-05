@@ -1,7 +1,7 @@
-#include <bgfx_shader.sh>
-
 #ifndef KAA_H_HEADER_GUARD
 #define KAA_H_HEADER_GUARD
+
+#include <bgfx_shader.sh>
 
 SAMPLER2D(s_texture, 0);
 uniform vec4 u_vec4_slot1;

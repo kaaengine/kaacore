@@ -25,7 +25,7 @@ class UniformSpecification {
   public:
     UniformSpecification() = default;
     UniformSpecification(
-        const UniformType type, const uint16_t number_of_elements = 1u);
+        const UniformType type, const uint16_t number_of_elements = 1);
     bool operator==(const UniformSpecification& other);
     UniformType type() const;
     uint16_t number_of_elements() const;
@@ -39,7 +39,7 @@ class UniformBase {
   public:
     UniformBase(
         const std::string& name, const UniformType type,
-        const uint16_t number_of_elements = 1u);
+        const uint16_t number_of_elements = 1);
     UniformBase(const UniformBase& other);
     UniformBase(UniformBase&& other);
     UniformBase& operator=(UniformBase&& other);
