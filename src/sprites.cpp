@@ -8,7 +8,7 @@ namespace kaacore {
 
 Sprite::Sprite() : texture(), origin(0, 0), dimensions(0, 0) {}
 
-Sprite::Sprite(const ResourceReference<Image>& texture)
+Sprite::Sprite(const ResourceReference<Texture>& texture)
     : texture(texture), origin(0, 0),
       dimensions(texture.res_ptr->get_dimensions())
 {}
@@ -16,7 +16,7 @@ Sprite::Sprite(const ResourceReference<Image>& texture)
 Sprite
 Sprite::load(const std::string& path, uint64_t flags)
 {
-    return Sprite(Image::load(path, flags));
+    return Sprite(Texture::load(path, flags));
 }
 
 bool

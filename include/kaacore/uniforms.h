@@ -10,7 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "kaacore/images.h"
+#include "kaacore/textures.h"
 
 namespace kaacore {
 
@@ -66,7 +66,7 @@ class ShadingContext;
 struct SamplerValue {
     uint8_t stage;
     uint32_t flags;
-    ResourceReference<Image> texture;
+    ResourceReference<Texture> texture;
 };
 
 class Sampler : public UniformBase {
@@ -80,15 +80,15 @@ class Sampler : public UniformBase {
 
     std::optional<SamplerValue> get() const;
     void set(
-        const ResourceReference<Image>& texture, const uint8_t stage,
+        const ResourceReference<Texture>& texture, const uint8_t stage,
         const uint32_t flags);
     void set(const SamplerValue& value);
-    void set(const Image* texture, const uint8_t stage, const uint32_t flags);
+    void set(const Texture* texture, const uint8_t stage, const uint32_t flags);
 
   private:
     uint8_t _stage;
     uint32_t _flags;
-    std::weak_ptr<Image> _texture;
+    std::weak_ptr<Texture> _texture;
     bgfx::TextureHandle _value = BGFX_INVALID_HANDLE;
 
     void _bind();

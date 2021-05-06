@@ -5,9 +5,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "kaacore/images.h"
 #include "kaacore/resources.h"
 #include "kaacore/shaders.h"
+#include "kaacore/textures.h"
 #include "kaacore/uniforms.h"
 
 namespace kaacore {
@@ -24,7 +24,7 @@ class ShadingContext : public Resource {
     ~ShadingContext();
     UniformSpecificationMap uniforms() const;
     void set_uniform_texture(
-        const std::string& name, const ResourceReference<Image>& texture,
+        const std::string& name, const ResourceReference<Texture>& texture,
         const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
     void set_uniform_texture(
@@ -66,7 +66,7 @@ class Material : public ShadingContext {
         const UniformSpecificationMap& uniforms = {});
     ResourceReference<Material> clone() const;
     void set_uniform_texture(
-        const std::string& name, const ResourceReference<Image>& texture,
+        const std::string& name, const ResourceReference<Texture>& texture,
         const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
     void set_uniform_texture(

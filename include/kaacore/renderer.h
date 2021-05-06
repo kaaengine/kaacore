@@ -10,11 +10,11 @@
 #include "kaacore/draw_queue.h"
 #include "kaacore/draw_unit.h"
 #include "kaacore/files.h"
-#include "kaacore/images.h"
 #include "kaacore/log.h"
 #include "kaacore/materials.h"
 #include "kaacore/resources.h"
 #include "kaacore/shaders.h"
+#include "kaacore/textures.h"
 #include "kaacore/utils.h"
 #include "kaacore/views.h"
 
@@ -38,7 +38,7 @@ class DefaultShadingContext : public ShadingContext {
     DefaultShadingContext& operator=(DefaultShadingContext&& other);
     void destroy();
     void set_uniform_texture(
-        const std::string& name, const Image* texture, const uint8_t stage,
+        const std::string& name, const Texture* texture, const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
 };
 
@@ -46,7 +46,7 @@ class Renderer {
   public:
     DefaultShadingContext shading_context;
     bgfx::VertexLayout vertex_layout;
-    std::unique_ptr<Image> default_image;
+    std::unique_ptr<Texture> default_texture;
     ResourceReference<Material> default_material;
     ResourceReference<Material> sdf_font_material;
 

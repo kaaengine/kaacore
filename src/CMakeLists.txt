@@ -23,7 +23,7 @@ set(SRC_CXX_FILES
     files.cpp
     log.cpp
     renderer.cpp
-    images.cpp
+    textures.cpp
     input.cpp
     audio.cpp
     scenes.cpp
@@ -62,7 +62,7 @@ set(SRC_H_FILES
     ../include/kaacore/files.h
     ../include/kaacore/log.h
     ../include/kaacore/renderer.h
-    ../include/kaacore/images.h
+    ../include/kaacore/textures.h
     ../include/kaacore/input.h
     ../include/kaacore/audio.h
     ../include/kaacore/scenes.h
