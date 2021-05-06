@@ -7,7 +7,6 @@
 #include <SDL_config.h>
 #include <SDL_syswm.h>
 
-#include "SDL_events.h"
 #include "kaacore/audio.h"
 #include "kaacore/display.h"
 #include "kaacore/exceptions.h"
@@ -35,7 +34,9 @@ Engine::Engine(
         "Virtual resolution must be greater than zero.");
     initialize_logging();
     KAACORE_LOG_INFO("Initializing Kaacore.");
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+    auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
+                     SDL_INIT_GAMECONTROLLER;
+    if (SDL_Init(init_flag) < 0) {
         throw kaacore::exception(SDL_GetError());
     }
     this->_main_thread_id = std::this_thread::get_id();
@@ -255,7 +256,6 @@ Engine::_gather_platform_data()
     bgfx_init_data.platformData.backBuffer = nullptr;
     bgfx_init_data.platformData.backBufferDS = nullptr;
     bgfx_init_data.debug = true;
-
     return bgfx_init_data;
 }
 
@@ -283,10 +283,9 @@ Engine::_scene_processing()
                     std::chrono::duration_cast<HighPrecisionDuration>(
                         scaled_dt_sec);
                 this->_total_time += scaled_dt_sec;
-                this->_scene->_total_time += scaled_dt_sec;
                 {
                     StopwatchStatAutoPusher stopwatch{"scene.update:time"};
-                    this->_scene->update(scaled_dt_sec);
+                    this->_scene->process_update(scaled_dt_sec);
                 }
 #if KAACORE_MULTITHREADING_MODE
                 this->_event_processing_state.set(

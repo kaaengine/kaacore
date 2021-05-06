@@ -2,6 +2,7 @@
 #include "kaacore/audio.h"
 #include "kaacore/fonts.h"
 #include "kaacore/images.h"
+#include "kaacore/materials.h"
 #include "kaacore/shaders.h"
 
 namespace kaacore {
@@ -23,6 +24,7 @@ ResourcesManager::_initialize_resources()
     initialize_images();
     initialize_fonts();
     initialize_shaders();
+    initialize_materials();
 }
 
 void
@@ -32,6 +34,7 @@ ResourcesManager::_uninitialize_resources()
     uninitialize_images();
     uninitialize_fonts();
     uninitialize_shaders();
+    uninitialize_materials();
 }
 
 } // namespace kaacore

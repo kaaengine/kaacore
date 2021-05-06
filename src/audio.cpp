@@ -372,6 +372,16 @@ _channel_finished_hook(int channel)
 AudioManager::AudioManager()
     : _master_volume(1.), _master_sound_volume(1.), _master_music_volume(1.)
 {
+    KAACORE_LOG_INFO("Initializing audio.");
+    KAACORE_CHECK(
+        SDL_InitSubSystem(SDL_INIT_AUDIO) == 0,
+        "Failed to initialize audio subsystem: {}.", SDL_GetError());
+
+    auto driver = SDL_getenv("SDL_AUDIODRIVER");
+    if (driver and std::string(driver) == "dummy") {
+        return;
+    }
+
     Mix_Init(MIX_INIT_OGG);
     auto err_code =
         Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048);

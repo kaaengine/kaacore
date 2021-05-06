@@ -1,6 +1,4 @@
-#include <fstream>
-#include <string>
-#include <vector>
+#include <functional>
 
 #include "kaacore/exceptions.h"
 #include "kaacore/log.h"
@@ -9,12 +7,12 @@
 
 namespace kaacore {
 
-RawFile::RawFile(const std::string file_path) noexcept(false) : path(file_path)
+File::File(const std::string& path) noexcept(false) : path(path)
 {
-    KAACORE_LOG_INFO("Reading file: {}", file_path);
-    std::ifstream f(file_path, std::ifstream::binary);
+    KAACORE_LOG_INFO("Reading file: {}", path);
+    std::ifstream f(path, std::ifstream::binary);
     if (f.fail()) {
-        throw exception("Failed to open file: " + this->path);
+        throw std::ios_base::failure("Failed to open file: " + path);
     }
     f.seekg(0, std::ios::end);
     auto len = f.tellg();
@@ -22,5 +20,4 @@ RawFile::RawFile(const std::string file_path) noexcept(false) : path(file_path)
     this->content.resize(len);
     f.read(reinterpret_cast<char*>(this->content.data()), len);
 }
-
 } // namespace kaacore

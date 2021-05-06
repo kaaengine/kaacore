@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -20,9 +21,10 @@ struct Sprite {
     glm::dvec2 dimensions;
 
     Sprite();
-    Sprite(ResourceReference<Image> texture);
+    Sprite(const ResourceReference<Image>& texture);
 
-    static Sprite load(const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
+    static Sprite load(
+        const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
 
     inline bool has_texture() const { return bool(this->texture); }
     inline operator bool() const { return this->has_texture(); }

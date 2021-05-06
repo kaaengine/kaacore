@@ -21,8 +21,8 @@ TEST_CASE("test_draw_queue_rendering", "[.][visual_test][draw_queue]")
             dbk.z_index = z_index;
             dbk.root_distance = 0;
             dbk.texture_raw_ptr = nullptr;
-            dbk.program_raw_ptr =
-                kaacore::get_engine()->renderer->default_program.res_ptr.get();
+            dbk.material_raw_ptr =
+                kaacore::get_engine()->renderer->default_material.res_ptr.get();
             ;
             dbk.state_flags = 0;
             dbk.stencil_flags = 0;

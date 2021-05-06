@@ -92,8 +92,6 @@ struct DemoScene : kaacore::Scene {
     void update(const kaacore::Duration dt) override
     {
         KAACORE_APP_LOG_DEBUG("DemoScene update {}s.", dt.count());
-        auto texture = kaacore::get_engine()->renderer->default_texture;
-
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key()) {
                 if (keyboard_key->key() == kaacore::Keycode::q) {

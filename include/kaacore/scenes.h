@@ -31,6 +31,7 @@ class Scene {
 
     void reset_views();
     NodesQueue& build_processing_queue();
+    void process_update(const Duration dt);
     void process_physics(const HighPrecisionDuration dt);
     void process_nodes(
         const HighPrecisionDuration dt, const NodesQueue& processing_queue);
@@ -60,6 +61,7 @@ class Scene {
 
   private:
     double _time_scale = 1.;
+    Duration _last_dt = 0s;
     Duration _total_time = 0s;
     NodesQueue _nodes_remove_queue;
     std::atomic<uint64_t> _node_scene_tree_id_counter = 0;

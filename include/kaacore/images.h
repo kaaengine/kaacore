@@ -24,7 +24,7 @@ uninitialize_images();
 bimg::ImageContainer*
 load_image(const uint8_t* data, size_t size);
 bimg::ImageContainer*
-load_image(const char* path);
+load_image(const std::string& path);
 bimg::ImageContainer*
 load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,

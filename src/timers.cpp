@@ -71,7 +71,8 @@ TimersManager::start(const Duration interval, Timer& timer)
     {
         std::unique_lock<std::mutex> lock{this->_lock};
         auto state = timer._state;
-        TimerID invocation_id = ++this->_last_timer_id;
+        auto invocation_id =
+            this->_last_id.fetch_add(1, std::memory_order_relaxed);
         state->id = invocation_id;
         state->is_running.store(true, std::memory_order_release);
         this->_awaiting_timers.data.emplace_back(

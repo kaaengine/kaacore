@@ -12,9 +12,11 @@
 #include "kaacore/draw_unit.h"
 #include "kaacore/fonts.h"
 #include "kaacore/geometry.h"
+#include "kaacore/materials.h"
 #include "kaacore/node_ptr.h"
 #include "kaacore/physics.h"
 #include "kaacore/renderer.h"
+#include "kaacore/resources.h"
 #include "kaacore/shapes.h"
 #include "kaacore/spatial_index.h"
 #include "kaacore/sprites.h"
@@ -95,6 +97,9 @@ class Node {
 
     Sprite sprite();
     void sprite(const Sprite& sprite);
+
+    ResourceReference<Material>& material();
+    void material(const ResourceReference<Material>& material);
 
     glm::dvec4 color();
     void color(const glm::dvec4& color);
@@ -196,6 +201,7 @@ class Node {
     Alignment _origin_alignment = Alignment::none;
     HighPrecisionDuration _lifetime = 0us;
     NodeTransitionsManager _transitions_manager;
+    ResourceReference<Material> _material;
 
     Scene* _scene = nullptr;
     uint64_t _scene_tree_id = 0;

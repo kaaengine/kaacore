@@ -227,13 +227,11 @@ Node::_make_draw_bucket_key() const
     key.views = this->_ordering_data.calculated_views;
     key.z_index = this->_ordering_data.calculated_z_index;
     key.root_distance = this->_root_distance;
-    key.texture_raw_ptr = this->_sprite.texture.res_ptr.get();
-    if (this->_type == NodeType::text) {
-        key.program_raw_ptr =
-            get_engine()->renderer->sdf_font_program.res_ptr.get();
+    key.texture_raw_ptr = this->_sprite.texture.get();
+    if (not this->_material and this->_type == NodeType::text) {
+        key.material_raw_ptr = get_engine()->renderer->sdf_font_material.get();
     } else {
-        key.program_raw_ptr =
-            get_engine()->renderer->default_program.res_ptr.get();
+        key.material_raw_ptr = this->_material.get();
     }
     key.state_flags = 0u;
     key.stencil_flags = 0u;
@@ -736,6 +734,18 @@ Node::sprite(const Sprite& sprite)
         }
     }
     this->_render_data.is_dirty = true;
+}
+
+ResourceReference<Material>&
+Node::material()
+{
+    return this->_material;
+}
+
+void
+Node::material(const ResourceReference<Material>& material)
+{
+    this->_material = material;
 }
 
 glm::dvec4

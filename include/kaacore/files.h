@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -8,11 +9,12 @@
 
 namespace kaacore {
 
-struct RawFile {
-    std::string path;
+class File {
+  public:
+    const std::string path;
     std::vector<uint8_t> content;
 
-    RawFile(const std::string file_path) noexcept(false);
+    File(const std::string& path) noexcept(false);
 };
 
 } // namespace kaacore

@@ -58,6 +58,13 @@ Scene::build_processing_queue()
 }
 
 void
+Scene::process_update(const Duration dt)
+{
+    this->_total_time += this->_last_dt = dt;
+    this->update(dt);
+}
+
+void
 Scene::process_physics(const HighPrecisionDuration dt)
 {
     StopwatchStatAutoPusher stopwatch{"scene.process_physics:time"};
@@ -152,7 +159,9 @@ Scene::process_drawing()
     }
 
     this->draw_queue.process_modifications();
-    get_engine()->renderer->render_draw_queue(this->draw_queue);
+    renderer->set_global_uniforms(
+        this->_last_dt.count(), this->_total_time.count());
+    renderer->render_draw_queue(this->draw_queue);
 }
 
 void

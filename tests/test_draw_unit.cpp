@@ -26,8 +26,8 @@ TEST_CASE(
         dbk1.z_index = 0;
         dbk1.root_distance = 0;
         dbk1.texture_raw_ptr = nullptr;
-        dbk1.program_raw_ptr =
-            kaacore::get_engine()->renderer->default_program.res_ptr.get();
+        dbk1.material_raw_ptr =
+            kaacore::get_engine()->renderer->default_material.res_ptr.get();
         dbk1.state_flags = 0;
         // toggle stencil test every 50 frames
         if ((scene.frames_left / 50) % 2 == 0) {
@@ -48,8 +48,8 @@ TEST_CASE(
         dbk2.z_index = 0;
         dbk2.root_distance = 0;
         dbk2.texture_raw_ptr = nullptr;
-        dbk2.program_raw_ptr =
-            kaacore::get_engine()->renderer->default_program.res_ptr.get();
+        dbk2.material_raw_ptr =
+            kaacore::get_engine()->renderer->default_material.res_ptr.get();
         dbk2.state_flags = 0;
         dbk2.stencil_flags =
             (0u | BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_RMASK(0xFF) |
@@ -84,8 +84,8 @@ TEST_CASE(
         dbk.z_index = 0;
         dbk.root_distance = 0;
         dbk.texture_raw_ptr = nullptr;
-        dbk.program_raw_ptr =
-            kaacore::get_engine()->renderer->default_program.res_ptr.get();
+        dbk.material_raw_ptr =
+            kaacore::get_engine()->renderer->default_material.res_ptr.get();
         ;
         dbk.state_flags = 0;
         dbk.stencil_flags = 0;
@@ -162,9 +162,7 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         REQUIRE(node_1_mod_1->lookup_key.z_index == 0);
         REQUIRE(node_1_mod_1->lookup_key.root_distance == 1);
         REQUIRE(node_1_mod_1->lookup_key.texture_raw_ptr == nullptr);
-        REQUIRE(
-            node_1_mod_1->lookup_key.program_raw_ptr ==
-            kaacore::get_engine()->renderer->default_program.res_ptr.get());
+        REQUIRE(node_1_mod_1->lookup_key.material_raw_ptr == nullptr);
         REQUIRE(node_1_mod_1->lookup_key.state_flags == 0u);
         REQUIRE(node_1_mod_1->lookup_key.stencil_flags == 0u);
 

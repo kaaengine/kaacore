@@ -11,8 +11,8 @@
 #undef GLM_ENABLE_EXPERIMENTAL
 
 #include "kaacore/images.h"
+#include "kaacore/materials.h"
 #include "kaacore/resources.h"
-#include "kaacore/shaders.h"
 #include "kaacore/utils.h"
 #include "kaacore/views.h"
 
@@ -60,7 +60,7 @@ struct DrawBucketKey {
     int16_t z_index;
     uint8_t root_distance;
     Image* texture_raw_ptr;
-    Program* program_raw_ptr;
+    Material* material_raw_ptr;
     uint64_t state_flags;
     uint32_t stencil_flags;
 
@@ -70,7 +70,7 @@ struct DrawBucketKey {
             this->views == other.views and this->z_index == other.z_index and
             this->root_distance == other.root_distance and
             this->texture_raw_ptr == other.texture_raw_ptr and
-            this->program_raw_ptr == other.program_raw_ptr and
+            this->material_raw_ptr == other.material_raw_ptr and
             this->state_flags == other.state_flags and
             this->stencil_flags == other.stencil_flags);
     }
@@ -84,11 +84,11 @@ struct DrawBucketKey {
     {
         return std::tie(
                    this->views, this->z_index, this->root_distance,
-                   this->texture_raw_ptr, this->program_raw_ptr,
+                   this->texture_raw_ptr, this->material_raw_ptr,
                    this->state_flags, this->stencil_flags) <
                std::tie(
                    other.views, other.z_index, other.root_distance,
-                   other.texture_raw_ptr, other.program_raw_ptr,
+                   other.texture_raw_ptr, other.material_raw_ptr,
                    other.state_flags, other.stencil_flags);
     }
 };
@@ -201,7 +201,7 @@ struct hash<kaacore::DrawBucketKey> {
     {
         return kaacore::hash_combined(
             key.views, key.z_index, key.root_distance, key.texture_raw_ptr,
-            key.program_raw_ptr, key.state_flags, key.stencil_flags);
+            key.material_raw_ptr, key.state_flags, key.stencil_flags);
     }
 };
 }

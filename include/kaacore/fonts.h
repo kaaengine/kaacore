@@ -10,6 +10,7 @@
 
 #include "kaacore/files.h"
 #include "kaacore/images.h"
+#include "kaacore/memory.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources.h"
 #include "kaacore/shapes.h"
@@ -74,8 +75,7 @@ class FontData : public Resource {
 
     ~FontData();
     static ResourceReference<FontData> load(const std::string& path);
-    static ResourceReference<FontData> load_from_memory(
-        const uint8_t* font_file_content, const size_t size);
+    static ResourceReference<FontData> load_from_memory(const Memory& memory);
     Shape generate_text_shape(
         const std::string& text, double size, double indent, double max_width);
     std::vector<FontRenderGlyph> generate_render_glyphs(

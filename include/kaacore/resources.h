@@ -25,8 +25,19 @@ struct ResourceReference {
     std::shared_ptr<T> res_ptr;
 
     ResourceReference() : res_ptr(nullptr) {}
-    ResourceReference(std::shared_ptr<T> ptr) : res_ptr(ptr) {}
+    ResourceReference(const std::shared_ptr<T>& ptr) : res_ptr(ptr) {}
     inline operator bool() const { return bool(this->res_ptr); }
+    T* get() const { return this->res_ptr.get(); }
+
+    T* get_valid() const
+    {
+        if (not this->res_ptr or
+            (this->res_ptr and not this->res_ptr->is_initialized)) {
+            throw kaacore::exception(
+                "Detected access to uninitialized resource.");
+        }
+        return this->get();
+    }
 
     bool operator==(const ResourceReference<T>& other)
     {
@@ -38,15 +49,7 @@ struct ResourceReference {
         return this->res_ptr != other.res_ptr;
     }
 
-    T* operator->() const
-    {
-        auto ptr = this->res_ptr;
-        if (ptr and not ptr->is_initialized) {
-            throw kaacore::exception(
-                "Detected access to uninitialized resource.");
-        }
-        return ptr.get();
-    }
+    T* operator->() const { return this->get_valid(); }
 };
 
 template<typename Key_T, typename Resource_T>
@@ -79,7 +82,7 @@ class ResourcesRegistry {
             throw kaacore::exception(
                 "An attempt to register resource with already existing key.");
         }
-        this->_registry[key] = resource;
+        this->_registry[key] = std::move(resource);
     }
 
     std::shared_ptr<Resource_T> get_resource(const Key_T& key)
