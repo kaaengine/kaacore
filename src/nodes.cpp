@@ -939,4 +939,14 @@ Node::bounding_box()
     }
 }
 
+Node*
+Node::_find_nearest_parent(const NodeType type) const
+{
+    auto node = this->_parent;
+    while (node != nullptr and node->_type != type) {
+        node = node->_parent;
+    }
+    return node;
+}
+
 } // namespace kaacore

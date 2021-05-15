@@ -252,6 +252,7 @@ class Node {
     void _recalculate_model_matrix_cumulative();
     void _set_position(const glm::dvec2& position);
     void _set_rotation(const double rotation);
+    Node* _find_nearest_parent(const NodeType type) const;
 
     DrawBucketKey _make_draw_bucket_key() const;
 
