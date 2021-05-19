@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <glm/gtc/type_precision.hpp>
 
-#include "kaacore/images.h"
+#include "kaacore/textures.h"
 
 #include "runner.h"
 
