@@ -9,8 +9,8 @@
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/fonts.h"
-#include "kaacore/images.h"
 #include "kaacore/nodes.h"
+#include "kaacore/textures.h"
 #include "kaacore/utils.h"
 
 #include "kaacore/fonts.h"
@@ -308,7 +308,7 @@ FontData::FontData(const std::string& path) : path(path)
 {
     File file(this->path);
     auto [baked_font_image, baked_font_data] = bake_font_texture(file);
-    this->baked_texture = Image::load(baked_font_image);
+    this->baked_texture = Texture::load(baked_font_image);
     this->baked_font = std::move(baked_font_data);
 
     if (is_engine_initialized()) {
@@ -317,7 +317,7 @@ FontData::FontData(const std::string& path) : path(path)
 }
 
 FontData::FontData(
-    const ResourceReference<Image> baked_texture,
+    const ResourceReference<Texture> baked_texture,
     const BakedFontData baked_font)
 {
     this->baked_texture = baked_texture;
@@ -345,11 +345,11 @@ ResourceReference<FontData>
 FontData::load_from_memory(const Memory& memory)
 {
     auto raw_memory = reinterpret_cast<const uint8_t*>(memory.get());
-    auto [baked_font_image, baked_font_data] =
+    auto [baked_font_texture, baked_font_data] =
         bake_font_texture(raw_memory, memory.size());
 
     return std::shared_ptr<FontData>(
-        new FontData(Image::load(baked_font_image), baked_font_data));
+        new FontData(Texture::load(baked_font_texture), baked_font_data));
 }
 
 FontData::~FontData()

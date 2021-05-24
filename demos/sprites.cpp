@@ -3,12 +3,12 @@
 
 #include "kaacore/clock.h"
 #include "kaacore/engine.h"
-#include "kaacore/images.h"
 #include "kaacore/log.h"
 #include "kaacore/node_transitions.h"
 #include "kaacore/nodes.h"
 #include "kaacore/resources.h"
 #include "kaacore/scenes.h"
+#include "kaacore/textures.h"
 #include "kaacore/transitions.h"
 
 using std::atoi;
@@ -16,14 +16,14 @@ using namespace std::chrono_literals;
 
 struct SpritesDemoScene : kaacore::Scene {
     kaacore::NodePtr animating_node;
-    kaacore::ResourceReference<kaacore::Image> image_file;
+    kaacore::ResourceReference<kaacore::Texture> texture;
 
     SpritesDemoScene(
         const char* filepath, int frame_w, int frame_h, int padding_x,
         int padding_y)
     {
-        this->image_file = kaacore::Image::load(filepath);
-        kaacore::Sprite sprite{this->image_file};
+        this->texture = kaacore::Texture::load(filepath);
+        kaacore::Sprite sprite{this->texture};
         auto frames = kaacore::split_spritesheet(
             sprite, {frame_w, frame_h}, 0, 0, {padding_x, padding_y});
 

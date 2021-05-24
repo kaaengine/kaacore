@@ -10,9 +10,9 @@
 #include <glm/gtx/hash.hpp>
 #undef GLM_ENABLE_EXPERIMENTAL
 
-#include "kaacore/images.h"
 #include "kaacore/materials.h"
 #include "kaacore/resources.h"
+#include "kaacore/textures.h"
 #include "kaacore/utils.h"
 #include "kaacore/views.h"
 
@@ -59,7 +59,7 @@ struct DrawBucketKey {
     ViewIndexSet views;
     int16_t z_index;
     uint8_t root_distance;
-    Image* texture_raw_ptr;
+    Texture* texture_raw_ptr;
     Material* material_raw_ptr;
     uint64_t state_flags;
     uint32_t stencil_flags;

@@ -10,12 +10,12 @@
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
-#include "kaacore/images.h"
 #include "kaacore/log.h"
 #include "kaacore/memory.h"
 #include "kaacore/platform.h"
 #include "kaacore/renderer.h"
 #include "kaacore/statistics.h"
+#include "kaacore/textures.h"
 
 namespace kaacore {
 
@@ -38,7 +38,7 @@ _release_used_container(void* _data, void* image_container)
     // Use aliasing constructor to create non-owning ptr that we will
     // use as a key
     std::shared_ptr<bimg::ImageContainer> key(
-        std::shared_ptr<Image>(),
+        std::shared_ptr<Texture>(),
         static_cast<bimg::ImageContainer*>(image_container));
     _used_containers.erase(key);
 }
@@ -116,16 +116,16 @@ load_embedded_shaders(
             Shader::create(ShaderType::fragment, fragment_memory_map)};
 }
 
-std::unique_ptr<Image>
-load_default_image()
+std::unique_ptr<Texture>
+load_default_texture()
 {
     // 1x1 white texture
     static const std::vector<uint8_t> image_content{0xFF, 0xFF, 0xFF, 0xFF};
     auto image_container =
         load_raw_image(bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
-    auto image = std::unique_ptr<Image>(new Image(image_container));
-    bgfx::setName(image->texture_handle, "DEFAULT TEXTURE");
-    return image;
+    auto texture = std::unique_ptr<Texture>(new Texture(image_container));
+    bgfx::setName(texture->handle, "DEFAULT TEXTURE");
+    return texture;
 }
 
 ResourceReference<Program>
@@ -155,7 +155,7 @@ DefaultShadingContext::operator=(DefaultShadingContext&& other)
 
 void
 DefaultShadingContext::set_uniform_texture(
-    const std::string& name, const Image* texture, const uint8_t stage,
+    const std::string& name, const Texture* texture, const uint8_t stage,
     const uint32_t flags)
 {
     KAACORE_CHECK(
@@ -191,7 +191,7 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
         .end();
 
     this->reset();
-    this->default_image = load_default_image();
+    this->default_texture = load_default_texture();
     KAACORE_LOG_INFO("Loading embedded default shader.");
     auto default_program = load_embedded_program("vs_default", "fs_default");
     KAACORE_LOG_INFO("Loading embedded sdf_font shader.");
@@ -204,7 +204,7 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 Renderer::~Renderer()
 {
     KAACORE_LOG_INFO("Destroying renderer");
-    this->default_image.reset();
+    this->default_texture.reset();
     this->shading_context.destroy();
 
     // since default shaders are embeded and not present
@@ -516,7 +516,7 @@ Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
     bgfx::ProgramHandle program_handle;
     bgfx::TextureHandle texture_handle;
     auto texture =
-        key.texture_raw_ptr ? key.texture_raw_ptr : this->default_image.get();
+        key.texture_raw_ptr ? key.texture_raw_ptr : this->default_texture.get();
     this->shading_context.set_uniform_texture(
         "s_texture", texture, _internal_sampler_stage_index);
     this->shading_context.bind("s_texture");
