@@ -64,6 +64,8 @@ struct Arbiter {
     void surface_velocity(const glm::dvec2 value);
     std::vector<CollisionContactPoint> contact_points() const;
     void contact_points(const std::vector<CollisionContactPoint>& value);
+    glm::dvec2 collision_normal() const;
+    void collision_normal(const glm::dvec2 value);
 };
 
 uint8_t

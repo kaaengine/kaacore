@@ -142,8 +142,7 @@ Arbiter::total_kinetic_energy() const
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::post_solve,
-        "Kinetic energy may only be retrieved in the post_solve phase."
-    );
+        "Kinetic energy may only be retrieved in the post_solve phase.");
     return cpArbiterTotalKE(this->cp_arbiter);
 }
 
@@ -152,10 +151,9 @@ Arbiter::total_impulse() const
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::post_solve,
-        "Impulse may only be retrieved in the post_solve phase."
-    );
+        "Impulse may only be retrieved in the post_solve phase.");
     auto result = cpArbiterTotalImpulse(this->cp_arbiter);
-    return {result.x , result.y};
+    return {result.x, result.y};
 }
 
 double
@@ -169,8 +167,7 @@ Arbiter::elasticity(double value)
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::pre_solve,
-        "Elasticity may only be set in the pre_solve phase."
-    );
+        "Elasticity may only be set in the pre_solve phase.");
     cpArbiterSetRestitution(this->cp_arbiter, value);
 }
 
@@ -185,8 +182,7 @@ Arbiter::friction(const double value)
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::pre_solve,
-        "Friction may only be set in the pre_solve phase."
-    );
+        "Friction may only be set in the pre_solve phase.");
     cpArbiterSetFriction(this->cp_arbiter, value);
 }
 
@@ -202,16 +198,15 @@ Arbiter::surface_velocity(const glm::dvec2 value)
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::pre_solve,
-        "Surface velocity may only be set in the pre_solve phase."
-    );
+        "Surface velocity may only be set in the pre_solve phase.");
     cpArbiterSetSurfaceVelocity(this->cp_arbiter, {value.x, value.y});
 }
 
 std::vector<CollisionContactPoint>
 Arbiter::contact_points() const
 {
-    auto result = cpArbiterGetContactPointSet(this->cp_arbiter);
-    return convert_contact_points(&result);
+    auto set = cpArbiterGetContactPointSet(this->cp_arbiter);
+    return convert_contact_points(&set);
 }
 
 void
@@ -220,16 +215,29 @@ Arbiter::contact_points(const std::vector<CollisionContactPoint>& value)
     auto number_of_points = value.size();
     KAACORE_ASSERT(
         number_of_points == cpArbiterGetCount(this->cp_arbiter),
-        "Number of contact points cannot be changed."
-    );
+        "Number of contact points cannot be changed.");
     cpContactPointSet set;
     set.count = number_of_points;
-    for (int i = 0; i < number_of_points; ++i)
-    {
+    for (int i = 0; i < number_of_points; ++i) {
         const auto& contact = value[i];
         set.points[i].pointA = {contact.point_a.x, contact.point_a.y};
         set.points[i].pointB = {contact.point_b.x, contact.point_b.y};
     }
+    cpArbiterSetContactPointSet(this->cp_arbiter, &set);
+}
+
+glm::dvec2
+Arbiter::collision_normal() const
+{
+    auto set = cpArbiterGetContactPointSet(this->cp_arbiter);
+    return {set.normal.x, set.normal.y};
+}
+
+void
+Arbiter::collision_normal(const glm::dvec2 value)
+{
+    auto set = cpArbiterGetContactPointSet(this->cp_arbiter);
+    set.normal = {value.x, value.y};
     cpArbiterSetContactPointSet(this->cp_arbiter, &set);
 }
 
