@@ -10,6 +10,7 @@ set(TEST_SRC_CXX_FILES
     test_transitions.cpp
     test_draw_unit.cpp
     test_draw_queue.cpp
+    test_geometry.cpp
 )
 
 add_executable(runner runner.cpp ${TEST_SRC_CXX_FILES})
