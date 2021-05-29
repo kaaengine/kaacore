@@ -88,7 +88,7 @@ class Sampler : public UniformBase {
   private:
     uint8_t _stage;
     uint32_t _flags;
-    std::weak_ptr<Texture> _texture;
+    std::shared_ptr<Texture> _texture;
     bgfx::TextureHandle _value = BGFX_INVALID_HANDLE;
 
     void _bind();

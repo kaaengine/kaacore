@@ -150,9 +150,8 @@ Sampler::operator=(Sampler&& other)
 std::optional<SamplerValue>
 Sampler::get() const
 {
-    auto texture = this->_texture.lock();
-    if (texture) {
-        return SamplerValue{this->_stage, this->_flags, this->_texture.lock()};
+    if (this->_texture) {
+        return SamplerValue{this->_stage, this->_flags, this->_texture};
     }
     return std::nullopt;
 }
