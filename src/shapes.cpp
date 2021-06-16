@@ -59,10 +59,10 @@ Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
     const std::vector<glm::dvec2> points = {a, b};
 
     const std::vector<StandardVertexData> vertices = {
-        StandardVertexData(a0.x, a0.y, 0., 0.),
-        StandardVertexData(b0.x, b0.y, 1., 0.),
-        StandardVertexData(b1.x, b1.y, 1., 1.),
-        StandardVertexData(a1.x, a1.y, 0., 1.)};
+        StandardVertexData::xy_uv(a0.x, a0.y, 0., 0.),
+        StandardVertexData::xy_uv(b0.x, b0.y, 1., 0.),
+        StandardVertexData::xy_uv(b1.x, b1.y, 1., 1.),
+        StandardVertexData::xy_uv(a1.x, a1.y, 0., 1.)};
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
@@ -78,13 +78,13 @@ Shape::Circle(const double radius, const glm::dvec2 center)
     const std::vector<glm::dvec2> points = {center};
 
     const std::vector<StandardVertexData> vertices = {
-        StandardVertexData::XY_UV_MN(
+        StandardVertexData::xy_uv_mn(
             center.x - radius, center.y - radius, 0., 0., -0.5, -0.5),
-        StandardVertexData::XY_UV_MN(
+        StandardVertexData::xy_uv_mn(
             center.x + radius, center.y - radius, 1., 0., +0.5, -0.5),
-        StandardVertexData::XY_UV_MN(
+        StandardVertexData::xy_uv_mn(
             center.x + radius, center.y + radius, 1., 1., +0.5, +0.5),
-        StandardVertexData::XY_UV_MN(
+        StandardVertexData::xy_uv_mn(
             center.x - radius, center.y + radius, 0., 1., -0.5, +0.5)};
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
@@ -116,10 +116,10 @@ Shape::Box(const glm::dvec2 size)
                                             {-0.5 * size.x, +0.5 * size.y}};
 
     const std::vector<StandardVertexData> vertices = {
-        StandardVertexData::XY_UV(-0.5 * size.x, -0.5 * size.y, 0., 0.),
-        StandardVertexData::XY_UV(+0.5 * size.x, -0.5 * size.y, 1., 0.),
-        StandardVertexData::XY_UV(+0.5 * size.x, +0.5 * size.y, 1., 1.),
-        StandardVertexData::XY_UV(-0.5 * size.x, +0.5 * size.y, 0., 1.)};
+        StandardVertexData::xy_uv(-0.5 * size.x, -0.5 * size.y, 0., 0.),
+        StandardVertexData::xy_uv(+0.5 * size.x, -0.5 * size.y, 1., 0.),
+        StandardVertexData::xy_uv(+0.5 * size.x, +0.5 * size.y, 1., 1.),
+        StandardVertexData::xy_uv(-0.5 * size.x, +0.5 * size.y, 0., 1.)};
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 

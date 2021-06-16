@@ -1,18 +1,19 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include "kaacore/images.h"
 #include "kaacore/resources.h"
+#include "kaacore/textures.h"
 #include "kaacore/utils.h"
 
 namespace kaacore {
 
 struct Sprite {
-    ResourceReference<Image> texture;
+    ResourceReference<Texture> texture;
     // we assume that image contains it's width and height
 
     // origin points and dimensions
@@ -20,9 +21,10 @@ struct Sprite {
     glm::dvec2 dimensions;
 
     Sprite();
-    Sprite(ResourceReference<Image> texture);
+    Sprite(const ResourceReference<Texture>& texture);
 
-    static Sprite load(const char* path, uint64_t flags = BGFX_SAMPLER_NONE);
+    static Sprite load(
+        const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
 
     inline bool has_texture() const { return bool(this->texture); }
     inline operator bool() const { return this->has_texture(); }

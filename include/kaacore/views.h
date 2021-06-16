@@ -16,8 +16,11 @@ constexpr auto views_max_z_index = ((KAACORE_MAX_VIEWS / 2) - 1);
 constexpr auto views_z_index_to_internal_offset = -views_min_z_index;
 constexpr auto views_default_z_index = 0;
 
+// index 0 is reserved for internal use
+constexpr int views_reserved_offset = 1;
+
 inline constexpr bool
-validate_view_z_index(int16_t z_index)
+validate_view_z_index(const int16_t z_index)
 {
     return (views_min_z_index <= z_index) and (z_index <= views_max_z_index);
 }
@@ -69,6 +72,8 @@ class ViewIndexSet {
     operator std::vector<int16_t>() const;
 
     std::bitset<KAACORE_MAX_VIEWS>::reference operator[](size_t pos);
+    bool operator==(const ViewIndexSet& other) const;
+    bool operator<(const ViewIndexSet& other) const;
     ViewIndexSet operator|(const ViewIndexSet& other) const;
     ViewIndexSet operator&(const ViewIndexSet& other) const;
     ViewIndexSet& operator|=(const ViewIndexSet& other);
@@ -78,12 +83,32 @@ class ViewIndexSet {
     bool any() const;
     bool none() const;
 
-    void each_active_z_index(const std::function<void(int16_t)>) const;
+    template<typename Func>
+    void each_active_z_index(Func&& func) const
+    {
+        for (auto i = 0; i < this->_views_bitset.size(); i++) {
+            if (this->_views_bitset.test(i)) {
+                func(i - views_z_index_to_internal_offset);
+            }
+        }
+    }
+
+    template<typename Func>
+    void each_active_internal_index(Func&& func) const
+    {
+        for (auto i = 0; i < this->_views_bitset.size(); i++) {
+            if (this->_views_bitset.test(i)) {
+                func(i + views_reserved_offset);
+            }
+        }
+    }
 
   private:
     ViewIndexSet(std::bitset<KAACORE_MAX_VIEWS> _bitset);
 
     std::bitset<KAACORE_MAX_VIEWS> _views_bitset;
+
+    friend struct std::hash<ViewIndexSet>;
 };
 
 class View {
@@ -145,3 +170,13 @@ class ViewsManager {
 };
 
 } // namespace kaacore
+
+namespace std {
+template<>
+struct hash<kaacore::ViewIndexSet> {
+    size_t operator()(const kaacore::ViewIndexSet& views) const
+    {
+        return std::hash<std::bitset<KAACORE_MAX_VIEWS>>{}(views._views_bitset);
+    }
+};
+}

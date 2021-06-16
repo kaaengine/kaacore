@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -10,6 +11,9 @@
 #include "kaacore/clock.h"
 
 namespace kaacore {
+
+class Scene;
+class TimersManager;
 
 struct TimerContext {
     Duration interval;
@@ -26,9 +30,6 @@ struct _TimerState {
     TimerCallback callback;
     std::atomic<bool> is_running;
 };
-
-class Scene;
-class TimersManager;
 
 class Timer {
   public:
@@ -90,7 +91,7 @@ class TimersManager {
         std::vector<_AwaitingState> data;
     } _awaiting_timers;
 
-    static inline TimerID _last_timer_id = 0;
+    static inline std::atomic<TimerID> _last_id = 0;
 };
 
 }

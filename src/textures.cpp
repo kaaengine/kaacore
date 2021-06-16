@@ -3,24 +3,24 @@
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
-#include "kaacore/images.h"
 #include "kaacore/log.h"
+#include "kaacore/textures.h"
 
 namespace kaacore {
 
 static bx::DefaultAllocator texture_image_allocator;
-ResourcesRegistry<std::string, Image> _images_registry;
+ResourcesRegistry<std::string, Texture> _textures_registry;
 
 void
-initialize_images()
+initialize_textures()
 {
-    _images_registry.initialze();
+    _textures_registry.initialze();
 }
 
 void
-uninitialize_images()
+uninitialize_textures()
 {
-    _images_registry.uninitialze();
+    _textures_registry.uninitialze();
 }
 
 void
@@ -47,10 +47,10 @@ load_image(const uint8_t* data, size_t size)
 }
 
 bimg::ImageContainer*
-load_image(const char* path)
+load_image(const std::string& path)
 {
     KAACORE_LOG_INFO("Loading image from file: {}", path);
-    RawFile file(path);
+    File file(path);
     KAACORE_LOG_INFO("Loaded file size: {}", file.content.size());
     return load_image(file.content.data(), file.content.size());
 }
@@ -68,16 +68,17 @@ load_raw_image(
     return image_container;
 }
 
-Image::Image(const std::string& path, uint64_t flags) : path(path), flags(flags)
+Texture::Texture(const std::string& path, uint64_t flags)
+    : path(path), flags(flags)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
-        load_image(path.c_str()), _destroy_image_container);
+        load_image(path), _destroy_image_container);
     if (is_engine_initialized()) {
         this->_initialize();
     }
 }
 
-Image::Image(bimg::ImageContainer* image_container)
+Texture::Texture(bimg::ImageContainer* image_container)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
         image_container, _destroy_image_container);
@@ -86,51 +87,51 @@ Image::Image(bimg::ImageContainer* image_container)
     }
 }
 
-Image::~Image()
+Texture::~Texture()
 {
     if (this->is_initialized) {
         this->_uninitialize();
     }
 }
 
-ResourceReference<Image>
-Image::load(const std::string& path, uint64_t flags)
+ResourceReference<Texture>
+Texture::load(const std::string& path, uint64_t flags)
 {
-    std::shared_ptr<Image> image;
-    if ((image = _images_registry.get_resource(path))) {
-        return image;
+    std::shared_ptr<Texture> texture;
+    if ((texture = _textures_registry.get_resource(path))) {
+        return texture;
     }
-    image = std::shared_ptr<Image>(new Image(path, flags));
-    _images_registry.register_resource(path, image);
-    return image;
+    texture = std::shared_ptr<Texture>(new Texture(path, flags));
+    _textures_registry.register_resource(path, texture);
+    return texture;
 }
 
-ResourceReference<Image>
-Image::load(bimg::ImageContainer* image_container)
+ResourceReference<Texture>
+Texture::load(bimg::ImageContainer* image_container)
 {
-    return std::shared_ptr<Image>(new Image(image_container));
+    return std::shared_ptr<Texture>(new Texture(image_container));
 }
 
 glm::uvec2
-Image::get_dimensions()
+Texture::get_dimensions()
 {
     KAACORE_CHECK(this->image_container != nullptr, "Invalid image container.");
     return {this->image_container->m_width, this->image_container->m_height};
 }
 
 void
-Image::_initialize()
+Texture::_initialize()
 {
-    this->texture_handle = get_engine()->renderer->make_texture(
+    this->handle = get_engine()->renderer->make_texture(
         this->image_container, this->flags);
-    bgfx::setName(this->texture_handle, this->path.c_str());
+    bgfx::setName(this->handle, this->path.c_str());
     this->is_initialized = true;
 }
 
 void
-Image::_uninitialize()
+Texture::_uninitialize()
 {
-    get_engine()->renderer->destroy_texture(this->texture_handle);
+    get_engine()->renderer->destroy_texture(this->handle);
     this->is_initialized = false;
 }
 

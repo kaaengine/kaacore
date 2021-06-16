@@ -35,7 +35,7 @@ Timer::_start(const Duration interval, TimersManager& manager)
 {
     KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
     KAACORE_CHECK(
-        not std::isinf(interval.count()), "Timer interval must not infinity.");
+        interval.count() != INFINITY, "Timer interval cannot be infinity.");
     if (this->is_running()) {
         this->stop();
     }
@@ -71,7 +71,8 @@ TimersManager::start(const Duration interval, Timer& timer)
     {
         std::unique_lock<std::mutex> lock{this->_lock};
         auto state = timer._state;
-        TimerID invocation_id = ++this->_last_timer_id;
+        auto invocation_id =
+            this->_last_id.fetch_add(1, std::memory_order_relaxed);
         state->id = invocation_id;
         state->is_running.store(true, std::memory_order_release);
         this->_awaiting_timers.data.emplace_back(
@@ -135,6 +136,7 @@ TimersManager::process(const HighPrecisionDuration dt)
         auto next_interval = state->callback(context);
         if (not(next_interval > 0.s)) {
             this->_queue.data.pop_back();
+            state->is_running.store(false, std::memory_order_release);
             continue;
         }
 

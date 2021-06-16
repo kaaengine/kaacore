@@ -2,8 +2,8 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <filesystem>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 
@@ -21,6 +21,7 @@
 #include "kaacore/threading.h"
 #include "kaacore/timers.h"
 #include "kaacore/window.h"
+#include "statistics.h"
 
 #define KAACORE_ASSERT_MAIN_THREAD()                                           \
     do {                                                                       \
@@ -58,6 +59,7 @@ class Engine {
     std::unique_ptr<InputManager> input_manager;
     std::unique_ptr<AudioManager> audio_manager;
     std::unique_ptr<ResourcesManager> resources_manager;
+    std::unique_ptr<UDPStatsExporter> udp_stats_exporter;
 
     Engine(
         const glm::uvec2& virtual_resolution,
@@ -76,10 +78,15 @@ class Engine {
     VirtualResolutionMode virtual_resolution_mode() const;
     void virtual_resolution_mode(const VirtualResolutionMode vr_mode);
 
-    double get_fps() const;
+    bool vertical_sync() const;
+    void vertical_sync(const bool vsync);
+
+    std::string get_persistent_path(
+        const std::string& application_name,
+        const std::string& organization_name = "kaaengine") const;
     std::vector<Display> get_displays();
-    std::filesystem::path get_writable_path(
-        std::string org, std::string app) const;
+    Duration total_time() const;
+    double get_fps() const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 
@@ -127,6 +134,7 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
+    Duration _total_time = 0s;
     std::thread::id _main_thread_id;
     SyncedSyscallQueue _synced_syscall_queue;
 

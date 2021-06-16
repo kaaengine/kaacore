@@ -17,14 +17,14 @@
 namespace kaacore {
 
 void
-initialize_images();
+initialize_textures();
 void
-uninitialize_images();
+uninitialize_textures();
 
 bimg::ImageContainer*
 load_image(const uint8_t* data, size_t size);
 bimg::ImageContainer*
-load_image(const char* path);
+load_image(const std::string& path);
 bimg::ImageContainer*
 load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,
@@ -32,31 +32,31 @@ load_raw_image(
 
 class FontData;
 
-class Image : public Resource {
+class Texture : public Resource {
   public:
     const std::string path;
+    bgfx::TextureHandle handle;
     const uint64_t flags = BGFX_SAMPLER_NONE;
-    bgfx::TextureHandle texture_handle;
     std::shared_ptr<bimg::ImageContainer> image_container;
 
-    Image();
-    ~Image();
+    Texture();
+    ~Texture();
     glm::uvec2 get_dimensions();
 
-    static ResourceReference<Image> load(
+    static ResourceReference<Texture> load(
         const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
-    static ResourceReference<Image> load(bimg::ImageContainer* image_container);
+    static ResourceReference<Texture> load(
+        bimg::ImageContainer* image_container);
 
   private:
-    Image(bimg::ImageContainer* image_container);
-    Image(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
+    Texture(bimg::ImageContainer* image_container);
+    Texture(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
-    friend class ResourcesRegistry<std::string, Image>;
     friend class FontData;
-    friend std::unique_ptr<Image> load_default_image();
-    friend class FontData;
+    friend class ResourcesRegistry<std::string, Texture>;
+    friend std::unique_ptr<Texture> load_default_texture();
 };
 
 template<typename T = uint8_t>

@@ -36,7 +36,8 @@ enum struct Alignment {
     center = 0b1111,
 };
 
-inline constexpr uint8_t operator&(const Alignment alignment, uint8_t mask)
+inline constexpr uint8_t operator&(
+    const Alignment alignment, const uint8_t mask)
 {
     return uint8_t(alignment) & mask;
 }

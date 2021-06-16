@@ -7,13 +7,13 @@
 #include <SDL_config.h>
 #include <SDL_syswm.h>
 
-#include "SDL_events.h"
 #include "kaacore/audio.h"
 #include "kaacore/display.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/input.h"
 #include "kaacore/log.h"
 #include "kaacore/scenes.h"
+#include "kaacore/statistics.h"
 
 #include "kaacore/engine.h"
 
@@ -34,7 +34,9 @@ Engine::Engine(
         "Virtual resolution must be greater than zero.");
     initialize_logging();
     KAACORE_LOG_INFO("Initializing Kaacore.");
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+    auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
+                     SDL_INIT_GAMECONTROLLER;
+    if (SDL_Init(init_flag) < 0) {
         throw kaacore::exception(SDL_GetError());
     }
     this->_main_thread_id = std::this_thread::get_id();
@@ -80,6 +82,7 @@ Engine::Engine(
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
     this->window->show();
+    this->udp_stats_exporter = try_make_udp_stats_exporter();
 }
 
 Engine::~Engine()
@@ -175,14 +178,30 @@ Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
     this->renderer->reset();
 }
 
-double
-Engine::get_fps() const
+bool
+Engine::vertical_sync() const
 {
-    auto duration = this->clock.average_duration();
-    if (duration > 0us) {
-        return 1.s / duration;
+    return this->renderer->_vertical_sync;
+}
+
+void
+Engine::vertical_sync(const bool vsync)
+{
+    this->renderer->_vertical_sync = vsync;
+    this->renderer->reset();
+}
+
+std::string
+Engine::get_persistent_path(
+    const std::string& application_name,
+    const std::string& organization_name) const
+{
+    std::unique_ptr<char[]> path(
+        SDL_GetPrefPath(organization_name.c_str(), application_name.c_str()));
+    if (not path) {
+        throw kaacore::exception(SDL_GetError());
     }
-    return 0;
+    return path.get();
 }
 
 std::vector<Display>
@@ -206,14 +225,20 @@ Engine::get_displays()
     });
 }
 
-std::filesystem::path
-Engine::get_writable_path(const std::string org, const std::string app) const
+Duration
+Engine::total_time() const
 {
-    std::unique_ptr<char[]> path(SDL_GetPrefPath(org.c_str(), app.c_str()));
-    if (not path) {
-        throw kaacore::exception(SDL_GetError());
+    return this->_total_time;
+}
+
+double
+Engine::get_fps() const
+{
+    auto duration = this->clock.average_duration();
+    if (duration > 0us) {
+        return 1.s / duration;
     }
-    return path.get();
+    return 0;
 }
 
 bgfx::Init
@@ -244,7 +269,6 @@ Engine::_gather_platform_data()
     bgfx_init_data.platformData.backBuffer = nullptr;
     bgfx_init_data.platformData.backBufferDS = nullptr;
     bgfx_init_data.debug = true;
-
     return bgfx_init_data;
 }
 
@@ -257,28 +281,49 @@ Engine::_scene_processing()
         this->_scene->on_enter();
         while (this->is_running) {
             auto dt = this->clock.measure();
-            this->renderer->begin_frame();
+            {
+                StopwatchStatAutoPusher stopwatch{"engine.frame:time"};
+                this->renderer->begin_frame();
 #if KAACORE_MULTITHREADING_MODE
-            this->_event_processing_state.wait(EventProcessingState::ready);
+                this->_event_processing_state.wait(EventProcessingState::ready);
 #endif
-            this->_process_events();
-            if (this->_next_scene) {
-                this->_swap_scenes();
+                this->_process_events();
+                if (this->_next_scene) {
+                    this->_swap_scenes();
+                }
+                Duration scaled_dt_sec = dt * this->_scene->_time_scale;
+                auto scaled_dt =
+                    std::chrono::duration_cast<HighPrecisionDuration>(
+                        scaled_dt_sec);
+                this->_total_time += scaled_dt_sec;
+                {
+                    StopwatchStatAutoPusher stopwatch{"scene.update:time"};
+                    this->_scene->process_update(scaled_dt_sec);
+                }
+#if KAACORE_MULTITHREADING_MODE
+                this->_event_processing_state.set(
+                    EventProcessingState::consumed);
+#endif
+                const auto& nodes_processing_queue =
+                    this->_scene->build_processing_queue();
+                this->_scene->update_nodes_drawing_queue(
+                    nodes_processing_queue);
+                this->_scene->process_drawing();
+                this->_scene->resolve_spatial_index_changes(
+                    nodes_processing_queue);
+                this->_scene->process_physics(scaled_dt);
+                this->timers.process(dt);
+                this->_scene->timers.process(scaled_dt);
+                this->_scene->process_nodes(scaled_dt, nodes_processing_queue);
+                this->renderer->end_frame();
+                this->_scene->remove_marked_nodes();
             }
-            Duration dt_sec = dt * this->_scene->time_scale();
-            auto scaled_dt =
-                std::chrono::duration_cast<HighPrecisionDuration>(dt_sec);
-            this->_scene->update(dt_sec);
-#if KAACORE_MULTITHREADING_MODE
-            this->_event_processing_state.set(EventProcessingState::consumed);
-#endif
-            this->_scene->resolve_dirty_nodes();
-            this->_scene->process_nodes_drawing();
-            this->_scene->process_physics(scaled_dt);
-            this->timers.process(dt);
-            this->_scene->timers.process(scaled_dt);
-            this->_scene->process_nodes(scaled_dt);
-            this->renderer->end_frame();
+
+            if (this->udp_stats_exporter) {
+                this->renderer->push_statistics();
+                this->udp_stats_exporter->send_sync(
+                    get_global_statistics_manager().get_last_all());
+            }
         }
         this->_scene->on_exit();
         KAACORE_LOG_INFO("Engine stopped.");
@@ -356,8 +401,7 @@ Engine::_main_thread_entrypoint()
         this->_event_processing_state.set(EventProcessingState::ready);
         do {
             this->_synced_syscall_queue.finalize_calls();
-        } while (this->is_running and
-                 bgfx::renderFrame(
+        } while (bgfx::renderFrame(
                      std::chrono::duration_cast<std::chrono::milliseconds>(
                          threads_sync_timeout)
                          .count()) == bgfx::RenderFrame::Enum::Timeout);
@@ -400,6 +444,9 @@ Engine::_engine_thread_entrypoint()
             KAACORE_LOG_INFO("Engine API loop stopped with exception.");
         }
         this->_engine_loop_state.set(EngineLoopState::stopping);
+        KAACORE_LOG_DEBUG("Rendering final frame.");
+        // render one more frame to stop waiting renderFrame() from main thread
+        this->renderer->end_frame();
         KAACORE_LOG_INFO("Engine loop stopped.");
     }
 }

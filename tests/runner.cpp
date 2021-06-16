@@ -7,8 +7,6 @@
 
 #include "runner.h"
 
-using namespace kaacore;
-
 extern "C" int
 main(int argc, char* argv[])
 {
@@ -18,10 +16,10 @@ main(int argc, char* argv[])
 }
 
 void
-TestingScene::update(uint32_t dt)
+TestingScene::update(const kaacore::Duration dt)
 {
     if (this->frames_left == 0) {
-        get_engine()->quit();
+        kaacore::get_engine()->quit();
         return;
     }
     this->update_function(dt);
@@ -32,13 +30,15 @@ void
 TestingScene::run_on_engine(uint32_t frames)
 {
     this->frames_left = frames;
-    get_engine()->run(this);
+    kaacore::get_engine()->run(this);
 }
 
-std::unique_ptr<Engine>
-initialize_testing_engine()
+std::unique_ptr<kaacore::Engine>
+initialize_testing_engine(bool window_visible)
 {
-    auto engine = std::make_unique<Engine>(glm::dvec2{100, 100});
-    engine->window->hide();
+    auto engine = std::make_unique<kaacore::Engine>(glm::dvec2{1, 1});
+    if (not window_visible) {
+        engine->window->hide();
+    }
     return engine;
 }

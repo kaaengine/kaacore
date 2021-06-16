@@ -9,8 +9,8 @@
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/fonts.h"
-#include "kaacore/images.h"
 #include "kaacore/nodes.h"
+#include "kaacore/textures.h"
 #include "kaacore/utils.h"
 
 #include "kaacore/fonts.h"
@@ -179,7 +179,7 @@ bake_font_texture(const uint8_t* font_file_content, const size_t size)
 }
 
 std::pair<bimg::ImageContainer*, BakedFontData>
-bake_font_texture(const RawFile& font_file)
+bake_font_texture(const File& font_file)
 {
     return bake_font_texture(
         font_file.content.data(), font_file.content.size());
@@ -271,24 +271,24 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
 
         vertices.push_back(
             // Left-top vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x, rg.position.y + rg.offset.y,
                 rg.texture_uv0.x, rg.texture_uv0.y));
         vertices.push_back(
             // Right-top vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x + rg.size.x,
                 rg.position.y + rg.offset.y, rg.texture_uv1.x,
                 rg.texture_uv0.y));
         vertices.push_back(
             // Left-bottom vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x,
                 rg.position.y + rg.offset.y + rg.size.y, rg.texture_uv0.x,
                 rg.texture_uv1.y));
         vertices.push_back(
             // Right-bottom vertex
-            StandardVertexData::XY_UV(
+            StandardVertexData::xy_uv(
                 rg.position.x + rg.offset.x + rg.size.x,
                 rg.position.y + rg.offset.y + rg.size.y, rg.texture_uv1.x,
                 rg.texture_uv1.y));
@@ -306,9 +306,9 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
 
 FontData::FontData(const std::string& path) : path(path)
 {
-    RawFile file(this->path);
+    File file(this->path);
     auto [baked_font_image, baked_font_data] = bake_font_texture(file);
-    this->baked_texture = Image::load(baked_font_image);
+    this->baked_texture = Texture::load(baked_font_image);
     this->baked_font = std::move(baked_font_data);
 
     if (is_engine_initialized()) {
@@ -317,7 +317,7 @@ FontData::FontData(const std::string& path) : path(path)
 }
 
 FontData::FontData(
-    const ResourceReference<Image> baked_texture,
+    const ResourceReference<Texture> baked_texture,
     const BakedFontData baked_font)
 {
     this->baked_texture = baked_texture;
@@ -342,13 +342,14 @@ FontData::load(const std::string& path)
 }
 
 ResourceReference<FontData>
-FontData::load_from_memory(const uint8_t* font_file_content, const size_t size)
+FontData::load_from_memory(const Memory& memory)
 {
-    auto [baked_font_image, baked_font_data] =
-        bake_font_texture(font_file_content, size);
+    auto raw_memory = reinterpret_cast<const uint8_t*>(memory.get());
+    auto [baked_font_texture, baked_font_data] =
+        bake_font_texture(raw_memory, memory.size());
 
     return std::shared_ptr<FontData>(
-        new FontData(Image::load(baked_font_image), baked_font_data));
+        new FontData(Texture::load(baked_font_texture), baked_font_data));
 }
 
 FontData::~FontData()
@@ -437,10 +438,9 @@ Font::operator==(const Font& other)
 Font&
 get_default_font()
 {
-    static auto file_pair = get_embedded_file_content(
+    static auto memory = get_embedded_file_content(
         embedded_assets_filesystem, "embedded_resources/font_munro/munro.ttf");
-    static Font default_font{
-        FontData::load_from_memory(file_pair.first, file_pair.second)};
+    static Font default_font{FontData::load_from_memory(memory)};
     return default_font;
 }
 

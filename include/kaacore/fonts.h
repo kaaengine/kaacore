@@ -9,10 +9,11 @@
 #include "stb_truetype.h"
 
 #include "kaacore/files.h"
-#include "kaacore/images.h"
+#include "kaacore/memory.h"
 #include "kaacore/renderer.h"
 #include "kaacore/resources.h"
 #include "kaacore/shapes.h"
+#include "kaacore/textures.h"
 
 namespace kaacore {
 
@@ -70,12 +71,11 @@ class FontData : public Resource {
   public:
     const std::string path;
     BakedFontData baked_font;
-    ResourceReference<Image> baked_texture;
+    ResourceReference<Texture> baked_texture;
 
     ~FontData();
     static ResourceReference<FontData> load(const std::string& path);
-    static ResourceReference<FontData> load_from_memory(
-        const uint8_t* font_file_content, const size_t size);
+    static ResourceReference<FontData> load_from_memory(const Memory& memory);
     Shape generate_text_shape(
         const std::string& text, double size, double indent, double max_width);
     std::vector<FontRenderGlyph> generate_render_glyphs(
@@ -84,7 +84,7 @@ class FontData : public Resource {
   private:
     FontData(const std::string& path);
     FontData(
-        const ResourceReference<Image> baked_texture,
+        const ResourceReference<Texture> baked_texture,
         const BakedFontData baked_font);
     virtual void _initialize() override;
     virtual void _uninitialize() override;

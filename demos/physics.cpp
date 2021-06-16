@@ -125,7 +125,7 @@ struct DemoScene : kaacore::Scene {
             [&, circle_shape, polygon_shape](
                 const kaacore::Arbiter arbiter, kaacore::CollisionPair pair_a,
                 kaacore::CollisionPair pair_b) -> uint8_t {
-                std::cout << "Collision! " << int(arbiter.phase) << std::endl;
+                KAACORE_APP_LOG_INFO("Collision! {}", int(arbiter.phase));
                 if (this->delete_on_collision) {
                     pair_a.body_node.destroy();
                 } else if (
@@ -158,8 +158,6 @@ struct DemoScene : kaacore::Scene {
     void update(const kaacore::Duration dt) override
     {
         KAACORE_APP_LOG_DEBUG("DemoScene update, dt: {}s.", dt.count());
-        auto texture = kaacore::get_engine()->renderer->default_texture;
-
         for (auto const& event : this->get_events()) {
             if (auto keyboard_key = event.keyboard_key();
                 keyboard_key and keyboard_key->is_key_down()) {
@@ -197,7 +195,7 @@ struct DemoScene : kaacore::Scene {
                         this->balls.pop_back();
                     }
                 } else if (keyboard_key->key() == kaacore::Keycode::l) {
-                    std::cout << "Setting objects lifetime" << std::endl;
+                    KAACORE_APP_LOG_INFO("Setting objects lifetime");
                     if (not this->balls.empty()) {
                         for (const auto node : this->balls) {
                             node->lifetime(5.s);
@@ -205,12 +203,12 @@ struct DemoScene : kaacore::Scene {
                         this->balls.clear();
                     }
                 } else if (keyboard_key->key() == kaacore::Keycode::num_1) {
-                    std::cout << "Enabling delete_on_collision" << std::endl;
+                    KAACORE_APP_LOG_INFO("Enabling delete_on_collision");
                     this->delete_on_collision = true;
                 } else if (keyboard_key->key() == kaacore::Keycode::num_2) {
-                    std::cout << "Enabling change_shape_on_collision"
-                              << std::endl;
-                    this->change_shape_on_collision = true;
+                    KAACORE_APP_LOG_INFO("Enabling change_shape_on_collision");
+                    this->change_shape_on_collision =
+                        not this->change_shape_on_collision;
                 }
             } else if (auto mouse_button = event.mouse_button();
                        mouse_button and mouse_button->is_button_down()) {
@@ -245,6 +243,8 @@ struct DemoScene : kaacore::Scene {
 
         auto raycast_results = this->container->space.query_ray(
             glm::dvec2{-10, 0}, glm::dvec2{10, 0});
+        KAACORE_APP_LOG_INFO(
+            "Raycast results count: {}", raycast_results.size());
         for (auto& res : raycast_results) {
             auto hit_indicator = kaacore::make_node();
             hit_indicator->position(res.point);
@@ -268,7 +268,6 @@ extern "C" int
 main(int argc, char* argv[])
 {
     kaacore::Engine eng({20, 20});
-    kaacore::set_logging_level("physics", spdlog::level::debug);
     eng.window->size({800, 600});
     eng.window->center();
     DemoScene scene;

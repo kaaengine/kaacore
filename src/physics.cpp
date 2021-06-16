@@ -131,6 +131,116 @@ Arbiter::Arbiter(
     : phase(phase), cp_arbiter(cp_arbiter), space(container_node(space_phys))
 {}
 
+bool
+Arbiter::first_contact() const
+{
+    return cpArbiterIsFirstContact(this->cp_arbiter);
+}
+
+double
+Arbiter::total_kinetic_energy() const
+{
+    KAACORE_ASSERT(
+        this->phase == CollisionPhase::post_solve,
+        "Kinetic energy may only be retrieved in the post_solve phase.");
+    return cpArbiterTotalKE(this->cp_arbiter);
+}
+
+glm::dvec2
+Arbiter::total_impulse() const
+{
+    KAACORE_ASSERT(
+        this->phase == CollisionPhase::post_solve,
+        "Impulse may only be retrieved in the post_solve phase.");
+    auto result = cpArbiterTotalImpulse(this->cp_arbiter);
+    return {result.x, result.y};
+}
+
+double
+Arbiter::elasticity() const
+{
+    return cpArbiterGetRestitution(this->cp_arbiter);
+}
+
+void
+Arbiter::elasticity(double value)
+{
+    KAACORE_ASSERT(
+        this->phase == CollisionPhase::pre_solve,
+        "Elasticity may only be set in the pre_solve phase.");
+    cpArbiterSetRestitution(this->cp_arbiter, value);
+}
+
+double
+Arbiter::friction() const
+{
+    return cpArbiterGetFriction(this->cp_arbiter);
+}
+
+void
+Arbiter::friction(const double value)
+{
+    KAACORE_ASSERT(
+        this->phase == CollisionPhase::pre_solve,
+        "Friction may only be set in the pre_solve phase.");
+    cpArbiterSetFriction(this->cp_arbiter, value);
+}
+
+glm::dvec2
+Arbiter::surface_velocity() const
+{
+    auto result = cpArbiterGetSurfaceVelocity(this->cp_arbiter);
+    return {result.x, result.y};
+}
+
+void
+Arbiter::surface_velocity(const glm::dvec2 value)
+{
+    KAACORE_ASSERT(
+        this->phase == CollisionPhase::pre_solve,
+        "Surface velocity may only be set in the pre_solve phase.");
+    cpArbiterSetSurfaceVelocity(this->cp_arbiter, {value.x, value.y});
+}
+
+std::vector<CollisionContactPoint>
+Arbiter::contact_points() const
+{
+    auto set = cpArbiterGetContactPointSet(this->cp_arbiter);
+    return convert_contact_points(&set);
+}
+
+void
+Arbiter::contact_points(const std::vector<CollisionContactPoint>& value)
+{
+    auto number_of_points = value.size();
+    KAACORE_ASSERT(
+        number_of_points == cpArbiterGetCount(this->cp_arbiter),
+        "Number of contact points cannot be changed.");
+    cpContactPointSet set;
+    set.count = number_of_points;
+    for (int i = 0; i < number_of_points; ++i) {
+        const auto& contact = value[i];
+        set.points[i].pointA = {contact.point_a.x, contact.point_a.y};
+        set.points[i].pointB = {contact.point_b.x, contact.point_b.y};
+    }
+    cpArbiterSetContactPointSet(this->cp_arbiter, &set);
+}
+
+glm::dvec2
+Arbiter::collision_normal() const
+{
+    auto set = cpArbiterGetContactPointSet(this->cp_arbiter);
+    return {set.normal.x, set.normal.y};
+}
+
+void
+Arbiter::collision_normal(const glm::dvec2 value)
+{
+    auto set = cpArbiterGetContactPointSet(this->cp_arbiter);
+    set.normal = {value.x, value.y};
+    cpArbiterSetContactPointSet(this->cp_arbiter, &set);
+}
+
 CollisionPair::CollisionPair(BodyNode* body, HitboxNode* hitbox)
     : body_node(container_node(body)), hitbox_node(container_node(hitbox))
 {}
@@ -311,8 +421,9 @@ _chipmunk_collision_handler(
         return R_type(0);
     }
 
+    auto arbiter = Arbiter(phase, space_phys, cp_arbiter);
     return (R_type)(*func)(
-        Arbiter(phase, space_phys, cp_arbiter), CollisionPair(body_a, hitbox_a),
+        arbiter, CollisionPair(body_a, hitbox_a),
         CollisionPair(body_b, hitbox_b));
 }
 
@@ -851,6 +962,13 @@ BodyNode::gravity()
         return convert_vector(this->_gravity.value());
     }
     return std::nullopt;
+}
+
+double
+BodyNode::kinetic_energy() const
+{
+    ASSERT_VALID_BODY_NODE(this);
+    return cpBodyKineticEnergy(this->_cp_body);
 }
 
 bool

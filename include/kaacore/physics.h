@@ -41,12 +41,31 @@ enum struct CollisionPhase {
     any_phase = 15
 };
 
+struct CollisionContactPoint {
+    glm::dvec2 point_a;
+    glm::dvec2 point_b;
+    double distance;
+};
+
 struct Arbiter {
     cpArbiter* cp_arbiter;
     CollisionPhase phase;
     NodePtr space;
 
     Arbiter(CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter);
+    bool first_contact() const;
+    double total_kinetic_energy() const;
+    glm::dvec2 total_impulse() const;
+    double elasticity() const;
+    void elasticity(const double value);
+    double friction() const;
+    void friction(const double value);
+    glm::dvec2 surface_velocity() const;
+    void surface_velocity(const glm::dvec2 value);
+    std::vector<CollisionContactPoint> contact_points() const;
+    void contact_points(const std::vector<CollisionContactPoint>& value);
+    glm::dvec2 collision_normal() const;
+    void collision_normal(const glm::dvec2 value);
 };
 
 uint8_t
@@ -63,7 +82,7 @@ struct CollisionPair {
     CollisionPair(BodyNode* body, HitboxNode* hitbox);
 };
 
-typedef std::function<uint8_t(const Arbiter, CollisionPair, CollisionPair)>
+typedef std::function<uint8_t(Arbiter&, CollisionPair, CollisionPair)>
     CollisionHandlerFunc;
 
 typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
@@ -78,12 +97,6 @@ struct SpatialQueryResultBase {
 
     SpatialQueryResultBase() = default;
     SpatialQueryResultBase(const cpShape* cp_shape);
-};
-
-struct CollisionContactPoint {
-    glm::dvec2 point_a;
-    glm::dvec2 point_b;
-    double distance;
 };
 
 struct ShapeQueryResult : SpatialQueryResultBase {
@@ -228,6 +241,8 @@ class BodyNode {
 
     void gravity(const std::optional<glm::dvec2>& gravity);
     std::optional<glm::dvec2> gravity();
+
+    double kinetic_energy() const;
 
     bool sleeping();
     void sleeping(const bool sleeping);

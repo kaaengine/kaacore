@@ -1,16 +1,15 @@
 #include <catch2/catch.hpp>
 #include <glm/gtc/type_precision.hpp>
 
-#include "kaacore/images.h"
+#include "kaacore/textures.h"
 
 #include "runner.h"
 
-using namespace kaacore;
 using namespace Catch::Matchers;
 
 TEST_CASE("Test bitmap creation and lookups", "[bitmap]")
 {
-    Bitmap bitmap{{5, 5}};
+    kaacore::Bitmap bitmap{{5, 5}};
     for (auto i = 0; i < 5; i++) {
         for (auto j = 0; j < 5; j++) {
             REQUIRE(bitmap.at(i, j) == 0);
@@ -31,7 +30,7 @@ TEST_CASE("Test bitmap creation and lookups", "[bitmap]")
 
 TEST_CASE("Test bitmap creation and lookups (4-channel)", "[bitmap]")
 {
-    Bitmap<glm::u8vec4> bitmap{{5, 5}};
+    kaacore::Bitmap<glm::u8vec4> bitmap{{5, 5}};
     for (auto i = 0; i < 5; i++) {
         for (auto j = 0; j < 5; j++) {
             REQUIRE(bitmap.at(i, j) == glm::u8vec4{0, 0, 0, 0});
@@ -52,7 +51,7 @@ TEST_CASE("Test bitmap creation and lookups (4-channel)", "[bitmap]")
 
 TEST_CASE("Test bitmap blitting", "[bitmap]")
 {
-    Bitmap src_bitmap{{3, 3}};
+    kaacore::Bitmap src_bitmap{{3, 3}};
     src_bitmap.at(0, 0) = 10;
     src_bitmap.at(0, 1) = 5;
     src_bitmap.at(1, 0) = 4;
@@ -61,7 +60,7 @@ TEST_CASE("Test bitmap blitting", "[bitmap]")
 
     SECTION("Blit-copy")
     {
-        Bitmap bitmap{{3, 3}};
+        kaacore::Bitmap bitmap{{3, 3}};
         bitmap.blit(src_bitmap, {0, 0});
         REQUIRE(bitmap.at(0, 0) == 10);
         REQUIRE(bitmap.at(0, 1) == 5);
@@ -76,7 +75,7 @@ TEST_CASE("Test bitmap blitting", "[bitmap]")
 
     SECTION("Blit-copy overflow")
     {
-        Bitmap bitmap{{3, 3}};
+        kaacore::Bitmap bitmap{{3, 3}};
         REQUIRE_THROWS_WITH(
             bitmap.blit(src_bitmap, {1, 0}), Contains("would overflow X"));
 
@@ -86,7 +85,7 @@ TEST_CASE("Test bitmap blitting", "[bitmap]")
 
     SECTION("Blit with offset")
     {
-        Bitmap bitmap{{5, 5}};
+        kaacore::Bitmap bitmap{{5, 5}};
         bitmap.blit(src_bitmap, {1, 2});
         REQUIRE(bitmap.at(0, 0) == 0);
         REQUIRE(bitmap.at(0, 1) == 0);

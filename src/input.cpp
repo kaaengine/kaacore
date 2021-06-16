@@ -23,11 +23,11 @@ glm::dvec2
 _scale_vector_to_virtual_resolution(int32_t x, int32_t y)
 {
     auto engine = get_engine();
-    x *= static_cast<double>(engine->virtual_resolution().x) /
-         static_cast<double>(engine->renderer->view_size.x);
-    y *= static_cast<double>(engine->virtual_resolution().y) /
-         static_cast<double>(engine->renderer->view_size.y);
-    return {x, y};
+    double final_x = x * static_cast<double>(engine->virtual_resolution().x) /
+                     static_cast<double>(engine->renderer->view_size.x);
+    double final_y = y * static_cast<double>(engine->virtual_resolution().y) /
+                     static_cast<double>(engine->renderer->view_size.y);
+    return {final_x, final_y};
 }
 
 glm::dvec2
@@ -495,6 +495,7 @@ InputManager::MouseManager::get_position() const
 {
     int pos_x, pos_y;
     SDL_GetMouseState(&pos_x, &pos_y);
+    KAACORE_LOG_TRACE("Raw (SDL) mouse position: {}x{}", pos_x, pos_y);
     return _naive_screen_position_to_virtual_resolution(pos_x, pos_y);
 }
 
