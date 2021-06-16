@@ -82,8 +82,8 @@ class Engine {
     void vertical_sync(const bool vsync);
 
     std::string get_persistent_path(
-        const std::string& application_name,
-        const std::string& organization_name = "kaaengine") const;
+        const std::string& prefix,
+        const std::string& organization_prefix = "kaaengine") const;
     std::vector<Display> get_displays();
     Duration total_time() const;
     double get_fps() const;

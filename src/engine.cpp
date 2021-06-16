@@ -193,11 +193,12 @@ Engine::vertical_sync(const bool vsync)
 
 std::string
 Engine::get_persistent_path(
-    const std::string& application_name,
-    const std::string& organization_name) const
+    const std::string& prefix, const std::string& organization_prefix) const
 {
+    KAACORE_CHECK(prefix.size(), "Invalid prefix.");
+    KAACORE_CHECK(organization_prefix.size(), "Invalid organization prefix.");
     std::unique_ptr<char[]> path(
-        SDL_GetPrefPath(organization_name.c_str(), application_name.c_str()));
+        SDL_GetPrefPath(organization_prefix.c_str(), prefix.c_str()));
     if (not path) {
         throw kaacore::exception(SDL_GetError());
     }
