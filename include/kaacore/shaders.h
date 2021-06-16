@@ -35,6 +35,7 @@ class Shader : public Resource {
   public:
     Shader() = default;
     ~Shader();
+    const Memory memory();
     ShaderType type() const;
     static ResourceReference<Shader> load(
         const ShaderType type, const ShaderModelMap& model_map);
@@ -76,6 +77,7 @@ class Program : public Resource {
         const ResourceReference<Shader>& fragment);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+    void _validate_shaders();
 
     friend class Renderer;
     friend class ResourcesRegistry<ProgramKey, Program>;
