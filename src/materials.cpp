@@ -75,7 +75,7 @@ ShadingContext::uniforms() const
 
 void
 ShadingContext::set_uniform_texture(
-    const std::string& name, const ResourceReference<Image>& texture,
+    const std::string& name, const ResourceReference<Texture>& texture,
     const uint8_t stage, const uint32_t flags)
 {
     KAACORE_CHECK(
@@ -210,7 +210,7 @@ Material::clone() const
 
 void
 Material::set_uniform_texture(
-    const std::string& name, const ResourceReference<Image>& texture,
+    const std::string& name, const ResourceReference<Texture>& texture,
     const uint8_t stage, const uint32_t flags)
 {
     KAACORE_CHECK(stage > 0, "Stage index must be greater than zero.");
