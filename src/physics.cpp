@@ -1186,10 +1186,6 @@ HitboxNode::update_physics_shape()
     }
 
     this->_cp_shape = new_cp_shape;
-
-    if (node->_parent) {
-        this->attach_to_simulation();
-    }
 }
 
 void
@@ -1197,6 +1193,9 @@ HitboxNode::attach_to_simulation()
 {
     KAACORE_ASSERT(
         this->_cp_shape != nullptr, "Invalid internal state of hitbox.");
+
+    this->update_physics_shape();
+
     Node* node = container_node(this);
     if (cpShapeGetBody(this->_cp_shape) == nullptr) {
         KAACORE_LOG_DEBUG(
@@ -1207,7 +1206,9 @@ HitboxNode::attach_to_simulation()
             body_node,
             "Encountered error while attaching hitbox node to simulation. "
             "Couldn't find body node in the inheritance chain.");
-        ASSERT_VALID_BODY_NODE(&body_node->body);
+        KAACORE_ASSERT(
+            (body_node->body)._cp_body != nullptr,
+            "Body node has invalid internal state.");
         space_safe_call(
             body_node->body.space(),
             [body_ptr = body_node->body._cp_body,
