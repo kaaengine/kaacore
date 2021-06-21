@@ -1,4 +1,5 @@
 #include <cmath>
+#include <numeric>
 #include <type_traits>
 
 #include <chipmunk/chipmunk.h>
@@ -124,6 +125,28 @@ space_safe_call(Node* space_node, const SpacePostStepFunc& func)
         space_node->type() == NodeType::space,
         "Invalid type - space type expected.");
     space_safe_call(&space_node->space, func);
+}
+
+glm::dvec2
+_calculate_inherited_hitbox_scale(Node* const node)
+{
+    bool body_found = false;
+    auto inheritance_chain_till_body = [&body_found](Node* node) {
+        if (body_found) {
+            return false;
+        } else if (node->type() == NodeType::body) {
+            body_found = true;
+        }
+        return true;
+    };
+    auto inheritance_chain =
+        node->build_inheritance_chain(inheritance_chain_till_body);
+
+    glm::dvec2 scale(1.);
+    for (auto n : inheritance_chain) {
+        scale *= n->scale();
+    }
+    return scale;
 }
 
 Arbiter::Arbiter(
@@ -1139,13 +1162,10 @@ HitboxNode::update_physics_shape()
 {
     Node* node = container_node(this);
     cpShape* new_cp_shape;
-
+    auto scale = _calculate_inherited_hitbox_scale(node);
     const auto transformation =
         Transformation() | Transformation::translate(node->_position) |
-        Transformation::rotate(node->_rotation) |
-        Transformation::scale(
-            node->_scale *
-            (node->_parent ? node->_parent->_scale : glm::dvec2(1.)));
+        Transformation::rotate(node->_rotation) | Transformation::scale(scale);
 
     new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
 
@@ -1170,15 +1190,21 @@ HitboxNode::update_physics_shape()
             new_cp_shape, cpShapeGetSurfaceVelocity(this->_cp_shape));
 
         space_safe_call(
-            this->space(),
-            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
+            this->space(), [cp_shape = this->_cp_shape,
+                            new_cp_shape](const SpaceNode* space_node) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: destroying old cpShape {}",
-                    fmt::ptr(shape_ptr));
-                if (space_node_phys) {
-                    cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
+                    fmt::ptr(cp_shape));
+                // copy over existing cpSape's relations
+                if (auto cp_body = cpShapeGetBody(cp_shape)) {
+                    cpShapeSetBody(new_cp_shape, cp_body);
                 }
-                cpShapeFree(shape_ptr);
+                if (space_node) {
+                    auto cp_space = space_node->_cp_space;
+                    cpSpaceRemoveShape(cp_space, cp_shape);
+                    cpSpaceAddShape(cp_space, new_cp_shape);
+                }
+                cpShapeFree(cp_shape);
             });
         this->_cp_shape = nullptr;
     } else {
@@ -1186,10 +1212,6 @@ HitboxNode::update_physics_shape()
     }
 
     this->_cp_shape = new_cp_shape;
-
-    if (node->_parent) {
-        this->attach_to_simulation();
-    }
 }
 
 void
@@ -1197,6 +1219,8 @@ HitboxNode::attach_to_simulation()
 {
     KAACORE_ASSERT(
         this->_cp_shape != nullptr, "Invalid internal state of hitbox.");
+    // we might need to adjust for parent's scale
+    this->update_physics_shape();
     Node* node = container_node(this);
     if (cpShapeGetBody(this->_cp_shape) == nullptr) {
         KAACORE_LOG_DEBUG(
@@ -1207,7 +1231,9 @@ HitboxNode::attach_to_simulation()
             body_node,
             "Encountered error while attaching hitbox node to simulation. "
             "Couldn't find body node in the inheritance chain.");
-        ASSERT_VALID_BODY_NODE(&body_node->body);
+        KAACORE_ASSERT(
+            (body_node->body)._cp_body != nullptr,
+            "Body node has invalid internal state.");
         space_safe_call(
             body_node->body.space(),
             [body_ptr = body_node->body._cp_body,
