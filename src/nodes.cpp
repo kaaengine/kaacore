@@ -205,13 +205,12 @@ Node::_set_position(const glm::dvec2& position)
 void
 Node::_set_rotation(const double rotation)
 {
-    auto normalized_rotation = normalize_angle(rotation);
-    if (normalized_rotation == this->_rotation) {
+    if (rotation == this->_rotation) {
         return;
     }
     this->_mark_dirty();
     this->_mark_draw_unit_vertices_indices_dirty();
-    this->_rotation = normalized_rotation;
+    this->_rotation = rotation;
 }
 
 DrawBucketKey
