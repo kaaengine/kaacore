@@ -205,4 +205,43 @@ find_points_minmax(const std::vector<glm::dvec2>& points)
     return std::make_pair(min_pt, max_pt);
 }
 
+double
+_normalize_angle_values_range(
+    const double value, const double begin, const double end)
+{
+    const double range_width = end - begin;
+    const double range_offset = value - begin;
+    return (range_offset -
+            (std::floor(range_offset / range_width) * range_width)) +
+           begin;
+}
+
+double
+normalize_angle(const double value, const AngleSign sign)
+{
+    switch (sign) {
+        case AngleSign::mixed:
+            return _normalize_angle_values_range(value, -M_PI, M_PI);
+        case AngleSign::negative:
+            return _normalize_angle_values_range(value, -2 * M_PI, 0.);
+        case AngleSign::positive:
+            return _normalize_angle_values_range(value, 0., 2 * M_PI);
+    }
+    return value;
+}
+
+double
+normalize_angle_degrees(const double value, const AngleSign sign)
+{
+    switch (sign) {
+        case AngleSign::mixed:
+            return _normalize_angle_values_range(value, -180., 180.);
+        case AngleSign::negative:
+            return _normalize_angle_values_range(value, 0., -360);
+        case AngleSign::positive:
+            return _normalize_angle_values_range(value, 0., 360.);
+    }
+    return value;
+}
+
 } // namespace kaacore

@@ -36,6 +36,12 @@ enum struct Alignment {
     center = 0b1111,
 };
 
+enum struct AngleSign {
+    mixed = 1,
+    negative = 2,
+    positive = 3,
+};
+
 inline constexpr uint8_t operator&(
     const Alignment alignment, const uint8_t mask)
 {
@@ -262,6 +268,12 @@ glm::dvec2
 find_points_center(const std::vector<glm::dvec2>& points);
 std::pair<glm::dvec2, glm::dvec2>
 find_points_minmax(const std::vector<glm::dvec2>& points);
+
+double
+normalize_angle(const double value, const AngleSign sign = AngleSign::mixed);
+double
+normalize_angle_degrees(
+    const double value, const AngleSign sign = AngleSign::mixed);
 
 } // namespace kaacore
 
