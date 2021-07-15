@@ -42,6 +42,10 @@ enum struct VirtualResolutionMode {
     no_stretch = 3,
 };
 
+std::string
+get_persistent_path(
+    const std::string& prefix, const std::string& organization_prefix = "");
+
 class Engine {
   public:
     std::atomic<bool> is_running = false;
@@ -81,9 +85,6 @@ class Engine {
     bool vertical_sync() const;
     void vertical_sync(const bool vsync);
 
-    std::string get_persistent_path(
-        const std::string& prefix,
-        const std::string& organization_prefix = "kaaengine") const;
     std::vector<Display> get_displays();
     Duration total_time() const;
     double get_fps() const;

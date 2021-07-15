@@ -19,29 +19,55 @@
 
 namespace kaacore {
 
-Engine* engine;
-
 constexpr auto threads_sync_timeout = std::chrono::milliseconds(5);
+
+Engine* engine;
+std::mutex init_mutex;
+
+std::string
+get_persistent_path(
+    const std::string& prefix, const std::string& organization_prefix)
+{
+    KAACORE_CHECK(prefix.size(), "Invalid prefix.");
+    std::string result;
+    {
+        std::lock_guard<std::mutex> lock(init_mutex);
+        bool tmp_init;
+        if ((tmp_init = (not is_engine_initialized()))) {
+            SDL_Init(0);
+        }
+        auto ptr = SDL_GetPrefPath(organization_prefix.c_str(), prefix.c_str());
+        KAACORE_CHECK(ptr, SDL_GetError());
+        result = ptr;
+        SDL_free(ptr);
+        if (tmp_init) {
+            SDL_Quit();
+        }
+    }
+    return result;
+}
 
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
     const VirtualResolutionMode vr_mode) noexcept(false)
     : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
 {
-    KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
+    {
+        std::lock_guard<std::mutex> lock(init_mutex);
+        KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
+        initialize_logging();
+        KAACORE_LOG_INFO("Initializing Kaacore.");
+        auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
+                         SDL_INIT_GAMECONTROLLER;
+        KAACORE_CHECK(SDL_Init(init_flag) == 0, SDL_GetError());
+        engine = this;
+    }
+
     KAACORE_CHECK(
         virtual_resolution.x > 0 and virtual_resolution.y > 0,
         "Virtual resolution must be greater than zero.");
-    initialize_logging();
-    KAACORE_LOG_INFO("Initializing Kaacore.");
-    auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
-                     SDL_INIT_GAMECONTROLLER;
-    if (SDL_Init(init_flag) < 0) {
-        throw kaacore::exception(SDL_GetError());
-    }
-    this->_main_thread_id = std::this_thread::get_id();
-    engine = this;
 
+    this->_main_thread_id = std::this_thread::get_id();
     this->window = std::make_unique<Window>(this->_virtual_resolution);
 
     auto bgfx_init_data = this->_gather_platform_data();
@@ -189,20 +215,6 @@ Engine::vertical_sync(const bool vsync)
 {
     this->renderer->_vertical_sync = vsync;
     this->renderer->reset();
-}
-
-std::string
-Engine::get_persistent_path(
-    const std::string& prefix, const std::string& organization_prefix) const
-{
-    KAACORE_CHECK(prefix.size(), "Invalid prefix.");
-    KAACORE_CHECK(organization_prefix.size(), "Invalid organization prefix.");
-    std::unique_ptr<char[]> path(
-        SDL_GetPrefPath(organization_prefix.c_str(), prefix.c_str()));
-    if (not path) {
-        throw kaacore::exception(SDL_GetError());
-    }
-    return path.get();
 }
 
 std::vector<Display>
