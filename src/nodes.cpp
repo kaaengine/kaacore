@@ -266,7 +266,7 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
         } else if (n->_type == NodeType::body) {
             n->body.attach_to_simulation();
         } else if (n->_type == NodeType::hitbox) {
-            n->hitbox.update_physics_shape();
+            n->hitbox.attach_to_simulation();
         }
 
         std::for_each(
@@ -598,11 +598,11 @@ Node::scale(const glm::dvec2& scale)
     this->_scale = scale;
 
     if (this->_type == NodeType::body) {
-        for (const auto& n : this->_children) {
+        this->recursive_call([](Node* n) {
             if (n->_type == NodeType::hitbox) {
                 n->hitbox.update_physics_shape();
             }
-        }
+        });
     } else if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
@@ -930,6 +930,16 @@ Node::bounding_box()
         return BoundingBox<double>::single_point(
             this->_position | transformation);
     }
+}
+
+Node*
+Node::_find_nearest_parent(const NodeType type) const
+{
+    auto node = this->_parent;
+    while (node != nullptr and node->_type != type) {
+        node = node->_parent;
+    }
+    return node;
 }
 
 } // namespace kaacore
