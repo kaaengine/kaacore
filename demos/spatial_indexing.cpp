@@ -50,6 +50,7 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
         for (int i = -20; i <= 20; i++) {
             for (int j = -20; j <= 20; j++) {
                 kaacore::NodeOwnerPtr node = kaacore::make_node();
+                node->indexable(true);
                 node->shape(shapes[(i + j) % shapes.size()]);
                 node->position({10. * i, 10. * j});
                 node->color({0.5, 0.5, 0.5, 1.0});
