@@ -17,6 +17,11 @@ ease(const Easing easing, const double progress)
         case Easing::bounce_in:
             return glm::bounceEaseIn(progress);
         case Easing::bounce_in_out:
+            // XXX workaround for a buggy glm implementation,
+            // remove when it get's fixed upstream
+            if (progress < 0.5) {
+                return (1. - glm::bounceEaseOut(1. - 2 * progress)) * 0.5;
+            }
             return glm::bounceEaseInOut(progress);
         case Easing::bounce_out:
             return glm::bounceEaseOut(progress);
