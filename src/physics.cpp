@@ -1,5 +1,4 @@
 #include <cmath>
-#include <numeric>
 #include <type_traits>
 
 #include <chipmunk/chipmunk.h>
