@@ -24,26 +24,37 @@ constexpr auto threads_sync_timeout = std::chrono::milliseconds(5);
 Engine* engine;
 std::mutex init_mutex;
 
+class InitGuard {
+  public:
+    InitGuard(std::mutex& init_mutex) : _lock(init_mutex)
+    {
+        if ((this->_tmp_init = (not is_engine_initialized()))) {
+            KAACORE_CHECK(SDL_Init(0) == 0, SDL_GetError());
+        }
+    }
+
+    ~InitGuard()
+    {
+        if (this->_tmp_init) {
+            SDL_Quit();
+        }
+    }
+
+  private:
+    bool _tmp_init;
+    std::scoped_lock<std::mutex> _lock;
+};
+
 std::string
 get_persistent_path(
     const std::string& prefix, const std::string& organization_prefix)
 {
     KAACORE_CHECK(prefix.size(), "Invalid prefix.");
-    std::string result;
-    {
-        std::lock_guard<std::mutex> lock(init_mutex);
-        bool tmp_init;
-        if ((tmp_init = (not is_engine_initialized()))) {
-            SDL_Init(0);
-        }
-        auto ptr = SDL_GetPrefPath(organization_prefix.c_str(), prefix.c_str());
-        KAACORE_CHECK(ptr, SDL_GetError());
-        result = ptr;
-        SDL_free(ptr);
-        if (tmp_init) {
-            SDL_Quit();
-        }
-    }
+    InitGuard guard(init_mutex);
+    auto ptr = SDL_GetPrefPath(organization_prefix.c_str(), prefix.c_str());
+    KAACORE_CHECK(ptr, SDL_GetError());
+    std::string result = ptr;
+    SDL_free(ptr);
     return result;
 }
 
@@ -52,16 +63,14 @@ Engine::Engine(
     const VirtualResolutionMode vr_mode) noexcept(false)
     : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
 {
-    {
-        std::lock_guard<std::mutex> lock(init_mutex);
-        KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
-        initialize_logging();
-        KAACORE_LOG_INFO("Initializing Kaacore.");
-        auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
-                         SDL_INIT_GAMECONTROLLER;
-        KAACORE_CHECK(SDL_Init(init_flag) == 0, SDL_GetError());
-        engine = this;
-    }
+    std::scoped_lock<std::mutex> lock(init_mutex);
+    KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
+    initialize_logging();
+    KAACORE_LOG_INFO("Initializing Kaacore.");
+    auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
+                     SDL_INIT_GAMECONTROLLER;
+    KAACORE_CHECK(SDL_Init(init_flag) == 0, SDL_GetError());
+    engine = this;
 
     KAACORE_CHECK(
         virtual_resolution.x > 0 and virtual_resolution.y > 0,
@@ -113,8 +122,8 @@ Engine::Engine(
 
 Engine::~Engine()
 {
+    std::lock_guard<std::mutex> lock(init_mutex);
     KAACORE_CHECK_TERMINATE(engine != nullptr, "Engine already destroyed.");
-
     KAACORE_LOG_INFO("Shutting down Kaacore.");
     this->audio_manager.reset();
     this->input_manager.reset();
