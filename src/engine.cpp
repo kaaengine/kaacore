@@ -28,20 +28,21 @@ class InitGuard {
   public:
     InitGuard(std::mutex& init_mutex) : _lock(init_mutex)
     {
-        if ((this->_tmp_init = (not is_engine_initialized()))) {
-            KAACORE_CHECK(SDL_Init(0) == 0, SDL_GetError());
+        if (not is_engine_initialized()) {
+            this->_sdl_initialized = SDL_Init(0) == 0;
+            KAACORE_CHECK(this->_sdl_initialized, SDL_GetError());
         }
     }
 
     ~InitGuard()
     {
-        if (this->_tmp_init) {
+        if (this->_sdl_initialized) {
             SDL_Quit();
         }
     }
 
   private:
-    bool _tmp_init;
+    bool _sdl_initialized;
     std::scoped_lock<std::mutex> _lock;
 };
 
