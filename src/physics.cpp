@@ -685,11 +685,12 @@ BodyNode::attach_to_simulation()
             "Node must have a parent in order to attach it to the simulation.");
         ASSERT_VALID_SPACE_NODE(&node->_parent->space);
         space_safe_call(
-            node->_parent, [this](const SpaceNode* space_node_phys) {
+            node->_parent,
+            [cp_body = this->_cp_body](const SpaceNode* space_node_phys) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: attaching cpBody {}",
-                    fmt::ptr(this->_cp_body));
-                cpSpaceAddBody(space_node_phys->_cp_space, this->_cp_body);
+                    fmt::ptr(cp_body));
+                cpSpaceAddBody(space_node_phys->_cp_space, cp_body);
             });
     }
 }
@@ -1289,7 +1290,7 @@ Node*
 HitboxNode::_find_nearest_parent(const NodeType type) const
 {
     Node* result = nullptr;
-    container_node(this)->_parent->recursive_call_upstream(
+    container_node(this)->recursive_call_upstream(
         [&result, type](Node* node) {
             if (node->_type == type) {
                 result = node;
