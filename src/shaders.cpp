@@ -97,6 +97,12 @@ Shader::create(const ShaderType type, const ShaderModelMemoryMap& memory_map)
     return std::shared_ptr<Shader>(new Shader(memory_map, type));
 }
 
+const Memory
+Shader::memory()
+{
+    return this->_models[this->_used_model];
+}
+
 ShaderType
 Shader::type() const
 {
@@ -110,7 +116,7 @@ Shader::_initialize()
     auto model = renderer->shader_model();
     if (renderer->type() == RendererType::noop) {
         // Grab the first model, it doesn't matter which one
-        //  since rendering is disabled.
+        // since rendering is disabled.
         model = this->_models.begin()->first;
     }
     if (this->_models.find(model) == this->_models.end()) {
@@ -128,6 +134,7 @@ Shader::_initialize()
     if (not bgfx::isValid(this->_handle)) {
         throw kaacore::exception("Can't create shader.");
     }
+    this->_used_model = model;
     this->is_initialized = true;
 }
 
@@ -177,6 +184,7 @@ Program::create(
 void
 Program::_initialize()
 {
+    this->_validate_shaders();
     this->_handle = bgfx::createProgram(
         this->vertex_shader->_handle, this->fragment_shader->_handle);
     if (not bgfx::isValid(this->_handle)) {
@@ -194,6 +202,26 @@ Program::_uninitialize()
 {
     bgfx::destroy(this->_handle);
     this->is_initialized = false;
+}
+
+void
+Program::_validate_shaders()
+{
+    auto vertex_memory = this->vertex_shader->memory();
+    auto fragment_memory = this->fragment_shader->memory();
+    auto hash_size = sizeof(uint32_t);
+    std::size_t input_offset = hash_size, output_offset = hash_size * 2;
+    KAACORE_CHECK(
+        (vertex_memory.size() >= output_offset + hash_size),
+        "Invalid vertex shader format.");
+    KAACORE_CHECK(
+        (fragment_memory.size() >= input_offset + hash_size),
+        "Invalid fragment shader format.");
+    auto match = std::memcmp(
+                     vertex_memory.get() + output_offset,
+                     fragment_memory.get() + input_offset, hash_size) == 0;
+    KAACORE_CHECK(
+        match, "Vertex shader output doesn't match fragment shader input.");
 }
 
 } // namespace kaacore
