@@ -324,8 +324,8 @@ class HitboxNode {
     void update_physics_shape();
     void attach_to_simulation();
     void detach_from_simulation();
-    void mark_hitbox_chain();
-    Node* find_nearest_parent(const NodeType type) const;
+    void _mark_hitbox_chain();
+    Node* _find_nearest_parent(const NodeType type) const;
 
     cpShape* _cp_shape = nullptr;
 

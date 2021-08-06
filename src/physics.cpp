@@ -142,11 +142,11 @@ _calculate_inherited_hitbox_transformation(Node* const node)
         node->build_inheritance_chain(inheritance_chain_till_body);
     Transformation transformation;
     if (body) {
-        transformation = Transformation::scale(body->scale()) | transformation;
+        transformation = Transformation::scale(body->scale());
     }
     for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
          ++it) {
-        transformation |= (*it)->transformation();
+        transformation = (*it)->transformation() | transformation;
     }
     return transformation;
 }
@@ -1223,7 +1223,7 @@ HitboxNode::attach_to_simulation()
         KAACORE_LOG_DEBUG(
             "Attaching hitbox node {} to simulation (body) (cpShape: {})",
             fmt::ptr(node), fmt::ptr(this->_cp_shape));
-        auto body_node = this->find_nearest_parent(NodeType::body);
+        auto body_node = this->_find_nearest_parent(NodeType::body);
         KAACORE_ASSERT(
             body_node,
             "Encountered error while attaching hitbox node to simulation. "
@@ -1241,10 +1241,10 @@ HitboxNode::attach_to_simulation()
                     fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
                 cpShapeSetBody(shape_ptr, body_ptr);
             });
-        this->mark_hitbox_chain();
+        this->_mark_hitbox_chain();
     }
 
-    auto space_node = this->find_nearest_parent(NodeType::space);
+    auto space_node = this->_find_nearest_parent(NodeType::space);
     if (cpShapeGetSpace(this->_cp_shape) == nullptr and space_node != nullptr) {
         KAACORE_LOG_DEBUG(
             "Attaching hitbox node {} to simulation (space) (cpShape: {})",
@@ -1286,7 +1286,7 @@ HitboxNode::detach_from_simulation()
 }
 
 Node*
-HitboxNode::find_nearest_parent(const NodeType type) const
+HitboxNode::_find_nearest_parent(const NodeType type) const
 {
     Node* result = nullptr;
     container_node(this)->_parent->recursive_call_upstream(
@@ -1301,11 +1301,11 @@ HitboxNode::find_nearest_parent(const NodeType type) const
 }
 
 void
-HitboxNode::mark_hitbox_chain()
+HitboxNode::_mark_hitbox_chain()
 {
     container_node(this)->recursive_call_upstream([](Node* node) {
         if (node->_in_hitbox_chain or node->_type == NodeType::body) {
-            // current node and all the parents are already in the chain
+            // current node and all its parents are already in the chain
             // or node is body which is not a part of chain
             return false;
         }
