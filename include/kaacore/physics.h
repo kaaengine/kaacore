@@ -32,6 +32,7 @@ class Node;
 class SpaceNode;
 class BodyNode;
 class HitboxNode;
+enum struct NodeType;
 
 enum struct CollisionPhase {
     begin = 1,
@@ -323,6 +324,8 @@ class HitboxNode {
     void update_physics_shape();
     void attach_to_simulation();
     void detach_from_simulation();
+    void mark_hitbox_chain();
+    Node* find_nearest_parent(const NodeType type) const;
 
     cpShape* _cp_shape = nullptr;
 

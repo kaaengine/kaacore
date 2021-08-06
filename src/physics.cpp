@@ -126,26 +126,29 @@ space_safe_call(Node* space_node, const SpacePostStepFunc& func)
     space_safe_call(&space_node->space, func);
 }
 
-glm::dvec2
-_calculate_inherited_hitbox_scale(Node* const node)
+Transformation
+_calculate_inherited_hitbox_transformation(Node* const node)
 {
-    bool body_found = false;
-    auto inheritance_chain_till_body = [&body_found](Node* node) {
-        if (body_found) {
+    Node* body = nullptr;
+    auto inheritance_chain_till_body = [&body](Node* node) {
+        if (node->type() == NodeType::body) {
+            body = node;
             return false;
-        } else if (node->type() == NodeType::body) {
-            body_found = true;
         }
         return true;
     };
+
     auto inheritance_chain =
         node->build_inheritance_chain(inheritance_chain_till_body);
-
-    glm::dvec2 scale(1.);
-    for (auto n : inheritance_chain) {
-        scale *= n->scale();
+    Transformation transformation;
+    if (body) {
+        transformation = Transformation::scale(body->scale()) | transformation;
     }
-    return scale;
+    for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
+         ++it) {
+        transformation |= (*it)->transformation();
+    }
+    return transformation;
 }
 
 Arbiter::Arbiter(
@@ -1161,13 +1164,8 @@ HitboxNode::update_physics_shape()
 {
     Node* node = container_node(this);
     cpShape* new_cp_shape;
-    auto scale = _calculate_inherited_hitbox_scale(node);
-    const auto transformation =
-        Transformation() | Transformation::translate(node->_position) |
-        Transformation::rotate(node->_rotation) | Transformation::scale(scale);
-
+    auto transformation = _calculate_inherited_hitbox_transformation(node);
     new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
-
     KAACORE_LOG_DEBUG(
         "Updating hitbox node {} shape (cpShape: {})", fmt::ptr(node),
         fmt::ptr(new_cp_shape));
@@ -1218,14 +1216,14 @@ HitboxNode::attach_to_simulation()
 {
     KAACORE_ASSERT(
         this->_cp_shape != nullptr, "Invalid internal state of hitbox.");
-    // we might need to adjust for parent's scale
+    // we might need to adjust for parents' transformation
     this->update_physics_shape();
     Node* node = container_node(this);
     if (cpShapeGetBody(this->_cp_shape) == nullptr) {
         KAACORE_LOG_DEBUG(
             "Attaching hitbox node {} to simulation (body) (cpShape: {})",
             fmt::ptr(node), fmt::ptr(this->_cp_shape));
-        auto body_node = node->_find_nearest_parent(NodeType::body);
+        auto body_node = this->find_nearest_parent(NodeType::body);
         KAACORE_ASSERT(
             body_node,
             "Encountered error while attaching hitbox node to simulation. "
@@ -1243,9 +1241,10 @@ HitboxNode::attach_to_simulation()
                     fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
                 cpShapeSetBody(shape_ptr, body_ptr);
             });
+        this->mark_hitbox_chain();
     }
 
-    auto space_node = node->_find_nearest_parent(NodeType::space);
+    auto space_node = this->find_nearest_parent(NodeType::space);
     if (cpShapeGetSpace(this->_cp_shape) == nullptr and space_node != nullptr) {
         KAACORE_LOG_DEBUG(
             "Attaching hitbox node {} to simulation (space) (cpShape: {})",
@@ -1284,6 +1283,34 @@ HitboxNode::detach_from_simulation()
             });
         this->_cp_shape = nullptr;
     }
+}
+
+Node*
+HitboxNode::find_nearest_parent(const NodeType type) const
+{
+    Node* result = nullptr;
+    container_node(this)->_parent->recursive_call_upstream(
+        [&result, type](Node* node) {
+            if (node->_type == type) {
+                result = node;
+                return false;
+            }
+            return true;
+        });
+    return result;
+}
+
+void
+HitboxNode::mark_hitbox_chain()
+{
+    container_node(this)->recursive_call_upstream([](Node* node) {
+        if (node->_in_hitbox_chain or node->_type == NodeType::body) {
+            // current node and all the parents are already in the chain
+            // or node is body which is not a part of chain
+            return false;
+        }
+        return node->_in_hitbox_chain = true;
+    });
 }
 
 CollisionTriggerId

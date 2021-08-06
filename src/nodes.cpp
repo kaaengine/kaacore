@@ -75,7 +75,7 @@ Node::~Node()
 void
 Node::_mark_dirty()
 {
-    this->recursive_call([](Node* node) {
+    this->recursive_call_downstream([](Node* node) {
         bool descend = true;
         if (node->_model_matrix.is_dirty) {
             descend = false;
@@ -90,7 +90,7 @@ Node::_mark_dirty()
 void
 Node::_mark_ordering_dirty()
 {
-    this->recursive_call([](Node* node) {
+    this->recursive_call_downstream([](Node* node) {
         if (node->_ordering_data.is_dirty) {
             return false;
         }
@@ -102,7 +102,7 @@ Node::_mark_ordering_dirty()
 void
 Node::_mark_draw_unit_vertices_indices_dirty()
 {
-    this->recursive_call([](Node* node) {
+    this->recursive_call_downstream([](Node* node) {
         if (node->_draw_unit_data.updated_vertices_indices_info) {
             return false;
         }
@@ -518,8 +518,8 @@ Node::position(const glm::dvec2& position)
     this->_set_position(position);
     if (this->_type == NodeType::body) {
         this->body.override_simulation_position();
-    } else if (this->_type == NodeType::hitbox) {
-        this->hitbox.update_physics_shape();
+    } else if (this->_in_hitbox_chain) {
+        this->_update_hitboxes();
     }
 }
 
@@ -573,8 +573,8 @@ Node::rotation(const double& rotation)
     this->_set_rotation(rotation);
     if (this->_type == NodeType::body) {
         this->body.override_simulation_rotation();
-    } else if (this->_type == NodeType::hitbox) {
-        this->hitbox.update_physics_shape();
+    } else if (this->_in_hitbox_chain) {
+        this->_update_hitboxes();
     }
 }
 
@@ -604,14 +604,8 @@ Node::scale(const glm::dvec2& scale)
     this->_mark_draw_unit_vertices_indices_dirty();
     this->_scale = scale;
 
-    if (this->_type == NodeType::body) {
-        this->recursive_call([](Node* n) {
-            if (n->_type == NodeType::hitbox) {
-                n->hitbox.update_physics_shape();
-            }
-        });
-    } else if (this->_type == NodeType::hitbox) {
-        this->hitbox.update_physics_shape();
+    if (this->_type == NodeType::body or this->_in_hitbox_chain) {
+        this->_update_hitboxes();
     }
 }
 
@@ -778,7 +772,7 @@ Node::visible(const bool& visible)
         return;
     }
     this->_visible = visible;
-    this->recursive_call([](Node* node) {
+    this->recursive_call_downstream([](Node* node) {
         if (node->_visibility_data.is_dirty and
             node->_draw_unit_data.updated_bucket_key) {
             return false;
@@ -939,14 +933,14 @@ Node::bounding_box()
     }
 }
 
-Node*
-Node::_find_nearest_parent(const NodeType type) const
+void
+Node::_update_hitboxes()
 {
-    auto node = this->_parent;
-    while (node != nullptr and node->_type != type) {
-        node = node->_parent;
-    }
-    return node;
+    this->recursive_call_downstream([](Node* n) {
+        if (n->_type == NodeType::hitbox) {
+            n->hitbox.update_physics_shape();
+        }
+    });
 }
 
 } // namespace kaacore
