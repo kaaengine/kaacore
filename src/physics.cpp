@@ -1290,14 +1290,13 @@ Node*
 HitboxNode::_find_nearest_parent(const NodeType type) const
 {
     Node* result = nullptr;
-    container_node(this)->recursive_call_upstream(
-        [&result, type](Node* node) {
-            if (node->_type == type) {
-                result = node;
-                return false;
-            }
-            return true;
-        });
+    container_node(this)->recursive_call_upstream([&result, type](Node* node) {
+        if (node->_type == type) {
+            result = node;
+            return false;
+        }
+        return true;
+    });
     return result;
 }
 

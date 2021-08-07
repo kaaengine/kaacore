@@ -260,13 +260,14 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
             if (n->_node_wrapper) {
                 n->_node_wrapper->on_attach();
             }
-        }
-        if (added_to_scene and n->_type == NodeType::space) {
-            n->_scene->register_simulation(n);
-        } else if (n->_type == NodeType::body) {
-            n->body.attach_to_simulation();
-        } else if (n->_type == NodeType::hitbox) {
-            n->hitbox.attach_to_simulation();
+
+            if (n->_type == NodeType::space) {
+                n->_scene->register_simulation(n);
+            } else if (n->_type == NodeType::body) {
+                n->body.attach_to_simulation();
+            } else if (n->_type == NodeType::hitbox) {
+                n->hitbox.attach_to_simulation();
+            }
         }
 
         std::for_each(
@@ -933,6 +934,7 @@ Node::_update_hitboxes()
         if (n->_type == NodeType::hitbox) {
             n->hitbox.update_physics_shape();
         }
+        return n->_in_hitbox_chain;
     });
 }
 
