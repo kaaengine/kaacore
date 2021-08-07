@@ -123,7 +123,7 @@ Engine::Engine(
 
 Engine::~Engine()
 {
-    std::lock_guard<std::mutex> lock(init_mutex);
+    std::scoped_lock<std::mutex> lock(init_mutex);
     KAACORE_CHECK_TERMINATE(engine != nullptr, "Engine already destroyed.");
     KAACORE_LOG_INFO("Shutting down Kaacore.");
     this->audio_manager.reset();
