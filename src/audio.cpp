@@ -401,6 +401,7 @@ AudioManager::~AudioManager()
     Mix_Quit();
     Mix_HookMusicFinished(nullptr);
     Mix_ChannelFinished(nullptr);
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
 Mix_Chunk*

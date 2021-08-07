@@ -19,29 +19,65 @@
 
 namespace kaacore {
 
-Engine* engine;
-
 constexpr auto threads_sync_timeout = std::chrono::milliseconds(5);
+
+Engine* engine;
+std::mutex init_mutex;
+
+class InitGuard {
+  public:
+    InitGuard(std::mutex& init_mutex) : _lock(init_mutex)
+    {
+        if (not is_engine_initialized()) {
+            this->_sdl_initialized = SDL_Init(0) == 0;
+            KAACORE_CHECK(this->_sdl_initialized, SDL_GetError());
+        }
+    }
+
+    ~InitGuard()
+    {
+        if (this->_sdl_initialized) {
+            SDL_Quit();
+        }
+    }
+
+  private:
+    bool _sdl_initialized;
+    std::scoped_lock<std::mutex> _lock;
+};
+
+std::string
+get_persistent_path(
+    const std::string& prefix, const std::string& organization_prefix)
+{
+    KAACORE_CHECK(prefix.size(), "Invalid prefix.");
+    InitGuard guard(init_mutex);
+    auto ptr = SDL_GetPrefPath(organization_prefix.c_str(), prefix.c_str());
+    KAACORE_CHECK(ptr, SDL_GetError());
+    std::string result = ptr;
+    SDL_free(ptr);
+    return result;
+}
 
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
     const VirtualResolutionMode vr_mode) noexcept(false)
     : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
 {
+    std::scoped_lock<std::mutex> lock(init_mutex);
     KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
-    KAACORE_CHECK(
-        virtual_resolution.x > 0 and virtual_resolution.y > 0,
-        "Virtual resolution must be greater than zero.");
     initialize_logging();
     KAACORE_LOG_INFO("Initializing Kaacore.");
     auto init_flag = SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
                      SDL_INIT_GAMECONTROLLER;
-    if (SDL_Init(init_flag) < 0) {
-        throw kaacore::exception(SDL_GetError());
-    }
-    this->_main_thread_id = std::this_thread::get_id();
+    KAACORE_CHECK(SDL_Init(init_flag) == 0, SDL_GetError());
     engine = this;
 
+    KAACORE_CHECK(
+        virtual_resolution.x > 0 and virtual_resolution.y > 0,
+        "Virtual resolution must be greater than zero.");
+
+    this->_main_thread_id = std::this_thread::get_id();
     this->window = std::make_unique<Window>(this->_virtual_resolution);
 
     auto bgfx_init_data = this->_gather_platform_data();
@@ -87,8 +123,8 @@ Engine::Engine(
 
 Engine::~Engine()
 {
+    std::scoped_lock<std::mutex> lock(init_mutex);
     KAACORE_CHECK_TERMINATE(engine != nullptr, "Engine already destroyed.");
-
     KAACORE_LOG_INFO("Shutting down Kaacore.");
     this->audio_manager.reset();
     this->input_manager.reset();
@@ -115,27 +151,6 @@ Engine::~Engine()
     this->window.reset();
     SDL_Quit();
     engine = nullptr;
-}
-
-std::vector<Display>
-Engine::get_displays()
-{
-    return this->make_call_from_main_thread<std::vector<Display>>([this]() {
-        std::vector<Display> displays;
-        SDL_Rect rect;
-        int32_t displays_num = SDL_GetNumVideoDisplays();
-        displays.resize(displays_num);
-        for (int32_t i = 0; i < displays_num; i++) {
-            SDL_GetDisplayUsableBounds(i, &rect);
-            Display& display = displays[i];
-            display.index = i;
-            display.position = {rect.x, rect.y};
-            display.size = {rect.w, rect.h};
-            display.name = SDL_GetDisplayName(i);
-        }
-
-        return displays;
-    });
 }
 
 void
@@ -212,6 +227,33 @@ Engine::vertical_sync(const bool vsync)
     this->renderer->reset();
 }
 
+std::vector<Display>
+Engine::get_displays()
+{
+    return this->make_call_from_main_thread<std::vector<Display>>([this]() {
+        std::vector<Display> displays;
+        SDL_Rect rect;
+        int32_t displays_num = SDL_GetNumVideoDisplays();
+        displays.resize(displays_num);
+        for (int32_t i = 0; i < displays_num; i++) {
+            SDL_GetDisplayUsableBounds(i, &rect);
+            Display& display = displays[i];
+            display.index = i;
+            display.position = {rect.x, rect.y};
+            display.size = {rect.w, rect.h};
+            display.name = SDL_GetDisplayName(i);
+        }
+
+        return displays;
+    });
+}
+
+Duration
+Engine::total_time() const
+{
+    return this->_total_time;
+}
+
 double
 Engine::get_fps() const
 {
@@ -220,12 +262,6 @@ Engine::get_fps() const
         return 1.s / duration;
     }
     return 0;
-}
-
-Duration
-Engine::total_time() const
-{
-    return this->_total_time;
 }
 
 bgfx::Init
