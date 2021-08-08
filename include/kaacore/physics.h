@@ -34,6 +34,9 @@ class BodyNode;
 class HitboxNode;
 enum struct NodeType;
 
+Transformation
+calculate_inherited_hitbox_transformation(Node* const node);
+
 enum struct CollisionPhase {
     begin = 1,
     pre_solve = 2,

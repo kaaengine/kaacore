@@ -127,7 +127,7 @@ space_safe_call(Node* space_node, const SpacePostStepFunc& func)
 }
 
 Transformation
-_calculate_inherited_hitbox_transformation(Node* const node)
+calculate_inherited_hitbox_transformation(Node* const node)
 {
     Node* body = nullptr;
     auto inheritance_chain_till_body = [&body](Node* node) {
@@ -1165,7 +1165,7 @@ HitboxNode::update_physics_shape()
 {
     Node* node = container_node(this);
     cpShape* new_cp_shape;
-    auto transformation = _calculate_inherited_hitbox_transformation(node);
+    auto transformation = calculate_inherited_hitbox_transformation(node);
     new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
     KAACORE_LOG_DEBUG(
         "Updating hitbox node {} shape (cpShape: {})", fmt::ptr(node),
