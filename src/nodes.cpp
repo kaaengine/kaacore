@@ -598,7 +598,8 @@ Node::scale(const glm::dvec2& scale)
     this->_mark_draw_unit_vertices_indices_dirty();
     this->_scale = scale;
 
-    if (this->_type == NodeType::body or this->_in_hitbox_chain) {
+    auto body_in_tree = this->_type == NodeType::body and this->_scene;
+    if (body_in_tree or this->_in_hitbox_chain) {
         this->_update_hitboxes();
     }
 }
