@@ -675,24 +675,22 @@ void
 BodyNode::attach_to_simulation()
 {
     ASSERT_VALID_BODY_NODE(this);
-    if (cpBodyGetSpace(this->_cp_body) == nullptr) {
-        Node* node = container_node(this);
-        KAACORE_LOG_DEBUG(
-            "Attaching body node {} to simulation (space) (cpBody: {})",
-            fmt::ptr(node), fmt::ptr(this->_cp_body));
-        KAACORE_ASSERT(
-            node->_parent != nullptr,
-            "Node must have a parent in order to attach it to the simulation.");
-        ASSERT_VALID_SPACE_NODE(&node->_parent->space);
-        space_safe_call(
-            node->_parent,
-            [cp_body = this->_cp_body](const SpaceNode* space_node_phys) {
-                KAACORE_LOG_DEBUG(
-                    "Simulation callback: attaching cpBody {}",
-                    fmt::ptr(cp_body));
-                cpSpaceAddBody(space_node_phys->_cp_space, cp_body);
-            });
-    }
+    Node* node = container_node(this);
+    KAACORE_LOG_DEBUG(
+        "Attaching body node {} to simulation (space) (cpBody: {})",
+        fmt::ptr(node), fmt::ptr(this->_cp_body));
+    KAACORE_ASSERT(
+        node->_parent != nullptr,
+        "Node must have a parent in order to attach it to the simulation.");
+    ASSERT_VALID_SPACE_NODE(&node->_parent->space);
+    space_safe_call(
+        node->_parent,
+        [cp_body = this->_cp_body](const SpaceNode* space_node_phys) {
+            KAACORE_LOG_DEBUG(
+                "Simulation callback: attaching cpBody {}",
+                fmt::ptr(cp_body));
+            cpSpaceAddBody(space_node_phys->_cp_space, cp_body);
+        });
 }
 
 void
@@ -1220,47 +1218,43 @@ HitboxNode::attach_to_simulation()
     // we might need to adjust for parents' transformation
     this->update_physics_shape();
     Node* node = container_node(this);
-    if (cpShapeGetBody(this->_cp_shape) == nullptr) {
-        KAACORE_LOG_DEBUG(
-            "Attaching hitbox node {} to simulation (body) (cpShape: {})",
-            fmt::ptr(node), fmt::ptr(this->_cp_shape));
-        auto body_node = this->_find_nearest_parent(NodeType::body);
-        KAACORE_ASSERT(
-            body_node,
-            "Encountered error while attaching hitbox node to simulation. "
-            "Couldn't find body node in the inheritance chain.");
-        KAACORE_ASSERT(
-            (body_node->body)._cp_body != nullptr,
-            "Body node has invalid internal state.");
-        space_safe_call(
-            body_node->body.space(),
-            [body_ptr = body_node->body._cp_body,
-             shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                KAACORE_LOG_DEBUG(
-                    "Simulation callback: attaching cpShape {} to body "
-                    "(cpBody: {})",
-                    fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
-                cpShapeSetBody(shape_ptr, body_ptr);
-            });
-        this->_mark_hitbox_chain();
-    }
+    KAACORE_LOG_DEBUG(
+        "Attaching hitbox node {} to simulation (body) (cpShape: {})",
+        fmt::ptr(node), fmt::ptr(this->_cp_shape));
+    auto body_node = this->_find_nearest_parent(NodeType::body);
+    KAACORE_ASSERT(
+        body_node,
+        "Encountered error while attaching hitbox node to simulation. "
+        "Couldn't find body node in the inheritance chain.");
+    KAACORE_ASSERT(
+        (body_node->body)._cp_body != nullptr,
+        "Body node has invalid internal state.");
+    space_safe_call(
+        body_node->body.space(),
+        [body_ptr = body_node->body._cp_body,
+         shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
+            KAACORE_LOG_DEBUG(
+                "Simulation callback: attaching cpShape {} to body "
+                "(cpBody: {})",
+                fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
+            cpShapeSetBody(shape_ptr, body_ptr);
+        });
+    this->_mark_hitbox_chain();
 
     auto space_node = this->_find_nearest_parent(NodeType::space);
-    if (cpShapeGetSpace(this->_cp_shape) == nullptr and space_node != nullptr) {
-        KAACORE_LOG_DEBUG(
-            "Attaching hitbox node {} to simulation (space) (cpShape: {})",
-            fmt::ptr(node), fmt::ptr(this->_cp_shape));
-        ASSERT_VALID_SPACE_NODE(&space_node->space);
-        space_safe_call(
-            &space_node->space,
-            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
-                KAACORE_LOG_DEBUG(
-                    "Simulation callback: attaching cpShape {} to space "
-                    "(cpSpace: {})",
-                    fmt::ptr(shape_ptr), fmt::ptr(space_node_phys->_cp_space));
-                cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
-            });
-    }
+    KAACORE_LOG_DEBUG(
+        "Attaching hitbox node {} to simulation (space) (cpShape: {})",
+        fmt::ptr(node), fmt::ptr(this->_cp_shape));
+    ASSERT_VALID_SPACE_NODE(&space_node->space);
+    space_safe_call(
+        &space_node->space,
+        [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
+            KAACORE_LOG_DEBUG(
+                "Simulation callback: attaching cpShape {} to space "
+                "(cpSpace: {})",
+                fmt::ptr(shape_ptr), fmt::ptr(space_node_phys->_cp_space));
+            cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
+        });
 }
 
 void
