@@ -140,7 +140,7 @@ class Node {
     BoundingBox<double> bounding_box();
 
     template<typename Func>
-    void recursive_call(Func&& func)
+    void recursive_call_downstream(Func&& func)
     {
         thread_local std::deque<Node*> nodes_to_process;
         nodes_to_process.clear();
@@ -162,6 +162,21 @@ class Node {
             nodes_to_process.insert(
                 nodes_to_process.end(), node->_children.begin(),
                 node->_children.end());
+        }
+    }
+
+    template<typename Func>
+    void recursive_call_upstream(Func&& func)
+    {
+        Node* node = this;
+        while (node) {
+            if constexpr (std::is_same_v<
+                              std::invoke_result_t<Func, Node*>, void>) {
+                func(node);
+            } else if (not func(node)) {
+                break;
+            }
+            node = node->_parent;
         }
     }
 
@@ -240,6 +255,7 @@ class Node {
     NodeSpatialData _spatial_data;
 
     bool _marked_to_delete = false;
+    bool _in_hitbox_chain = false;
 
     void _mark_dirty();
     void _mark_ordering_dirty();
@@ -252,6 +268,7 @@ class Node {
     void _recalculate_model_matrix_cumulative();
     void _set_position(const glm::dvec2& position);
     void _set_rotation(const double rotation);
+    void _update_hitboxes();
 
     DrawBucketKey _make_draw_bucket_key() const;
 

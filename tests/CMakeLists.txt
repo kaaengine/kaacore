@@ -4,6 +4,7 @@ cmake_policy(SET CMP0077 NEW)
 set(TEST_SRC_CXX_FILES
     test_basics.cpp
     test_shapes.cpp
+    test_hitboxes.cpp
     test_textures.cpp
     test_materials.cpp
     test_statistics.cpp

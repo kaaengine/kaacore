@@ -126,6 +126,31 @@ space_safe_call(Node* space_node, const SpacePostStepFunc& func)
     space_safe_call(&space_node->space, func);
 }
 
+Transformation
+calculate_inherited_hitbox_transformation(Node* const node)
+{
+    Node* body = nullptr;
+    auto inheritance_chain_till_body = [&body](Node* node) {
+        if (node->type() == NodeType::body) {
+            body = node;
+            return false;
+        }
+        return true;
+    };
+
+    auto inheritance_chain =
+        node->build_inheritance_chain(inheritance_chain_till_body);
+    Transformation transformation;
+    if (body) {
+        transformation = Transformation::scale(body->scale());
+    }
+    for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
+         ++it) {
+        transformation = (*it)->transformation() | transformation;
+    }
+    return transformation;
+}
+
 Arbiter::Arbiter(
     CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter)
     : phase(phase), cp_arbiter(cp_arbiter), space(container_node(space_phys))
@@ -659,12 +684,14 @@ BodyNode::attach_to_simulation()
             node->_parent != nullptr,
             "Node must have a parent in order to attach it to the simulation.");
         ASSERT_VALID_SPACE_NODE(&node->_parent->space);
-        space_safe_call(node->_parent, [&](const SpaceNode* space_node_phys) {
-            KAACORE_LOG_DEBUG(
-                "Simulation callback: attaching cpBody {}",
-                fmt::ptr(this->_cp_body));
-            cpSpaceAddBody(space_node_phys->_cp_space, this->_cp_body);
-        });
+        space_safe_call(
+            node->_parent,
+            [cp_body = this->_cp_body](const SpaceNode* space_node_phys) {
+                KAACORE_LOG_DEBUG(
+                    "Simulation callback: attaching cpBody {}",
+                    fmt::ptr(cp_body));
+                cpSpaceAddBody(space_node_phys->_cp_space, cp_body);
+            });
     }
 }
 
@@ -1138,16 +1165,8 @@ HitboxNode::update_physics_shape()
 {
     Node* node = container_node(this);
     cpShape* new_cp_shape;
-
-    const auto transformation =
-        Transformation() | Transformation::translate(node->_position) |
-        Transformation::rotate(node->_rotation) |
-        Transformation::scale(
-            node->_scale *
-            (node->_parent ? node->_parent->_scale : glm::dvec2(1.)));
-
+    auto transformation = calculate_inherited_hitbox_transformation(node);
     new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
-
     KAACORE_LOG_DEBUG(
         "Updating hitbox node {} shape (cpShape: {})", fmt::ptr(node),
         fmt::ptr(new_cp_shape));
@@ -1169,15 +1188,21 @@ HitboxNode::update_physics_shape()
             new_cp_shape, cpShapeGetSurfaceVelocity(this->_cp_shape));
 
         space_safe_call(
-            this->space(),
-            [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
+            this->space(), [cp_shape = this->_cp_shape,
+                            new_cp_shape](const SpaceNode* space_node) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: destroying old cpShape {}",
-                    fmt::ptr(shape_ptr));
-                if (space_node_phys) {
-                    cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
+                    fmt::ptr(cp_shape));
+                // copy over existing cpSape's relations
+                if (auto cp_body = cpShapeGetBody(cp_shape)) {
+                    cpShapeSetBody(new_cp_shape, cp_body);
                 }
-                cpShapeFree(shape_ptr);
+                if (space_node) {
+                    auto cp_space = space_node->_cp_space;
+                    cpSpaceRemoveShape(cp_space, cp_shape);
+                    cpSpaceAddShape(cp_space, new_cp_shape);
+                }
+                cpShapeFree(cp_shape);
             });
         this->_cp_shape = nullptr;
     } else {
@@ -1185,10 +1210,6 @@ HitboxNode::update_physics_shape()
     }
 
     this->_cp_shape = new_cp_shape;
-
-    if (node->_parent) {
-        this->attach_to_simulation();
-    }
 }
 
 void
@@ -1196,18 +1217,24 @@ HitboxNode::attach_to_simulation()
 {
     KAACORE_ASSERT(
         this->_cp_shape != nullptr, "Invalid internal state of hitbox.");
+    // we might need to adjust for parents' transformation
+    this->update_physics_shape();
     Node* node = container_node(this);
     if (cpShapeGetBody(this->_cp_shape) == nullptr) {
         KAACORE_LOG_DEBUG(
             "Attaching hitbox node {} to simulation (body) (cpShape: {})",
             fmt::ptr(node), fmt::ptr(this->_cp_shape));
+        auto body_node = this->_find_nearest_parent(NodeType::body);
         KAACORE_ASSERT(
-            node->_parent != nullptr, "Hitbox must to have a parent in order "
-                                      "to attach it to the simulation.");
-        ASSERT_VALID_BODY_NODE(&node->_parent->body);
+            body_node,
+            "Encountered error while attaching hitbox node to simulation. "
+            "Couldn't find body node in the inheritance chain.");
+        KAACORE_ASSERT(
+            (body_node->body)._cp_body != nullptr,
+            "Body node has invalid internal state.");
         space_safe_call(
-            node->_parent->body.space(),
-            [body_ptr = node->_parent->body._cp_body,
+            body_node->body.space(),
+            [body_ptr = body_node->body._cp_body,
              shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: attaching cpShape {} to body "
@@ -1215,16 +1242,17 @@ HitboxNode::attach_to_simulation()
                     fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
                 cpShapeSetBody(shape_ptr, body_ptr);
             });
+        this->_mark_hitbox_chain();
     }
 
-    if (cpShapeGetSpace(this->_cp_shape) == nullptr and
-        node->_parent->_parent != nullptr) {
+    auto space_node = this->_find_nearest_parent(NodeType::space);
+    if (cpShapeGetSpace(this->_cp_shape) == nullptr and space_node != nullptr) {
         KAACORE_LOG_DEBUG(
             "Attaching hitbox node {} to simulation (space) (cpShape: {})",
             fmt::ptr(node), fmt::ptr(this->_cp_shape));
-        ASSERT_VALID_SPACE_NODE(&node->_parent->_parent->space);
+        ASSERT_VALID_SPACE_NODE(&space_node->space);
         space_safe_call(
-            node->_parent->_parent,
+            &space_node->space,
             [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: attaching cpShape {} to space "
@@ -1256,6 +1284,33 @@ HitboxNode::detach_from_simulation()
             });
         this->_cp_shape = nullptr;
     }
+}
+
+Node*
+HitboxNode::_find_nearest_parent(const NodeType type) const
+{
+    Node* result = nullptr;
+    container_node(this)->recursive_call_upstream([&result, type](Node* node) {
+        if (node->_type == type) {
+            result = node;
+            return false;
+        }
+        return true;
+    });
+    return result;
+}
+
+void
+HitboxNode::_mark_hitbox_chain()
+{
+    container_node(this)->recursive_call_upstream([](Node* node) {
+        if (node->_in_hitbox_chain or node->_type == NodeType::body) {
+            // current node and all its parents are already in the chain
+            // or node is body which is not a part of chain
+            return false;
+        }
+        return node->_in_hitbox_chain = true;
+    });
 }
 
 CollisionTriggerId
