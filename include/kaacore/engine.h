@@ -75,6 +75,7 @@ class Engine {
 
     void run(
         Scene* scene, uint32_t frames_limit = 0,
+        Duration frame_fixed_duration = 0s,
         CapturingAdapterBase* capturing_adapter = nullptr);
     void change_scene(Scene* scene);
     Scene* current_scene();
@@ -139,12 +140,11 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
-    Duration _total_time = 0s;
-
     class _RuntimeSession {
       public:
         _RuntimeSession(
-            Engine* engine, Scene* initial_scene, uint32_t frames_limit,
+            Engine* engine, Scene* initial_scene, const uint32_t frames_limit,
+            const Duration frame_fixed_duration,
             CapturingAdapterBase* capturing_adapter);
         ~_RuntimeSession();
         _RuntimeSession(const _RuntimeSession&) = delete;
@@ -153,14 +153,31 @@ class Engine {
         _RuntimeSession& operator=(_RuntimeSession&&) = delete;
 
         inline uint32_t frames_limit() const { return this->_frames_limit; }
+        inline HighPrecisionDuration frame_fixed_duration() const
+        {
+            return this->_frame_fixed_duration;
+        }
+        inline HighPrecisionDuration total_time() const
+        {
+            return this->_total_running_time;
+        }
+        inline void increment_total_time(const HighPrecisionDuration dt)
+        {
+            this->_total_running_time += dt;
+        }
 
       private:
         Engine* _engine;
         uint32_t _frames_limit;
+        HighPrecisionDuration _frame_fixed_duration;
         bool _capture_enabled;
+
+        HighPrecisionDuration _total_running_time;
     };
 
-    const _RuntimeSession* _runtime_session;
+    _RuntimeSession* _runtime_session;
+
+    _RuntimeSession& runtime_session() const;
 
     std::thread::id _main_thread_id;
     SyncedSyscallQueue _synced_syscall_queue;

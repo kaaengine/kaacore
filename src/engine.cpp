@@ -156,11 +156,11 @@ Engine::~Engine()
 
 void
 Engine::run(
-    Scene* scene, uint32_t frames_limit,
+    Scene* scene, uint32_t frames_limit, Duration frame_fixed_duration,
     CapturingAdapterBase* capturing_adapter)
 {
     _RuntimeSession runtime_session{this, scene, frames_limit,
-                                    capturing_adapter};
+                                    frame_fixed_duration, capturing_adapter};
 
     this->window->_activate();
 #if KAACORE_MULTITHREADING_MODE
@@ -255,7 +255,8 @@ Engine::get_displays()
 Duration
 Engine::total_time() const
 {
-    return this->_total_time;
+    return std::chrono::duration_cast<Duration>(
+        this->runtime_session().total_time());
 }
 
 double
@@ -307,9 +308,18 @@ Engine::_scene_processing()
     uint32_t frames_count = 0;
     try {
         KAACORE_LOG_INFO("Engine is running.");
+        HighPrecisionDuration fixed_dt =
+            this->runtime_session().frame_fixed_duration();
+        KAACORE_LOG_DEBUG("Engine fixed_dt: {} us", fixed_dt.count());
         this->_scene->on_enter();
         while (this->is_running) {
-            auto dt = this->clock.measure();
+            HighPrecisionDuration dt;
+            if (fixed_dt == HighPrecisionDuration::zero()) {
+                dt = this->clock.measure();
+            } else {
+                dt = fixed_dt;
+            }
+
             {
                 StopwatchStatAutoPusher stopwatch{"engine.frame:time"};
                 this->renderer->begin_frame();
@@ -324,7 +334,7 @@ Engine::_scene_processing()
                 auto scaled_dt =
                     std::chrono::duration_cast<HighPrecisionDuration>(
                         scaled_dt_sec);
-                this->_total_time += scaled_dt_sec;
+                this->runtime_session().increment_total_time(scaled_dt);
                 {
                     StopwatchStatAutoPusher stopwatch{"scene.update:time"};
                     this->_scene->process_update(scaled_dt_sec);
@@ -494,6 +504,15 @@ Engine::_single_thread_entrypoint()
 
 #endif // KAACORE_MULTITHREADING_MODE
 
+Engine::_RuntimeSession&
+Engine::runtime_session() const
+{
+    KAACORE_CHECK(
+        this->_runtime_session != nullptr,
+        "Engine loop is not running currently");
+    return *this->_runtime_session;
+}
+
 Engine::_ScenePointerWrapper::_ScenePointerWrapper() : _scene_ptr(nullptr) {}
 
 Engine::_ScenePointerWrapper::operator bool() const
@@ -553,10 +572,14 @@ Engine::_ScenePointerWrapper::data()
 }
 
 Engine::_RuntimeSession::_RuntimeSession(
-    Engine* engine, Scene* initial_scene, uint32_t frames_limit,
+    Engine* engine, Scene* initial_scene, const uint32_t frames_limit,
+    const Duration frame_fixed_duration,
     CapturingAdapterBase* capturing_adapter)
     : _engine(engine), _frames_limit(frames_limit),
-      _capture_enabled(capturing_adapter != nullptr)
+      _frame_fixed_duration(std::chrono::duration_cast<HighPrecisionDuration>(
+          frame_fixed_duration)),
+      _capture_enabled(capturing_adapter != nullptr),
+      _total_running_time(HighPrecisionDuration::zero())
 {
     KAACORE_ASSERT(
         this->_engine->_runtime_session == nullptr,
