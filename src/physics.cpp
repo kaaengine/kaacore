@@ -687,8 +687,7 @@ BodyNode::attach_to_simulation()
         node->_parent,
         [cp_body = this->_cp_body](const SpaceNode* space_node_phys) {
             KAACORE_LOG_DEBUG(
-                "Simulation callback: attaching cpBody {}",
-                fmt::ptr(cp_body));
+                "Simulation callback: attaching cpBody {}", fmt::ptr(cp_body));
             cpSpaceAddBody(space_node_phys->_cp_space, cp_body);
         });
 }
