@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -20,11 +21,17 @@ class CapturingAdapterBase {
     uint32_t width() const;
     uint32_t height() const;
     bimg::TextureFormat::Enum texture_format() const;
+    bool y_flip() const;
 
     void process_raw_frame(const void* data, uint32_t size);
     void initialize_capture_parameters(
         uint32_t width, uint32_t height, uint32_t pitch,
         bgfx::TextureFormat::Enum format, bool y_flip);
+
+  protected:
+    size_t frame_line_bytes_count() const;
+    void flip_aware_frame_copy(
+        std::byte* dst, const std::byte* src, const uint32_t size) const;
 
   private:
     bool _is_initialized = false;

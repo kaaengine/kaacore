@@ -12,19 +12,29 @@ namespace kaacore {
 uint32_t
 CapturingAdapterBase::width() const
 {
+    KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_width;
 }
 
 uint32_t
 CapturingAdapterBase::height() const
 {
+    KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_height;
 }
 
 bimg::TextureFormat::Enum
 CapturingAdapterBase::texture_format() const
 {
+    KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_target_format;
+}
+
+bool
+CapturingAdapterBase::y_flip() const
+{
+    KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
+    return this->_y_flip;
 }
 
 void
@@ -59,9 +69,7 @@ CapturingAdapterBase::initialize_capture_parameters(
     this->_source_pitch = pitch;
     this->_source_format = bimg::TextureFormat::Enum(source_format);
     this->_y_flip = y_flip;
-    this->_frame_data_size =
-        width * height * (bimg::getBitsPerPixel(this->_target_format) / 8);
-
+    this->_frame_data_size = height * this->frame_line_bytes_count();
     this->_frame_data_buffer.reset(new std::byte[this->_frame_data_size]);
 
     KAACORE_LOG_DEBUG(
@@ -70,6 +78,36 @@ CapturingAdapterBase::initialize_capture_parameters(
     KAACORE_LOG_DEBUG(
         "Frame image format: {} -> {}", bimg::getName(this->_source_format),
         bimg::getName(this->_target_format));
+}
+
+size_t
+CapturingAdapterBase::frame_line_bytes_count() const
+{
+    KAACORE_CHECK(this->_is_initialized, "Adapter was not initialized yet.");
+    return this->_width * (bimg::getBitsPerPixel(this->_target_format) / 8);
+}
+
+void
+CapturingAdapterBase::flip_aware_frame_copy(
+    std::byte* dst, const std::byte* src, const uint32_t size) const
+{
+    if (this->y_flip()) {
+        uint32_t height = this->height();
+        uint32_t line_bytes = this->frame_line_bytes_count();
+        for (uint32_t i = 0; i < height; i++) {
+            KAACORE_ASSERT(
+                src + line_bytes * i + line_bytes <= src + size,
+                "Out of bounds read for i = {}", i);
+            KAACORE_ASSERT(
+                dst + line_bytes * (height - i - 1) + line_bytes <= dst + size,
+                "Out of bounds write for i = {}", i);
+            std::memcpy(
+                dst + line_bytes * (height - i - 1), src + line_bytes * i,
+                line_bytes);
+        }
+    } else {
+        std::memcpy(dst, src, size);
+    }
 }
 
 ImagesDirectoryCapturingAdapter::ImagesDirectoryCapturingAdapter(
@@ -112,7 +150,7 @@ MemoryVectorCapturingAdapter::on_frame(
 {
     KAACORE_LOG_DEBUG("Storing captured frame #{}", this->frames_count() + 1);
     std::unique_ptr<std::byte[]> frame_stored{new std::byte[size]};
-    std::memcpy(frame_stored.get(), frame_data, size);
+    this->flip_aware_frame_copy(frame_stored.get(), frame_data, size);
     this->_frames.push_back(std::move(frame_stored));
 }
 

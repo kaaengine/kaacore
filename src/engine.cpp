@@ -480,7 +480,7 @@ Engine::_engine_thread_entrypoint()
             KAACORE_ASSERT(this->_scene, "Running scene not selected.");
             this->_engine_loop_state.set(EngineLoopState::running);
             this->_scene_processing();
-        } catch (const std::exception exc) {
+        } catch (const std::exception& exc) {
             KAACORE_LOG_ERROR(
                 "Engine loop interrupted by exception: {}", exc.what());
             this->_engine_loop_exception = std::current_exception();
