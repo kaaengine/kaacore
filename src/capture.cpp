@@ -84,7 +84,8 @@ size_t
 CapturingAdapterBase::frame_line_bytes_count() const
 {
     KAACORE_CHECK(this->_is_initialized, "Adapter was not initialized yet.");
-    return this->_width * (bimg::getBitsPerPixel(this->_target_format) / 8);
+    return static_cast<size_t>(this->_width) *
+           (bimg::getBitsPerPixel(this->_target_format) / 8);
 }
 
 void
