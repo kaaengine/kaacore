@@ -20,6 +20,8 @@
 
 namespace kaacore {
 
+constexpr uint16_t DEFAULT_CLEAR_FLAGS = BGFX_CLEAR_STENCIL;
+
 enum class RendererType {
     noop = bgfx::RendererType::Noop,
     dx9 = bgfx::RendererType::Direct3D9,
