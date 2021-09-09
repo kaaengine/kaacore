@@ -11,15 +11,19 @@
 #include "kaacore/geometry.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
+#include "kaacore/render_passes.h"
 #include "kaacore/scenes.h"
 #include "kaacore/shapes.h"
-#include "kaacore/views.h"
 
 namespace kaacore {
 
 const int16_t default_root_z_index = 0;
-const ViewIndexSet default_root_views =
-    std::unordered_set<int16_t>{views_default_z_index};
+const int16_t default_viewport_index = 0;
+const int16_t default_render_pass_index = 0;
+const RenderPassIndexSet default_root_render_passes =
+    std::unordered_set<int16_t>{default_render_pass_index};
+const ViewportIndexSet default_root_viewports =
+    std::unordered_set<int16_t>{default_viewport_index};
 
 Node::Node(NodeType type) : _type(type)
 {
@@ -217,14 +221,15 @@ DrawBucketKey
 Node::_make_draw_bucket_key() const
 {
     DrawBucketKey key;
-    key.views = this->_ordering_data.calculated_views;
+    key.render_passes = this->_ordering_data.calculated_render_passes;
+    key.viewports = this->_ordering_data.calculated_viewports;
     key.z_index = this->_ordering_data.calculated_z_index;
     key.root_distance = this->_root_distance;
-    key.texture_raw_ptr = this->_sprite.texture.get();
+    key.texture = this->_sprite.texture.get();
     if (not this->_material and this->_type == NodeType::text) {
-        key.material_raw_ptr = get_engine()->renderer->sdf_font_material.get();
+        key.material = get_engine()->renderer->sdf_font_material.get();
     } else {
-        key.material_raw_ptr = this->_material.get();
+        key.material = this->_material.get();
     }
     key.state_flags = 0u;
     key.stencil_flags = 0u;
@@ -334,17 +339,31 @@ Node::recalculate_ordering_data()
         return;
     }
 
-    if (this->_views.has_value()) {
-        this->_ordering_data.calculated_views = *this->_views;
+    if (this->_render_passes.has_value()) {
+        this->_ordering_data.calculated_render_passes = *this->_render_passes;
     } else if (this->is_root()) {
-        this->_ordering_data.calculated_views = default_root_views;
+        this->_ordering_data.calculated_render_passes =
+            default_root_render_passes;
     } else {
         KAACORE_ASSERT(
             this->_parent != nullptr,
             "Can't inherit view data if node has no parent");
         this->_parent->recalculate_ordering_data();
-        this->_ordering_data.calculated_views =
-            this->_parent->_ordering_data.calculated_views;
+        this->_ordering_data.calculated_render_passes =
+            this->_parent->_ordering_data.calculated_render_passes;
+    }
+
+    if (this->_viewports.has_value()) {
+        this->_ordering_data.calculated_viewports = *this->_viewports;
+    } else if (this->is_root()) {
+        this->_ordering_data.calculated_viewports = default_root_viewports;
+    } else {
+        KAACORE_ASSERT(
+            this->_parent != nullptr,
+            "Can't inherit viewport data if node has no parent");
+        this->_parent->recalculate_ordering_data();
+        this->_ordering_data.calculated_viewports =
+            this->_parent->_ordering_data.calculated_viewports;
     }
 
     if (this->_z_index.has_value()) {
@@ -839,29 +858,57 @@ Node::parent() const
 }
 
 void
-Node::views(const std::optional<std::unordered_set<int16_t>>& z_indices)
+Node::render_passes(const std::optional<std::unordered_set<int16_t>>& z_indices)
 {
     if (z_indices.has_value()) {
         KAACORE_CHECK(
-            z_indices->size() <= KAACORE_MAX_VIEWS, "Invalid indices size.");
+            z_indices->size() <= KAACORE_MAX_RENDER_PASSES,
+            "Invalid indices size.");
     }
 
     this->_mark_ordering_dirty();
     this->_draw_unit_data.updated_bucket_key = true;
-    this->_views = z_indices;
+    this->_render_passes = z_indices;
 }
 
 const std::optional<std::vector<int16_t>>
-Node::views() const
+Node::render_passes() const
 {
-    return this->_views;
+    return this->_render_passes;
 }
 
 const std::vector<int16_t>
-Node::effective_views()
+Node::effective_render_passes()
 {
     this->recalculate_ordering_data();
-    return this->_ordering_data.calculated_views;
+    return this->_ordering_data.calculated_render_passes;
+}
+
+void
+Node::viewports(const std::optional<std::unordered_set<int16_t>>& z_indices)
+{
+    if (z_indices.has_value()) {
+        KAACORE_CHECK(
+            z_indices->size() <= KAACORE_MAX_VIEWPORTS,
+            "Invalid indices size.");
+    }
+
+    this->_mark_ordering_dirty();
+    this->_draw_unit_data.updated_bucket_key = true;
+    this->_viewports = z_indices;
+}
+
+const std::optional<std::vector<int16_t>>
+Node::viewports() const
+{
+    return this->_viewports;
+}
+
+const std::vector<int16_t>
+Node::effective_viewports()
+{
+    this->recalculate_ordering_data();
+    return this->_ordering_data.calculated_render_passes;
 }
 
 void
@@ -908,7 +955,6 @@ BoundingBox<double>
 Node::bounding_box()
 {
     const auto transformation = this->absolute_transformation();
-
     if (this->_shape) {
         KAACORE_ASSERT(
             not this->_shape.bounding_points.empty(),

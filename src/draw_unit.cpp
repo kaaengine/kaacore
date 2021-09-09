@@ -11,26 +11,30 @@ constexpr size_t range_max_vertices_count =
     std::numeric_limits<uint16_t>::max();
 constexpr size_t range_max_indices_count = std::numeric_limits<uint32_t>::max();
 
-DrawBucket::Range
-DrawBucket::find_range() const
+GeometryStream::GeometryStream(const std::vector<DrawUnit>& draw_units)
+    : _draw_units(draw_units)
+{}
+
+GeometryStream::Range
+GeometryStream::find_range() const
 {
-    return this->find_range(this->draw_units.cbegin());
+    return this->find_range(this->_draw_units.cbegin());
 }
 
-DrawBucket::Range
-DrawBucket::find_range(const DrawBucket::DrawUnitIter start_pos) const
+GeometryStream::Range
+GeometryStream::find_range(const GeometryStream::DrawUnitIter start_pos) const
 {
-    DrawBucket::Range range;
+    GeometryStream::Range range;
     range.begin = start_pos;
     range.vertices_count = 0;
     range.indices_count = 0;
 
-    if (start_pos == this->draw_units.end()) {
-        range.end = this->draw_units.end();
+    if (start_pos == this->_draw_units.end()) {
+        range.end = this->_draw_units.end();
         return range;
     }
-    DrawBucket::DrawUnitIter it;
-    for (it = start_pos; it < this->draw_units.end(); it++) {
+    GeometryStream::DrawUnitIter it;
+    for (it = start_pos; it < this->_draw_units.end(); it++) {
         const auto& unit = *it;
         // check buffer limits
         if (range.vertices_count + unit.details.vertices.size() >
@@ -48,8 +52,9 @@ DrawBucket::find_range(const DrawBucket::DrawUnitIter start_pos) const
 }
 
 void
-DrawBucket::copy_range_details_to_transient_buffers(
-    const DrawBucket::Range& range, bgfx::TransientVertexBuffer& vertex_buffer,
+GeometryStream::copy_range(
+    const GeometryStream::Range& range,
+    bgfx::TransientVertexBuffer& vertex_buffer,
     bgfx::TransientIndexBuffer& index_buffer) const
 {
     KAACORE_LOG_TRACE(
@@ -65,7 +70,7 @@ DrawBucket::copy_range_details_to_transient_buffers(
     size_t indices_offset = 0;
     size_t vertices_count = 0;
     size_t indices_count = 0;
-    for (DrawBucket::DrawUnitIter it = range.begin; it < range.end; it++) {
+    for (GeometryStream::DrawUnitIter it = range.begin; it < range.end; it++) {
         const auto& unit = *it;
 
         vertices_count += unit.details.vertices.size();
@@ -114,6 +119,12 @@ DrawBucket::copy_range_details_to_transient_buffers(
         index_writer_pos == index_buffer.data + index_buffer.size,
         "Index buffer wasn't fully filled (filled: {}, size: {})",
         index_writer_pos - index_buffer.data, index_buffer.size);
+}
+
+GeometryStream
+DrawBucket::geometry_stream() const
+{
+    return GeometryStream(this->draw_units);
 }
 
 void

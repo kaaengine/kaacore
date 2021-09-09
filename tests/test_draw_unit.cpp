@@ -10,65 +10,6 @@
 #include "runner.h"
 
 TEST_CASE(
-    "Test direct rendering with DrawUnit - stencil test",
-    "[.][visual_test][draw_unit]")
-{
-    auto engine = initialize_testing_engine(true);
-
-    TestingScene scene;
-    scene.camera().position({0., 0.});
-
-    scene.update_function = [&](auto dt) {
-        auto test_shape1 =
-            kaacore::Shape::Circle(7.5, {-35. + 0.15 * scene.frames_left, 0.});
-        kaacore::DrawBucketKey dbk1;
-        dbk1.views = kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}};
-        dbk1.z_index = 0;
-        dbk1.root_distance = 0;
-        dbk1.texture_raw_ptr = nullptr;
-        dbk1.material_raw_ptr =
-            kaacore::get_engine()->renderer->default_material.res_ptr.get();
-        dbk1.state_flags = 0;
-        // toggle stencil test every 50 frames
-        if ((scene.frames_left / 50) % 2 == 0) {
-            dbk1.stencil_flags =
-                (0u | BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_RMASK(0xFF) |
-                 BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_OP_FAIL_S_KEEP |
-                 BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-        } else {
-            dbk1.stencil_flags = 0;
-        }
-        kaacore::DrawUnit du1{1, {}};
-        du1.details.vertices = test_shape1.vertices;
-        du1.details.indices = test_shape1.indices;
-
-        auto test_shape2 = kaacore::Shape::Box({50., 5});
-        kaacore::DrawBucketKey dbk2;
-        dbk2.views = kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}};
-        dbk2.z_index = 0;
-        dbk2.root_distance = 0;
-        dbk2.texture_raw_ptr = nullptr;
-        dbk2.material_raw_ptr =
-            kaacore::get_engine()->renderer->default_material.res_ptr.get();
-        dbk2.state_flags = 0;
-        dbk2.stencil_flags =
-            (0u | BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_RMASK(0xFF) |
-             BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_OP_FAIL_S_REPLACE |
-             BGFX_STENCIL_OP_FAIL_Z_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-        kaacore::DrawUnit du2{2, {}};
-        du2.details.vertices = test_shape2.vertices;
-        for (auto& vt : du2.details.vertices) {
-            vt.rgba = {1., 0., 0., 0.5};
-        }
-        du2.details.indices = test_shape2.indices;
-
-        engine->renderer->render_draw_unit(dbk2, du2);
-        engine->renderer->render_draw_unit(dbk1, du1);
-    };
-    scene.run_on_engine(500);
-}
-
-TEST_CASE(
     "Test direct rendering with DrawBucket", "[.][visual_test][draw_unit]")
 {
     auto engine = initialize_testing_engine(true);
@@ -80,11 +21,14 @@ TEST_CASE(
         auto test_shape1 =
             kaacore::Shape::Circle(7.5, {-35. + 0.15 * scene.frames_left, 25.});
         kaacore::DrawBucketKey dbk;
-        dbk.views = kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}};
+        dbk.render_passes =
+            kaacore::RenderPassIndexSet{std::unordered_set<int16_t>{0}};
+        dbk.viewports =
+            kaacore::ViewportIndexSet{std::unordered_set<int16_t>{0}};
         dbk.z_index = 0;
         dbk.root_distance = 0;
-        dbk.texture_raw_ptr = nullptr;
-        dbk.material_raw_ptr =
+        dbk.texture = nullptr;
+        dbk.material =
             kaacore::get_engine()->renderer->default_material.res_ptr.get();
         ;
         dbk.state_flags = 0;
@@ -104,7 +48,12 @@ TEST_CASE(
         kaacore::DrawBucket draw_bucket;
         draw_bucket.draw_units = {du1, du2};
 
-        engine->renderer->render_draw_bucket(dbk, draw_bucket);
+        auto batch = kaacore::RenderBatch::from_bucket(
+            dbk, draw_bucket, engine->renderer->default_texture.get(),
+            engine->renderer->default_material.get());
+        engine->renderer->render_batch(
+            batch, dbk.render_passes, dbk.viewports,
+            scene.viewports.take_snapshot());
     };
     scene.run_on_engine(500);
 }
@@ -157,12 +106,12 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         REQUIRE(not node_1_mod_1->state_update.indices.empty());
 
         REQUIRE(
-            node_1_mod_1->lookup_key.views ==
-            kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}});
+            node_1_mod_1->lookup_key.render_passes ==
+            kaacore::RenderPassIndexSet{std::unordered_set<int16_t>{0}});
         REQUIRE(node_1_mod_1->lookup_key.z_index == 0);
         REQUIRE(node_1_mod_1->lookup_key.root_distance == 1);
-        REQUIRE(node_1_mod_1->lookup_key.texture_raw_ptr == nullptr);
-        REQUIRE(node_1_mod_1->lookup_key.material_raw_ptr == nullptr);
+        REQUIRE(node_1_mod_1->lookup_key.texture == nullptr);
+        REQUIRE(node_1_mod_1->lookup_key.material == nullptr);
         REQUIRE(node_1_mod_1->lookup_key.state_flags == 0u);
         REQUIRE(node_1_mod_1->lookup_key.stencil_flags == 0u);
 

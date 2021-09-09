@@ -9,18 +9,22 @@
 #include "kaacore/input.h"
 #include "kaacore/nodes.h"
 #include "kaacore/physics.h"
+#include "kaacore/render_passes.h"
 #include "kaacore/spatial_index.h"
 #include "kaacore/timers.h"
-#include "kaacore/views.h"
+#include "kaacore/viewports.h"
 
 namespace kaacore {
+
+class Renderer;
 
 class Scene {
     using NodesQueue = std::vector<Node*>;
 
   public:
     Node root_node;
-    ViewsManager views;
+    RenderPassesManager render_passes;
+    ViewportsManager viewports;
     TimersManager timers;
     SpatialIndex spatial_index;
     std::set<Node*> simulations_registry;
@@ -29,7 +33,7 @@ class Scene {
     Scene();
     virtual ~Scene();
 
-    void reset_views();
+    void reset_viewports();
     NodesQueue& build_processing_queue();
     void process_update(const Duration dt);
     void process_physics(const HighPrecisionDuration dt);
@@ -67,6 +71,7 @@ class Scene {
     std::atomic<uint64_t> _node_scene_tree_id_counter = 0;
 
     friend class Engine;
+    friend class Renderer;
 };
 
 } // namespace kaacore

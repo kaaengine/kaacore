@@ -6,15 +6,17 @@
 #include <unordered_map>
 #include <vector>
 
+#include <bgfx/bgfx.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 #undef GLM_ENABLE_EXPERIMENTAL
 
 #include "kaacore/materials.h"
+#include "kaacore/render_passes.h"
 #include "kaacore/resources.h"
 #include "kaacore/textures.h"
 #include "kaacore/utils.h"
-#include "kaacore/views.h"
+#include "kaacore/viewports.h"
 
 namespace kaacore {
 
@@ -26,6 +28,20 @@ struct StandardVertexData {
     glm::fvec2 uv;
     glm::fvec2 mn;
     glm::fvec4 rgba;
+
+    static bgfx::VertexLayout init()
+    {
+        bgfx::VertexLayout vertex_layout;
+        vertex_layout.begin()
+            .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float)
+            .add(
+                bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float)
+            .add(
+                bgfx::Attrib::Enum::TexCoord1, 2, bgfx::AttribType::Enum::Float)
+            .add(bgfx::Attrib::Enum::Color0, 4, bgfx::AttribType::Enum::Float)
+            .end();
+        return vertex_layout;
+    };
 
     StandardVertexData(
         float x = 0., float y = 0., float z = 0., float u = 0., float v = 0.,
@@ -56,21 +72,24 @@ typedef std::pair<std::vector<StandardVertexData>, std::vector<VertexIndex>>
     VerticesIndicesVectorPair;
 
 struct DrawBucketKey {
-    ViewIndexSet views;
+    RenderPassIndexSet render_passes;
+    ViewportIndexSet viewports;
     int16_t z_index;
     uint8_t root_distance;
-    Texture* texture_raw_ptr;
-    Material* material_raw_ptr;
+    Texture* texture;
+    Material* material;
     uint64_t state_flags;
     uint32_t stencil_flags;
 
     inline bool operator==(const DrawBucketKey& other) const
     {
         return (
-            this->views == other.views and this->z_index == other.z_index and
+            this->render_passes == other.render_passes and
+            this->viewports == other.viewports and
+            this->z_index == other.z_index and
             this->root_distance == other.root_distance and
-            this->texture_raw_ptr == other.texture_raw_ptr and
-            this->material_raw_ptr == other.material_raw_ptr and
+            this->texture == other.texture and
+            this->material == other.material and
             this->state_flags == other.state_flags and
             this->stencil_flags == other.stencil_flags);
     }
@@ -83,12 +102,12 @@ struct DrawBucketKey {
     inline bool operator<(const DrawBucketKey& other) const
     {
         return std::tie(
-                   this->views, this->z_index, this->root_distance,
-                   this->texture_raw_ptr, this->material_raw_ptr,
+                   this->render_passes, this->viewports, this->z_index,
+                   this->root_distance, this->texture, this->material,
                    this->state_flags, this->stencil_flags) <
                std::tie(
-                   other.views, other.z_index, other.root_distance,
-                   other.texture_raw_ptr, other.material_raw_ptr,
+                   other.render_passes, this->viewports, other.z_index,
+                   other.root_distance, other.texture, other.material,
                    other.state_flags, other.stencil_flags);
     }
 };
@@ -151,14 +170,11 @@ struct DrawUnit {
     DrawUnitDetails details;
 };
 
-typedef std::pair<
-    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
-    DrawUnitModificationPair;
+class DrawBucket;
 
-struct DrawBucket {
+class GeometryStream {
+  public:
     using DrawUnitIter = std::vector<DrawUnit>::const_iterator;
-    using ModsIter = std::vector<DrawUnitModification>::const_iterator;
-
     struct Range {
         DrawUnitIter begin;
         DrawUnitIter end;
@@ -171,12 +187,27 @@ struct DrawBucket {
         }
     };
 
+    inline bool empty() const { return this->_draw_units.empty(); }
     Range find_range() const;
     Range find_range(const DrawUnitIter start_pos) const;
-    void copy_range_details_to_transient_buffers(
+    void copy_range(
         const Range& range, bgfx::TransientVertexBuffer& vertex_buffer,
         bgfx::TransientIndexBuffer& index_buffer) const;
 
+  private:
+    const std::vector<DrawUnit>& _draw_units;
+
+    GeometryStream(const std::vector<DrawUnit>& draw_units);
+
+    friend class DrawBucket;
+};
+
+typedef std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
+    DrawUnitModificationPair;
+
+struct DrawBucket {
+    GeometryStream geometry_stream() const;
     void consume_modifications(
         const std::vector<DrawUnitModification>::iterator src_begin,
         const std::vector<DrawUnitModification>::iterator src_end);
@@ -200,8 +231,8 @@ struct hash<kaacore::DrawBucketKey> {
     size_t operator()(const kaacore::DrawBucketKey& key) const
     {
         return kaacore::hash_combined(
-            key.views, key.z_index, key.root_distance, key.texture_raw_ptr,
-            key.material_raw_ptr, key.state_flags, key.stencil_flags);
+            key.render_passes, key.viewports, key.z_index, key.root_distance,
+            key.texture, key.material, key.state_flags, key.stencil_flags);
     }
 };
 }

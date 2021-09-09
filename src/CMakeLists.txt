@@ -38,7 +38,8 @@ set(SRC_CXX_FILES
     timers.cpp
     transitions.cpp
     camera.cpp
-    views.cpp
+    render_passes.cpp
+    viewports.cpp
     spatial_index.cpp
     threading.cpp
     utils.cpp
@@ -79,7 +80,8 @@ set(SRC_H_FILES
     ../include/kaacore/transitions.h
     ../include/kaacore/node_transitions.h
     ../include/kaacore/camera.h
-    ../include/kaacore/views.h
+    ../include/kaacore/render_passes.h
+    ../include/kaacore/viewports.h
     ../include/kaacore/spatial_index.h
     ../include/kaacore/threading.h
     ../include/kaacore/easings.h

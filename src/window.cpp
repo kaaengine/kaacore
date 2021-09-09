@@ -89,11 +89,12 @@ glm::uvec2
 Window::size()
 {
     return get_engine()->make_call_from_main_thread<glm::uvec2>([this]() {
-        glm::uvec2 vec;
-        SDL_GetWindowSize(
-            this->_window, reinterpret_cast<int32_t*>(&vec.x),
-            reinterpret_cast<int32_t*>(&vec.y));
-        return vec;
+        return this->_peek_size();
+        // glm::uvec2 vec;
+        // SDL_GetWindowSize(
+        //     this->_window, reinterpret_cast<int32_t*>(&vec.x),
+        //     reinterpret_cast<int32_t*>(&vec.y));
+        // return vec;
     });
 }
 

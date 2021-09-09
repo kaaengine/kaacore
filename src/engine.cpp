@@ -198,7 +198,7 @@ Engine::virtual_resolution(const glm::uvec2& resolution)
         resolution.x > 0 and resolution.y > 0,
         "Virtual resolution must be greater than zero.");
     this->_virtual_resolution = resolution;
-    this->renderer->reset();
+    this->renderer->reset(this->window->size());
 }
 
 VirtualResolutionMode
@@ -211,7 +211,7 @@ void
 Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
-    this->renderer->reset();
+    this->renderer->reset(this->window->size());
 }
 
 bool
@@ -224,7 +224,7 @@ void
 Engine::vertical_sync(const bool vsync)
 {
     this->renderer->_vertical_sync = vsync;
-    this->renderer->reset();
+    this->renderer->reset(this->window->size());
 }
 
 std::vector<Display>
@@ -365,7 +365,7 @@ Engine::_swap_scenes()
     this->_scene->on_exit();
     this->_next_scene->on_enter();
     this->_scene = std::move(this->_next_scene);
-    this->_scene->reset_views();
+    this->_scene->reset_viewports();
 }
 
 void
@@ -393,8 +393,8 @@ Engine::_process_events()
         } else if (
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            this->renderer->reset();
-            this->_scene->reset_views();
+            this->renderer->reset({event.window.data1, event.window.data2});
+            this->_scene->reset_viewports();
         }
         this->input_manager->push_event(event);
     }

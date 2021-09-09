@@ -9,10 +9,8 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/statistics.h"
-#include "kaacore/views.h"
-
 #include "kaacore/scenes.h"
+#include "kaacore/statistics.h"
 
 namespace kaacore {
 
@@ -35,7 +33,7 @@ Scene::~Scene()
 Camera&
 Scene::camera()
 {
-    return this->views[views_default_z_index].camera;
+    return this->viewports[viewports_default_z_index].camera;
 }
 
 std::vector<Node*>&
@@ -153,15 +151,8 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
 void
 Scene::process_drawing()
 {
-    auto& renderer = get_engine()->renderer;
-    for (auto& view : this->views) {
-        renderer->process_view(view);
-    }
-
     this->draw_queue.process_modifications();
-    renderer->set_global_uniforms(
-        this->_last_dt.count(), this->_total_time.count());
-    renderer->render_draw_queue(this->draw_queue);
+    get_engine()->renderer->render_scene(this);
 }
 
 void
@@ -277,9 +268,9 @@ Scene::get_events() const
 }
 
 void
-Scene::reset_views()
+Scene::reset_viewports()
 {
-    this->views._mark_dirty();
+    this->viewports._mark_dirty();
 }
 
 } // namespace kaacore

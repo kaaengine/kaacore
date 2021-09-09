@@ -8,7 +8,7 @@ Camera::Camera()
     auto virtual_resolution = get_engine()->virtual_resolution();
     this->_position = {static_cast<double>(virtual_resolution.x) / 2,
                        static_cast<double>(virtual_resolution.y) / 2};
-    this->refresh();
+    this->_refresh();
 }
 
 glm::dvec2
@@ -56,19 +56,6 @@ Camera::scale(const glm::dvec2& scale)
     }
 }
 
-void
-Camera::refresh()
-{
-    this->_calculated_view = glm::translate(
-        glm::rotate(
-            glm::scale(
-                glm::fmat4(1.0),
-                glm::fvec3(this->_scale.x, this->_scale.y, 1.)),
-            static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
-        glm::fvec3(-this->_position.x, -this->_position.y, 0.));
-    this->_is_dirty = false;
-}
-
 glm::dvec2
 Camera::unproject_position(const glm::dvec2& pos)
 {
@@ -91,6 +78,19 @@ Camera::visible_area_bounding_box()
              glm::dvec2{virtual_resolution.x, virtual_resolution.y}),
          this->unproject_position(glm::dvec2{0, 0}),
          this->unproject_position(glm::dvec2{virtual_resolution.x, 0})});
+}
+
+void
+Camera::_refresh()
+{
+    this->_calculated_view = glm::translate(
+        glm::rotate(
+            glm::scale(
+                glm::fmat4(1.0),
+                glm::fvec3(this->_scale.x, this->_scale.y, 1.)),
+            static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
+        glm::fvec3(-this->_position.x, -this->_position.y, 0.));
+    this->_is_dirty = false;
 }
 
 } // namespace kaacore
