@@ -67,7 +67,7 @@ RenderPass::reset_clear_color()
 
 RenderPassesManager::RenderPassesManager()
 {
-    for (uint16_t view_index = 0; view_index < this->size(); ++view_index) {
+    for (auto view_index = 0; view_index < this->size(); ++view_index) {
         this->_render_passes[view_index]._index = view_index;
     }
 }

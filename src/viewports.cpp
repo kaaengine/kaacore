@@ -135,7 +135,7 @@ Viewport::_view_matrix() const
 
 ViewportsManager::ViewportsManager()
 {
-    for (uint16_t index = 0; index < this->size(); ++index) {
+    for (auto index = 0; index < this->size(); ++index) {
         this->_viewports[index]._index = index;
     }
 }
