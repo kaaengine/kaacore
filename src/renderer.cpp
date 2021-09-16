@@ -7,7 +7,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "kaacore/embedded_data.h"
-#include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
 #include "kaacore/log.h"
@@ -22,7 +21,7 @@ namespace kaacore {
 
 bgfx::VertexLayout _vertex_layout;
 constexpr uint16_t _internal_view_index = 0;
-constexpr uint16_t views_reserved_offset = 1;
+constexpr uint16_t _views_reserved_offset = 1;
 constexpr uint8_t _internal_sampler_stage_index = 0;
 const UniformSpecificationMap _default_uniforms = {
     {"s_texture", UniformSpecification(UniformType::sampler)},
@@ -242,7 +241,9 @@ RenderBatch::from_bucket(
     return {state, sorting_hint, bucket.geometry_stream()};
 }
 
-Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2 window_size)
+Renderer::Renderer(
+    bgfx::Init bgfx_init_data, const glm::uvec2 window_size,
+    glm::uvec2 virtual_resolution, VirtualResolutionMode mode)
 {
     KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
@@ -256,7 +257,7 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2 window_size)
     KAACORE_LOG_INFO("Initializing bgfx completed.");
     KAACORE_LOG_INFO("Initializing renderer.");
     _vertex_layout = StandardVertexData::init();
-    this->reset(window_size);
+    this->reset(window_size, virtual_resolution, mode);
     this->default_texture = load_default_texture();
     KAACORE_LOG_INFO("Loading embedded default shader.");
     auto default_program = load_embedded_program("vs_default", "fs_default");
@@ -412,16 +413,15 @@ Renderer::push_statistics() const
 }
 
 void
-Renderer::reset(const glm::uvec2 window_size)
+Renderer::reset(
+    const glm::uvec2 window_size, glm::uvec2 virtual_resolution,
+    VirtualResolutionMode mode)
 {
     KAACORE_LOG_DEBUG("Calling Renderer::reset()");
 
     bgfx::reset(window_size.x, window_size.y, this->_calculate_reset_flags());
     glm::uvec2 view_size, border_size;
-    auto virtual_resolution = get_engine()->virtual_resolution();
-    auto virtual_resolution_mode = get_engine()->_virtual_resolution_mode;
-
-    if (virtual_resolution_mode == VirtualResolutionMode::adaptive_stretch) {
+    if (mode == VirtualResolutionMode::adaptive_stretch) {
         double aspect_ratio =
             double(virtual_resolution.x) / double(virtual_resolution.y);
         double window_aspect_ratio =
@@ -436,11 +436,10 @@ Renderer::reset(const glm::uvec2 window_size)
         }
         border_size = {(window_size.x - view_size.x) / 2,
                        (window_size.y - view_size.y) / 2};
-    } else if (
-        virtual_resolution_mode == VirtualResolutionMode::aggresive_stretch) {
+    } else if (mode == VirtualResolutionMode::aggresive_stretch) {
         view_size = window_size;
         border_size = {0, 0};
-    } else if (virtual_resolution_mode == VirtualResolutionMode::no_stretch) {
+    } else if (mode == VirtualResolutionMode::no_stretch) {
         view_size = virtual_resolution;
         border_size = {
             window_size.x > view_size.x ? (window_size.x - view_size.x) / 2 : 0,
@@ -451,10 +450,7 @@ Renderer::reset(const glm::uvec2 window_size)
     }
     this->view_size = view_size;
     this->border_size = border_size;
-
-    bgfx::setViewRect(
-        _internal_view_index + views_reserved_offset, 0, 0, window_size.x,
-        window_size.y);
+    bgfx::setViewRect(_internal_view_index, 0, 0, window_size.x, window_size.y);
     bgfx::setViewClear(
         _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
 }
@@ -462,6 +458,7 @@ Renderer::reset(const glm::uvec2 window_size)
 void
 Renderer::process_render_pass(RenderPass& pass) const
 {
+    auto index = pass._index + _views_reserved_offset;
     if (pass._requires_clean) {
         uint32_t r, g, b, a;
         a = static_cast<uint32_t>(pass._clear_color.a * 255.0 + 0.5);
@@ -469,15 +466,15 @@ Renderer::process_render_pass(RenderPass& pass) const
         g = static_cast<uint32_t>(pass._clear_color.g * 255.0 + 0.5) << 16;
         r = static_cast<uint32_t>(pass._clear_color.r * 255.0 + 0.5) << 24;
         auto clear_color_hex = a + b + g + r;
-        bgfx::setViewClear(pass._index, pass._clear_flags, clear_color_hex);
+        bgfx::setViewClear(index, pass._clear_flags, clear_color_hex);
         pass._requires_clean = false;
     }
 
+    bgfx::touch(index);
     bgfx::setViewRect(
-        pass._index, this->border_size.x, this->border_size.y,
-        this->view_size.x, this->view_size.y);
-    bgfx::touch(pass._index);
-    bgfx::setViewMode(pass._index, bgfx::ViewMode::DepthAscending);
+        index, this->border_size.x, this->border_size.y, this->view_size.x,
+        this->view_size.y);
+    bgfx::setViewMode(index, bgfx::ViewMode::DepthAscending);
 }
 
 void
@@ -523,7 +520,7 @@ Renderer::render_batch(
                 [&call](uint16_t render_pass_index) {
                     auto program_handle = call.state.material->program->_handle;
                     bgfx::submit(
-                        render_pass_index + views_reserved_offset,
+                        render_pass_index + _views_reserved_offset,
                         program_handle, call.sorting_hint, BGFX_DISCARD_NONE);
                 });
             this->discard_render_state();
@@ -553,7 +550,7 @@ Renderer::render_draw_call(
     this->set_viewport_state(viewport_state);
     auto program_handle = call.state.material->program->_handle;
     bgfx::submit(
-        render_pass + views_reserved_offset, program_handle, call.sorting_hint,
+        render_pass + _views_reserved_offset, program_handle, call.sorting_hint,
         BGFX_DISCARD_ALL);
 }
 

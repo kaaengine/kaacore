@@ -9,8 +9,7 @@
 
 #include "kaacore/draw_queue.h"
 #include "kaacore/draw_unit.h"
-#include "kaacore/files.h"
-#include "kaacore/log.h"
+#include "kaacore/engine.h"
 #include "kaacore/materials.h"
 #include "kaacore/render_passes.h"
 #include "kaacore/resources.h"
@@ -96,6 +95,8 @@ struct RenderBatch {
         Material* default_material = nullptr);
 };
 
+enum class VirtualResolutionMode;
+
 class Renderer {
   public:
     DefaultShadingContext shading_context;
@@ -107,7 +108,9 @@ class Renderer {
     glm::uvec2 border_size;
     uint32_t border_color = 0x000000ff;
 
-    Renderer(bgfx::Init bgfx_init_data, const glm::uvec2 window_size);
+    Renderer(
+        bgfx::Init bgfx_init_data, const glm::uvec2 window_size,
+        glm::uvec2 virtual_resolution, VirtualResolutionMode mode);
     ~Renderer();
 
     bgfx::TextureHandle make_texture(
@@ -120,7 +123,9 @@ class Renderer {
     void begin_frame();
     void end_frame();
     void push_statistics() const;
-    void reset(const glm::uvec2 windows_size);
+    void reset(
+        const glm::uvec2 windows_size, glm::uvec2 virtual_resolution,
+        VirtualResolutionMode mode);
     void process_render_pass(RenderPass& view) const;
     void set_global_uniforms(const float last_dt, const float scene_time);
     void set_viewport_state(const ViewportState& state);

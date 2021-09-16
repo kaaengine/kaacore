@@ -88,9 +88,8 @@ Window::_peek_size()
 glm::uvec2
 Window::size()
 {
-    return get_engine()->make_call_from_main_thread<glm::uvec2>([this]() {
-        return this->_peek_size();
-    });
+    return get_engine()->make_call_from_main_thread<glm::uvec2>(
+        [this]() { return this->_peek_size(); });
 }
 
 void

@@ -90,8 +90,9 @@ Engine::Engine(
                          // meaning it will talk with system graphics.
     this->_engine_loop_thread =
         std::thread{[this, bgfx_init_data, window_size]() {
-            this->renderer =
-                std::make_unique<Renderer>(bgfx_init_data, window_size);
+            this->renderer = std::make_unique<Renderer>(
+                bgfx_init_data, window_size, this->_virtual_resolution,
+                this->_virtual_resolution_mode);
             this->resources_manager = std::make_unique<ResourcesManager>();
             this->_engine_thread_entrypoint();
             // When _engine_thread_entrypoint() exits it means engine is
@@ -114,7 +115,9 @@ Engine::Engine(
         }
     }
 #else
-    this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
+    this->renderer = std::make_unique<Renderer>(
+        bgfx_init_data, window_size, this->_virtual_resolution,
+        this->_virtual_resolution_mode);
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
     this->window->show();
@@ -198,7 +201,8 @@ Engine::virtual_resolution(const glm::uvec2& resolution)
         resolution.x > 0 and resolution.y > 0,
         "Virtual resolution must be greater than zero.");
     this->_virtual_resolution = resolution;
-    this->renderer->reset(this->window->size());
+    this->renderer->reset(
+        this->window->size(), resolution, this->_virtual_resolution_mode);
 }
 
 VirtualResolutionMode
@@ -211,7 +215,8 @@ void
 Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
-    this->renderer->reset(this->window->size());
+    this->renderer->reset(
+        this->window->size(), this->_virtual_resolution, vr_mode);
 }
 
 bool
@@ -224,7 +229,9 @@ void
 Engine::vertical_sync(const bool vsync)
 {
     this->renderer->_vertical_sync = vsync;
-    this->renderer->reset(this->window->size());
+    this->renderer->reset(
+        this->window->size(), this->_virtual_resolution,
+        this->_virtual_resolution_mode);
 }
 
 std::vector<Display>
@@ -393,7 +400,9 @@ Engine::_process_events()
         } else if (
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            this->renderer->reset({event.window.data1, event.window.data2});
+            this->renderer->reset(
+                {event.window.data1, event.window.data2},
+                this->_virtual_resolution, this->_virtual_resolution_mode);
             this->_scene->reset_viewports();
         }
         this->input_manager->push_event(event);
