@@ -26,6 +26,9 @@ struct ResourceReference {
 
     ResourceReference() : res_ptr(nullptr) {}
     ResourceReference(const std::shared_ptr<T>& ptr) : res_ptr(ptr) {}
+    template<typename Y>
+    ResourceReference(const ResourceReference<Y>& ref) : res_ptr(ref.res_ptr)
+    {}
     inline operator bool() const { return bool(this->res_ptr); }
     T* get() const { return this->res_ptr.get(); }
 

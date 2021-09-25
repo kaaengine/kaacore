@@ -10,13 +10,12 @@
 #include "kaacore/nodes.h"
 #include "kaacore/physics.h"
 #include "kaacore/render_passes.h"
+#include "kaacore/renderer.h"
 #include "kaacore/spatial_index.h"
 #include "kaacore/timers.h"
 #include "kaacore/viewports.h"
 
 namespace kaacore {
-
-class Renderer;
 
 class Scene {
     using NodesQueue = std::vector<Node*>;
@@ -42,6 +41,9 @@ class Scene {
     void resolve_spatial_index_changes(const NodesQueue& processing_queue);
     void update_nodes_drawing_queue(const NodesQueue& processing_queue);
     void process_drawing();
+    void draw(
+        const uint16_t render_pass, const uint16_t viewport,
+        const DrawCall& draw_call);
     void remove_marked_nodes();
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
@@ -68,6 +70,7 @@ class Scene {
     Duration _last_dt = 0s;
     Duration _total_time = 0s;
     NodesQueue _nodes_remove_queue;
+    std::vector<DrawCommand> _draw_commands;
     std::atomic<uint64_t> _node_scene_tree_id_counter = 0;
 
     friend class Engine;

@@ -15,7 +15,7 @@ _create_test_texture()
     const std::vector<uint8_t> image_content{0xFF, 0xFF, 0xFF, 0xFF};
     auto image_container = kaacore::load_raw_image(
         bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
-    return kaacore::Texture::load(image_container);
+    return kaacore::ImageTexture::load(image_container);
 }
 
 TEST_CASE("Test materials")

@@ -3,11 +3,15 @@
 #include <sstream>
 #include <utility>
 
+#include "kaacore/embedded_data.h"
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
+#include "kaacore/platform.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shaders.h"
+
+#include <cmrc/cmrc.hpp>
 
 namespace kaacore {
 
@@ -42,6 +46,69 @@ _load_shader(const std::string& path)
     File file(path);
     return Memory::copy(
         reinterpret_cast<std::byte*>(file.content.data()), file.content.size());
+}
+
+Memory
+_load_embedded_shader_memory(const std::string& path)
+{
+    try {
+        return get_embedded_file_content(embedded_shaders_filesystem, path);
+    } catch (embedded_file_error& err) {
+        KAACORE_LOG_ERROR(
+            "Failed to load embedded binary shader: {} ({})", path, err.what());
+        throw;
+    }
+}
+
+std::string
+_get_shader_model_tag(ShaderModel model)
+{
+    switch (model) {
+        case ShaderModel::glsl:
+            return "glsl";
+        case ShaderModel::spirv:
+            return "spirv";
+        case ShaderModel::metal:
+            return "metal";
+        case ShaderModel::hlsl_dx9:
+            return "dx9";
+        case ShaderModel::hlsl_dx11:
+            return "dx11";
+        default:
+            return "unknown";
+    }
+}
+
+ResourceReference<Shader>
+load_embedded_shader(
+    const std::string& shader_name, const ShaderType shader_type)
+{
+    std::vector<ShaderModel> models;
+    switch (get_platform()) {
+        case PlatformType::linux:
+            models = {ShaderModel::glsl, ShaderModel::spirv};
+            break;
+        case PlatformType::osx:
+            models = {ShaderModel::metal, ShaderModel::glsl,
+                      ShaderModel::spirv};
+            break;
+        case PlatformType::windows:
+            models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
+                      ShaderModel::glsl, ShaderModel::spirv};
+            break;
+        default:
+            KAACORE_LOG_ERROR(
+                "Unsupported platform! Can't load embedded shaders.");
+    }
+
+    std::string path;
+    ShaderModelMemoryMap memory_map;
+    for (auto model : models) {
+        auto shader_model_tag = _get_shader_model_tag(model);
+        path = fmt::format("{}/{}.bin", shader_model_tag, shader_name);
+        memory_map[model] = _load_embedded_shader_memory(path);
+    }
+    return Shader::create(shader_type, memory_map);
 }
 
 Shader::Shader(const ShaderModelMemoryMap& memory_map, const ShaderType type)

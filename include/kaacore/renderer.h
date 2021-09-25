@@ -31,15 +31,16 @@ enum class RendererType {
     unsupported
 };
 
+class Renderer;
+
 class DefaultShadingContext : public ShadingContext {
   public:
     DefaultShadingContext() = default;
     DefaultShadingContext(const UniformSpecificationMap& uniforms);
     DefaultShadingContext& operator=(DefaultShadingContext&& other);
     void destroy();
-    void set_uniform_texture(
-        const std::string& name, const Texture* texture, const uint8_t stage,
-        const uint32_t flags = std::numeric_limits<uint32_t>::max());
+
+    friend class Renderer;
 };
 
 struct RenderState {
@@ -69,6 +70,12 @@ struct DrawCall {
     void bind_buffers() const;
 };
 
+struct DrawCommand {
+    uint16_t pass;
+    uint16_t viewport;
+    DrawCall call;
+};
+
 struct RenderBatch {
     RenderState state;
     uint32_t sorting_hint;
@@ -90,9 +97,28 @@ struct RenderBatch {
     }
 
     static RenderBatch from_bucket(
-        const DrawBucketKey& key, const DrawBucket& bucket,
-        Texture* default_texture = nullptr,
-        Material* default_material = nullptr);
+        const DrawBucketKey& key, const DrawBucket& bucket);
+};
+
+struct RendererCapabilities {
+    struct GpuInfo {
+        uint16_t vendor_id;
+        uint16_t device_id;
+    };
+
+    bool homogeneous_depth;
+    bool origin_bottom_left;
+    uint32_t max_draw_calls;
+    uint32_t max_texture_size;
+    uint32_t max_texture_layers;
+    uint32_t max_render_passes;
+    uint32_t max_render_targets;
+    uint32_t max_programs;
+    uint32_t max_shaders;
+    uint32_t max_textures;
+    uint32_t max_samplers;
+    uint32_t max_uniforms;
+    std::vector<GpuInfo> gpus;
 };
 
 enum class VirtualResolutionMode;
@@ -118,6 +144,7 @@ class Renderer {
         const uint64_t flags) const;
     RendererType type() const;
     ShaderModel shader_model() const;
+    const RendererCapabilities capabilities() const;
 
     void destroy_texture(const bgfx::TextureHandle& handle) const;
     void begin_frame();
@@ -126,18 +153,19 @@ class Renderer {
     void reset(
         const glm::uvec2 windows_size, glm::uvec2 virtual_resolution,
         VirtualResolutionMode mode);
-    void process_render_pass(RenderPass& view) const;
     void set_global_uniforms(const float last_dt, const float scene_time);
+    void set_pass_state(const RenderPassState& state);
     void set_viewport_state(const ViewportState& state);
-    void set_render_state(const RenderState& state);
+    bgfx::ProgramHandle set_render_state(const RenderState& state);
     void discard_render_state();
     void render_scene(Scene* scene);
     void render_batch(
         const RenderBatch& batch, const RenderPassIndexSet render_passes,
         const ViewportIndexSet viewports,
+        const RenderPassStateArray& render_pass_states,
         const ViewportStateArray& viewport_states);
     void render_draw_call(
-        const uint16_t render_pass, const DrawCall& call,
+        const DrawCall& call, const RenderPassState& render_pass_state,
         const ViewportState& viewport_state);
     static std::unordered_set<std::string>& reserved_uniform_names();
 

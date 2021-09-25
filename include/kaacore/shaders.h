@@ -1,9 +1,11 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+
+#include <bgfx/bgfx.h>
 
 #include "kaacore/memory.h"
 #include "kaacore/resources.h"
@@ -28,6 +30,11 @@ enum class ShaderModel { hlsl_dx9, hlsl_dx11, glsl, spirv, metal, unknown };
 using ShaderModelMap = std::unordered_map<ShaderModel, std::string>;
 using ShaderModelMemoryMap = std::unordered_map<ShaderModel, Memory>;
 
+ResourceReference<Shader>
+load_embedded_shader(
+    const std::string& shader_name, const ShaderType shader_type);
+
+class Effect;
 class Program;
 class Renderer;
 
@@ -53,6 +60,7 @@ class Shader : public Resource {
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
+    friend class Effect;
     friend class Program;
     friend class Renderer;
     friend class ResourcesRegistry<ShaderKey, Shader>;

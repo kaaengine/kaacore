@@ -153,6 +153,15 @@ Scene::process_drawing()
 {
     this->draw_queue.process_modifications();
     get_engine()->renderer->render_scene(this);
+    this->_draw_commands.clear();
+}
+
+void
+Scene::draw(
+    const uint16_t render_pass, const uint16_t viewport,
+    const DrawCall& draw_call)
+{
+    this->_draw_commands.push_back({render_pass, viewport, draw_call});
 }
 
 void

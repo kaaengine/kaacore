@@ -39,6 +39,7 @@ set(SRC_CXX_FILES
     transitions.cpp
     camera.cpp
     render_passes.cpp
+    render_targets.cpp
     viewports.cpp
     spatial_index.cpp
     threading.cpp
@@ -81,6 +82,7 @@ set(SRC_H_FILES
     ../include/kaacore/node_transitions.h
     ../include/kaacore/camera.h
     ../include/kaacore/render_passes.h
+    ../include/kaacore/render_targets.h
     ../include/kaacore/viewports.h
     ../include/kaacore/spatial_index.h
     ../include/kaacore/threading.h

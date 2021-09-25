@@ -22,7 +22,7 @@ struct SpritesDemoScene : kaacore::Scene {
         const char* filepath, int frame_w, int frame_h, int padding_x,
         int padding_y)
     {
-        this->texture = kaacore::Texture::load(filepath);
+        this->texture = kaacore::ImageTexture::load(filepath);
         kaacore::Sprite sprite{this->texture};
         auto frames = kaacore::split_spritesheet(
             sprite, {frame_w, frame_h}, 0, 0, {padding_x, padding_y});

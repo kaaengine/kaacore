@@ -9,18 +9,18 @@
 namespace kaacore {
 
 static bx::DefaultAllocator texture_image_allocator;
-ResourcesRegistry<std::string, Texture> _textures_registry;
+ResourcesRegistry<std::string, ImageTexture> _image_textures_registry;
 
 void
 initialize_textures()
 {
-    _textures_registry.initialze();
+    _image_textures_registry.initialze();
 }
 
 void
 uninitialize_textures()
 {
-    _textures_registry.uninitialze();
+    _image_textures_registry.uninitialze();
 }
 
 void
@@ -68,8 +68,13 @@ load_raw_image(
     return image_container;
 }
 
-Texture::Texture(const std::string& path, uint64_t flags)
-    : path(path), flags(flags)
+bgfx::TextureHandle
+Texture::handle() const
+{
+    return this->_handle;
+}
+
+ImageTexture::ImageTexture(const std::string& path) : path(path)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
         load_image(path), _destroy_image_container);
@@ -78,7 +83,7 @@ Texture::Texture(const std::string& path, uint64_t flags)
     }
 }
 
-Texture::Texture(bimg::ImageContainer* image_container)
+ImageTexture::ImageTexture(bimg::ImageContainer* image_container)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
         image_container, _destroy_image_container);
@@ -87,51 +92,51 @@ Texture::Texture(bimg::ImageContainer* image_container)
     }
 }
 
-Texture::~Texture()
+ImageTexture::~ImageTexture()
 {
     if (this->is_initialized) {
         this->_uninitialize();
     }
 }
 
-ResourceReference<Texture>
-Texture::load(const std::string& path, uint64_t flags)
+ResourceReference<ImageTexture>
+ImageTexture::load(const std::string& path)
 {
-    std::shared_ptr<Texture> texture;
-    if ((texture = _textures_registry.get_resource(path))) {
+    std::shared_ptr<ImageTexture> texture;
+    if ((texture = _image_textures_registry.get_resource(path))) {
         return texture;
     }
-    texture = std::shared_ptr<Texture>(new Texture(path, flags));
-    _textures_registry.register_resource(path, texture);
+    texture = std::shared_ptr<ImageTexture>(new ImageTexture(path));
+    _image_textures_registry.register_resource(path, texture);
     return texture;
 }
 
-ResourceReference<Texture>
-Texture::load(bimg::ImageContainer* image_container)
+ResourceReference<ImageTexture>
+ImageTexture::load(bimg::ImageContainer* image_container)
 {
-    return std::shared_ptr<Texture>(new Texture(image_container));
+    return std::shared_ptr<ImageTexture>(new ImageTexture(image_container));
 }
 
 glm::uvec2
-Texture::get_dimensions()
+ImageTexture::get_dimensions()
 {
     KAACORE_CHECK(this->image_container != nullptr, "Invalid image container.");
     return {this->image_container->m_width, this->image_container->m_height};
 }
 
 void
-Texture::_initialize()
+ImageTexture::_initialize()
 {
-    this->handle = get_engine()->renderer->make_texture(
-        this->image_container, this->flags);
-    bgfx::setName(this->handle, this->path.c_str());
+    this->_handle = get_engine()->renderer->make_texture(
+        this->image_container, BGFX_SAMPLER_NONE);
+    bgfx::setName(this->_handle, this->path.c_str());
     this->is_initialized = true;
 }
 
 void
-Texture::_uninitialize()
+ImageTexture::_uninitialize()
 {
-    get_engine()->renderer->destroy_texture(this->handle);
+    get_engine()->renderer->destroy_texture(this->_handle);
     this->is_initialized = false;
 }
 

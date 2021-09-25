@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+// #include <utility>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,29 +35,36 @@ class FontData;
 
 class Texture : public Resource {
   public:
+    bgfx::TextureHandle handle() const;
+    virtual glm::uvec2 get_dimensions() = 0;
+
+  protected:
+    bgfx::TextureHandle _handle;
+
+    friend class FontData;
+};
+
+class ImageTexture : public Texture {
+  public:
     const std::string path;
-    bgfx::TextureHandle handle;
-    const uint64_t flags = BGFX_SAMPLER_NONE;
     std::shared_ptr<bimg::ImageContainer> image_container;
 
-    Texture();
-    ~Texture();
-    glm::uvec2 get_dimensions();
+    ImageTexture();
+    ~ImageTexture();
+    glm::uvec2 get_dimensions() override;
 
-    static ResourceReference<Texture> load(
-        const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
-    static ResourceReference<Texture> load(
+    static ResourceReference<ImageTexture> load(const std::string& path);
+    static ResourceReference<ImageTexture> load(
         bimg::ImageContainer* image_container);
 
   private:
-    Texture(bimg::ImageContainer* image_container);
-    Texture(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
+    ImageTexture(bimg::ImageContainer* image_container);
+    ImageTexture(const std::string& path);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
-    friend class FontData;
-    friend class ResourcesRegistry<std::string, Texture>;
-    friend std::unique_ptr<Texture> load_default_texture();
+    friend class ResourcesRegistry<std::string, ImageTexture>;
+    friend std::unique_ptr<ImageTexture> load_default_texture();
 };
 
 template<typename T = uint8_t>

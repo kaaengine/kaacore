@@ -55,6 +55,9 @@ class ShadingContext : public Resource {
     virtual void _initialize() override;
     virtual void _uninitialize() override;
     bool _name_in_registry(const std::string& name) const;
+    void _set_uniform_texture(
+        const std::string& name, const Texture* texture, const uint8_t stage,
+        const uint32_t flags = std::numeric_limits<uint32_t>::max());
 };
 
 class Material : public ShadingContext {

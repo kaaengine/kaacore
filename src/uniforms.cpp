@@ -161,7 +161,7 @@ Sampler::set(
     const ResourceReference<Texture>& texture, const uint8_t stage,
     const uint32_t flags)
 {
-    this->_value = texture->handle;
+    this->_value = texture->handle();
     this->_texture = texture.res_ptr;
     this->_stage = stage;
     this->_flags = flags;
@@ -170,16 +170,16 @@ Sampler::set(
 void
 Sampler::set(const SamplerValue& value)
 {
-    this->_value = value.texture->handle;
+    this->_value = value.texture->handle();
     this->_texture = value.texture.res_ptr;
     this->_stage = value.stage;
     this->_flags = value.flags;
 }
 
 void
-Sampler::set(const Texture* texture, const uint8_t stage, const uint32_t flags)
+Sampler::_set(const Texture* texture, const uint8_t stage, const uint32_t flags)
 {
-    this->_value = texture->handle;
+    this->_value = texture->handle();
     this->_texture = std::shared_ptr<Texture>(nullptr);
     this->_stage = stage;
     this->_flags = flags;

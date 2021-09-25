@@ -6,11 +6,9 @@
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "kaacore/embedded_data.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
 #include "kaacore/log.h"
-#include "kaacore/memory.h"
 #include "kaacore/platform.h"
 #include "kaacore/renderer.h"
 #include "kaacore/scenes.h"
@@ -52,37 +50,6 @@ _release_used_container(void* _data, void* image_container)
     _used_containers.erase(key);
 }
 
-std::string
-get_shader_model_tag(ShaderModel model)
-{
-    switch (model) {
-        case ShaderModel::glsl:
-            return "glsl";
-        case ShaderModel::spirv:
-            return "spirv";
-        case ShaderModel::metal:
-            return "metal";
-        case ShaderModel::hlsl_dx9:
-            return "dx9";
-        case ShaderModel::hlsl_dx11:
-            return "dx11";
-        default:
-            return "unknown";
-    }
-}
-
-Memory
-load_embedded_shader(const std::string& path)
-{
-    try {
-        return get_embedded_file_content(embedded_shaders_filesystem, path);
-    } catch (embedded_file_error& err) {
-        KAACORE_LOG_ERROR(
-            "Failed to load embedded binary shader: {} ({})", path, err.what());
-        throw;
-    }
-}
-
 std::pair<ResourceReference<Shader>, ResourceReference<Shader>>
 load_embedded_shaders(
     const std::string vertex_shader_name,
@@ -92,48 +59,20 @@ load_embedded_shaders(
         "Loading embedded shaders: {}, {}", vertex_shader_name,
         fragment_shader_name);
     KAACORE_LOG_TRACE("Detected platform : {}", get_platform_name());
-
-    std::vector<ShaderModel> models;
-    switch (get_platform()) {
-        case PlatformType::linux:
-            models = {ShaderModel::glsl, ShaderModel::spirv};
-            break;
-        case PlatformType::osx:
-            models = {ShaderModel::metal, ShaderModel::glsl,
-                      ShaderModel::spirv};
-            break;
-        case PlatformType::windows:
-            models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
-                      ShaderModel::glsl, ShaderModel::spirv};
-            break;
-        default:
-            KAACORE_LOG_ERROR(
-                "Unsupported platform! Can't load embedded shaders.");
-    }
-
-    std::string path;
-    ShaderModelMemoryMap vertex_memory_map;
-    ShaderModelMemoryMap fragment_memory_map;
-    for (auto model : models) {
-        auto shader_model_tag = get_shader_model_tag(model);
-        path = fmt::format("{}/{}.bin", shader_model_tag, vertex_shader_name);
-        vertex_memory_map[model] = load_embedded_shader(path);
-        path = fmt::format("{}/{}.bin", shader_model_tag, fragment_shader_name);
-        fragment_memory_map[model] = load_embedded_shader(path);
-    }
-    return {Shader::create(ShaderType::vertex, vertex_memory_map),
-            Shader::create(ShaderType::fragment, fragment_memory_map)};
+    return {load_embedded_shader(vertex_shader_name, ShaderType::vertex),
+            load_embedded_shader(fragment_shader_name, ShaderType::fragment)};
 }
 
-std::unique_ptr<Texture>
+std::unique_ptr<ImageTexture>
 load_default_texture()
 {
     // 1x1 white texture
     static const std::vector<uint8_t> image_content{0xFF, 0xFF, 0xFF, 0xFF};
     auto image_container =
         load_raw_image(bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
-    auto texture = std::unique_ptr<Texture>(new Texture(image_container));
-    bgfx::setName(texture->handle, "DEFAULT TEXTURE");
+    auto texture =
+        std::unique_ptr<ImageTexture>(new ImageTexture(image_container));
+    bgfx::setName(texture->handle(), "DEFAULT TEXTURE");
     return texture;
 }
 
@@ -160,16 +99,6 @@ DefaultShadingContext::operator=(DefaultShadingContext&& other)
     }
     this->_uniforms = std::move(other._uniforms);
     return *this;
-}
-
-void
-DefaultShadingContext::set_uniform_texture(
-    const std::string& name, const Texture* texture, const uint8_t stage,
-    const uint32_t flags)
-{
-    KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
-    std::get<Sampler>(this->_uniforms[name]).set(texture, stage, flags);
 }
 
 void
@@ -227,17 +156,13 @@ DrawCall::bind_buffers() const
 }
 
 RenderBatch
-RenderBatch::from_bucket(
-    const DrawBucketKey& key, const DrawBucket& bucket,
-    Texture* default_texture, Material* default_material)
+RenderBatch::from_bucket(const DrawBucketKey& key, const DrawBucket& bucket)
 {
     uint32_t sorting_hint =
         (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
     sorting_hint <<= 16;
     sorting_hint |= key.root_distance;
     auto state = RenderState::from_bucket_key(key);
-    state.texture = state.texture ? state.texture : default_texture;
-    state.material = state.material ? state.material : default_material;
     return {state, sorting_hint, bucket.geometry_stream()};
 }
 
@@ -367,6 +292,31 @@ Renderer::shader_model() const
     }
 }
 
+const RendererCapabilities
+Renderer::capabilities() const
+{
+    auto caps = bgfx::getCaps();
+    std::vector<RendererCapabilities::GpuInfo> gpus;
+    for (int i = 0; i < caps->numGPUs; ++i) {
+        auto gpu = caps->gpu[i];
+        gpus.push_back({gpu.vendorId, gpu.deviceId});
+    }
+
+    return {caps->homogeneousDepth,
+            caps->originBottomLeft,
+            caps->limits.maxDrawCalls,
+            caps->limits.maxTextureSize,
+            caps->limits.maxTextureLayers,
+            caps->limits.maxViews,
+            caps->limits.maxFBAttachments,
+            caps->limits.maxPrograms,
+            caps->limits.maxShaders,
+            caps->limits.maxTextures,
+            caps->limits.maxShaders,
+            caps->limits.maxUniforms,
+            gpus};
+}
+
 void
 Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 {
@@ -450,108 +400,18 @@ Renderer::reset(
     }
     this->view_size = view_size;
     this->border_size = border_size;
-    bgfx::setViewRect(_internal_view_index, 0, 0, window_size.x, window_size.y);
+
+    // internal pass
     bgfx::setViewClear(
         _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
-}
+    bgfx::setViewRect(_internal_view_index, 0, 0, bgfx::BackbufferRatio::Equal);
 
-void
-Renderer::process_render_pass(RenderPass& pass) const
-{
-    auto index = pass._index + _views_reserved_offset;
-    if (pass._requires_clean) {
-        uint32_t r, g, b, a;
-        a = static_cast<uint32_t>(pass._clear_color.a * 255.0 + 0.5);
-        b = static_cast<uint32_t>(pass._clear_color.b * 255.0 + 0.5) << 8;
-        g = static_cast<uint32_t>(pass._clear_color.g * 255.0 + 0.5) << 16;
-        r = static_cast<uint32_t>(pass._clear_color.r * 255.0 + 0.5) << 24;
-        auto clear_color_hex = a + b + g + r;
-        bgfx::setViewClear(index, pass._clear_flags, clear_color_hex);
-        pass._requires_clean = false;
+    // user available passes
+    for (auto pass_index = _internal_view_index + _views_reserved_offset;
+         pass_index <= KAACORE_MAX_RENDER_PASSES; ++pass_index) {
+        bgfx::setViewRect(
+            pass_index, border_size.x, border_size.y, view_size.x, view_size.y);
     }
-
-    bgfx::touch(index);
-    bgfx::setViewRect(
-        index, this->border_size.x, this->border_size.y, this->view_size.x,
-        this->view_size.y);
-    bgfx::setViewMode(index, bgfx::ViewMode::DepthAscending);
-}
-
-void
-Renderer::render_scene(Scene* scene)
-{
-    this->set_global_uniforms(
-        scene->_last_dt.count(), scene->_total_time.count());
-
-    bgfx::touch(_internal_view_index);
-    auto viewport_states = scene->viewports.take_snapshot();
-    for (auto& render_pass : scene->render_passes) {
-        this->process_render_pass(render_pass);
-    }
-
-    for (const auto& [key, bucket] : scene->draw_queue) {
-        auto batch = RenderBatch::from_bucket(
-            key, bucket, this->default_texture.get(),
-            this->default_material.get());
-        if (batch.geometry_stream.empty()) {
-            continue;
-        }
-
-        this->render_batch(
-            batch, key.render_passes, key.viewports, viewport_states);
-    }
-}
-
-void
-Renderer::render_batch(
-    const RenderBatch& batch, const RenderPassIndexSet target_render_passes,
-    const ViewportIndexSet target_viewports,
-    const ViewportStateArray& viewport_states)
-{
-    batch.each_draw_call([this, target_render_passes, target_viewports,
-                          &viewport_states](const DrawCall& call) {
-        call.bind_buffers();
-        target_viewports.each_active_index([this, target_render_passes, &call,
-                                            &viewport_states](
-                                               uint16_t viewport_index) {
-            this->set_render_state(call.state);
-            this->set_viewport_state(viewport_states[viewport_index]);
-            target_render_passes.each_active_index(
-                [&call](uint16_t render_pass_index) {
-                    auto program_handle = call.state.material->program->_handle;
-                    bgfx::submit(
-                        render_pass_index + _views_reserved_offset,
-                        program_handle, call.sorting_hint, BGFX_DISCARD_NONE);
-                });
-            this->discard_render_state();
-        });
-    });
-}
-
-void
-Renderer::set_render_state(const RenderState& state)
-{
-    this->shading_context.set_uniform_texture(
-        "s_texture", state.texture, _internal_sampler_stage_index);
-    this->shading_context.bind("s_texture");
-    state.material->bind();
-    bgfx::setState(
-        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | state.state_flags);
-    bgfx::setStencil(state.stencil_flags);
-}
-
-void
-Renderer::render_draw_call(
-    const uint16_t render_pass, const DrawCall& call,
-    const ViewportState& viewport_state)
-{
-    this->set_render_state(call.state);
-    this->set_viewport_state(viewport_state);
-    auto program_handle = call.state.material->program->_handle;
-    bgfx::submit(
-        render_pass + _views_reserved_offset, program_handle, call.sorting_hint,
-        BGFX_DISCARD_ALL);
 }
 
 void
@@ -561,6 +421,34 @@ Renderer::set_global_uniforms(const float last_dt, const float scene_time)
     this->shading_context.set_uniform_value<glm::fvec4>(
         "u_vec4_slot1", u_vec4_slot1);
     this->shading_context.bind("u_vec4_slot1");
+}
+
+void
+Renderer::set_pass_state(const RenderPassState& state)
+{
+    if (not state.requires_clean) {
+        return;
+    }
+
+    auto view_index = state.index + _views_reserved_offset;
+    if (state.active_attachments_number) {
+        for (auto i = 0; i < state.clear_colors.size(); ++i) {
+            auto color_value = reinterpret_cast<const float*>(
+                glm::value_ptr(state.clear_colors[i]));
+            bgfx::setPaletteColor(i, color_value);
+        }
+        bgfx::setViewClear(
+            view_index, state.clear_flags, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7);
+    } else {
+        uint32_t r, g, b, a;
+        auto clear_color = state.clear_colors[0];
+        a = static_cast<uint32_t>(clear_color.a * 255.0 + 0.5);
+        b = static_cast<uint32_t>(clear_color.b * 255.0 + 0.5) << 8;
+        g = static_cast<uint32_t>(clear_color.g * 255.0 + 0.5) << 16;
+        r = static_cast<uint32_t>(clear_color.r * 255.0 + 0.5) << 24;
+        auto clear_color_hex = a + b + g + r;
+        bgfx::setViewClear(view_index, state.clear_flags, clear_color_hex);
+    }
 }
 
 void
@@ -595,6 +483,113 @@ Renderer::set_viewport_state(const ViewportState& state)
         static_cast<uint16_t>(state.view_rect.y),
         static_cast<uint16_t>(state.view_rect.z),
         static_cast<uint16_t>(state.view_rect.w));
+}
+
+bgfx::ProgramHandle
+Renderer::set_render_state(const RenderState& state)
+{
+    auto texture = state.texture ? state.texture : this->default_texture.get();
+    auto material =
+        state.material ? state.material : this->default_material.get_valid();
+    this->shading_context._set_uniform_texture(
+        "s_texture", texture, _internal_sampler_stage_index);
+    this->shading_context.bind("s_texture");
+    material->bind();
+    bgfx::setState(
+        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | state.state_flags);
+    bgfx::setStencil(state.stencil_flags);
+    return material->program->_handle;
+}
+
+void
+Renderer::render_scene(Scene* scene)
+{
+    this->set_global_uniforms(
+        scene->_last_dt.count(), scene->_total_time.count());
+
+    auto viewport_states = scene->viewports.take_snapshot();
+    auto render_pass_states = scene->render_passes.take_snapshot();
+
+    // drawing of nodes tree
+    for (const auto& [key, bucket] : scene->draw_queue) {
+        auto batch = RenderBatch::from_bucket(key, bucket);
+        if (batch.geometry_stream.empty()) {
+            continue;
+        }
+
+        this->render_batch(
+            batch, key.render_passes, key.viewports, render_pass_states,
+            viewport_states);
+    }
+
+    // drawing of custom draw calls
+    for (auto& draw_command : scene->_draw_commands) {
+        this->render_draw_call(
+            draw_command.call, render_pass_states[draw_command.pass],
+            viewport_states[draw_command.viewport]);
+    }
+
+    // effects
+    bgfx::touch(_internal_view_index);
+    for (auto& render_pass : scene->render_passes) {
+        bgfx::touch(render_pass._index + _views_reserved_offset);
+        if (not render_pass.effect) {
+            continue;
+        }
+
+        ViewportState viewport_state{{this->border_size, this->view_size},
+                                     glm::fmat4(1.f),
+                                     glm::fmat4(1.f)};
+        this->render_draw_call(
+            render_pass.effect->draw_call(),
+            render_pass_states[render_pass._index], viewport_state);
+    }
+
+    scene->render_passes._reset();
+}
+
+void
+Renderer::render_batch(
+    const RenderBatch& batch, const RenderPassIndexSet target_render_passes,
+    const ViewportIndexSet target_viewports,
+    const RenderPassStateArray& render_pass_states,
+    const ViewportStateArray& viewport_states)
+{
+    batch.each_draw_call([=, &render_pass_states,
+                          &viewport_states](const DrawCall& call) {
+        call.bind_buffers();
+        // iterate over viewports first in order to minimalize state changes
+        target_viewports.each_active_index([=, &call, &render_pass_states,
+                                            &viewport_states](
+                                               uint16_t viewport_index) {
+            auto program_handle = this->set_render_state(call.state);
+            this->set_viewport_state(viewport_states[viewport_index]);
+            target_render_passes.each_active_index(
+                [this, program_handle, sorting_hint = call.sorting_hint,
+                 &render_pass_states](uint16_t render_pass_index) {
+                    this->set_pass_state(render_pass_states[render_pass_index]);
+                    bgfx::submit(
+                        render_pass_index + _views_reserved_offset,
+                        program_handle, sorting_hint, BGFX_DISCARD_NONE);
+                });
+            this->discard_render_state();
+        });
+    });
+}
+
+void
+Renderer::render_draw_call(
+    const DrawCall& call, const RenderPassState& pass_state,
+    const ViewportState& viewport_state)
+{
+    call.bind_buffers();
+    this->set_pass_state(pass_state);
+    this->set_viewport_state(viewport_state);
+    auto program_handle = this->set_render_state(call.state);
+    bgfx::submit(
+        pass_state.index + _views_reserved_offset, program_handle,
+        call.sorting_hint, BGFX_DISCARD_ALL);
 }
 
 std::unordered_set<std::string>&
