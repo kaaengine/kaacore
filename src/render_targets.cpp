@@ -44,9 +44,22 @@ RenderTarget::create()
 }
 
 glm::uvec2
-RenderTarget::get_dimensions()
+RenderTarget::get_dimensions() const
 {
     return get_engine()->window->size();
+}
+
+glm::dvec4
+RenderTarget::clear_color() const
+{
+    return this->_clear_color;
+}
+
+void
+RenderTarget::clear_color(const glm::dvec4& color)
+{
+    this->_clear_color = color;
+    this->_requires_clean = true;
 }
 
 void

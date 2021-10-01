@@ -430,7 +430,7 @@ Renderer::set_pass_state(const RenderPassState& state)
         return;
     }
 
-    auto view_index = state.index + _views_reserved_offset;
+    auto pass_index = state.index + _views_reserved_offset;
     if (state.active_attachments_number) {
         for (auto i = 0; i < state.clear_colors.size(); ++i) {
             auto color_value = reinterpret_cast<const float*>(
@@ -438,7 +438,7 @@ Renderer::set_pass_state(const RenderPassState& state)
             bgfx::setPaletteColor(i, color_value);
         }
         bgfx::setViewClear(
-            view_index, state.clear_flags, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7);
+            pass_index, state.clear_flags, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7);
     } else {
         uint32_t r, g, b, a;
         auto clear_color = state.clear_colors[0];
@@ -447,7 +447,7 @@ Renderer::set_pass_state(const RenderPassState& state)
         g = static_cast<uint32_t>(clear_color.g * 255.0 + 0.5) << 16;
         r = static_cast<uint32_t>(clear_color.r * 255.0 + 0.5) << 24;
         auto clear_color_hex = a + b + g + r;
-        bgfx::setViewClear(view_index, state.clear_flags, clear_color_hex);
+        bgfx::setViewClear(pass_index, state.clear_flags, clear_color_hex);
     }
 }
 
@@ -558,20 +558,22 @@ Renderer::render_batch(
 {
     batch.each_draw_call([=, &render_pass_states,
                           &viewport_states](const DrawCall& call) {
-        call.bind_buffers();
-        // iterate over viewports first in order to minimalize state changes
+        // iterate over viewports first to minimalize state changes
         target_viewports.each_active_index([=, &call, &render_pass_states,
                                             &viewport_states](
                                                uint16_t viewport_index) {
+            call.bind_buffers();
             auto program_handle = this->set_render_state(call.state);
             this->set_viewport_state(viewport_states[viewport_index]);
             target_render_passes.each_active_index(
-                [this, program_handle, sorting_hint = call.sorting_hint,
+                [this, program_handle, viewport_index,
+                 sorting_hint = call.sorting_hint,
                  &render_pass_states](uint16_t render_pass_index) {
                     this->set_pass_state(render_pass_states[render_pass_index]);
+                    auto depth = sorting_hint | (viewport_index << 24);
                     bgfx::submit(
                         render_pass_index + _views_reserved_offset,
-                        program_handle, sorting_hint, BGFX_DISCARD_NONE);
+                        program_handle, depth, BGFX_DISCARD_NONE);
                 });
             this->discard_render_state();
         });

@@ -10,9 +10,9 @@
 
 namespace kaacore {
 
-constexpr auto viewports_default_z_index = 0;
-constexpr auto viewports_min_z_index = (KAACORE_MAX_VIEWPORTS / -2);
-constexpr auto viewports_max_z_index = ((KAACORE_MAX_VIEWPORTS / 2) - 1);
+constexpr auto default_viewport_z_index = 0;
+constexpr auto min_viewport_z_index = (KAACORE_MAX_VIEWPORTS / -2);
+constexpr auto max_viewport_z_index = ((KAACORE_MAX_VIEWPORTS / 2) - 1);
 
 struct ViewportState;
 using ViewportStateArray = std::array<ViewportState, KAACORE_MAX_VIEWPORTS>;
@@ -20,8 +20,8 @@ using ViewportStateArray = std::array<ViewportState, KAACORE_MAX_VIEWPORTS>;
 inline bool
 validate_z_index(const int16_t z_index)
 {
-    return (viewports_min_z_index <= z_index) and
-           (z_index <= viewports_max_z_index);
+    return (min_viewport_z_index <= z_index) and
+           (z_index <= max_viewport_z_index);
 }
 
 class Scene;
@@ -93,7 +93,7 @@ class ViewportIndexSet : public IndexSet<KAACORE_MAX_VIEWPORTS> {
     void each_active_z_index(Func&& func) const
     {
         auto translate_index = [&func](int32_t internal_index) {
-            func(internal_index + viewports_min_z_index);
+            func(internal_index + min_viewport_z_index);
         };
         this->each_active_index(translate_index);
     }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include <bgfx/bgfx.h>
 #include <glm/glm.hpp>
 
@@ -25,7 +23,9 @@ class RenderTarget : public Texture {
   public:
     ~RenderTarget();
     static ResourceReference<RenderTarget> create();
-    glm::uvec2 get_dimensions() override;
+    glm::uvec2 get_dimensions() const override;
+    glm::dvec4 clear_color() const;
+    void clear_color(const glm::dvec4& color);
 
   private:
     RenderTargetID _id;

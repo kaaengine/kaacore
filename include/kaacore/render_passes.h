@@ -35,7 +35,7 @@ void
 uninitialize_effects();
 
 inline bool
-validate_render_pass_index(const int16_t render_pass_index)
+validate_render_pass_index(const uint16_t render_pass_index)
 {
     return (min_pass_index <= render_pass_index) and
            (render_pass_index <= max_pass_index);
@@ -79,6 +79,7 @@ class Effect : public Resource {
     static ResourceReference<Effect> create(
         const ResourceReference<Shader>& fragment_shader,
         const UniformSpecificationMap& uniforms = {});
+    ResourceReference<Material>& material();
     DrawCall draw_call();
 
   private:
@@ -118,7 +119,6 @@ class RenderPass {
     uint16_t index() const;
     glm::dvec4 clear_color() const;
     void clear_color(const glm::dvec4& color);
-    void reset_clear_color();
     void render_targets(
         const std::optional<std::vector<ResourceReference<RenderTarget>>>&
             targets);
@@ -155,8 +155,8 @@ class RenderPassesManager {
   public:
     RenderPassesManager();
     RenderPassStateArray take_snapshot();
-    RenderPass& operator[](const int16_t z_index);
-    RenderPass* get(const int16_t z_index);
+    RenderPass& operator[](const uint16_t index);
+    RenderPass* get(const uint16_t index);
     RenderPass* begin();
     RenderPass* end();
 

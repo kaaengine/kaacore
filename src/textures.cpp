@@ -118,7 +118,7 @@ ImageTexture::load(bimg::ImageContainer* image_container)
 }
 
 glm::uvec2
-ImageTexture::get_dimensions()
+ImageTexture::get_dimensions() const
 {
     KAACORE_CHECK(this->image_container != nullptr, "Invalid image container.");
     return {this->image_container->m_width, this->image_container->m_height};

@@ -84,11 +84,16 @@ Effect::create(
     return effect;
 }
 
+ResourceReference<Material>&
+Effect::material()
+{
+    return this->_material;
+}
+
 DrawCall
 Effect::draw_call()
 {
     RenderState state{nullptr, this->_material.get_valid(), 0, 0};
-    // uint16_t
     return DrawCall::create(
         state, -1, this->_quad.vertices, this->_quad.indices);
 }
@@ -140,14 +145,6 @@ void
 RenderPass::clear_color(const glm::dvec4& color)
 {
     this->_clear_color = color;
-    this->_clear_flags |= ClearFlag::color;
-    this->_requires_clean = true;
-}
-
-void
-RenderPass::reset_clear_color()
-{
-    this->_clear_flags &= ~ClearFlag::color;
     this->_requires_clean = true;
 }
 
@@ -225,17 +222,17 @@ RenderPassesManager::take_snapshot()
     return result;
 }
 
-RenderPass& RenderPassesManager::operator[](const int16_t z_index)
+RenderPass& RenderPassesManager::operator[](const uint16_t index)
 {
-    KAACORE_CHECK(validate_render_pass_index(z_index), "Invalid view z_index.");
-    auto index = z_index + (this->size() / 2);
+    KAACORE_CHECK(
+        validate_render_pass_index(index), "Invalid render pass index.");
     return this->_render_passes[index];
 }
 
 RenderPass*
-RenderPassesManager::get(const int16_t z_index)
+RenderPassesManager::get(const uint16_t index)
 {
-    return &this->operator[](z_index);
+    return &this->operator[](index);
 }
 
 RenderPass*

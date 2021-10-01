@@ -125,7 +125,7 @@ class Node {
     bool is_root() const;
 
     void render_passes(
-        const std::optional<std::unordered_set<int16_t>>& z_indices);
+        const std::optional<std::unordered_set<int16_t>>& indices);
     const std::optional<std::vector<int16_t>> render_passes() const;
     const std::vector<int16_t> effective_render_passes();
 

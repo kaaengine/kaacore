@@ -28,7 +28,7 @@ ResourcesManager::_initialize_resources()
     initialize_shaders();
     initialize_materials();
     initialize_render_targets();
-    initialize_fonts();
+    initialize_effects();
 }
 
 void

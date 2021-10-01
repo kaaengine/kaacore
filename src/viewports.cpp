@@ -15,7 +15,7 @@ _translate_from_z_index(const std::unordered_set<int16_t>& indices)
         indices.begin(), indices.end(), std::inserter(result, result.begin()),
         [](int16_t index) -> int16_t {
             KAACORE_CHECK(validate_z_index(index), "Invalid z index.");
-            return index - viewports_min_z_index;
+            return index - min_viewport_z_index;
         });
     return result;
 }
@@ -86,38 +86,50 @@ Viewport::_refresh()
         static_cast<glm::dvec2>(engine->virtual_resolution());
     auto virtual_origin = static_cast<glm::dvec2>(this->_origin);
     auto virtual_dimensions = static_cast<glm::dvec2>(this->_dimensions);
-    auto view_dimensions =
+    auto viewport_dimensions =
         virtual_dimensions / virtual_resoultion * drawable_area;
-    auto view_origin = virtual_origin / virtual_resoultion * drawable_area;
+    auto viewport_origin = virtual_origin / virtual_resoultion * drawable_area;
     // start drawing from the edge of border
-    auto clipped_view_origin = glm::max(view_origin, {0., 0.});
-    // clip view when views_orgin < border_size
-    auto clipped_view_dimensions =
-        view_dimensions - clipped_view_origin + view_origin;
-    // clip view when views_dimensions + views_orgin > drawable_area
-    clipped_view_dimensions =
-        glm::min(clipped_view_dimensions, drawable_area - clipped_view_origin);
-    // since the view might be clipped, adjust projection so it's the same as it
-    // would be without clipping
-    auto projection_size_factor = clipped_view_dimensions / view_dimensions;
-    glm::dvec2 projection_displacement = glm::min({0., 0.}, virtual_origin);
-    projection_displacement += glm::max(
-        {0., 0.}, virtual_origin + virtual_dimensions - virtual_resoultion);
+    auto clipped_viewport_origin = glm::max(viewport_origin, {0., 0.});
+    // viewport_orgin < border_size
+    auto clipped_viewport_dimensions =
+        viewport_dimensions - clipped_viewport_origin + viewport_origin;
+    // viewport_dimensions + viewport_orgin > drawable_area
+    clipped_viewport_dimensions = glm::min(
+        clipped_viewport_dimensions, drawable_area - clipped_viewport_origin);
 
-    this->_view_rect = {clipped_view_origin.x + border_size.x,
-                        clipped_view_origin.y + border_size.y,
-                        clipped_view_dimensions.x, clipped_view_dimensions.y};
+    this->_view_rect = {border_size.x + clipped_viewport_origin.x,
+                        border_size.y + clipped_viewport_origin.y,
+                        clipped_viewport_dimensions.x,
+                        clipped_viewport_dimensions.y};
 
-    this->_projection_matrix = glm::ortho(
-        -virtual_dimensions.x * projection_size_factor.x / 2 -
-            projection_displacement.x / 2,
-        virtual_dimensions.x * projection_size_factor.x / 2 -
-            projection_displacement.x / 2,
-        virtual_dimensions.y * projection_size_factor.y / 2 -
-            projection_displacement.y / 2,
-        -virtual_dimensions.y * projection_size_factor.y / 2 -
-            projection_displacement.y / 2);
+    auto scale = virtual_resoultion / virtual_dimensions;
+    auto target_resolution = virtual_resoultion * scale;
+    auto target_origin = virtual_origin * scale;
 
+    auto offset = virtual_resoultion - virtual_dimensions;
+    float left = -(virtual_dimensions.x + offset.x) / 2.f - target_origin.x;
+    float right = left + target_resolution.x;
+    float top = -(virtual_dimensions.y + offset.y) / 2.f - target_origin.y;
+    float bottom = top + target_resolution.y;
+
+    // aspect ratio correction
+    float correction;
+    float viewport_ratio = virtual_dimensions.x / virtual_dimensions.y;
+    float target_ratio = virtual_resoultion.x / virtual_resoultion.y;
+    if (viewport_ratio >= target_ratio) {
+        // wide viewport, use full height
+        correction = viewport_ratio / target_ratio;
+        left *= correction;
+        right *= correction;
+    } else {
+        // tall viewport, use full width
+        correction = target_ratio / viewport_ratio;
+        top *= correction;
+        bottom *= correction;
+    }
+
+    this->_projection_matrix = glm::ortho(left, right, bottom, top);
     this->_is_dirty = false;
 }
 

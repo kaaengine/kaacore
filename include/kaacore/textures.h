@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstring>
-// #include <utility>
 #include <memory>
 #include <string>
 #include <vector>
@@ -36,7 +35,7 @@ class FontData;
 class Texture : public Resource {
   public:
     bgfx::TextureHandle handle() const;
-    virtual glm::uvec2 get_dimensions() = 0;
+    virtual glm::uvec2 get_dimensions() const = 0;
 
   protected:
     bgfx::TextureHandle _handle;
@@ -51,7 +50,7 @@ class ImageTexture : public Texture {
 
     ImageTexture();
     ~ImageTexture();
-    glm::uvec2 get_dimensions() override;
+    glm::uvec2 get_dimensions() const override;
 
     static ResourceReference<ImageTexture> load(const std::string& path);
     static ResourceReference<ImageTexture> load(

@@ -33,7 +33,7 @@ Scene::~Scene()
 Camera&
 Scene::camera()
 {
-    return this->viewports[viewports_default_z_index].camera;
+    return this->viewports[default_viewport_z_index].camera;
 }
 
 std::vector<Node*>&

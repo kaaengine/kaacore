@@ -858,17 +858,17 @@ Node::parent() const
 }
 
 void
-Node::render_passes(const std::optional<std::unordered_set<int16_t>>& z_indices)
+Node::render_passes(const std::optional<std::unordered_set<int16_t>>& indices)
 {
-    if (z_indices.has_value()) {
+    if (indices.has_value()) {
         KAACORE_CHECK(
-            z_indices->size() <= KAACORE_MAX_RENDER_PASSES,
+            indices->size() <= KAACORE_MAX_RENDER_PASSES,
             "Invalid indices size.");
     }
 
     this->_mark_ordering_dirty();
     this->_draw_unit_data.updated_bucket_key = true;
-    this->_render_passes = z_indices;
+    this->_render_passes = indices;
 }
 
 const std::optional<std::vector<int16_t>>
