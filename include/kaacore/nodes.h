@@ -61,9 +61,8 @@ class Node {
     void recalculate_visibility_data();
     VerticesIndicesVectorPair recalculate_vertices_indices_data();
 
-    bool has_draw_unit_updates() const;
     std::optional<DrawUnitModification> calculate_draw_unit_removal() const;
-    DrawUnitModificationPair calculate_draw_unit_updates();
+    DrawUnitModificationPack calculate_draw_unit_updates();
     void clear_draw_unit_updates(const std::optional<const DrawBucketKey> key);
 
     const NodeType type() const;
@@ -247,7 +246,7 @@ class Node {
     } _visibility_data;
     struct {
         bool updated_bucket_key = true;
-        bool updated_vertices_indices_info = true;
+        bool updated_vertices_indices_info = false;
         std::optional<DrawBucketKey> current_key;
     } _draw_unit_data;
 

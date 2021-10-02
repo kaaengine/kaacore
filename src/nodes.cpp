@@ -392,14 +392,6 @@ Node::recalculate_visibility_data()
     }
 }
 
-bool
-Node::has_draw_unit_updates() const
-{
-    return (
-        this->_draw_unit_data.updated_bucket_key or
-        this->_draw_unit_data.updated_vertices_indices_info);
-}
-
 std::optional<DrawUnitModification>
 Node::calculate_draw_unit_removal() const
 {
@@ -415,65 +407,63 @@ Node::calculate_draw_unit_removal() const
                                 this->_scene_tree_id};
 }
 
-DrawUnitModificationPair
+DrawUnitModificationPack
 Node::calculate_draw_unit_updates()
 {
     KAACORE_ASSERT(
         this->_scene_tree_id != 0u, "Node ({}) has no scene tree id",
         fmt::ptr(this));
-    KAACORE_ASSERT(
-        this->has_draw_unit_updates(), "Node has no draw unit modifications");
+
+    if (not this->_draw_unit_data.updated_bucket_key and
+        not this->_draw_unit_data.updated_vertices_indices_info) {
+        return {std::nullopt, std::nullopt};
+    }
 
     this->recalculate_model_matrix();
     this->recalculate_ordering_data();
     this->recalculate_visibility_data();
 
-    std::optional<DrawUnitModification> remove_mod_opt{std::nullopt};
+    const bool is_visible =
+        this->_shape and this->_visibility_data.calculated_visible;
+    const std::optional<DrawBucketKey> calculated_draw_bucket_key =
+        is_visible ? std::optional<DrawBucketKey>{this->_make_draw_bucket_key()}
+                   : std::nullopt;
+    const bool changed_draw_bucket_key =
+        this->_draw_unit_data.updated_bucket_key and
+        this->_draw_unit_data.current_key != calculated_draw_bucket_key;
+    const bool changed_vertices_indices =
+        this->_draw_unit_data.updated_vertices_indices_info;
 
-    if (this->_draw_unit_data.updated_bucket_key and
-        this->_draw_unit_data.current_key) {
+    std::optional<DrawUnitModification> remove_mod{std::nullopt};
+    std::optional<DrawUnitModification> upsert_mod{std::nullopt};
+
+    if (changed_draw_bucket_key and this->_draw_unit_data.current_key) {
         // draw unit needs to be removed from previous bucket
-        remove_mod_opt = this->calculate_draw_unit_removal().value();
+        remove_mod = this->calculate_draw_unit_removal().value();
     }
 
     // skip inserting/updating if node will not be rendered
-    if (not this->_shape or not this->_visibility_data.calculated_visible) {
-        return {std::nullopt, remove_mod_opt};
-    }
+    if (is_visible and (changed_draw_bucket_key or changed_vertices_indices)) {
+        upsert_mod = DrawUnitModification{
+            changed_draw_bucket_key ? DrawUnitModification::Type::insert
+                                    : DrawUnitModification::Type::update,
+            *calculated_draw_bucket_key, this->_scene_tree_id};
 
-    DrawBucketKey lookup_key;
-    DrawUnitModification::Type mod_type;
-    if (this->_draw_unit_data.updated_bucket_key or
-        not this->_draw_unit_data.current_key) {
-        lookup_key = this->_make_draw_bucket_key();
-        mod_type = DrawUnitModification::Type::insert;
-    } else {
-        lookup_key = *this->_draw_unit_data.current_key;
-        mod_type = DrawUnitModification::Type::update;
-    }
-    DrawUnitModification update_mod{mod_type, lookup_key, this->_scene_tree_id};
-
-    if (this->_draw_unit_data.updated_vertices_indices_info or
-        this->_draw_unit_data.updated_bucket_key) {
-        update_mod.updated_vertices_indices = true;
+        upsert_mod->updated_vertices_indices = true;
         auto vertices_indices_pair = this->recalculate_vertices_indices_data();
-        update_mod.state_update.vertices =
+        upsert_mod->state_update.vertices =
             std::move(vertices_indices_pair.first);
-        update_mod.state_update.indices =
+        upsert_mod->state_update.indices =
             std::move(vertices_indices_pair.second);
-    } else {
-        update_mod.updated_vertices_indices = false;
     }
 
-    return {update_mod, remove_mod_opt};
+    return {upsert_mod, remove_mod};
 }
 
 void
 Node::clear_draw_unit_updates(const std::optional<const DrawBucketKey> key)
 {
     this->_draw_unit_data.current_key = key;
-    this->_draw_unit_data.updated_bucket_key = false;
-    this->_draw_unit_data.updated_vertices_indices_info = false;
 }
 
 const NodeType
@@ -692,7 +682,7 @@ Node::shape(const Shape& shape, bool is_auto_shape)
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->_mark_draw_unit_vertices_indices_dirty();
     this->_render_data.is_dirty = true;
     this->_spatial_data.is_dirty = true;
 }
@@ -712,7 +702,7 @@ Node::sprite(const Sprite& sprite)
     if (this->_sprite.texture != sprite.texture) {
         this->_draw_unit_data.updated_bucket_key = true;
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->_mark_draw_unit_vertices_indices_dirty();
 
     this->_sprite = sprite;
     if (this->_auto_shape) {
@@ -749,7 +739,7 @@ Node::color(const glm::dvec4& color)
     if (color == this->_color) {
         return;
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->_mark_draw_unit_vertices_indices_dirty();
     this->_render_data.is_dirty = true;
     this->_color = color;
 }
@@ -790,7 +780,7 @@ Node::origin_alignment(const Alignment& alignment)
     if (alignment == this->_origin_alignment) {
         return;
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->_mark_draw_unit_vertices_indices_dirty();
     this->_render_data.is_dirty = true;
     this->_origin_alignment = alignment;
 }

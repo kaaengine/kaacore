@@ -11,6 +11,42 @@ constexpr size_t range_max_vertices_count =
     std::numeric_limits<uint16_t>::max();
 constexpr size_t range_max_indices_count = std::numeric_limits<uint32_t>::max();
 
+DrawUnitModificationPack::DrawUnitModificationPack(
+    std::optional<DrawUnitModification> upsert_mod_,
+    std::optional<DrawUnitModification> remove_mod_)
+    : upsert_mod(upsert_mod_), remove_mod(remove_mod_)
+{
+    if (upsert_mod_.has_value()) {
+        KAACORE_ASSERT(
+            upsert_mod_->type != DrawUnitModification::Type::update or
+                not remove_mod_.has_value(),
+            "`update` modification type cannot be combined with `remove` type");
+    }
+}
+
+DrawUnitModificationPack::operator bool() const
+{
+    return this->upsert_mod.has_value() or this->remove_mod.has_value();
+}
+
+std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
+DrawUnitModificationPack::unpack()
+{
+    return {this->upsert_mod, this->remove_mod};
+}
+
+std::optional<DrawBucketKey>
+DrawUnitModificationPack::new_lookup_key() const
+{
+    KAACORE_ASSERT(
+        *this, "Can't get lookup key on empty `DrawUnitModificationPack`");
+    if (this->upsert_mod) {
+        return this->upsert_mod->lookup_key;
+    }
+    return std::nullopt;
+}
+
 DrawBucket::Range
 DrawBucket::find_range() const
 {
