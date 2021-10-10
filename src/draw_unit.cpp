@@ -204,8 +204,12 @@ DrawBucket::consume_modifications(
                 break;
             case DrawUnitModification::Type::update:
                 KAACORE_LOG_TRACE(
-                    "DrawBucket ({}): updating draw unit with id: {}",
+                    "DrawBucket ({}): Updating draw unit with id: {}",
                     fmt::ptr(this), mod_it->id);
+                KAACORE_ASSERT(
+                    draw_unit_it != this->draw_units.end(),
+                    "Target draw unit not found, end of draw units vector "
+                    "reached.");
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawBucket ({}): DrawUnit ({}) - DrawUnitModification "
@@ -224,6 +228,10 @@ DrawBucket::consume_modifications(
                 KAACORE_LOG_TRACE(
                     "DrawBucket ({}): Removing draw unit with id: {}",
                     fmt::ptr(this), mod_it->id);
+                KAACORE_ASSERT(
+                    draw_unit_it != this->draw_units.end(),
+                    "Target draw unit not found, end of draw units vector "
+                    "reached.");
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawBucket ({}): DrawUnit ({}) - DrawUnitModification "

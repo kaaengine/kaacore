@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bitset>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -45,6 +46,8 @@ struct Scene;
 
 class Node {
   public:
+    typedef std::bitset<16> DirtyFlagsType;
+
     union {
         SpaceNode space;
         BodyNode body;
@@ -64,6 +67,10 @@ class Node {
     std::optional<DrawUnitModification> calculate_draw_unit_removal() const;
     DrawUnitModificationPack calculate_draw_unit_updates();
     void clear_draw_unit_updates(const std::optional<const DrawBucketKey> key);
+
+    void set_dirty_flags(const DirtyFlagsType flags);
+    void clear_dirty_flags(const DirtyFlagsType flags);
+    bool query_dirty_flags(const DirtyFlagsType flags);
 
     const NodeType type() const;
 
@@ -141,10 +148,28 @@ class Node {
     template<typename Func>
     void recursive_call_downstream(Func&& func)
     {
+        if constexpr (std::is_same_v<std::invoke_result_t<Func, Node*>, void>) {
+            // if provided Func does return void then
+            // always proceed with the recursive calling to children
+            func(this);
+        } else if (not func(this)) {
+            // returning false stops recursive calling
+            // for this node's children
+            return;
+        }
+        this->recursive_call_downstream_children(func);
+    }
+
+    template<typename Func>
+    void recursive_call_downstream_children(Func&& func)
+    {
         thread_local std::deque<Node*> nodes_to_process;
         nodes_to_process.clear();
 
-        nodes_to_process.push_back(this);
+        nodes_to_process.insert(
+            nodes_to_process.begin(), this->_children.begin(),
+            this->_children.end());
+
         while (not nodes_to_process.empty()) {
             Node* node = nodes_to_process.front();
             nodes_to_process.pop_front();
@@ -201,6 +226,43 @@ class Node {
         return inheritance_chain;
     }
 
+    static constexpr size_t DIRTY_FLAGS_SHIFT_RECURSIVE = 8;
+
+    static inline const DirtyFlagsType DIRTY_MODEL_MATRIX = 1u << 0;
+    static inline const DirtyFlagsType DIRTY_DRAW_KEYS = 1u << 1;
+    static inline const DirtyFlagsType DIRTY_DRAW_VERTICES = 1u << 2;
+    static inline const DirtyFlagsType DIRTY_VISIBILITY = 1u << 3;
+    static inline const DirtyFlagsType DIRTY_ORDERING = 1u << 4;
+    static inline const DirtyFlagsType DIRTY_SPATIAL_INDEX = 1u << 5;
+
+    static inline const DirtyFlagsType DIRTY_MODEL_MATRIX_RECURSIVE =
+        DIRTY_MODEL_MATRIX | DIRTY_MODEL_MATRIX << DIRTY_FLAGS_SHIFT_RECURSIVE;
+    static inline const DirtyFlagsType DIRTY_DRAW_KEYS_RECURSIVE =
+        DIRTY_DRAW_KEYS | DIRTY_DRAW_KEYS << DIRTY_FLAGS_SHIFT_RECURSIVE;
+    static inline const DirtyFlagsType DIRTY_DRAW_VERTICES_RECURSIVE =
+        DIRTY_DRAW_VERTICES | DIRTY_DRAW_VERTICES
+                                  << DIRTY_FLAGS_SHIFT_RECURSIVE;
+    static inline const DirtyFlagsType DIRTY_VISIBILITY_RECURSIVE =
+        DIRTY_VISIBILITY | DIRTY_VISIBILITY << DIRTY_FLAGS_SHIFT_RECURSIVE;
+    static inline const DirtyFlagsType DIRTY_ORDERING_RECURSIVE =
+        DIRTY_ORDERING | DIRTY_ORDERING << DIRTY_FLAGS_SHIFT_RECURSIVE;
+    static inline const DirtyFlagsType DIRTY_SPATIAL_INDEX_RECURSIVE =
+        DIRTY_SPATIAL_INDEX | DIRTY_SPATIAL_INDEX
+                                  << DIRTY_FLAGS_SHIFT_RECURSIVE;
+
+    static inline const DirtyFlagsType DIRTY_ANY_RECURSIVE =
+        DIRTY_MODEL_MATRIX << DIRTY_FLAGS_SHIFT_RECURSIVE |
+        DIRTY_DRAW_KEYS << DIRTY_FLAGS_SHIFT_RECURSIVE |
+        DIRTY_DRAW_VERTICES << DIRTY_FLAGS_SHIFT_RECURSIVE |
+        DIRTY_VISIBILITY << DIRTY_FLAGS_SHIFT_RECURSIVE |
+        DIRTY_ORDERING << DIRTY_FLAGS_SHIFT_RECURSIVE |
+        DIRTY_SPATIAL_INDEX << DIRTY_FLAGS_SHIFT_RECURSIVE;
+
+    static inline const DirtyFlagsType DIRTY_ALL =
+        DIRTY_MODEL_MATRIX_RECURSIVE | DIRTY_DRAW_KEYS_RECURSIVE |
+        DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_VISIBILITY_RECURSIVE |
+        DIRTY_ORDERING_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE;
+
   private:
     const NodeType _type = NodeType::basic;
     glm::dvec2 _position = {0., 0.};
@@ -228,25 +290,15 @@ class Node {
 
     struct {
         glm::fmat4 value;
-        bool is_dirty = true;
     } _model_matrix;
-    struct {
-        std::vector<StandardVertexData> computed_vertices;
-        bgfx::TextureHandle texture_handle;
-        bool is_dirty = true;
-    } _render_data;
     struct {
         ViewIndexSet calculated_views;
         int16_t calculated_z_index;
-        bool is_dirty = true;
     } _ordering_data;
     struct {
         bool calculated_visible;
-        bool is_dirty = true;
     } _visibility_data;
     struct {
-        bool updated_bucket_key = true;
-        bool updated_vertices_indices_info = false;
         std::optional<DrawBucketKey> current_key;
     } _draw_unit_data;
 
@@ -255,10 +307,8 @@ class Node {
 
     bool _marked_to_delete = false;
     bool _in_hitbox_chain = false;
+    DirtyFlagsType _dirty_flags = DIRTY_ALL;
 
-    void _mark_dirty();
-    void _mark_ordering_dirty();
-    void _mark_draw_unit_vertices_indices_dirty();
     void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(

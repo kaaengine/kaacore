@@ -132,6 +132,9 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
     const auto simulate_frame_step = [](const kaacore::NodePtr node) {
         if (auto mods_pack = node->calculate_draw_unit_updates()) {
             node->clear_draw_unit_updates(mods_pack.new_lookup_key());
+            node->clear_dirty_flags(
+                kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
         }
     };
 
@@ -168,7 +171,9 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         // no remove
         REQUIRE(not node_1_mod_2.has_value());
 
-        node_1->clear_draw_unit_updates(node_1_mod_1->lookup_key);
+        node_1->clear_dirty_flags(
+            kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
         REQUIRE(not node_1->calculate_draw_unit_updates());
     }
 
@@ -206,9 +211,7 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
 
         node_1->shape(test_shape_3);
         REQUIRE(node_1->calculate_draw_unit_updates());
-        // XXX temporarily disabled - enable when
-        // dirty_draw_unit_vertices_indices flag gets optimized for (auto n :
-        // REQUIRE(not node_2->calculate_draw_unit_updates());
+        REQUIRE(not node_2->calculate_draw_unit_updates());
 
         node_2->shape(test_shape_3);
         REQUIRE(node_2->calculate_draw_unit_updates());
@@ -247,9 +250,9 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
 
         node_1->z_index(100);
         REQUIRE(node_1->calculate_draw_unit_updates());
-        REQUIRE(not node_2->calculate_draw_unit_updates());
+        REQUIRE(node_2->calculate_draw_unit_updates());
 
-        auto [mod_1, mod_2] = node_1->calculate_draw_unit_updates();
+        auto [mod_1, mod_2] = node_1->calculate_draw_unit_updates().unpack();
         REQUIRE(mod_1->type == kaacore::DrawUnitModification::Type::insert);
         REQUIRE(mod_1->lookup_key.z_index == 100);
         REQUIRE(mod_2.has_value());
@@ -302,12 +305,18 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                 }
                 node->clear_draw_unit_updates(mods_pack.new_lookup_key());
             }
+            node->clear_dirty_flags(
+                kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
         };
 
     const auto reset_modifications = [](const kaacore::NodePtr node) {
         if (auto mods_pack = node->calculate_draw_unit_updates()) {
             node->clear_draw_unit_updates(mods_pack.new_lookup_key());
         }
+        node->clear_dirty_flags(
+            kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
     };
 
     const auto validate_bucket_content =
@@ -598,11 +607,9 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         node_1->color({0., 1., 0., 1.});
 
         REQUIRE(node_1->calculate_draw_unit_updates());
-        // XXX temporarily disabled - enable when
-        // dirty_draw_unit_vertices_indices flag gets optimized for (auto n :
-        // {node_2, node_3, node_4}) {
-        //     REQUIRE(not n->calculate_draw_unit_updates());
-        // }
+        for (auto n : {node_2, node_3, node_4}) {
+            REQUIRE(not n->calculate_draw_unit_updates());
+        }
     }
 
     SECTION("Test lifecycle - parent position then color change")

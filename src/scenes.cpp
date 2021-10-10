@@ -54,6 +54,7 @@ Scene::build_processing_queue()
         }
         i++;
     }
+    KAACORE_LOG_DEBUG("Nodes to process count: {}", processing_queue.size());
     return processing_queue;
 }
 
@@ -116,7 +117,7 @@ Scene::resolve_spatial_index_changes(const Scene::NodesQueue& processing_queue)
             continue;
         }
 
-        if (node->_spatial_data.is_dirty) {
+        if (node->query_dirty_flags(Node::DIRTY_SPATIAL_INDEX)) {
             this->spatial_index.update_single(node);
             spatial_updates_counter += 1;
         }
@@ -149,8 +150,9 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
                 node->clear_draw_unit_updates(new_lookup_key);
             }
         }
-        node->_draw_unit_data.updated_bucket_key = false;
-        node->_draw_unit_data.updated_vertices_indices_info = false;
+        node->clear_dirty_flags(
+            Node::DIRTY_DRAW_KEYS_RECURSIVE |
+            Node::DIRTY_DRAW_VERTICES_RECURSIVE);
     }
 }
 
