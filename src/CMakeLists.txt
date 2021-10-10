@@ -55,6 +55,7 @@ set(SRC_CXX_FILES
     statistics.cpp
     draw_unit.cpp
     draw_queue.cpp
+    vertex_layout.cpp
 )
 
 set(SRC_H_FILES
@@ -96,6 +97,7 @@ set(SRC_H_FILES
     ../include/kaacore/statistics.h
     ../include/kaacore/draw_unit.h
     ../include/kaacore/draw_queue.h
+    ../include/kaacore/vertex_layout.h
 
     ../include/kaacore/utils.h
     ../include/kaacore/embedded_data.h

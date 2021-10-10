@@ -316,10 +316,9 @@ Node::recalculate_vertices_indices_data()
         [this, &uv_rect, pos_realignment](
             const StandardVertexData& orig_vt) -> StandardVertexData {
             StandardVertexData vt;
-            vt.xyz =
-                this->_model_matrix.value *
-                (glm::fvec4{orig_vt.xyz.x, orig_vt.xyz.y, orig_vt.xyz.z, 1.} +
-                 glm::fvec4{pos_realignment.x, pos_realignment.y, 0., 0.});
+            vt.xyz = this->_model_matrix.value *
+                     (glm::fvec4{orig_vt.xyz, 1.} +
+                      glm::fvec4{pos_realignment, 0., 0.});
 
             if (uv_rect) {
                 vt.uv = glm::mix(uv_rect->first, uv_rect->second, orig_vt.uv);

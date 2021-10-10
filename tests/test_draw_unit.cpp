@@ -49,10 +49,7 @@ TEST_CASE(
         draw_bucket.draw_units = {du1, du2};
 
         auto batch = kaacore::RenderBatch::from_bucket(dbk, draw_bucket);
-        engine->renderer->render_batch(
-            batch, dbk.render_passes, dbk.viewports,
-            scene.render_passes.take_snapshot(),
-            scene.viewports.take_snapshot());
+        engine->renderer->render_batch(batch, dbk.render_passes, dbk.viewports);
     };
     scene.run_on_engine(500);
 }

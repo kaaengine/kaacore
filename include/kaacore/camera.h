@@ -28,7 +28,7 @@ class Camera {
     glm::dvec2 _scale = {1., 1.};
     glm::fmat4 _calculated_view;
 
-    void _refresh();
+    void _reset();
 
     friend class Viewport;
 };

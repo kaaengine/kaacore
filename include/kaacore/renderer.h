@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/draw_queue.h"
-#include "kaacore/draw_unit.h"
 #include "kaacore/engine.h"
 #include "kaacore/materials.h"
 #include "kaacore/render_passes.h"
@@ -41,6 +40,14 @@ class DefaultShadingContext : public ShadingContext {
     void destroy();
 
     friend class Renderer;
+};
+
+struct FrameContext {
+    Duration last_dt;
+    Duration total_time;
+    glm::uvec2 window_size;
+    ViewportStateArray viewport_states;
+    RenderPassStateArray render_pass_states;
 };
 
 struct RenderState {
@@ -142,37 +149,43 @@ class Renderer {
     bgfx::TextureHandle make_texture(
         std::shared_ptr<bimg::ImageContainer> image_container,
         const uint64_t flags) const;
+    void destroy_texture(const bgfx::TextureHandle& handle) const;
     RendererType type() const;
     ShaderModel shader_model() const;
     const RendererCapabilities capabilities() const;
-
-    void destroy_texture(const bgfx::TextureHandle& handle) const;
+    void set_frame_context(
+        const Duration last_dt, const Duration total_time,
+        const RenderPassStateArray& render_pass_states,
+        const ViewportStateArray& viewport_states);
     void begin_frame();
     void end_frame();
     void push_statistics() const;
     void reset(
         const glm::uvec2 windows_size, glm::uvec2 virtual_resolution,
         VirtualResolutionMode mode);
-    void set_global_uniforms(const float last_dt, const float scene_time);
+    void set_global_uniforms();
     void set_pass_state(const RenderPassState& state);
-    void set_viewport_state(const ViewportState& state);
-    bgfx::ProgramHandle set_render_state(const RenderState& state);
-    void discard_render_state();
-    void render_scene(Scene* scene);
+    void set_viewport_state(
+        const ViewportState& viewport_state, const RenderPassState& pass_state);
+    void set_render_state(const RenderState& state);
     void render_batch(
         const RenderBatch& batch, const RenderPassIndexSet render_passes,
-        const ViewportIndexSet viewports,
-        const RenderPassStateArray& render_pass_states,
-        const ViewportStateArray& viewport_states);
+        const ViewportIndexSet viewports);
+    void render_effect(const Effect& effect, const uint16_t pass_index);
+    void render_draw_command(
+        const DrawCommand& command, const uint16_t pass_index,
+        const uint16_t viewport_index);
     void render_draw_call(
-        const DrawCall& call, const RenderPassState& render_pass_state,
+        const DrawCall& call, const RenderPassState& pass_state,
         const ViewportState& viewport_state);
     static std::unordered_set<std::string>& reserved_uniform_names();
 
   private:
     bool _vertical_sync = true;
+    FrameContext _frame_context;
 
     uint32_t _calculate_reset_flags() const;
+    bgfx::ProgramHandle _get_program_handle(const Material* material);
     bgfx::RendererType::Enum _choose_bgfx_renderer(
         const std::string& name) const;
 

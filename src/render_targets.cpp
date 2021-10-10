@@ -19,9 +19,8 @@ uninitialize_render_targets()
     _render_targets_registry.uninitialze();
 }
 
-RenderTarget::RenderTarget()
+RenderTarget::RenderTarget(RenderTargetID id) : _id(id)
 {
-    this->_id = this->_last_id.fetch_add(1, std::memory_order_relaxed);
     if (is_engine_initialized()) {
         this->_initialize();
     }
@@ -38,7 +37,7 @@ ResourceReference<RenderTarget>
 RenderTarget::create()
 {
     auto id = RenderTarget::_last_id.fetch_add(1, std::memory_order_relaxed);
-    auto render_target = std::shared_ptr<RenderTarget>(new RenderTarget);
+    auto render_target = std::shared_ptr<RenderTarget>(new RenderTarget(id));
     _render_targets_registry.register_resource(id, render_target);
     return render_target;
 }
@@ -59,25 +58,36 @@ void
 RenderTarget::clear_color(const glm::dvec4& color)
 {
     this->_clear_color = color;
-    this->_requires_clean = true;
+    this->_is_dirty = true;
 }
 
 void
 RenderTarget::_initialize()
 {
-    this->_texture = bgfx::createTexture2D(
-        bgfx::BackbufferRatio::Equal, false, 1, bgfx::TextureFormat::BGRA8,
+    this->_handle = bgfx::createTexture2D(
+        bgfx::BackbufferRatio::Equal, false, 1, bgfx::TextureFormat::RGBA8,
         BGFX_TEXTURE_RT);
+
     KAACORE_CHECK(
-        bgfx::isValid(this->_texture),
+        bgfx::isValid(this->_handle),
         "Failed to create render target texture.");
+    bgfx::setName(
+        this->_handle,
+        fmt::format("Texture for RenderTarget({})", this->_id).c_str());
+    this->is_initialized = true;
 }
 
 void
 RenderTarget::_uninitialize()
 {
-    bgfx::destroy(this->_texture);
+    bgfx::destroy(this->_handle);
     this->is_initialized = false;
+}
+
+void
+RenderTarget::_mark_dirty()
+{
+    this->_is_dirty = true;
 }
 
 } // namespace kaacore

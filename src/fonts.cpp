@@ -308,7 +308,7 @@ FontData::FontData(const std::string& path) : path(path)
 {
     File file(this->path);
     auto [baked_font_image, baked_font_data] = bake_font_texture(file);
-    this->baked_texture = ImageTexture::load(baked_font_image);
+    this->baked_texture = MemoryTexture::create(baked_font_image);
     this->baked_font = std::move(baked_font_data);
 
     if (is_engine_initialized()) {
@@ -348,8 +348,8 @@ FontData::load_from_memory(const Memory& memory)
     auto [baked_font_texture, baked_font_data] =
         bake_font_texture(raw_memory, memory.size());
 
-    return std::shared_ptr<FontData>(
-        new FontData(ImageTexture::load(baked_font_texture), baked_font_data));
+    return std::shared_ptr<FontData>(new FontData(
+        MemoryTexture::create(baked_font_texture), baked_font_data));
 }
 
 FontData::~FontData()

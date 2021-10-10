@@ -8,7 +8,7 @@ Camera::Camera()
     auto virtual_resolution = get_engine()->virtual_resolution();
     this->_position = {static_cast<double>(virtual_resolution.x) / 2,
                        static_cast<double>(virtual_resolution.y) / 2};
-    this->_refresh();
+    this->_reset();
 }
 
 glm::dvec2
@@ -81,7 +81,7 @@ Camera::visible_area_bounding_box()
 }
 
 void
-Camera::_refresh()
+Camera::_reset()
 {
     this->_calculated_view = glm::translate(
         glm::rotate(

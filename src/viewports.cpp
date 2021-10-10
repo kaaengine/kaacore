@@ -1,7 +1,5 @@
 #include <algorithm>
 
-#include <bgfx/bgfx.h>
-
 #include "kaacore/engine.h"
 #include "kaacore/viewports.h"
 
@@ -65,17 +63,21 @@ Viewport::dimensions(const glm::uvec2& dimensions)
 }
 
 glm::ivec4
-Viewport::view_rect() const
+Viewport::viewport_rect() const
 {
     return {this->_origin.x, this->_origin.y, this->_dimensions.x,
             this->_dimensions.y};
 }
 
 void
-Viewport::_refresh()
+Viewport::_reset()
 {
     if (this->camera._is_dirty) {
-        this->camera._refresh();
+        this->camera._reset();
+    }
+
+    if (not this->_is_dirty) {
+        return;
     }
 
     auto engine = get_engine();
@@ -98,10 +100,9 @@ Viewport::_refresh()
     clipped_viewport_dimensions = glm::min(
         clipped_viewport_dimensions, drawable_area - clipped_viewport_origin);
 
-    this->_view_rect = {border_size.x + clipped_viewport_origin.x,
-                        border_size.y + clipped_viewport_origin.y,
-                        clipped_viewport_dimensions.x,
-                        clipped_viewport_dimensions.y};
+    this->_view_rect = {border_size + clipped_viewport_origin,
+                        clipped_viewport_dimensions};
+    this->_viewport_rect = {border_size + viewport_origin, viewport_dimensions};
 
     auto scale = virtual_resoultion / virtual_dimensions;
     auto target_resolution = virtual_resoultion * scale;
@@ -134,15 +135,16 @@ Viewport::_refresh()
 }
 
 bool
-Viewport::_refresh_required() const
+Viewport::_reset_required() const
 {
     return this->_is_dirty or this->camera._is_dirty;
 }
 
-glm::fmat4
-Viewport::_view_matrix() const
+ViewportState
+Viewport::_take_snapshot()
 {
-    return this->camera._calculated_view;
+    return {this->_view_rect, this->_viewport_rect,
+            this->camera._calculated_view, this->_projection_matrix};
 }
 
 ViewportsManager::ViewportsManager()
@@ -192,15 +194,14 @@ ViewportsManager::_mark_dirty()
 }
 
 ViewportStateArray
-ViewportsManager::take_snapshot()
+ViewportsManager::_take_snapshot()
 {
     ViewportStateArray result;
     for (auto& viewport : *this) {
-        if (viewport._refresh_required()) {
-            viewport._refresh();
+        if (viewport._reset_required()) {
+            viewport._reset();
         }
-        result[viewport._index] = {viewport._view_rect, viewport._view_matrix(),
-                                   viewport._projection_matrix};
+        result[viewport._index] = viewport._take_snapshot();
     }
     return result;
 }

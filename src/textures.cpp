@@ -74,30 +74,54 @@ Texture::handle() const
     return this->_handle;
 }
 
-ImageTexture::ImageTexture(const std::string& path) : path(path)
-{
-    this->image_container = std::shared_ptr<bimg::ImageContainer>(
-        load_image(path), _destroy_image_container);
-    if (is_engine_initialized()) {
-        this->_initialize();
-    }
-}
-
-ImageTexture::ImageTexture(bimg::ImageContainer* image_container)
+MemoryTexture::MemoryTexture(bimg::ImageContainer* image_container)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
         image_container, _destroy_image_container);
+
     if (is_engine_initialized()) {
         this->_initialize();
     }
 }
 
-ImageTexture::~ImageTexture()
+MemoryTexture::~MemoryTexture()
 {
     if (this->is_initialized) {
         this->_uninitialize();
     }
 }
+
+ResourceReference<MemoryTexture>
+MemoryTexture::create(bimg::ImageContainer* image_container)
+{
+    return std::shared_ptr<MemoryTexture>(new MemoryTexture(image_container));
+}
+
+glm::uvec2
+MemoryTexture::get_dimensions() const
+{
+    KAACORE_CHECK(this->image_container != nullptr, "Invalid image container.");
+    return {this->image_container->m_width, this->image_container->m_height};
+}
+
+void
+MemoryTexture::_initialize()
+{
+    this->_handle = get_engine()->renderer->make_texture(
+        this->image_container, BGFX_SAMPLER_NONE);
+    this->is_initialized = true;
+}
+
+void
+MemoryTexture::_uninitialize()
+{
+    get_engine()->renderer->destroy_texture(this->_handle);
+    this->is_initialized = false;
+}
+
+ImageTexture::ImageTexture(const std::string& path)
+    : path(path), MemoryTexture(load_image(path))
+{}
 
 ResourceReference<ImageTexture>
 ImageTexture::load(const std::string& path)
@@ -111,33 +135,11 @@ ImageTexture::load(const std::string& path)
     return texture;
 }
 
-ResourceReference<ImageTexture>
-ImageTexture::load(bimg::ImageContainer* image_container)
-{
-    return std::shared_ptr<ImageTexture>(new ImageTexture(image_container));
-}
-
-glm::uvec2
-ImageTexture::get_dimensions() const
-{
-    KAACORE_CHECK(this->image_container != nullptr, "Invalid image container.");
-    return {this->image_container->m_width, this->image_container->m_height};
-}
-
 void
 ImageTexture::_initialize()
 {
-    this->_handle = get_engine()->renderer->make_texture(
-        this->image_container, BGFX_SAMPLER_NONE);
+    MemoryTexture::_initialize();
     bgfx::setName(this->_handle, this->path.c_str());
-    this->is_initialized = true;
-}
-
-void
-ImageTexture::_uninitialize()
-{
-    get_engine()->renderer->destroy_texture(this->_handle);
-    this->is_initialized = false;
 }
 
 } // namespace kaacore

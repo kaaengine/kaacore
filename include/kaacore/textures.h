@@ -43,27 +43,35 @@ class Texture : public Resource {
     friend class FontData;
 };
 
-class ImageTexture : public Texture {
+class MemoryTexture : public Texture {
   public:
-    const std::string path;
+    MemoryTexture() = default;
+    ~MemoryTexture();
     std::shared_ptr<bimg::ImageContainer> image_container;
 
-    ImageTexture();
-    ~ImageTexture();
     glm::uvec2 get_dimensions() const override;
-
-    static ResourceReference<ImageTexture> load(const std::string& path);
-    static ResourceReference<ImageTexture> load(
+    static ResourceReference<MemoryTexture> create(
         bimg::ImageContainer* image_container);
 
-  private:
-    ImageTexture(bimg::ImageContainer* image_container);
-    ImageTexture(const std::string& path);
+  protected:
+    MemoryTexture(bimg::ImageContainer* image_container);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
+    friend std::unique_ptr<MemoryTexture> load_default_texture();
+};
+
+class ImageTexture : public MemoryTexture {
+  public:
+    const std::string path;
+
+    static ResourceReference<ImageTexture> load(const std::string& path);
+
+  private:
+    ImageTexture(const std::string& path);
+    virtual void _initialize() override;
+
     friend class ResourcesRegistry<std::string, ImageTexture>;
-    friend std::unique_ptr<ImageTexture> load_default_texture();
 };
 
 template<typename T = uint8_t>

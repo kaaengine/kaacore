@@ -149,19 +149,13 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
 }
 
 void
-Scene::process_drawing()
-{
-    this->draw_queue.process_modifications();
-    get_engine()->renderer->render_scene(this);
-    this->_draw_commands.clear();
-}
-
-void
 Scene::draw(
-    const uint16_t render_pass, const uint16_t viewport,
+    const uint16_t render_pass, const int16_t viewport,
     const DrawCall& draw_call)
 {
-    this->_draw_commands.push_back({render_pass, viewport, draw_call});
+    // translate z_index to index
+    uint16_t viewport_index = render_pass + std::abs(min_viewport_z_index);
+    this->_draw_commands.push_back({render_pass, viewport_index, draw_call});
 }
 
 void
@@ -194,6 +188,45 @@ Scene::on_exit()
 void
 Scene::on_detach()
 {}
+
+void
+Scene::attach_frame_context(const std::unique_ptr<Renderer>& renderer)
+{
+    renderer->set_frame_context(
+        this->_last_dt, this->_total_time, this->render_passes._take_snapshot(),
+        this->viewports._take_snapshot());
+}
+
+void
+Scene::render(const std::unique_ptr<Renderer>& renderer)
+{
+    this->draw_queue.process_modifications();
+
+    // render nodes tree
+    for (const auto& [key, bucket] : this->draw_queue) {
+        auto batch = RenderBatch::from_bucket(key, bucket);
+        if (batch.geometry_stream.empty()) {
+            continue;
+        }
+        renderer->render_batch(batch, key.render_passes, key.viewports);
+    }
+
+    // render custom draw calls
+    for (auto& draw_command : this->_draw_commands) {
+        renderer->render_draw_command(
+            draw_command, draw_command.pass, draw_command.viewport);
+    }
+    this->_draw_commands.clear();
+
+    // render effects
+    for (auto& render_pass : this->render_passes) {
+        if (not render_pass.effect) {
+            continue;
+        }
+        renderer->render_effect(
+            render_pass.effect.value(), render_pass.index());
+    }
+}
 
 void
 Scene::register_simulation(Node* node)
@@ -277,9 +310,10 @@ Scene::get_events() const
 }
 
 void
-Scene::reset_viewports()
+Scene::_reset()
 {
     this->viewports._mark_dirty();
+    this->render_passes._mark_dirty();
 }
 
 } // namespace kaacore

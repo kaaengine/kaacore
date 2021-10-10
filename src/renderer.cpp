@@ -15,6 +15,8 @@
 #include "kaacore/statistics.h"
 #include "kaacore/textures.h"
 
+#include <glm/gtx/string_cast.hpp>
+
 namespace kaacore {
 
 bgfx::VertexLayout _vertex_layout;
@@ -59,11 +61,13 @@ load_embedded_shaders(
         "Loading embedded shaders: {}, {}", vertex_shader_name,
         fragment_shader_name);
     KAACORE_LOG_TRACE("Detected platform : {}", get_platform_name());
-    return {load_embedded_shader(vertex_shader_name, ShaderType::vertex),
-            load_embedded_shader(fragment_shader_name, ShaderType::fragment)};
+    return {
+        EmbeddedShader::load(ShaderType::fragment, fragment_shader_name),
+        EmbeddedShader::load(ShaderType::vertex, vertex_shader_name),
+    };
 }
 
-std::unique_ptr<ImageTexture>
+std::unique_ptr<MemoryTexture>
 load_default_texture()
 {
     // 1x1 white texture
@@ -71,7 +75,8 @@ load_default_texture()
     auto image_container =
         load_raw_image(bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
     auto texture =
-        std::unique_ptr<ImageTexture>(new ImageTexture(image_container));
+        std::unique_ptr<MemoryTexture>(new MemoryTexture(image_container));
+
     bgfx::setName(texture->handle(), "DEFAULT TEXTURE");
     return texture;
 }
@@ -198,29 +203,6 @@ Renderer::~Renderer()
     KAACORE_LOG_INFO("Destroying renderer");
     this->default_texture.reset();
     this->shading_context.destroy();
-
-    // since default shaders are embeded and not present
-    // in registry, free them manually
-    if (this->default_material) {
-        this->default_material.get()
-            ->program.get()
-            ->vertex_shader->_uninitialize();
-        this->default_material.get()
-            ->program.get()
-            ->fragment_shader->_uninitialize();
-        this->default_material.get()->program.get()->_uninitialize();
-    }
-
-    if (this->sdf_font_material) {
-        this->sdf_font_material.get()
-            ->program.get()
-            ->vertex_shader->_uninitialize();
-        this->sdf_font_material.get()
-            ->program.get()
-            ->fragment_shader->_uninitialize();
-        this->sdf_font_material.get()->program.get()->_uninitialize();
-    }
-
     bgfx::shutdown();
 }
 
@@ -247,6 +229,14 @@ Renderer::make_texture(
     KAACORE_ASSERT(bgfx::isValid(handle), "Failed to create texture.");
     _used_containers.insert(std::move(image_container));
     return handle;
+}
+
+void
+Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
+{
+    KAACORE_ASSERT_TERMINATE(
+        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed.");
+    bgfx::destroy(handle);
 }
 
 RendererType
@@ -318,16 +308,31 @@ Renderer::capabilities() const
 }
 
 void
-Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
+Renderer::set_frame_context(
+    const Duration last_dt, const Duration total_time,
+    const RenderPassStateArray& render_pass_states,
+    const ViewportStateArray& viewport_states)
 {
-    KAACORE_ASSERT_TERMINATE(
-        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed.");
-    bgfx::destroy(handle);
+    this->_frame_context.last_dt = last_dt;
+    this->_frame_context.total_time = total_time;
+    this->_frame_context.viewport_states = viewport_states;
+    this->_frame_context.render_pass_states = render_pass_states;
 }
 
 void
 Renderer::begin_frame()
-{}
+{
+    this->set_global_uniforms();
+    bgfx::touch(_internal_view_index);
+    for (auto view_index = _internal_view_index + _views_reserved_offset;
+         view_index <= KAACORE_MAX_RENDER_PASSES; ++view_index) {
+        bgfx::touch(view_index);
+        bgfx::setViewMode(view_index, bgfx::ViewMode::DepthAscending);
+        bgfx::setViewRect(
+            view_index, this->border_size.x, this->border_size.y,
+            this->view_size.x, this->view_size.y);
+    }
+}
 
 void
 Renderer::end_frame()
@@ -400,24 +405,18 @@ Renderer::reset(
     }
     this->view_size = view_size;
     this->border_size = border_size;
+    this->_frame_context.window_size = window_size;
 
-    // internal pass
     bgfx::setViewClear(
         _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
     bgfx::setViewRect(_internal_view_index, 0, 0, bgfx::BackbufferRatio::Equal);
-
-    // user available passes
-    for (auto pass_index = _internal_view_index + _views_reserved_offset;
-         pass_index <= KAACORE_MAX_RENDER_PASSES; ++pass_index) {
-        bgfx::setViewRect(
-            pass_index, border_size.x, border_size.y, view_size.x, view_size.y);
-    }
 }
 
 void
-Renderer::set_global_uniforms(const float last_dt, const float scene_time)
+Renderer::set_global_uniforms()
 {
-    glm::vec4 u_vec4_slot1{last_dt, scene_time, 0, 0};
+    glm::vec4 u_vec4_slot1{this->_frame_context.last_dt.count(),
+                           this->_frame_context.total_time.count(), 0, 0};
     this->shading_context.set_uniform_value<glm::fvec4>(
         "u_vec4_slot1", u_vec4_slot1);
     this->shading_context.bind("u_vec4_slot1");
@@ -426,47 +425,60 @@ Renderer::set_global_uniforms(const float last_dt, const float scene_time)
 void
 Renderer::set_pass_state(const RenderPassState& state)
 {
+    auto pass_index = state.index + _views_reserved_offset;
+    bgfx::setViewFrameBuffer(pass_index, state.framebuffer);
+
     if (not state.requires_clean) {
         return;
     }
 
-    auto pass_index = state.index + _views_reserved_offset;
-    if (state.active_attachments_number) {
+    if (state.has_custom_framebuffer()) {
         for (auto i = 0; i < state.clear_colors.size(); ++i) {
-            auto color_value = reinterpret_cast<const float*>(
-                glm::value_ptr(state.clear_colors[i]));
-            bgfx::setPaletteColor(i, color_value);
+            auto clear_color = glm::fvec4(state.clear_colors[i]);
+            bgfx::setPaletteColor(i, glm::value_ptr(clear_color));
         }
         bgfx::setViewClear(
-            pass_index, state.clear_flags, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7);
+            pass_index, state.clear_flags, 0., 0, 0, 1, 2, 3, 4, 5, 6, 7);
     } else {
-        uint32_t r, g, b, a;
-        auto clear_color = state.clear_colors[0];
-        a = static_cast<uint32_t>(clear_color.a * 255.0 + 0.5);
-        b = static_cast<uint32_t>(clear_color.b * 255.0 + 0.5) << 8;
-        g = static_cast<uint32_t>(clear_color.g * 255.0 + 0.5) << 16;
-        r = static_cast<uint32_t>(clear_color.r * 255.0 + 0.5) << 24;
-        auto clear_color_hex = a + b + g + r;
-        bgfx::setViewClear(pass_index, state.clear_flags, clear_color_hex);
+        auto clear_color = glm::fvec4(state.clear_colors[0]);
+        bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
+        bgfx::setViewClear(pass_index, state.clear_flags, 0.f, 0, 0);
     }
 }
 
 void
-Renderer::set_viewport_state(const ViewportState& state)
+Renderer::set_viewport_state(
+    const ViewportState& viewport_state, const RenderPassState& pass_state)
 {
-    auto view_projection_matrix = state.projection_matrix * state.view_matrix;
+    auto view_rect = viewport_state.view_rect;
+    auto projection_matrix = viewport_state.projection_matrix;
+    if (pass_state.has_custom_framebuffer()) {
+        if (bgfx::getCaps()->originBottomLeft) {
+            // in case custom render target is used adjust for NDC origin being
+            // at bottom left
+            projection_matrix = glm::scale(projection_matrix, {1., -1., 1.});
+        }
+
+        bgfx::setViewRect(
+            pass_state.index + 1, 0, 0, bgfx::BackbufferRatio::Equal);
+        view_rect = {glm::fvec2(0),
+                     glm::fvec2(this->_frame_context.window_size)};
+    }
+
+    auto view_matrix = viewport_state.view_matrix;
+    auto view_projection_matrix = projection_matrix * view_matrix;
     this->shading_context.set_uniform_value<glm::fvec4>(
-        "u_view_rect", state.view_rect);
+        "u_view_rect", viewport_state.viewport_rect);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_view_matrix", state.view_matrix);
+        "u_view_matrix", viewport_state.view_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_proj_matrix", state.projection_matrix);
+        "u_inv_view_matrix", glm::inverse(view_matrix));
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_proj_matrix", projection_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
         "u_view_proj_matrix", view_projection_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_inv_view_matrix", glm::inverse(state.view_matrix));
-    this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_inv_proj_matrix", glm::inverse(state.projection_matrix));
+        "u_inv_proj_matrix", glm::inverse(projection_matrix));
     this->shading_context.set_uniform_value<glm::fmat4>(
         "u_inv_view_proj_matrix", glm::inverse(view_projection_matrix));
 
@@ -479,13 +491,11 @@ Renderer::set_viewport_state(const ViewportState& state)
     this->shading_context.bind("u_inv_view_proj_matrix");
 
     bgfx::setScissor(
-        static_cast<uint16_t>(state.view_rect.x),
-        static_cast<uint16_t>(state.view_rect.y),
-        static_cast<uint16_t>(state.view_rect.z),
-        static_cast<uint16_t>(state.view_rect.w));
+        static_cast<uint16_t>(view_rect.x), static_cast<uint16_t>(view_rect.y),
+        static_cast<uint16_t>(view_rect.z), static_cast<uint16_t>(view_rect.w));
 }
 
-bgfx::ProgramHandle
+void
 Renderer::set_render_state(const RenderState& state)
 {
     auto texture = state.texture ? state.texture : this->default_texture.get();
@@ -499,85 +509,54 @@ Renderer::set_render_state(const RenderState& state)
         BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
         BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | state.state_flags);
     bgfx::setStencil(state.stencil_flags);
-    return material->program->_handle;
-}
-
-void
-Renderer::render_scene(Scene* scene)
-{
-    this->set_global_uniforms(
-        scene->_last_dt.count(), scene->_total_time.count());
-
-    auto viewport_states = scene->viewports.take_snapshot();
-    auto render_pass_states = scene->render_passes.take_snapshot();
-
-    // drawing of nodes tree
-    for (const auto& [key, bucket] : scene->draw_queue) {
-        auto batch = RenderBatch::from_bucket(key, bucket);
-        if (batch.geometry_stream.empty()) {
-            continue;
-        }
-
-        this->render_batch(
-            batch, key.render_passes, key.viewports, render_pass_states,
-            viewport_states);
-    }
-
-    // drawing of custom draw calls
-    for (auto& draw_command : scene->_draw_commands) {
-        this->render_draw_call(
-            draw_command.call, render_pass_states[draw_command.pass],
-            viewport_states[draw_command.viewport]);
-    }
-
-    // effects
-    bgfx::touch(_internal_view_index);
-    for (auto& render_pass : scene->render_passes) {
-        bgfx::touch(render_pass._index + _views_reserved_offset);
-        if (not render_pass.effect) {
-            continue;
-        }
-
-        ViewportState viewport_state{{this->border_size, this->view_size},
-                                     glm::fmat4(1.f),
-                                     glm::fmat4(1.f)};
-        this->render_draw_call(
-            render_pass.effect->draw_call(),
-            render_pass_states[render_pass._index], viewport_state);
-    }
-
-    scene->render_passes._reset();
 }
 
 void
 Renderer::render_batch(
     const RenderBatch& batch, const RenderPassIndexSet target_render_passes,
-    const ViewportIndexSet target_viewports,
-    const RenderPassStateArray& render_pass_states,
-    const ViewportStateArray& viewport_states)
+    const ViewportIndexSet target_viewports)
 {
-    batch.each_draw_call([=, &render_pass_states,
-                          &viewport_states](const DrawCall& call) {
-        // iterate over viewports first to minimalize state changes
-        target_viewports.each_active_index([=, &call, &render_pass_states,
-                                            &viewport_states](
-                                               uint16_t viewport_index) {
-            call.bind_buffers();
-            auto program_handle = this->set_render_state(call.state);
-            this->set_viewport_state(viewport_states[viewport_index]);
-            target_render_passes.each_active_index(
-                [this, program_handle, viewport_index,
-                 sorting_hint = call.sorting_hint,
-                 &render_pass_states](uint16_t render_pass_index) {
-                    this->set_pass_state(render_pass_states[render_pass_index]);
-                    auto depth = sorting_hint | (viewport_index << 24);
+    batch.each_draw_call([this, target_viewports,
+                          target_render_passes](const DrawCall& call) {
+        target_render_passes.each_active_index([this, target_viewports,
+                                                &call](uint16_t pass_index) {
+            target_viewports.each_active_index(
+                [this, pass_index, &call](uint16_t viewport_index) {
+                    call.bind_buffers();
+                    auto& ctx = this->_frame_context;
+                    auto pass_state = ctx.render_pass_states[pass_index];
+                    auto viewport_state = ctx.viewport_states[viewport_index];
+                    this->set_render_state(call.state);
+                    this->set_pass_state(pass_state);
+                    this->set_viewport_state(viewport_state, pass_state);
+                    uint32_t depth = call.sorting_hint | (viewport_index << 24);
                     bgfx::submit(
-                        render_pass_index + _views_reserved_offset,
-                        program_handle, depth, BGFX_DISCARD_NONE);
+                        pass_index + _views_reserved_offset,
+                        this->_get_program_handle(call.state.material), depth,
+                        BGFX_DISCARD_ALL);
                 });
-            this->discard_render_state();
         });
     });
+}
+
+void
+Renderer::render_effect(const Effect& effect, const uint16_t pass_index)
+{
+    glm::dvec4 view_rect = {this->border_size, this->view_size};
+    ViewportState viewport_state{view_rect, view_rect, glm::fmat4(1.f),
+                                 glm::fmat4(1.f)};
+    auto pass_state = this->_frame_context.render_pass_states[pass_index];
+    this->render_draw_call(effect.draw_call(), pass_state, viewport_state);
+}
+
+void
+Renderer::render_draw_command(
+    const DrawCommand& command, const uint16_t pass_index,
+    const uint16_t viewport_index)
+{
+    auto pass_state = this->_frame_context.render_pass_states[pass_index];
+    auto viewport_state = this->_frame_context.viewport_states[viewport_index];
+    this->render_draw_call(command.call, pass_state, viewport_state);
 }
 
 void
@@ -586,12 +565,13 @@ Renderer::render_draw_call(
     const ViewportState& viewport_state)
 {
     call.bind_buffers();
+    this->set_render_state(call.state);
     this->set_pass_state(pass_state);
-    this->set_viewport_state(viewport_state);
-    auto program_handle = this->set_render_state(call.state);
+    this->set_viewport_state(viewport_state, pass_state);
     bgfx::submit(
-        pass_state.index + _views_reserved_offset, program_handle,
-        call.sorting_hint, BGFX_DISCARD_ALL);
+        pass_state.index + _views_reserved_offset,
+        this->_get_program_handle(call.state.material), call.sorting_hint,
+        BGFX_DISCARD_ALL);
 }
 
 std::unordered_set<std::string>&
@@ -606,16 +586,17 @@ Renderer::reserved_uniform_names()
     return reserved_names;
 }
 
-inline void
-Renderer::discard_render_state()
-{
-    bgfx::discard(BGFX_DISCARD_ALL);
-}
-
 uint32_t
 Renderer::_calculate_reset_flags() const
 {
     return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
+}
+
+bgfx::ProgramHandle
+Renderer::_get_program_handle(const Material* material)
+{
+    auto ptr = material ? material : this->default_material.get_valid();
+    return ptr->program->_handle;
 }
 
 bgfx::RendererType::Enum

@@ -79,12 +79,12 @@ _get_shader_model_tag(ShaderModel model)
     }
 }
 
-ResourceReference<Shader>
-load_embedded_shader(
-    const std::string& shader_name, const ShaderType shader_type)
+ShaderModelMemoryMap
+_load_embedded_shader_memory_map(
+    const std::string& shader_name, const PlatformType platform)
 {
     std::vector<ShaderModel> models;
-    switch (get_platform()) {
+    switch (platform) {
         case PlatformType::linux:
             models = {ShaderModel::glsl, ShaderModel::spirv};
             break;
@@ -108,18 +108,18 @@ load_embedded_shader(
         path = fmt::format("{}/{}.bin", shader_model_tag, shader_name);
         memory_map[model] = _load_embedded_shader_memory(path);
     }
-    return Shader::create(shader_type, memory_map);
+    return memory_map;
 }
 
-Shader::Shader(const ShaderModelMemoryMap& memory_map, const ShaderType type)
-    : _models(memory_map), _type(type)
+Shader::Shader(const ShaderType type, const ShaderModelMemoryMap& memory_map)
+    : _type(type), _models(memory_map)
 {
     if (is_engine_initialized()) {
         this->_initialize();
     }
 }
 
-Shader::Shader(ShaderModelMemoryMap&& memory_map, const ShaderType type)
+Shader::Shader(const ShaderType type, ShaderModelMemoryMap&& memory_map)
     : _models(std::move(memory_map)), _type(type)
 {
     if (is_engine_initialized()) {
@@ -153,7 +153,7 @@ Shader::load(const ShaderType type, const ShaderModelMap& model_map)
         memory_map[kv_pair.first] = std::move(_load_shader(kv_pair.second));
     }
 
-    shader = std::shared_ptr<Shader>(new Shader(std::move(memory_map), type));
+    shader = std::shared_ptr<Shader>(new Shader(type, std::move(memory_map)));
     _shaders_registry.register_resource(key, shader);
     return shader;
 }
@@ -161,7 +161,7 @@ Shader::load(const ShaderType type, const ShaderModelMap& model_map)
 ResourceReference<Shader>
 Shader::create(const ShaderType type, const ShaderModelMemoryMap& memory_map)
 {
-    return std::shared_ptr<Shader>(new Shader(memory_map, type));
+    return std::shared_ptr<Shader>(new Shader(type, memory_map));
 }
 
 const Memory
@@ -210,6 +210,48 @@ Shader::_uninitialize()
 {
     bgfx::destroy(this->_handle);
     this->is_initialized = false;
+}
+
+ShaderModelMemoryMap
+_eval_if_initialized(const EmbeddedShader::ShaderMemoryProxy& proxy)
+{
+    if (is_engine_initialized()) {
+        return proxy();
+    }
+    return {};
+}
+
+EmbeddedShader::EmbeddedShader(
+    const ShaderType type, const ShaderMemoryProxy& proxy)
+    : _proxy(proxy), Shader(type, _eval_if_initialized(proxy))
+{}
+
+ResourceReference<EmbeddedShader>
+EmbeddedShader::load(const ShaderType type, const std::string& shader_name)
+{
+    ShaderKey key{fmt::format("EMBEDDED::{}", shader_name), "str"};
+    auto shader = std::static_pointer_cast<EmbeddedShader>(
+        _shaders_registry.get_resource(key));
+    if (shader) {
+        return shader;
+    }
+
+    // in case shader is created in global scope
+    // loading embedded memory has to be deffered - cmrc might not be ready yet
+    auto lazy_load = [shader_name]() -> ShaderModelMemoryMap {
+        return _load_embedded_shader_memory_map(shader_name, get_platform());
+    };
+    shader =
+        std::shared_ptr<EmbeddedShader>(new EmbeddedShader(type, lazy_load));
+    _shaders_registry.register_resource(key, shader);
+    return shader;
+}
+
+void
+EmbeddedShader::_initialize()
+{
+    this->_models = std::move(this->_proxy());
+    Shader::_initialize();
 }
 
 Program::Program() : vertex_shader(nullptr), fragment_shader(nullptr) {}

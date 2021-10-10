@@ -29,13 +29,13 @@ class RenderTarget : public Texture {
 
   private:
     RenderTargetID _id;
-    bool _requires_clean;
     glm::dvec4 _clear_color;
-    bgfx::TextureHandle _texture;
+    bool _is_dirty = false;
 
-    RenderTarget();
+    RenderTarget(RenderTargetID id);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
+    void _mark_dirty();
 
     static inline std::atomic<RenderTargetID> _last_id = 0;
 

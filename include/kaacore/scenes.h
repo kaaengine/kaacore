@@ -1,7 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <set>
 #include <vector>
+
+#include <glm/glm.hpp>
 
 #include "kaacore/camera.h"
 #include "kaacore/clock.h"
@@ -32,7 +35,6 @@ class Scene {
     Scene();
     virtual ~Scene();
 
-    void reset_viewports();
     NodesQueue& build_processing_queue();
     void process_update(const Duration dt);
     void process_physics(const HighPrecisionDuration dt);
@@ -40,10 +42,11 @@ class Scene {
         const HighPrecisionDuration dt, const NodesQueue& processing_queue);
     void resolve_spatial_index_changes(const NodesQueue& processing_queue);
     void update_nodes_drawing_queue(const NodesQueue& processing_queue);
-    void process_drawing();
     void draw(
-        const uint16_t render_pass, const uint16_t viewport,
+        const uint16_t render_pass, const int16_t viewport,
         const DrawCall& draw_call);
+    void attach_frame_context(const std::unique_ptr<Renderer>& renderer);
+    void render(const std::unique_ptr<Renderer>& renderer);
     void remove_marked_nodes();
     void register_simulation(Node* node);
     void unregister_simulation(Node* node);
@@ -72,6 +75,8 @@ class Scene {
     NodesQueue _nodes_remove_queue;
     std::vector<DrawCommand> _draw_commands;
     std::atomic<uint64_t> _node_scene_tree_id_counter = 0;
+
+    void _reset();
 
     friend class Engine;
     friend class Renderer;

@@ -313,7 +313,6 @@ Engine::_scene_processing()
             auto dt = this->clock.measure();
             {
                 StopwatchStatAutoPusher stopwatch{"engine.frame:time"};
-                this->renderer->begin_frame();
 #if KAACORE_MULTITHREADING_MODE
                 this->_event_processing_state.wait(EventProcessingState::ready);
 #endif
@@ -338,14 +337,16 @@ Engine::_scene_processing()
                     this->_scene->build_processing_queue();
                 this->_scene->update_nodes_drawing_queue(
                     nodes_processing_queue);
-                this->_scene->process_drawing();
+                this->_scene->attach_frame_context(this->renderer);
+                this->renderer->begin_frame();
+                this->_scene->render(this->renderer);
+                this->renderer->end_frame();
                 this->_scene->resolve_spatial_index_changes(
                     nodes_processing_queue);
                 this->_scene->process_physics(scaled_dt);
                 this->timers.process(dt);
                 this->_scene->timers.process(scaled_dt);
                 this->_scene->process_nodes(scaled_dt, nodes_processing_queue);
-                this->renderer->end_frame();
                 this->_scene->remove_marked_nodes();
             }
 
@@ -372,7 +373,7 @@ Engine::_swap_scenes()
     this->_scene->on_exit();
     this->_next_scene->on_enter();
     this->_scene = std::move(this->_next_scene);
-    this->_scene->reset_viewports();
+    this->_scene->_reset();
 }
 
 void
@@ -403,7 +404,7 @@ Engine::_process_events()
             this->renderer->reset(
                 {event.window.data1, event.window.data2},
                 this->_virtual_resolution, this->_virtual_resolution_mode);
-            this->_scene->reset_viewports();
+            this->_scene->_reset();
         }
         this->input_manager->push_event(event);
     }

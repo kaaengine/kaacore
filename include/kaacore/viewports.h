@@ -27,6 +27,13 @@ validate_z_index(const int16_t z_index)
 class Scene;
 class ViewportsManager;
 
+struct ViewportState {
+    glm::fvec4 view_rect;
+    glm::fvec4 viewport_rect;
+    glm::fmat4 view_matrix;
+    glm::fmat4 projection_matrix;
+};
+
 class Viewport {
   public:
     Camera camera;
@@ -38,46 +45,40 @@ class Viewport {
     void origin(const glm::ivec2& origin);
     glm::uvec2 dimensions() const;
     void dimensions(const glm::uvec2& dimensions);
-    glm::ivec4 view_rect() const;
+    glm::ivec4 viewport_rect() const;
 
   private:
     bool _is_dirty;
     int16_t _index;
-    glm::dvec4 _view_rect;
     glm::uvec2 _dimensions;
     glm::ivec2 _origin = {0, 0};
     glm::fmat4 _projection_matrix;
+    glm::dvec4 _view_rect;
+    glm::dvec4 _viewport_rect;
 
     Viewport();
 
-    void _refresh();
-    bool _refresh_required() const;
-    glm::fmat4 _view_matrix() const;
+    void _reset();
+    bool _reset_required() const;
+    ViewportState _take_snapshot();
 
     friend class ViewportsManager;
-};
-
-struct ViewportState {
-    glm::fvec4 view_rect;
-    glm::fmat4 view_matrix;
-    glm::fmat4 projection_matrix;
 };
 
 class ViewportsManager {
   public:
     ViewportsManager();
-    ViewportStateArray take_snapshot();
     Viewport& operator[](const int16_t index);
     Viewport* get(const int16_t index);
     Viewport* begin();
     Viewport* end();
-
     size_t size();
 
   private:
     Viewport _viewports[KAACORE_MAX_VIEWPORTS];
 
     void _mark_dirty();
+    ViewportStateArray _take_snapshot();
 
     friend Scene;
 };
