@@ -9,14 +9,28 @@
 
 namespace kaacore {
 
-class CapturingAdapterBase {
+typedef std::shared_ptr<std::byte[]> CapturedFrameData;
+
+struct CapturedFrames {
+    CapturedFrames() {}
+    CapturedFrames(
+        const uint32_t width, const uint32_t height,
+        const std::vector<CapturedFrameData>& frames)
+        : width(width), height(height), frames(frames)
+    {}
+
+    std::vector<uint8_t*> raw_ptr_frames_uint8();
+
+    uint32_t width;
+    uint32_t height;
+    std::vector<CapturedFrameData> frames;
+};
+
+class CapturingAdapter {
     friend class CaptureCallback;
 
   public:
-    CapturingAdapterBase() = default;
-    virtual ~CapturingAdapterBase() {}
-
-    virtual void on_frame(const std::byte* frame_data, uint32_t size) = 0;
+    void on_frame(const std::byte* frame_data, uint32_t size);
 
     uint32_t width() const;
     uint32_t height() const;
@@ -28,12 +42,14 @@ class CapturingAdapterBase {
         uint32_t width, uint32_t height, uint32_t pitch,
         bgfx::TextureFormat::Enum format, bool y_flip);
 
-  protected:
+    size_t frames_count() const;
+    CapturedFrames get_captured_frames() const;
+
+  private:
     size_t frame_line_bytes_count() const;
     void flip_aware_frame_copy(
         std::byte* dst, const std::byte* src, const uint32_t size) const;
 
-  private:
     bool _is_initialized = false;
     std::unique_ptr<std::byte[]> _frame_data_buffer;
     size_t _frame_data_size;
@@ -43,30 +59,7 @@ class CapturingAdapterBase {
     bimg::TextureFormat::Enum _source_format;
     bimg::TextureFormat::Enum _target_format = bimg::TextureFormat::Enum::RGBA8;
     bool _y_flip;
-};
-
-class ImagesDirectoryCapturingAdapter : public CapturingAdapterBase {
-  public:
-    ImagesDirectoryCapturingAdapter(const std::string name_prefix);
-
-    void on_frame(const std::byte* frame_data, uint32_t size) override;
-
-  private:
-    std::string _name_format;
-    size_t _frames_count;
-};
-
-class MemoryVectorCapturingAdapter : public CapturingAdapterBase {
-  public:
-    MemoryVectorCapturingAdapter();
-
-    void on_frame(const std::byte* frame_data, uint32_t size) override;
-
-    size_t frames_count() const;
-    const std::vector<uint8_t*> frames_uint8() const;
-
-  private:
-    std::vector<std::unique_ptr<std::byte[]>> _frames;
+    std::vector<CapturedFrameData> _frames;
 };
 
 } // namespace kaacore

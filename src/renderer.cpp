@@ -560,7 +560,7 @@ Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
 uint32_t
 Renderer::_calculate_reset_flags() const
 {
-    return (this->_capture ? BGFX_RESET_CAPTURE : 0) |
+    return (this->_capturing_adapter != nullptr ? BGFX_RESET_CAPTURE : 0) |
            (this->_vertical_sync ? BGFX_RESET_VSYNC : 0);
 }
 
@@ -588,13 +588,14 @@ Renderer::_choose_bgfx_renderer(const std::string& renderer_name) const
 }
 
 void
-Renderer::setup_capture(CapturingAdapterBase* capturing_adapter)
+Renderer::setup_capture()
 {
     KAACORE_ASSERT(
         this->_renderer_callbacks.capturing_adapter == nullptr,
         "capturing_adapter already set");
-    this->_renderer_callbacks.capturing_adapter = capturing_adapter;
-    this->_capture = true;
+    this->_capturing_adapter = std::make_unique<CapturingAdapter>();
+    this->_renderer_callbacks.capturing_adapter =
+        this->_capturing_adapter.get();
     this->_needs_reset = true;
 }
 
@@ -605,8 +606,16 @@ Renderer::clear_capture()
         this->_renderer_callbacks.capturing_adapter != nullptr,
         "capturing_adapter is not set");
     this->_renderer_callbacks.capturing_adapter = nullptr;
-    this->_capture = false;
+    this->_capturing_adapter.reset(nullptr);
     this->_needs_reset = true;
+}
+
+CapturedFrames
+Renderer::get_captured_frames() const
+{
+    KAACORE_ASSERT(
+        this->_capturing_adapter != nullptr, "capturing_adapter is not set");
+    return this->_capturing_adapter->get_captured_frames();
 }
 
 } // namespace kaacore

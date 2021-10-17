@@ -9,36 +9,56 @@
 
 namespace kaacore {
 
+std::vector<uint8_t*>
+CapturedFrames::raw_ptr_frames_uint8()
+{
+    std::vector<uint8_t*> pointers;
+    for (const auto& frame : this->frames) {
+        pointers.push_back(reinterpret_cast<uint8_t*>(frame.get()));
+    }
+
+    return pointers;
+}
+
+void
+CapturingAdapter::on_frame(const std::byte* frame_data, uint32_t size)
+{
+    KAACORE_LOG_DEBUG("Storing captured frame #{}", this->frames_count() + 1);
+    CapturedFrameData frame_stored{new std::byte[size]};
+    this->flip_aware_frame_copy(frame_stored.get(), frame_data, size);
+    this->_frames.push_back(std::move(frame_stored));
+}
+
 uint32_t
-CapturingAdapterBase::width() const
+CapturingAdapter::width() const
 {
     KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_width;
 }
 
 uint32_t
-CapturingAdapterBase::height() const
+CapturingAdapter::height() const
 {
     KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_height;
 }
 
 bimg::TextureFormat::Enum
-CapturingAdapterBase::texture_format() const
+CapturingAdapter::texture_format() const
 {
     KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_target_format;
 }
 
 bool
-CapturingAdapterBase::y_flip() const
+CapturingAdapter::y_flip() const
 {
     KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
     return this->_y_flip;
 }
 
 void
-CapturingAdapterBase::process_raw_frame(const void* data, uint32_t size)
+CapturingAdapter::process_raw_frame(const void* data, uint32_t size)
 {
     thread_local bx::DefaultAllocator allocator;
     KAACORE_ASSERT(this->_is_initialized, "Adapter was not initialized");
@@ -57,7 +77,7 @@ CapturingAdapterBase::process_raw_frame(const void* data, uint32_t size)
 }
 
 void
-CapturingAdapterBase::initialize_capture_parameters(
+CapturingAdapter::initialize_capture_parameters(
     uint32_t width, uint32_t height, uint32_t pitch,
     bgfx::TextureFormat::Enum source_format, bool y_flip)
 {
@@ -81,7 +101,7 @@ CapturingAdapterBase::initialize_capture_parameters(
 }
 
 size_t
-CapturingAdapterBase::frame_line_bytes_count() const
+CapturingAdapter::frame_line_bytes_count() const
 {
     KAACORE_CHECK(this->_is_initialized, "Adapter was not initialized yet.");
     return static_cast<size_t>(this->_width) *
@@ -89,7 +109,7 @@ CapturingAdapterBase::frame_line_bytes_count() const
 }
 
 void
-CapturingAdapterBase::flip_aware_frame_copy(
+CapturingAdapter::flip_aware_frame_copy(
     std::byte* dst, const std::byte* src, const uint32_t size) const
 {
     if (this->y_flip()) {
@@ -111,64 +131,20 @@ CapturingAdapterBase::flip_aware_frame_copy(
     }
 }
 
-ImagesDirectoryCapturingAdapter::ImagesDirectoryCapturingAdapter(
-    const std::string name_prefix)
-    : _name_format(name_prefix + "_{:06d}.png"), _frames_count(0),
-      CapturingAdapterBase()
-{}
-
-void
-ImagesDirectoryCapturingAdapter::on_frame(
-    const std::byte* frame_data, uint32_t size)
-{
-    std::string file_path =
-        fmt::format(this->_name_format, this->_frames_count);
-    KAACORE_LOG_DEBUG(
-        "Writing captured frame (size: {}) to file: {}", size, file_path);
-
-    bx::FileWriter writer;
-    bx::Error err;
-    if (bx::open(&writer, file_path.c_str(), false, &err)) {
-        uint32_t pitch = this->width() * 4;
-        bimg::imageWritePng(
-            &writer, this->width(), this->height(), pitch, frame_data,
-            this->texture_format(), false, &err);
-        bx::close(&writer);
-    }
-    this->_frames_count++;
-
-    KAACORE_CHECK(
-        err.isOk(), "BX error occured: {}", err.getMessage().getPtr());
-}
-
-MemoryVectorCapturingAdapter::MemoryVectorCapturingAdapter()
-    : CapturingAdapterBase()
-{}
-
-void
-MemoryVectorCapturingAdapter::on_frame(
-    const std::byte* frame_data, uint32_t size)
-{
-    KAACORE_LOG_DEBUG("Storing captured frame #{}", this->frames_count() + 1);
-    std::unique_ptr<std::byte[]> frame_stored{new std::byte[size]};
-    this->flip_aware_frame_copy(frame_stored.get(), frame_data, size);
-    this->_frames.push_back(std::move(frame_stored));
-}
-
 size_t
-MemoryVectorCapturingAdapter::frames_count() const
+CapturingAdapter::frames_count() const
 {
     return this->_frames.size();
 }
 
-const std::vector<uint8_t*>
-MemoryVectorCapturingAdapter::frames_uint8() const
+CapturedFrames
+CapturingAdapter::get_captured_frames() const
 {
-    std::vector<uint8_t*> frames_vector;
-    for (const auto& uptr : this->_frames) {
-        frames_vector.push_back(reinterpret_cast<uint8_t*>(uptr.get()));
+    if (this->_is_initialized) {
+        return {this->width(), this->height(), this->_frames};
     }
-    return frames_vector;
+    KAACORE_LOG_WARN("No frames captured, adapter was not initialized");
+    return {};
 }
 
 } // namespace kaacore

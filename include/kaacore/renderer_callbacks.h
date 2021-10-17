@@ -41,7 +41,7 @@ struct RendererCallbacks : bgfx::CallbackI {
         bool) override
     {}
 
-    CapturingAdapterBase* capturing_adapter = nullptr;
+    CapturingAdapter* capturing_adapter = nullptr;
 };
 
 } // namespace kaacore

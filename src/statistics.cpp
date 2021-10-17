@@ -83,6 +83,17 @@ FrameStatisticTracker::analyse() const
     return stats;
 }
 
+std::optional<StatisticAnalysis>
+StatisticsManager::get_analysis(const std::string& name)
+{
+    std::lock_guard lock{this->_mutex};
+    auto it = this->_trackers.find(name);
+    if (it != this->_trackers.end()) {
+        return it->second.analyse();
+    }
+    return std::nullopt;
+}
+
 void
 StatisticsManager::push_value(const std::string& stat_name, const double value)
 {

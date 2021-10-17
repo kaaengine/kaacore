@@ -48,6 +48,8 @@ std::string
 get_persistent_path(
     const std::string& prefix, const std::string& organization_prefix = "");
 
+class EngineRuntimeHandler;
+
 class Engine {
   public:
     std::atomic<bool> is_running = false;
@@ -57,7 +59,6 @@ class Engine {
     VirtualResolutionMode _virtual_resolution_mode =
         VirtualResolutionMode::adaptive_stretch;
 
-    Clock clock;
     TimersManager timers;
     // use pointers so we can have more controll over destruction order
     std::unique_ptr<Window> window;
@@ -73,10 +74,11 @@ class Engine {
             VirtualResolutionMode::adaptive_stretch) noexcept(false);
     ~Engine();
 
-    void run(
-        Scene* scene, uint32_t frames_limit = 0,
-        Duration frame_fixed_duration = 0s,
-        CapturingAdapterBase* capturing_adapter = nullptr);
+    void run_with_handler(EngineRuntimeHandler* runtime_handler, Scene* scene);
+    void run(Scene* scene);
+    CapturedFrames run_capture(
+        Scene* scene, const uint32_t frames_limit,
+        const Duration fixed_dt = 0.01667s);
     void change_scene(Scene* scene);
     Scene* current_scene();
     void quit();
@@ -93,6 +95,8 @@ class Engine {
     std::vector<Display> get_displays();
     Duration total_time() const;
     double get_fps() const;
+
+    EngineRuntimeHandler* runtime_handler() const;
 
     inline std::thread::id main_thread_id() { return this->_main_thread_id; }
 
@@ -140,44 +144,7 @@ class Engine {
     _ScenePointerWrapper _scene;
     _ScenePointerWrapper _next_scene;
 
-    class _RuntimeSession {
-      public:
-        _RuntimeSession(
-            Engine* engine, Scene* initial_scene, const uint32_t frames_limit,
-            const Duration frame_fixed_duration,
-            CapturingAdapterBase* capturing_adapter);
-        ~_RuntimeSession();
-        _RuntimeSession(const _RuntimeSession&) = delete;
-        _RuntimeSession(_RuntimeSession&&) = delete;
-        _RuntimeSession& operator=(const _RuntimeSession&) = delete;
-        _RuntimeSession& operator=(_RuntimeSession&&) = delete;
-
-        inline uint32_t frames_limit() const { return this->_frames_limit; }
-        inline HighPrecisionDuration frame_fixed_duration() const
-        {
-            return this->_frame_fixed_duration;
-        }
-        inline HighPrecisionDuration total_time() const
-        {
-            return this->_total_running_time;
-        }
-        inline void increment_total_time(const HighPrecisionDuration dt)
-        {
-            this->_total_running_time += dt;
-        }
-
-      private:
-        Engine* _engine;
-        uint32_t _frames_limit;
-        HighPrecisionDuration _frame_fixed_duration;
-        bool _capture_enabled;
-
-        HighPrecisionDuration _total_running_time;
-    };
-
-    _RuntimeSession* _runtime_session;
-
-    _RuntimeSession& runtime_session() const;
+    EngineRuntimeHandler* _runtime_handler;
 
     std::thread::id _main_thread_id;
     SyncedSyscallQueue _synced_syscall_queue;
@@ -235,5 +202,86 @@ get_engine()
     KAACORE_CHECK(is_engine_initialized(), "Engine is not initialized.");
     return engine;
 }
+
+class EngineRuntimeHandler {
+  protected:
+    class ScopeGuard;
+
+  public:
+    EngineRuntimeHandler();
+    virtual ~EngineRuntimeHandler();
+    EngineRuntimeHandler(const EngineRuntimeHandler&) = delete;
+    EngineRuntimeHandler(EngineRuntimeHandler&&) = delete;
+    EngineRuntimeHandler& operator=(const EngineRuntimeHandler&) = delete;
+    EngineRuntimeHandler& operator=(EngineRuntimeHandler&&) = delete;
+
+    HighPrecisionDuration total_time() const;
+    uint32_t total_frames() const;
+
+    ScopeGuard attach(
+        Engine* engine, EngineRuntimeHandler** runtime_handler_slot);
+
+    virtual void on_attach();
+    virtual void on_session_start();
+
+    virtual void on_frame_start();
+    virtual bool check_loop_condition() const;
+    HighPrecisionDuration measure_time();
+    virtual HighPrecisionDuration get_elapsed_time() = 0;
+    virtual void on_frame_end();
+
+    virtual void on_session_end();
+    virtual void on_detach() noexcept;
+
+  protected:
+    void handle_detach() noexcept;
+
+    Engine* _engine;
+    EngineRuntimeHandler** _handler_slot;
+    HighPrecisionDuration _total_running_time;
+    uint32_t _total_frames_count;
+
+    class ScopeGuard {
+      public:
+        ScopeGuard(EngineRuntimeHandler* runtime_handler)
+            : _runtime_handler(runtime_handler)
+        {}
+        ~ScopeGuard() { this->_runtime_handler->handle_detach(); }
+        ScopeGuard(const ScopeGuard&) = delete;
+        ScopeGuard(ScopeGuard&&) = default;
+        ScopeGuard& operator=(const ScopeGuard&) = delete;
+        ScopeGuard& operator=(ScopeGuard&&) = default;
+
+      private:
+        EngineRuntimeHandler* _runtime_handler;
+    };
+};
+
+class BasicEngineRuntimeHandler : public EngineRuntimeHandler {
+  public:
+    void on_session_start() override;
+    HighPrecisionDuration get_elapsed_time() override;
+
+  private:
+    Clock _clock;
+    HighPrecisionDuration _current_duration;
+};
+
+class CapturingEngineRuntimeHandler : public EngineRuntimeHandler {
+  public:
+    CapturingEngineRuntimeHandler(
+        const uint32_t frames_limit, const Duration fixed_dt);
+    void on_session_start() override;
+    bool check_loop_condition() const override;
+    HighPrecisionDuration get_elapsed_time() override;
+    void on_session_end() override;
+
+    CapturedFrames get_captured_frames() const;
+
+  private:
+    uint32_t _frames_limit;
+    HighPrecisionDuration _fixed_dt;
+    CapturedFrames _captured_frames;
+};
 
 } // namespace kaacore

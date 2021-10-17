@@ -78,8 +78,9 @@ class Renderer {
     void render_draw_queue(const DrawQueue& draw_queue);
     void set_global_uniforms(const float last_dt, const float scene_time);
     static std::unordered_set<std::string>& reserved_uniform_names();
-    void setup_capture(CapturingAdapterBase* capturing_adapter);
+    void setup_capture();
     void clear_capture();
+    CapturedFrames get_captured_frames() const;
 
   private:
     uint32_t _calculate_reset_flags() const;
@@ -89,7 +90,7 @@ class Renderer {
 
     bool _needs_reset = false;
     bool _vertical_sync = true;
-    bool _capture = false;
+    std::unique_ptr<CapturingAdapter> _capturing_adapter;
 
     RendererCallbacks _renderer_callbacks;
 
