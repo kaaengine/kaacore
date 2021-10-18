@@ -9,6 +9,10 @@
 
 namespace kaacore {
 
+CapturedFrameData::CapturedFrameData(std::byte* raw_ptr, const size_t size)
+    : ptr(raw_ptr, std::default_delete<std::byte[]>()), size(size)
+{}
+
 std::vector<uint8_t*>
 CapturedFrames::raw_ptr_frames_uint8()
 {
@@ -24,7 +28,7 @@ void
 CapturingAdapter::on_frame(const std::byte* frame_data, uint32_t size)
 {
     KAACORE_LOG_DEBUG("Storing captured frame #{}", this->frames_count() + 1);
-    CapturedFrameData frame_stored{new std::byte[size]};
+    CapturedFrameData frame_stored{new std::byte[size], size};
     this->flip_aware_frame_copy(frame_stored.get(), frame_data, size);
     this->_frames.push_back(std::move(frame_stored));
 }

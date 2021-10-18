@@ -9,7 +9,13 @@
 
 namespace kaacore {
 
-typedef std::shared_ptr<std::byte[]> CapturedFrameData;
+struct CapturedFrameData {
+    CapturedFrameData(std::byte* raw_ptr, const size_t size);
+    inline std::byte* get() const { return this->ptr.get(); }
+
+    std::shared_ptr<std::byte> ptr;
+    size_t size;
+};
 
 struct CapturedFrames {
     CapturedFrames() {}
