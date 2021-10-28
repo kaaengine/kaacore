@@ -122,6 +122,26 @@ struct DrawUnit {
     DrawUnitDetails details;
 };
 
+struct DrawUnitModificationPack {
+    DrawUnitModificationPack(
+        std::optional<DrawUnitModification> upsert_mod_,
+        std::optional<DrawUnitModification> remove_mod_);
+
+    explicit operator bool() const;
+    std::pair<
+        std::optional<DrawUnitModification>,
+        std::optional<DrawUnitModification>>
+    unpack();
+    std::optional<DrawBucketKey> new_lookup_key() const;
+
+    std::optional<DrawUnitModification> upsert_mod;
+    std::optional<DrawUnitModification> remove_mod;
+};
+
+typedef std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
+    DrawUnitModificationPair;
+
 class DrawBucket;
 
 class GeometryStream {

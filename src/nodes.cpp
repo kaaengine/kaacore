@@ -71,45 +71,6 @@ Node::~Node()
 }
 
 void
-Node::_mark_dirty()
-{
-    this->recursive_call_downstream([](Node* node) {
-        bool descend = true;
-        if (node->_model_matrix.is_dirty) {
-            descend = false;
-        }
-        node->_render_data.is_dirty = true;
-        node->_model_matrix.is_dirty = true;
-        node->_spatial_data.is_dirty = true;
-        return descend;
-    });
-}
-
-void
-Node::_mark_ordering_dirty()
-{
-    this->recursive_call_downstream([](Node* node) {
-        if (node->_ordering_data.is_dirty) {
-            return false;
-        }
-        node->_ordering_data.is_dirty = true;
-        return true;
-    });
-}
-
-void
-Node::_mark_draw_unit_vertices_indices_dirty()
-{
-    this->recursive_call_downstream([](Node* node) {
-        if (node->_draw_unit_data.updated_vertices_indices_info) {
-            return false;
-        }
-        node->_draw_unit_data.updated_vertices_indices_info = true;
-        return true;
-    });
-}
-
-void
 Node::_mark_to_delete()
 {
     if (this->_marked_to_delete) {
@@ -176,7 +137,7 @@ Node::_recalculate_model_matrix()
     const static glm::fmat4 identity(1.0);
     this->_model_matrix.value = this->_compute_model_matrix(
         this->_parent ? this->_parent->_model_matrix.value : identity);
-    this->_model_matrix.is_dirty = false;
+    this->clear_dirty_flags(DIRTY_MODEL_MATRIX_RECURSIVE);
 }
 
 void
@@ -185,7 +146,7 @@ Node::_recalculate_model_matrix_cumulative()
     Node* pointer = this;
     std::vector<Node*> inheritance_chain{pointer};
     while ((pointer = pointer->_parent) != nullptr and
-           pointer->_model_matrix.is_dirty) {
+           pointer->query_dirty_flags(DIRTY_MODEL_MATRIX)) {
         inheritance_chain.push_back(pointer);
     }
 
@@ -201,8 +162,9 @@ Node::_set_position(const glm::dvec2& position)
     if (this->_position == position) {
         return;
     }
-    this->_mark_dirty();
-    this->_mark_draw_unit_vertices_indices_dirty();
+    this->set_dirty_flags(
+        DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
+        DIRTY_MODEL_MATRIX_RECURSIVE);
     this->_position = position;
 }
 
@@ -212,8 +174,9 @@ Node::_set_rotation(const double rotation)
     if (rotation == this->_rotation) {
         return;
     }
-    this->_mark_dirty();
-    this->_mark_draw_unit_vertices_indices_dirty();
+    this->set_dirty_flags(
+        DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
+        DIRTY_MODEL_MATRIX_RECURSIVE);
     this->_rotation = rotation;
 }
 
@@ -286,7 +249,7 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
 void
 Node::recalculate_model_matrix()
 {
-    if (not this->_model_matrix.is_dirty) {
+    if (not this->query_dirty_flags(DIRTY_MODEL_MATRIX)) {
         return;
     }
     this->_recalculate_model_matrix();
@@ -334,7 +297,7 @@ Node::recalculate_vertices_indices_data()
 void
 Node::recalculate_ordering_data()
 {
-    if (not this->_ordering_data.is_dirty) {
+    if (not this->query_dirty_flags(DIRTY_ORDERING)) {
         return;
     }
 
@@ -376,18 +339,18 @@ Node::recalculate_ordering_data()
         this->_ordering_data.calculated_z_index =
             this->_parent->_ordering_data.calculated_z_index;
     }
-    this->_ordering_data.is_dirty = false;
+    this->clear_dirty_flags(DIRTY_ORDERING_RECURSIVE);
 }
 
 void
 Node::recalculate_visibility_data()
 {
-    if (not this->_visibility_data.is_dirty) {
+    if (not this->query_dirty_flags(DIRTY_VISIBILITY)) {
         return;
     }
 
     const auto& inheritance_chain = this->build_inheritance_chain(
-        [](Node* n) { return n->_visibility_data.is_dirty; });
+        [](Node* n) { return n->query_dirty_flags(DIRTY_VISIBILITY); });
 
     for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
          it++) {
@@ -406,16 +369,8 @@ Node::recalculate_visibility_data()
                 node->_parent->_visibility_data.calculated_visible;
         }
 
-        node->_visibility_data.is_dirty = false;
+        node->clear_dirty_flags(DIRTY_VISIBILITY_RECURSIVE);
     }
-}
-
-bool
-Node::has_draw_unit_updates() const
-{
-    return (
-        this->_draw_unit_data.updated_bucket_key or
-        this->_draw_unit_data.updated_vertices_indices_info);
 }
 
 std::optional<DrawUnitModification>
@@ -433,65 +388,102 @@ Node::calculate_draw_unit_removal() const
                                 this->_scene_tree_id};
 }
 
-DrawUnitModificationPair
+DrawUnitModificationPack
 Node::calculate_draw_unit_updates()
 {
     KAACORE_ASSERT(
         this->_scene_tree_id != 0u, "Node ({}) has no scene tree id",
         fmt::ptr(this));
-    KAACORE_ASSERT(
-        this->has_draw_unit_updates(), "Node has no draw unit modifications");
+
+    if (not this->query_dirty_flags(DIRTY_DRAW_KEYS | DIRTY_DRAW_VERTICES)) {
+        return {std::nullopt, std::nullopt};
+    }
 
     this->recalculate_model_matrix();
     this->recalculate_ordering_data();
     this->recalculate_visibility_data();
 
-    std::optional<DrawUnitModification> remove_mod_opt{std::nullopt};
+    const bool is_visible =
+        this->_shape and this->_visibility_data.calculated_visible;
+    const std::optional<DrawBucketKey> calculated_draw_bucket_key =
+        is_visible ? std::optional<DrawBucketKey>{this->_make_draw_bucket_key()}
+                   : std::nullopt;
+    const bool changed_draw_bucket_key =
+        this->query_dirty_flags(DIRTY_DRAW_KEYS) and
+        this->_draw_unit_data.current_key != calculated_draw_bucket_key;
+    const bool changed_vertices_indices =
+        this->query_dirty_flags(DIRTY_DRAW_VERTICES);
 
-    if (this->_draw_unit_data.updated_bucket_key and
-        this->_draw_unit_data.current_key) {
+    std::optional<DrawUnitModification> remove_mod{std::nullopt};
+    std::optional<DrawUnitModification> upsert_mod{std::nullopt};
+
+    if (changed_draw_bucket_key and this->_draw_unit_data.current_key) {
         // draw unit needs to be removed from previous bucket
-        remove_mod_opt = this->calculate_draw_unit_removal().value();
+        remove_mod = this->calculate_draw_unit_removal().value();
     }
 
     // skip inserting/updating if node will not be rendered
-    if (not this->_shape or not this->_visibility_data.calculated_visible) {
-        return {std::nullopt, remove_mod_opt};
-    }
+    if (is_visible and (changed_draw_bucket_key or changed_vertices_indices)) {
+        upsert_mod = DrawUnitModification{
+            changed_draw_bucket_key ? DrawUnitModification::Type::insert
+                                    : DrawUnitModification::Type::update,
+            *calculated_draw_bucket_key, this->_scene_tree_id};
 
-    DrawBucketKey lookup_key;
-    DrawUnitModification::Type mod_type;
-    if (this->_draw_unit_data.updated_bucket_key or
-        not this->_draw_unit_data.current_key) {
-        lookup_key = this->_make_draw_bucket_key();
-        mod_type = DrawUnitModification::Type::insert;
-    } else {
-        lookup_key = *this->_draw_unit_data.current_key;
-        mod_type = DrawUnitModification::Type::update;
-    }
-    DrawUnitModification update_mod{mod_type, lookup_key, this->_scene_tree_id};
-
-    if (this->_draw_unit_data.updated_vertices_indices_info or
-        this->_draw_unit_data.updated_bucket_key) {
-        update_mod.updated_vertices_indices = true;
+        upsert_mod->updated_vertices_indices = true;
         auto vertices_indices_pair = this->recalculate_vertices_indices_data();
-        update_mod.state_update.vertices =
+        upsert_mod->state_update.vertices =
             std::move(vertices_indices_pair.first);
-        update_mod.state_update.indices =
+        upsert_mod->state_update.indices =
             std::move(vertices_indices_pair.second);
-    } else {
-        update_mod.updated_vertices_indices = false;
     }
 
-    return {update_mod, remove_mod_opt};
+    return {upsert_mod, remove_mod};
 }
 
 void
 Node::clear_draw_unit_updates(const std::optional<const DrawBucketKey> key)
 {
     this->_draw_unit_data.current_key = key;
-    this->_draw_unit_data.updated_bucket_key = false;
-    this->_draw_unit_data.updated_vertices_indices_info = false;
+}
+
+void
+Node::set_dirty_flags(const Node::DirtyFlagsType flags)
+{
+    // Check which recursive flags are not currently set on targetted node.
+    // If those flags are set already it is guaranteed that all of
+    // the children will have those flags set as well.
+    auto unapplied_recursive_flags =
+        flags & ~this->_dirty_flags & DIRTY_ANY_RECURSIVE;
+    this->_dirty_flags |= flags;
+
+    if (unapplied_recursive_flags.any()) {
+        // promote `recursive` flags to `non-recursive` variant
+        auto children_flags =
+            unapplied_recursive_flags |
+            unapplied_recursive_flags >> DIRTY_FLAGS_SHIFT_RECURSIVE;
+
+        this->recursive_call_downstream_children([children_flags](Node* node) {
+            // repeated check if any recursive flags are not applied,
+            // this time on child level
+            bool descend =
+                (children_flags & ~node->_dirty_flags & DIRTY_ANY_RECURSIVE)
+                    .any();
+            node->_dirty_flags |= children_flags;
+            return descend;
+        });
+    }
+}
+
+void
+Node::clear_dirty_flags(const Node::DirtyFlagsType flags)
+{
+    this->_dirty_flags &= ~flags;
+}
+
+bool
+Node::query_dirty_flags(const Node::DirtyFlagsType flags)
+{
+    return (this->_dirty_flags & flags).any();
 }
 
 const NodeType
@@ -538,7 +530,7 @@ Node::position(const glm::dvec2& position)
 glm::dvec2
 Node::absolute_position()
 {
-    if (this->_model_matrix.is_dirty) {
+    if (this->query_dirty_flags(DIRTY_MODEL_MATRIX)) {
         this->_recalculate_model_matrix_cumulative();
     }
 
@@ -572,7 +564,7 @@ Node::rotation()
 double
 Node::absolute_rotation()
 {
-    if (this->_model_matrix.is_dirty) {
+    if (this->query_dirty_flags(DIRTY_MODEL_MATRIX)) {
         this->_recalculate_model_matrix_cumulative();
     }
 
@@ -599,7 +591,7 @@ Node::scale()
 glm::dvec2
 Node::absolute_scale()
 {
-    if (this->_model_matrix.is_dirty) {
+    if (this->query_dirty_flags(DIRTY_MODEL_MATRIX)) {
         this->_recalculate_model_matrix_cumulative();
     }
 
@@ -612,8 +604,9 @@ Node::scale(const glm::dvec2& scale)
     if (scale == this->_scale) {
         return;
     }
-    this->_mark_dirty();
-    this->_mark_draw_unit_vertices_indices_dirty();
+    this->set_dirty_flags(
+        DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
+        DIRTY_MODEL_MATRIX_RECURSIVE);
     this->_scale = scale;
 
     auto body_in_tree = this->_type == NodeType::body and this->_scene;
@@ -625,7 +618,7 @@ Node::scale(const glm::dvec2& scale)
 Transformation
 Node::absolute_transformation()
 {
-    if (this->_model_matrix.is_dirty) {
+    if (this->query_dirty_flags(DIRTY_MODEL_MATRIX)) {
         this->_recalculate_model_matrix_cumulative();
     }
     return Transformation{this->_model_matrix.value};
@@ -671,8 +664,7 @@ Node::z_index(const std::optional<int16_t>& z_index)
         return;
     }
     this->_z_index = z_index;
-    this->_draw_unit_data.updated_bucket_key = true;
-    this->_mark_ordering_dirty();
+    this->set_dirty_flags(DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_ORDERING_RECURSIVE);
 }
 
 int16_t
@@ -710,9 +702,7 @@ Node::shape(const Shape& shape, bool is_auto_shape)
     if (this->_type == NodeType::hitbox) {
         this->hitbox.update_physics_shape();
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
-    this->_render_data.is_dirty = true;
-    this->_spatial_data.is_dirty = true;
+    this->set_dirty_flags(DIRTY_DRAW_VERTICES | DIRTY_SPATIAL_INDEX);
 }
 
 Sprite
@@ -728,9 +718,9 @@ Node::sprite(const Sprite& sprite)
         return;
     }
     if (this->_sprite.texture != sprite.texture) {
-        this->_draw_unit_data.updated_bucket_key = true;
+        this->set_dirty_flags(DIRTY_DRAW_KEYS);
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
+    this->set_dirty_flags(DIRTY_DRAW_VERTICES);
 
     this->_sprite = sprite;
     if (this->_auto_shape) {
@@ -740,7 +730,6 @@ Node::sprite(const Sprite& sprite)
             this->shape(Shape{});
         }
     }
-    this->_render_data.is_dirty = true;
 }
 
 ResourceReference<Material>&
@@ -767,8 +756,7 @@ Node::color(const glm::dvec4& color)
     if (color == this->_color) {
         return;
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
-    this->_render_data.is_dirty = true;
+    this->set_dirty_flags(DIRTY_DRAW_VERTICES);
     this->_color = color;
 }
 
@@ -784,16 +772,9 @@ Node::visible(const bool& visible)
     if (visible == this->_visible) {
         return;
     }
+    this->set_dirty_flags(
+        DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_VISIBILITY_RECURSIVE);
     this->_visible = visible;
-    this->recursive_call_downstream([](Node* node) {
-        if (node->_visibility_data.is_dirty and
-            node->_draw_unit_data.updated_bucket_key) {
-            return false;
-        }
-        node->_visibility_data.is_dirty = true;
-        node->_draw_unit_data.updated_bucket_key = true;
-        return true;
-    });
 }
 
 Alignment
@@ -808,8 +789,7 @@ Node::origin_alignment(const Alignment& alignment)
     if (alignment == this->_origin_alignment) {
         return;
     }
-    this->_draw_unit_data.updated_vertices_indices_info = true;
-    this->_render_data.is_dirty = true;
+    this->set_dirty_flags(DIRTY_DRAW_VERTICES);
     this->_origin_alignment = alignment;
 }
 
@@ -865,8 +845,7 @@ Node::render_passes(const std::optional<std::unordered_set<int16_t>>& indices)
             "Invalid indices size.");
     }
 
-    this->_mark_ordering_dirty();
-    this->_draw_unit_data.updated_bucket_key = true;
+    this->set_dirty_flags(DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_ORDERING_RECURSIVE);
     this->_render_passes = indices;
 }
 
@@ -892,8 +871,7 @@ Node::viewports(const std::optional<std::unordered_set<int16_t>>& z_indices)
             "Invalid indices size.");
     }
 
-    this->_mark_ordering_dirty();
-    this->_draw_unit_data.updated_bucket_key = true;
+    this->set_dirty_flags(DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_ORDERING_RECURSIVE);
     this->_viewports = z_indices;
 }
 
@@ -926,10 +904,11 @@ Node::wrapper_ptr() const
 void
 Node::indexable(const bool indexable_flag)
 {
-    if (this->_indexable != indexable_flag) {
-        this->_indexable = indexable_flag;
-        this->_spatial_data.is_dirty = true;
+    if (this->_indexable == indexable_flag) {
+        return;
     }
+    this->_indexable = indexable_flag;
+    this->set_dirty_flags(DIRTY_SPATIAL_INDEX);
 }
 
 bool

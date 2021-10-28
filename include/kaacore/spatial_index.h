@@ -17,7 +17,6 @@ struct NodeSpatialData {
     void refresh();
     bool contains_point(const glm::dvec2 point) const;
 
-    bool is_dirty = false;
     bool is_indexed = false;
     bool is_phony_indexed = false;
     BoundingBox<double> bounding_box;

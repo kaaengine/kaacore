@@ -11,6 +11,42 @@ constexpr size_t range_max_vertices_count =
     std::numeric_limits<uint16_t>::max();
 constexpr size_t range_max_indices_count = std::numeric_limits<uint32_t>::max();
 
+DrawUnitModificationPack::DrawUnitModificationPack(
+    std::optional<DrawUnitModification> upsert_mod_,
+    std::optional<DrawUnitModification> remove_mod_)
+    : upsert_mod(upsert_mod_), remove_mod(remove_mod_)
+{
+    if (upsert_mod_.has_value()) {
+        KAACORE_ASSERT(
+            upsert_mod_->type != DrawUnitModification::Type::update or
+                not remove_mod_.has_value(),
+            "`update` modification type cannot be combined with `remove` type");
+    }
+}
+
+DrawUnitModificationPack::operator bool() const
+{
+    return this->upsert_mod.has_value() or this->remove_mod.has_value();
+}
+
+std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
+DrawUnitModificationPack::unpack()
+{
+    return {this->upsert_mod, this->remove_mod};
+}
+
+std::optional<DrawBucketKey>
+DrawUnitModificationPack::new_lookup_key() const
+{
+    KAACORE_ASSERT(
+        *this, "Can't get lookup key on empty `DrawUnitModificationPack`");
+    if (this->upsert_mod) {
+        return this->upsert_mod->lookup_key;
+    }
+    return std::nullopt;
+}
+
 GeometryStream::GeometryStream(const std::vector<DrawUnit>& draw_units)
     : _draw_units(draw_units)
 {}
@@ -179,8 +215,12 @@ DrawBucket::consume_modifications(
                 break;
             case DrawUnitModification::Type::update:
                 KAACORE_LOG_TRACE(
-                    "DrawBucket ({}): updating draw unit with id: {}",
+                    "DrawBucket ({}): Updating draw unit with id: {}",
                     fmt::ptr(this), mod_it->id);
+                KAACORE_ASSERT(
+                    draw_unit_it != this->draw_units.end(),
+                    "Target draw unit not found, end of draw units vector "
+                    "reached.");
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawBucket ({}): DrawUnit ({}) - DrawUnitModification "
@@ -199,6 +239,10 @@ DrawBucket::consume_modifications(
                 KAACORE_LOG_TRACE(
                     "DrawBucket ({}): Removing draw unit with id: {}",
                     fmt::ptr(this), mod_it->id);
+                KAACORE_ASSERT(
+                    draw_unit_it != this->draw_units.end(),
+                    "Target draw unit not found, end of draw units vector "
+                    "reached.");
                 KAACORE_ASSERT(
                     mod_it->id == draw_unit_it->id,
                     "DrawBucket ({}): DrawUnit ({}) - DrawUnitModification "
