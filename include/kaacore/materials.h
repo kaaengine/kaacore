@@ -12,6 +12,8 @@
 
 namespace kaacore {
 
+using MaterialID = uint32_t;
+
 void
 initialize_materials();
 void

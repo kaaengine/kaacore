@@ -12,6 +12,7 @@
 #include "kaacore/indexset.h"
 #include "kaacore/materials.h"
 #include "kaacore/render_targets.h"
+#include "kaacore/resources.h"
 #include "kaacore/vertex_layout.h"
 
 namespace kaacore {
@@ -19,9 +20,6 @@ namespace kaacore {
 constexpr auto min_pass_index = 0;
 constexpr auto max_pass_index = KAACORE_MAX_RENDER_PASSES - 1;
 constexpr auto default_pass_index = min_pass_index;
-constexpr bgfx::FrameBufferHandle backbuffer_handle = BGFX_INVALID_HANDLE;
-// setViewClear has only 8 slots for attachment clear values
-constexpr auto max_attachments_number = 8u;
 
 struct RenderPassState;
 using RenderPassStateArray =
@@ -94,58 +92,51 @@ class Effect {
     friend std::hash<Effect>;
 };
 
-class Renderer;
-class RenderPassesManager;
-
 struct RenderPassState {
     uint16_t index;
     bool requires_clean;
     uint16_t clear_flags;
-    size_t attachments_number;
-    bgfx::FrameBufferHandle framebuffer;
-    std::array<glm::dvec4, max_attachments_number> clear_colors;
+    glm::dvec4 clear_color;
+    bgfx::FrameBufferHandle frame_buffer;
 
     inline bool has_custom_framebuffer() const
     {
-        return this->attachments_number > 0;
+        return bgfx::isValid(this->frame_buffer);
     }
 };
 
+class RenderPassesManager;
+
 class RenderPass {
+    using RenderTargets = std::vector<ResourceReference<RenderTarget>>;
+
   public:
-    std::optional<Effect> effect;
-
-    ~RenderPass();
     RenderPass& operator=(const RenderPass&) = delete;
-
     uint16_t index() const;
     glm::dvec4 clear_color() const;
     void clear_color(const glm::dvec4& color);
-    void render_targets(
-        const std::vector<ResourceReference<RenderTarget>>& targets);
-    std::vector<ResourceReference<RenderTarget>>& render_targets();
+    std::optional<Effect> effect();
+    void effect(const std::optional<Effect>& effect);
+    void render_targets(const std::optional<RenderTargets>& targets);
+    std::optional<RenderTargets> render_targets();
 
   private:
+    bool _is_dirty;
     uint16_t _index;
-    bool _requires_clean;
-    glm::dvec4 _clear_color;
-    glm::fmat4 _projection_matrix;
+    glm::dvec4 _clear_color = {0, 0, 0, 0};
     uint16_t _clear_flags = ClearFlag::none | ClearFlag::depth |
                             ClearFlag::color | ClearFlag::stencil;
-    bgfx::FrameBufferHandle _frame_buffer = backbuffer_handle;
-    std::vector<ResourceReference<RenderTarget>> _render_targets;
+    std::optional<Effect> _effect;
+    ResourceReference<FrameBuffer> _frame_buffer;
 
     RenderPass();
-    void _create_frame_buffer();
-    void _destroy_frame_buffer();
-    void _reset_frame_buffer();
-    RenderPassState _take_snapshot() const;
+    void _mark_dirty();
+    RenderPassState _take_snapshot();
 
     friend class RenderPassesManager;
 };
 
 class Scene;
-class Renderer;
 
 class RenderPassesManager {
   public:

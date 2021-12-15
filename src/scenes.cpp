@@ -52,7 +52,7 @@ Scene::build_processing_queue()
         }
         i++;
     }
-    KAACORE_LOG_DEBUG("Nodes to process count: {}", processing_queue.size());
+    // KAACORE_LOG_DEBUG("Nodes to process count: {}", processing_queue.size());
     return processing_queue;
 }
 
@@ -226,11 +226,11 @@ Scene::render(const std::unique_ptr<Renderer>& renderer)
 
     // render effects
     for (auto& render_pass : this->render_passes) {
-        if (not render_pass.effect) {
+        auto effect = render_pass.effect();
+        if (not effect) {
             continue;
         }
-        renderer->render_effect(
-            render_pass.effect.value(), render_pass.index());
+        renderer->render_effect(effect.value(), render_pass.index());
     }
 }
 

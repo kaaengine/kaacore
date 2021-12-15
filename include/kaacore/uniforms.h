@@ -71,6 +71,8 @@ struct SamplerValue {
 };
 
 class Sampler : public UniformBase {
+    using _Value = std::variant<bgfx::TextureHandle, std::shared_ptr<Texture>>;
+
   public:
     Sampler();
     Sampler(const std::string& name);
@@ -86,11 +88,11 @@ class Sampler : public UniformBase {
     void set(const SamplerValue& value);
 
   private:
+    _Value _value;
     uint8_t _stage;
     uint32_t _flags;
-    std::shared_ptr<Texture> _texture;
-    bgfx::TextureHandle _value = BGFX_INVALID_HANDLE;
 
+    bgfx::TextureHandle _texture_handle();
     void _set(
         const Texture* texture, const uint8_t stage, const uint32_t flags);
     void _bind();
@@ -198,7 +200,6 @@ class FloatUniform : public UniformBase {
     friend class ShadingContext;
 };
 
-using MaterialID = uint32_t;
 using Vec4Uniform = FloatUniform<glm::fvec4>;
 using Mat3Uniform = FloatUniform<glm::fmat3>;
 using Mat4Uniform = FloatUniform<glm::fmat4>;

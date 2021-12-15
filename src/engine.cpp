@@ -93,6 +93,7 @@ Engine::Engine(
             this->renderer = std::make_unique<Renderer>(
                 bgfx_init_data, window_size, this->_virtual_resolution,
                 this->_virtual_resolution_mode);
+            reset_render_targets(this->renderer->view_size);
             this->resources_manager = std::make_unique<ResourcesManager>();
             this->_engine_thread_entrypoint();
             // When _engine_thread_entrypoint() exits it means engine is
@@ -118,6 +119,7 @@ Engine::Engine(
     this->renderer = std::make_unique<Renderer>(
         bgfx_init_data, window_size, this->_virtual_resolution,
         this->_virtual_resolution_mode);
+    reset_render_targets(this->renderer->view_size);
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
     this->window->show();
@@ -201,8 +203,7 @@ Engine::virtual_resolution(const glm::uvec2& resolution)
         resolution.x > 0 and resolution.y > 0,
         "Virtual resolution must be greater than zero.");
     this->_virtual_resolution = resolution;
-    this->renderer->reset(
-        this->window->size(), resolution, this->_virtual_resolution_mode);
+    this->_reset(this->window->size());
 }
 
 VirtualResolutionMode
@@ -215,8 +216,7 @@ void
 Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
-    this->renderer->reset(
-        this->window->size(), this->_virtual_resolution, vr_mode);
+    this->_reset(this->window->size());
 }
 
 bool
@@ -269,6 +269,15 @@ Engine::get_fps() const
         return 1.s / duration;
     }
     return 0;
+}
+
+void
+Engine::_reset(const glm::uvec2& window_size)
+{
+    this->renderer->reset(
+        window_size, this->_virtual_resolution, this->_virtual_resolution_mode);
+    this->_scene->_reset();
+    reset_render_targets(this->renderer->view_size);
 }
 
 bgfx::Init
@@ -401,10 +410,7 @@ Engine::_process_events()
         } else if (
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            this->renderer->reset(
-                {event.window.data1, event.window.data2},
-                this->_virtual_resolution, this->_virtual_resolution_mode);
-            this->_scene->_reset();
+            this->_reset({event.window.data1, event.window.data2});
         }
         this->input_manager->push_event(event);
     }

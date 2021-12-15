@@ -8,7 +8,8 @@
 namespace kaacore {
 
 class DrawQueue {
-    typedef std::unordered_map<DrawBucketKey, DrawBucket>::const_iterator const_iterator;
+    typedef std::unordered_map<DrawBucketKey, DrawBucket>::const_iterator
+        const_iterator;
 
   public:
     void enqueue_modification(DrawUnitModification&& draw_unit_mod);

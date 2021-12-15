@@ -98,7 +98,7 @@ class ResourcesRegistry {
         return it->second.lock();
     }
 
-  private:
+  protected:
     std::unordered_map<Key_T, std::weak_ptr<Resource_T>> _registry;
 };
 

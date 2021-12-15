@@ -212,19 +212,14 @@ Shader::_uninitialize()
     this->is_initialized = false;
 }
 
-ShaderModelMemoryMap
-_eval_if_initialized(const EmbeddedShader::ShaderMemoryProxy& proxy)
+EmbeddedShader::EmbeddedShader(const ShaderType type, const std::string& name)
+    : _name(name)
 {
+    this->_type = type;
     if (is_engine_initialized()) {
-        return proxy();
+        this->_initialize();
     }
-    return {};
 }
-
-EmbeddedShader::EmbeddedShader(
-    const ShaderType type, const ShaderMemoryProxy& proxy)
-    : _proxy(proxy), Shader(type, _eval_if_initialized(proxy))
-{}
 
 ResourceReference<EmbeddedShader>
 EmbeddedShader::load(const ShaderType type, const std::string& shader_name)
@@ -236,13 +231,8 @@ EmbeddedShader::load(const ShaderType type, const std::string& shader_name)
         return shader;
     }
 
-    // in case shader is created in global scope
-    // loading embedded memory has to be deffered - cmrc might not be ready yet
-    auto lazy_load = [shader_name]() -> ShaderModelMemoryMap {
-        return _load_embedded_shader_memory_map(shader_name, get_platform());
-    };
     shader =
-        std::shared_ptr<EmbeddedShader>(new EmbeddedShader(type, lazy_load));
+        std::shared_ptr<EmbeddedShader>(new EmbeddedShader(type, shader_name));
     _shaders_registry.register_resource(key, shader);
     return shader;
 }
@@ -250,7 +240,8 @@ EmbeddedShader::load(const ShaderType type, const std::string& shader_name)
 void
 EmbeddedShader::_initialize()
 {
-    this->_models = std::move(this->_proxy());
+    this->_models =
+        _load_embedded_shader_memory_map(this->_name, get_platform());
     Shader::_initialize();
 }
 

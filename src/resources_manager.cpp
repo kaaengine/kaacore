@@ -2,6 +2,7 @@
 #include "kaacore/audio.h"
 #include "kaacore/fonts.h"
 #include "kaacore/materials.h"
+#include "kaacore/render_passes.h"
 #include "kaacore/render_targets.h"
 #include "kaacore/shaders.h"
 #include "kaacore/textures.h"

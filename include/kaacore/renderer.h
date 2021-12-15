@@ -46,6 +46,7 @@ struct FrameContext {
     Duration last_dt;
     Duration total_time;
     glm::uvec2 window_size;
+    glm::uvec2 virtual_resolution;
     ViewportStateArray viewport_states;
     RenderPassStateArray render_pass_states;
 };

@@ -16,8 +16,6 @@ set(KAACORE_MAX_RENDER_PASSES 32 CACHE STRING "")
 set(KAACORE_MAX_VIEWPORTS 32 CACHE STRING "")
 set(BGFX_MAX_VIEWS 64 CACHE STRING "")
 
-# force static bgfx build
-set(BUILD_SHARED_LIBS OFF)
 # force dynamic SDL build
 set(SDL_SHARED_ENABLED_BY_DEFAULT ON)
 
@@ -58,6 +56,8 @@ set_target_properties(
 )
 
 add_subdirectory(src)
+target_link_libraries(kaacore PUBLIC bx bimg)
+
 add_subdirectory(shaders)
 target_link_libraries(kaacore PUBLIC kaacore_embedded_shaders)
 

@@ -15,8 +15,6 @@
 #include "kaacore/statistics.h"
 #include "kaacore/textures.h"
 
-#include <glm/gtx/string_cast.hpp>
-
 namespace kaacore {
 
 bgfx::VertexLayout _vertex_layout;
@@ -324,13 +322,24 @@ Renderer::begin_frame()
 {
     this->set_global_uniforms();
     bgfx::touch(_internal_view_index);
-    for (auto view_index = _internal_view_index + _views_reserved_offset;
-         view_index <= KAACORE_MAX_RENDER_PASSES; ++view_index) {
+    for (auto pass_index = _internal_view_index;
+         pass_index <= KAACORE_MAX_RENDER_PASSES; ++pass_index) {
+        auto view_index = pass_index + _views_reserved_offset;
         bgfx::touch(view_index);
         bgfx::setViewMode(view_index, bgfx::ViewMode::DepthAscending);
-        bgfx::setViewRect(
-            view_index, this->border_size.x, this->border_size.y,
-            this->view_size.x, this->view_size.y);
+        auto state = this->_frame_context.render_pass_states[pass_index];
+
+        if (not state.requires_clean) {
+            continue;
+        }
+
+        if (state.clear_color.a) {
+            glm::fvec4 clear_color = state.clear_color;
+            bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
+            bgfx::setViewClear(view_index, state.clear_flags, 0.f, 0, 0);
+        } else {
+            bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
+        }
     }
 }
 
@@ -406,6 +415,7 @@ Renderer::reset(
     this->view_size = view_size;
     this->border_size = border_size;
     this->_frame_context.window_size = window_size;
+    this->_frame_context.virtual_resolution = virtual_resolution;
 
     bgfx::setViewClear(
         _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
@@ -425,24 +435,15 @@ Renderer::set_global_uniforms()
 void
 Renderer::set_pass_state(const RenderPassState& state)
 {
-    auto pass_index = state.index + _views_reserved_offset;
-    bgfx::setViewFrameBuffer(pass_index, state.framebuffer);
-
-    if (not state.requires_clean) {
-        return;
-    }
-
+    auto view_index = state.index + _views_reserved_offset;
+    bgfx::setViewFrameBuffer(view_index, state.frame_buffer);
     if (state.has_custom_framebuffer()) {
-        for (auto i = 0; i < state.clear_colors.size(); ++i) {
-            auto clear_color = glm::fvec4(state.clear_colors[i]);
-            bgfx::setPaletteColor(i, glm::value_ptr(clear_color));
-        }
-        bgfx::setViewClear(
-            pass_index, state.clear_flags, 0., 0, 0, 1, 2, 3, 4, 5, 6, 7);
+        bgfx::setViewRect(
+            view_index, 0, 0, this->view_size.x, this->view_size.y);
     } else {
-        auto clear_color = glm::fvec4(state.clear_colors[0]);
-        bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
-        bgfx::setViewClear(pass_index, state.clear_flags, 0.f, 0, 0);
+        bgfx::setViewRect(
+            view_index, this->border_size.x, this->border_size.y,
+            this->view_size.x, this->view_size.y);
     }
 }
 
@@ -453,16 +454,16 @@ Renderer::set_viewport_state(
     auto view_rect = viewport_state.view_rect;
     auto projection_matrix = viewport_state.projection_matrix;
     if (pass_state.has_custom_framebuffer()) {
+        float x = this->_frame_context.virtual_resolution.x;
+        float y = this->_frame_context.virtual_resolution.y;
+        projection_matrix = glm::ortho(-x / 2, x / 2, y / 2, -y / 2);
+        view_rect = {glm::fvec2(0),
+                     glm::fvec2(this->_frame_context.window_size)};
         if (bgfx::getCaps()->originBottomLeft) {
             // in case custom render target is used adjust for NDC origin being
             // at bottom left
             projection_matrix = glm::scale(projection_matrix, {1., -1., 1.});
         }
-
-        bgfx::setViewRect(
-            pass_state.index + 1, 0, 0, bgfx::BackbufferRatio::Equal);
-        view_rect = {glm::fvec2(0),
-                     glm::fvec2(this->_frame_context.window_size)};
     }
 
     auto view_matrix = viewport_state.view_matrix;

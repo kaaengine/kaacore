@@ -64,15 +64,13 @@ class Shader : public Resource {
 
 class EmbeddedShader : public Shader {
   public:
-    using ShaderMemoryProxy = std::function<ShaderModelMemoryMap()>;
-
     static ResourceReference<EmbeddedShader> load(
         const ShaderType type, const std::string& shader_name);
 
   private:
-    ShaderMemoryProxy _proxy;
+    const std::string _name;
 
-    EmbeddedShader(const ShaderType type, const ShaderMemoryProxy& proxy);
+    EmbeddedShader(const ShaderType type, const std::string& _name);
     virtual void _initialize() override;
 
     friend class ResourcesRegistry<ShaderKey, Shader>;

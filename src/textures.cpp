@@ -1,5 +1,7 @@
 #include <memory>
 
+#include <bx/file.h>
+
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"

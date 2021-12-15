@@ -5,18 +5,49 @@
 
 namespace kaacore {
 
-ResourcesRegistry<RenderTargetID, RenderTarget> _render_targets_registry;
+class RenderTargetsRegistry
+    : public ResourcesRegistry<RenderTargetID, RenderTarget> {
+    friend void reset_render_targets(const glm::uvec2&);
+};
+
+class FrameBuffersRegistry
+    : public ResourcesRegistry<FrameBufferID, FrameBuffer> {
+    friend void reset_render_targets(const glm::uvec2&);
+};
+
+RenderTargetsRegistry _render_targets_registry;
+FrameBuffersRegistry _frame_buffers_registry;
 
 void
 initialize_render_targets()
 {
     _render_targets_registry.initialze();
+    _frame_buffers_registry.initialze();
 }
 
 void
 uninitialize_render_targets()
 {
     _render_targets_registry.uninitialze();
+    _frame_buffers_registry.uninitialze();
+}
+
+void
+reset_render_targets(const glm::uvec2& size)
+{
+    RenderTarget::_dimensions = size;
+    for (auto& it : _render_targets_registry._registry) {
+        auto resource = it.second.lock();
+        if (resource and resource->is_initialized) {
+            std::static_pointer_cast<RenderTarget>(resource)->_reset();
+        }
+    }
+    for (auto& it : _frame_buffers_registry._registry) {
+        auto resource = it.second.lock();
+        if (resource and resource->is_initialized) {
+            std::static_pointer_cast<FrameBuffer>(resource)->_reset();
+        }
+    }
 }
 
 RenderTarget::RenderTarget(RenderTargetID id) : _id(id)
@@ -45,36 +76,38 @@ RenderTarget::create()
 glm::uvec2
 RenderTarget::get_dimensions() const
 {
-    return get_engine()->window->size();
-}
-
-glm::dvec4
-RenderTarget::clear_color() const
-{
-    return this->_clear_color;
+    return this->_dimensions;
 }
 
 void
-RenderTarget::clear_color(const glm::dvec4& color)
+RenderTarget::_reset()
 {
-    this->_clear_color = color;
-    this->_is_dirty = true;
+    if (bgfx::isValid(this->_handle)) {
+        bgfx::destroy(this->_handle);
+    }
+    auto dimensions = glm::max({1, 1}, this->_dimensions);
+    this->_handle = this->_create_texture(dimensions);
 }
 
 void
 RenderTarget::_initialize()
 {
-    this->_handle = bgfx::createTexture2D(
-        bgfx::BackbufferRatio::Equal, false, 1, bgfx::TextureFormat::RGBA8,
-        BGFX_TEXTURE_RT);
-
-    KAACORE_CHECK(
-        bgfx::isValid(this->_handle),
-        "Failed to create render target texture.");
-    bgfx::setName(
-        this->_handle,
-        fmt::format("Texture for RenderTarget({})", this->_id).c_str());
+    this->_handle = this->_create_texture(this->_dimensions);
     this->is_initialized = true;
+}
+
+bgfx::TextureHandle
+RenderTarget::_create_texture(const glm::uvec2& dimensions)
+{
+    auto handle = bgfx::createTexture2D(
+        dimensions.x, dimensions.y, false, 1, bgfx::TextureFormat::RGBA8,
+        BGFX_TEXTURE_RT);
+    KAACORE_CHECK(
+        bgfx::isValid(handle), "Failed to create render target texture.");
+    bgfx::setName(
+        handle,
+        fmt::format("Texture for RenderTarget({})", handle.idx).c_str());
+    return handle;
 }
 
 void
@@ -84,10 +117,83 @@ RenderTarget::_uninitialize()
     this->is_initialized = false;
 }
 
-void
-RenderTarget::_mark_dirty()
+FrameBuffer::FrameBuffer(
+    const FrameBufferID id,
+    const std::vector<ResourceReference<RenderTarget>>& targets)
+    : _id(id), _render_targets(targets)
 {
-    this->_is_dirty = true;
+
+    if (is_engine_initialized()) {
+        this->_initialize();
+    }
+}
+
+FrameBuffer::~FrameBuffer()
+{
+    if (this->is_initialized) {
+        this->_uninitialize();
+    }
+}
+
+ResourceReference<FrameBuffer>
+FrameBuffer::create(const std::vector<ResourceReference<RenderTarget>>& targets)
+{
+    auto max_attachments = bgfx::getCaps()->limits.maxFBAttachments;
+    KAACORE_CHECK(
+        targets.size() <= max_attachments,
+        "The maximum supported number of render targets is {}.",
+        max_attachments);
+
+    auto id = FrameBuffer::_last_id.fetch_add(1, std::memory_order_relaxed);
+    auto frame_buffer =
+        std::shared_ptr<FrameBuffer>(new FrameBuffer(id, targets));
+    _frame_buffers_registry.register_resource(id, frame_buffer);
+    return frame_buffer;
+}
+
+std::vector<ResourceReference<RenderTarget>>&
+FrameBuffer::render_targets()
+{
+    return this->_render_targets;
+}
+
+void
+FrameBuffer::_reset()
+{
+    if (bgfx::isValid(this->_handle)) {
+        bgfx::destroy(this->_handle);
+    }
+    this->_handle = this->_create_frame_buffer();
+}
+
+void
+FrameBuffer::_initialize()
+{
+    this->_handle = this->_create_frame_buffer();
+    this->is_initialized = true;
+}
+
+bgfx::FrameBufferHandle
+FrameBuffer::_create_frame_buffer()
+{
+    std::vector<bgfx::Attachment> attachments(this->_render_targets.size());
+    for (auto i = 0; i < this->_render_targets.size(); ++i) {
+        auto& render_target = this->_render_targets[i];
+        attachments[i].init(render_target->_handle);
+    }
+    auto handle = bgfx::createFrameBuffer(
+        this->_render_targets.size(), attachments.data(), false);
+    KAACORE_CHECK(bgfx::isValid(handle), "Failed to create frame buffer.");
+    return handle;
+}
+
+void
+FrameBuffer::_uninitialize()
+{
+    if (bgfx::isValid(this->_handle)) {
+        bgfx::destroy(this->_handle);
+        this->_handle = backbuffer_handle;
+    }
 }
 
 } // namespace kaacore

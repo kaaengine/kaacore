@@ -6,9 +6,7 @@
 #include <vector>
 
 #include <bgfx/bgfx.h>
-#include <bimg/decode.h>
-#include <bx/bx.h>
-#include <bx/file.h>
+#include <bimg/bimg.h>
 #include <glm/glm.hpp>
 
 #include "kaacore/log.h"

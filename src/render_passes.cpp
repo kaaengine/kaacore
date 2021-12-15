@@ -95,12 +95,7 @@ Effect::draw_call() const
         state, -1, this->_quad.vertices, this->_quad.indices);
 }
 
-RenderPass::RenderPass() : _requires_clean(false) {}
-
-RenderPass::~RenderPass()
-{
-    this->_destroy_frame_buffer();
-}
+RenderPass::RenderPass() : _is_dirty(true) {}
 
 uint16_t
 RenderPass::index() const
@@ -118,84 +113,64 @@ void
 RenderPass::clear_color(const glm::dvec4& color)
 {
     this->_clear_color = color;
-    this->_requires_clean = true;
+    this->_mark_dirty();
+}
+
+std::optional<Effect>
+RenderPass::effect()
+{
+    return this->_effect;
 }
 
 void
-RenderPass::render_targets(
-    const std::vector<ResourceReference<RenderTarget>>& targets)
-{
-    auto attachments_number = std::min(
-        bgfx::getCaps()->limits.maxFBAttachments, max_attachments_number);
-    KAACORE_CHECK(
-        targets.size() <= max_attachments_number,
-        "The maximum supported number of render targets is {}.",
-        max_attachments_number);
 
-    this->_render_targets = targets;
-    this->_reset_frame_buffer();
+RenderPass::effect(const std::optional<Effect>& effect)
+{
+    this->_effect = effect;
 }
 
-std::vector<ResourceReference<RenderTarget>>&
+void
+RenderPass::render_targets(const std::optional<RenderTargets>& targets)
+{
+    if (targets.has_value()) {
+        this->_frame_buffer = FrameBuffer::create(*targets);
+    } else {
+        this->_frame_buffer = ResourceReference<FrameBuffer>();
+    }
+}
+
+std::optional<RenderPass::RenderTargets>
 RenderPass::render_targets()
 {
-    return this->_render_targets;
-}
-
-void
-RenderPass::_create_frame_buffer()
-{
-    if (this->_render_targets.size()) {
-        std::array<bgfx::Attachment, max_attachments_number> attachments;
-        for (auto i = 0; i < this->_render_targets.size(); ++i) {
-            auto& render_target = this->_render_targets[i];
-            attachments[i].init(render_target->_handle);
-        }
-        this->_frame_buffer = bgfx::createFrameBuffer(
-            this->_render_targets.size(), attachments.data(), false);
+    if (this->_frame_buffer) {
+        return this->_frame_buffer->_render_targets;
     }
+    return std::nullopt;
 }
 
 void
-RenderPass::_destroy_frame_buffer()
+RenderPass::_mark_dirty()
 {
-    if (bgfx::isValid(this->_frame_buffer)) {
-        bgfx::destroy(this->_frame_buffer);
-        this->_frame_buffer = backbuffer_handle;
-    }
-}
-
-void
-RenderPass::_reset_frame_buffer()
-{
-    this->_destroy_frame_buffer();
-    this->_create_frame_buffer();
+    this->_is_dirty = true;
 }
 
 RenderPassState
-RenderPass::_take_snapshot() const
+RenderPass::_take_snapshot()
 {
-    std::array<glm::dvec4, max_attachments_number> clear_colors;
-    bool has_targets = not this->_render_targets.empty();
-    bool requires_clean = has_targets ? false : this->_requires_clean;
-    if (not has_targets) {
-        // if no render target is set, use pass._clear_color
-        clear_colors[0] = this->_clear_color;
+    RenderPassState result;
+    result.index = this->_index;
+    result.requires_clean = this->_is_dirty;
+    result.clear_flags = this->_clear_flags;
+    result.clear_color = this->_clear_color;
+    this->_is_dirty = false;
+
+    if (this->_frame_buffer) {
+        result.frame_buffer = this->_frame_buffer->_handle;
     } else {
-        // in case render targets are provided, ignore pass._clear_color
-        // and use render_target._clear_color
-        for (int i = 0; i < this->_render_targets.size(); ++i) {
-            auto& render_target = this->_render_targets[i];
-            if (render_target->_is_dirty) {
-                requires_clean = true;
-                render_target->_is_dirty = false;
-            }
-            clear_colors[i] = render_target->_clear_color;
-        }
+        result.frame_buffer = backbuffer_handle;
     }
-    return {this->_index,        requires_clean,
-            this->_clear_flags,  this->_render_targets.size(),
-            this->_frame_buffer, clear_colors};
+
+    return result;
 }
 
 RenderPassesManager::RenderPassesManager()
@@ -239,10 +214,8 @@ RenderPassesManager::size()
 void
 RenderPassesManager::_mark_dirty()
 {
-    for (auto& render_pass : *this) {
-        for (auto& target : render_pass.render_targets()) {
-            target->_mark_dirty();
-        }
+    for (auto& pass : *this) {
+        pass._mark_dirty();
     }
 }
 
