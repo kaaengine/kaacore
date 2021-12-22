@@ -28,9 +28,7 @@ class Scene;
 class ViewportsManager;
 
 struct ViewportState {
-    // rect clipped to drawable area - used for scissor test
     glm::fvec4 view_rect;
-    // user defined rect - no cliping applied
     glm::fvec4 viewport_rect;
     glm::fmat4 view_matrix;
     glm::fmat4 projection_matrix;

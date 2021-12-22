@@ -81,7 +81,6 @@ Viewport::_reset()
     auto engine = get_engine();
     auto renderer = engine->renderer.get();
     auto drawable_area = static_cast<glm::dvec2>(renderer->view_size);
-    auto border_size = static_cast<glm::dvec2>(renderer->border_size);
     auto virtual_resoultion =
         static_cast<glm::dvec2>(engine->virtual_resolution());
     auto virtual_origin = static_cast<glm::dvec2>(this->_origin);
@@ -98,9 +97,8 @@ Viewport::_reset()
     clipped_viewport_dimensions = glm::min(
         clipped_viewport_dimensions, drawable_area - clipped_viewport_origin);
 
-    this->_view_rect = {border_size + clipped_viewport_origin,
-                        clipped_viewport_dimensions};
-    this->_viewport_rect = {border_size + viewport_origin, viewport_dimensions};
+    this->_view_rect = {clipped_viewport_origin, clipped_viewport_dimensions};
+    this->_viewport_rect = {viewport_origin, viewport_dimensions};
 
     auto scale = virtual_resoultion / virtual_dimensions;
     auto target_resolution = virtual_resoultion * scale;

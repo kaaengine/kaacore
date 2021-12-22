@@ -414,7 +414,6 @@ Renderer::reset(
     }
     this->view_size = view_size;
     this->border_size = border_size;
-    this->_frame_context.window_size = window_size;
     this->_frame_context.virtual_resolution = virtual_resolution;
 
     bgfx::setViewClear(
@@ -433,44 +432,56 @@ Renderer::set_global_uniforms()
 }
 
 void
-Renderer::set_pass_state(const RenderPassState& state)
+Renderer::set_render_state(
+    const RenderState& render_state, const ViewportState& viewport_state,
+    const RenderPassState& pass_state)
 {
-    auto view_index = state.index + _views_reserved_offset;
-    bgfx::setViewFrameBuffer(view_index, state.frame_buffer);
-    if (state.has_custom_framebuffer()) {
-        bgfx::setViewRect(
-            view_index, 0, 0, this->view_size.x, this->view_size.y);
-    } else {
-        bgfx::setViewRect(
-            view_index, this->border_size.x, this->border_size.y,
-            this->view_size.x, this->view_size.y);
-    }
-}
+    auto view_index = pass_state.index + _views_reserved_offset;
+    bgfx::setState(
+        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | render_state.state_flags);
+    bgfx::setStencil(render_state.stencil_flags);
+    bgfx::setViewFrameBuffer(view_index, pass_state.frame_buffer);
 
-void
-Renderer::set_viewport_state(
-    const ViewportState& viewport_state, const RenderPassState& pass_state)
-{
+    // rect clipped to drawable area - used for scissor test
     auto view_rect = viewport_state.view_rect;
+    // user defined rect - no cliping applied
+    auto viewport_rect = viewport_state.viewport_rect;
     auto projection_matrix = viewport_state.projection_matrix;
     if (pass_state.has_custom_framebuffer()) {
+        // render target is always size of a drawable area
+        // therefore use full available size and adjust projection accordingly
+        bgfx::setViewRect(
+            view_index, 0, 0, this->view_size.x, this->view_size.y);
         float x = this->_frame_context.virtual_resolution.x;
         float y = this->_frame_context.virtual_resolution.y;
         projection_matrix = glm::ortho(-x / 2, x / 2, y / 2, -y / 2);
-        // FIXME
-        view_rect = {glm::fvec2(0),
-                     glm::fvec2(this->_frame_context.window_size)};
         if (bgfx::getCaps()->originBottomLeft) {
-            // in case custom render target is used adjust for NDC origin being
-            // at bottom left
+            // adjust for NDC origin being at the bottom left
             projection_matrix = glm::scale(projection_matrix, {1., -1., 1.});
         }
+    } else {
+        // backbuffer case, borders might be needed
+        bgfx::setViewRect(
+            view_index, this->border_size.x, this->border_size.y,
+            this->view_size.x, this->view_size.y);
+        auto offset = glm::fvec4({this->border_size, 0, 0});
+        view_rect += offset;
+        viewport_rect += offset;
     }
 
+    bgfx::setScissor(
+        static_cast<uint16_t>(view_rect.x), static_cast<uint16_t>(view_rect.y),
+        static_cast<uint16_t>(view_rect.z), static_cast<uint16_t>(view_rect.w));
+
     auto view_matrix = viewport_state.view_matrix;
+    auto texture = render_state.texture ? render_state.texture
+                                        : this->default_texture.get();
     auto view_projection_matrix = projection_matrix * view_matrix;
+    this->shading_context._set_uniform_texture(
+        "s_texture", texture, _internal_sampler_stage_index);
     this->shading_context.set_uniform_value<glm::fvec4>(
-        "u_view_rect", viewport_state.viewport_rect);
+        "u_view_rect", viewport_rect);
     this->shading_context.set_uniform_value<glm::fmat4>(
         "u_view_matrix", viewport_state.view_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
@@ -484,6 +495,7 @@ Renderer::set_viewport_state(
     this->shading_context.set_uniform_value<glm::fmat4>(
         "u_inv_view_proj_matrix", glm::inverse(view_projection_matrix));
 
+    this->shading_context.bind("s_texture");
     this->shading_context.bind("u_view_rect");
     this->shading_context.bind("u_view_matrix");
     this->shading_context.bind("u_proj_matrix");
@@ -492,25 +504,9 @@ Renderer::set_viewport_state(
     this->shading_context.bind("u_inv_proj_matrix");
     this->shading_context.bind("u_inv_view_proj_matrix");
 
-    bgfx::setScissor(
-        static_cast<uint16_t>(view_rect.x), static_cast<uint16_t>(view_rect.y),
-        static_cast<uint16_t>(view_rect.z), static_cast<uint16_t>(view_rect.w));
-}
-
-void
-Renderer::set_render_state(const RenderState& state)
-{
-    auto texture = state.texture ? state.texture : this->default_texture.get();
-    auto material =
-        state.material ? state.material : this->default_material.get_valid();
-    this->shading_context._set_uniform_texture(
-        "s_texture", texture, _internal_sampler_stage_index);
-    this->shading_context.bind("s_texture");
+    auto material = render_state.material ? render_state.material
+                                          : this->default_material.get_valid();
     material->bind();
-    bgfx::setState(
-        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | state.state_flags);
-    bgfx::setStencil(state.stencil_flags);
 }
 
 void
@@ -522,21 +518,19 @@ Renderer::render_batch(
                           target_render_passes](const DrawCall& call) {
         target_render_passes.each_active_index([this, target_viewports,
                                                 &call](uint16_t pass_index) {
-            target_viewports.each_active_index(
-                [this, pass_index, &call](uint16_t viewport_index) {
-                    call.bind_buffers();
-                    auto& ctx = this->_frame_context;
-                    auto pass_state = ctx.render_pass_states[pass_index];
-                    auto viewport_state = ctx.viewport_states[viewport_index];
-                    this->set_render_state(call.state);
-                    this->set_pass_state(pass_state);
-                    this->set_viewport_state(viewport_state, pass_state);
-                    uint32_t depth = call.sorting_hint | (viewport_index << 24);
-                    bgfx::submit(
-                        pass_index + _views_reserved_offset,
-                        this->_get_program_handle(call.state.material), depth,
-                        BGFX_DISCARD_ALL);
-                });
+            target_viewports.each_active_index([this, pass_index, &call](
+                                                   uint16_t viewport_index) {
+                call.bind_buffers();
+                auto& ctx = this->_frame_context;
+                auto pass_state = ctx.render_pass_states[pass_index];
+                auto viewport_state = ctx.viewport_states[viewport_index];
+                this->set_render_state(call.state, viewport_state, pass_state);
+                uint32_t depth = call.sorting_hint | (viewport_index << 24);
+                bgfx::submit(
+                    pass_index + _views_reserved_offset,
+                    this->_get_program_handle(call.state.material), depth,
+                    BGFX_DISCARD_ALL);
+            });
         });
     });
 }
@@ -552,10 +546,9 @@ Renderer::render_effect(const Effect& effect, const uint16_t pass_index)
 }
 
 void
-Renderer::render_draw_command(
-    const DrawCommand& command, const uint16_t pass_index,
-    const uint16_t viewport_index)
+Renderer::render_draw_command(const DrawCommand& command)
 {
+    uint16_t pass_index = command.pass, viewport_index = command.viewport;
     auto pass_state = this->_frame_context.render_pass_states[pass_index];
     auto viewport_state = this->_frame_context.viewport_states[viewport_index];
     this->render_draw_call(command.call, pass_state, viewport_state);
@@ -567,9 +560,7 @@ Renderer::render_draw_call(
     const ViewportState& viewport_state)
 {
     call.bind_buffers();
-    this->set_render_state(call.state);
-    this->set_pass_state(pass_state);
-    this->set_viewport_state(viewport_state, pass_state);
+    this->set_render_state(call.state, viewport_state, pass_state);
     bgfx::submit(
         pass_state.index + _views_reserved_offset,
         this->_get_program_handle(call.state.material), call.sorting_hint,

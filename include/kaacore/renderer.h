@@ -45,7 +45,6 @@ class DefaultShadingContext : public ShadingContext {
 struct FrameContext {
     Duration last_dt;
     Duration total_time;
-    glm::uvec2 window_size;
     glm::uvec2 virtual_resolution;
     ViewportStateArray viewport_states;
     RenderPassStateArray render_pass_states;
@@ -165,17 +164,14 @@ class Renderer {
         const glm::uvec2 windows_size, glm::uvec2 virtual_resolution,
         VirtualResolutionMode mode);
     void set_global_uniforms();
-    void set_pass_state(const RenderPassState& state);
-    void set_viewport_state(
-        const ViewportState& viewport_state, const RenderPassState& pass_state);
-    void set_render_state(const RenderState& state);
+    void set_render_state(
+        const RenderState& render_state, const ViewportState& viewport_state,
+        const RenderPassState& pass_state);
     void render_batch(
         const RenderBatch& batch, const RenderPassIndexSet render_passes,
         const ViewportIndexSet viewports);
     void render_effect(const Effect& effect, const uint16_t pass_index);
-    void render_draw_command(
-        const DrawCommand& command, const uint16_t pass_index,
-        const uint16_t viewport_index);
+    void render_draw_command(const DrawCommand& command);
     void render_draw_call(
         const DrawCall& call, const RenderPassState& pass_state,
         const ViewportState& viewport_state);

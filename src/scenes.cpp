@@ -219,18 +219,15 @@ Scene::render(const std::unique_ptr<Renderer>& renderer)
 
     // render custom draw calls
     for (auto& draw_command : this->_draw_commands) {
-        renderer->render_draw_command(
-            draw_command, draw_command.pass, draw_command.viewport);
+        renderer->render_draw_command(draw_command);
     }
     this->_draw_commands.clear();
 
     // render effects
     for (auto& render_pass : this->render_passes) {
-        auto effect = render_pass.effect();
-        if (not effect) {
-            continue;
+        if (auto effect = render_pass.effect()) {
+            renderer->render_effect(effect.value(), render_pass.index());
         }
-        renderer->render_effect(effect.value(), render_pass.index());
     }
 }
 
