@@ -145,8 +145,9 @@ typedef std::pair<
 class DrawBucket;
 
 class GeometryStream {
-  public:
     using DrawUnitIter = std::vector<DrawUnit>::const_iterator;
+
+  public:
     struct Range {
         DrawUnitIter begin;
         DrawUnitIter end;
@@ -174,9 +175,8 @@ class GeometryStream {
     friend class DrawBucket;
 };
 
-typedef std::pair<
-    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
-    DrawUnitModificationPair;
+using DrawUnitModificationPair = std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>;
 
 struct DrawBucket {
     GeometryStream geometry_stream() const;

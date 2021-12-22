@@ -20,13 +20,13 @@ struct TimerContext {
     Scene* scene;
 };
 
-using TimerID = uint32_t;
+using TimerId = uint32_t;
 using TimerCallback = std::function<Duration(TimerContext context)>;
 
 struct _TimerState {
-    _TimerState(TimerID id, TimerCallback&& callback);
+    _TimerState(TimerId id, TimerCallback&& callback);
 
-    TimerID id;
+    TimerId id;
     TimerCallback callback;
     std::atomic<bool> is_running;
 };
@@ -59,14 +59,14 @@ class TimersManager {
 
   private:
     using _AwaitingState =
-        std::tuple<TimerID, Duration, std::weak_ptr<_TimerState>>;
+        std::tuple<TimerId, Duration, std::weak_ptr<_TimerState>>;
 
     struct _InvocationInstance {
         _InvocationInstance(
-            TimerID invocation_id, Duration interval, TimePoint triggered_at,
+            TimerId invocation_id, Duration interval, TimePoint triggered_at,
             std::weak_ptr<_TimerState>&& state);
 
-        TimerID invocation_id;
+        TimerId invocation_id;
         Duration interval;
         TimePoint triggered_at;
         std::weak_ptr<_TimerState> state;
@@ -91,7 +91,7 @@ class TimersManager {
         std::vector<_AwaitingState> data;
     } _awaiting_timers;
 
-    static inline std::atomic<TimerID> _last_id = 0;
+    static inline std::atomic<TimerId> _last_id = 0;
 };
 
 }

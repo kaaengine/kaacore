@@ -11,7 +11,7 @@
 namespace kaacore {
 
 Quad Effect::_quad;
-ResourcesRegistry<EffectID, Effect> _effects_registry;
+ResourcesRegistry<EffectId, Effect> _effects_registry;
 
 uint16_t
 operator~(ClearFlag flag)
@@ -94,8 +94,6 @@ Effect::draw_call() const
     return DrawCall::create(
         state, -1, this->_quad.vertices, this->_quad.indices);
 }
-
-RenderPass::RenderPass() : _is_dirty(true) {}
 
 uint16_t
 RenderPass::index() const

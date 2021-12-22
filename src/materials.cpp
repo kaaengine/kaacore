@@ -7,7 +7,7 @@
 
 namespace kaacore {
 
-ResourcesRegistry<MaterialID, Material> _materials_registry;
+ResourcesRegistry<MaterialId, Material> _materials_registry;
 
 void
 initialize_materials()
@@ -152,7 +152,7 @@ ShadingContext::_set_uniform_texture(
 }
 
 Material::Material(
-    const MaterialID id, const ResourceReference<Program>& program,
+    const MaterialId id, const ResourceReference<Program>& program,
     const UniformSpecificationMap& uniforms)
     : ShadingContext(uniforms), program(program), _id(id)
 {}

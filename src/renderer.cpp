@@ -457,6 +457,7 @@ Renderer::set_viewport_state(
         float x = this->_frame_context.virtual_resolution.x;
         float y = this->_frame_context.virtual_resolution.y;
         projection_matrix = glm::ortho(-x / 2, x / 2, y / 2, -y / 2);
+        // FIXME
         view_rect = {glm::fvec2(0),
                      glm::fvec2(this->_frame_context.window_size)};
         if (bgfx::getCaps()->originBottomLeft) {

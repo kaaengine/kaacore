@@ -15,7 +15,7 @@
 
 namespace kaacore {
 
-typedef SDL_JoystickID ControllerID;
+typedef SDL_JoystickID ControllerId;
 struct Event;
 typedef std::function<bool(const Event&)> EventCallback;
 
@@ -462,7 +462,7 @@ struct MouseWheelEvent : public BaseEvent {
 };
 
 struct BaseControllerEvent : public BaseEvent {
-    ControllerID id() const;
+    ControllerId id() const;
 };
 
 struct ControllerButtonEvent : public BaseControllerEvent {
@@ -548,25 +548,25 @@ struct InputManager {
 
     struct ControllerManager {
         ~ControllerManager();
-        bool is_connected(const ControllerID id) const;
-        bool is_pressed(const ControllerButton cb, const ControllerID id) const;
+        bool is_connected(const ControllerId id) const;
+        bool is_pressed(const ControllerButton cb, const ControllerId id) const;
         bool is_released(
-            const ControllerButton cb, const ControllerID id) const;
-        bool is_pressed(const ControllerAxis ca, const ControllerID id) const;
-        bool is_released(const ControllerAxis ca, const ControllerID id) const;
+            const ControllerButton cb, const ControllerId id) const;
+        bool is_pressed(const ControllerAxis ca, const ControllerId id) const;
+        bool is_released(const ControllerAxis ca, const ControllerId id) const;
         double get_axis_motion(
-            const ControllerAxis axis, const ControllerID id) const;
-        std::string get_name(const ControllerID id) const;
-        glm::dvec2 get_triggers(const ControllerID id) const;
+            const ControllerAxis axis, const ControllerId id) const;
+        std::string get_name(const ControllerId id) const;
+        glm::dvec2 get_triggers(const ControllerId id) const;
         glm::dvec2 get_sticks(
-            const CompoundControllerAxis axis, const ControllerID id) const;
-        std::vector<ControllerID> get_connected_controllers() const;
+            const CompoundControllerAxis axis, const ControllerId id) const;
+        std::vector<ControllerId> get_connected_controllers() const;
 
-        ControllerID connect(int device_index);
-        void disconnect(ControllerID id);
+        ControllerId connect(int device_index);
+        void disconnect(ControllerId id);
 
       private:
-        std::unordered_map<ControllerID, SDL_GameController*> _connected_map;
+        std::unordered_map<ControllerId, SDL_GameController*> _connected_map;
     } controller;
 
     void register_callback(EventType event_type, EventCallback callback);

@@ -18,9 +18,7 @@ _translate_from_z_index(const std::unordered_set<int16_t>& indices)
     return result;
 }
 
-Viewport::Viewport()
-    : _dimensions(get_engine()->virtual_resolution()), _is_dirty(true)
-{}
+Viewport::Viewport() : _dimensions(get_engine()->virtual_resolution()) {}
 
 int16_t
 Viewport::z_index() const

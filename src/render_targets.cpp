@@ -6,12 +6,12 @@
 namespace kaacore {
 
 class RenderTargetsRegistry
-    : public ResourcesRegistry<RenderTargetID, RenderTarget> {
+    : public ResourcesRegistry<RenderTargetId, RenderTarget> {
     friend void reset_render_targets(const glm::uvec2&);
 };
 
 class FrameBuffersRegistry
-    : public ResourcesRegistry<FrameBufferID, FrameBuffer> {
+    : public ResourcesRegistry<FrameBufferId, FrameBuffer> {
     friend void reset_render_targets(const glm::uvec2&);
 };
 
@@ -50,7 +50,7 @@ reset_render_targets(const glm::uvec2& size)
     }
 }
 
-RenderTarget::RenderTarget(RenderTargetID id) : _id(id)
+RenderTarget::RenderTarget(RenderTargetId id) : _id(id)
 {
     if (is_engine_initialized()) {
         this->_initialize();
@@ -118,7 +118,7 @@ RenderTarget::_uninitialize()
 }
 
 FrameBuffer::FrameBuffer(
-    const FrameBufferID id,
+    const FrameBufferId id,
     const std::vector<ResourceReference<RenderTarget>>& targets)
     : _id(id), _render_targets(targets)
 {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <bitset>
 #include <optional>
 #include <unordered_set>
 
@@ -24,7 +23,7 @@ constexpr auto default_pass_index = min_pass_index;
 struct RenderPassState;
 using RenderPassStateArray =
     std::array<RenderPassState, KAACORE_MAX_RENDER_PASSES>;
-using EffectID = uint32_t;
+using EffectId = uint32_t;
 using RenderPassIndexSet = IndexSet<KAACORE_MAX_RENDER_PASSES>;
 
 inline bool
@@ -64,7 +63,6 @@ operator|(uint16_t left, ClearFlag right);
 uint16_t
 operator|=(uint16_t& left, ClearFlag right);
 
-class Shape;
 class DrawCall;
 
 struct Quad {
@@ -121,15 +119,14 @@ class RenderPass {
     std::optional<RenderTargets> render_targets();
 
   private:
-    bool _is_dirty;
     uint16_t _index;
+    bool _is_dirty = true;
     glm::dvec4 _clear_color = {0, 0, 0, 0};
     uint16_t _clear_flags = ClearFlag::none | ClearFlag::depth |
                             ClearFlag::color | ClearFlag::stencil;
     std::optional<Effect> _effect;
     ResourceReference<FrameBuffer> _frame_buffer;
 
-    RenderPass();
     void _mark_dirty();
     RenderPassState _take_snapshot();
 

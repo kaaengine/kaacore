@@ -247,7 +247,7 @@ MouseWheelEvent::scroll() const
     return direction;
 }
 
-ControllerID
+ControllerId
 BaseControllerEvent::id() const
 {
     return this->sdl_event.cdevice.which;
@@ -542,7 +542,7 @@ InputManager::ControllerManager::~ControllerManager()
 }
 
 bool
-InputManager::ControllerManager::is_connected(const ControllerID id) const
+InputManager::ControllerManager::is_connected(const ControllerId id) const
 {
     auto it = this->_connected_map.find(id);
     if (it == this->_connected_map.end()) {
@@ -554,7 +554,7 @@ InputManager::ControllerManager::is_connected(const ControllerID id) const
 
 bool
 InputManager::ControllerManager::is_pressed(
-    const ControllerButton cb, const ControllerID id) const
+    const ControllerButton cb, const ControllerId id) const
 {
     if (not this->is_connected(id)) {
         return false;
@@ -567,28 +567,28 @@ InputManager::ControllerManager::is_pressed(
 
 bool
 InputManager::ControllerManager::is_released(
-    const ControllerButton cb, const ControllerID id) const
+    const ControllerButton cb, const ControllerId id) const
 {
     return not this->is_pressed(cb, id);
 }
 
 bool
 InputManager::ControllerManager::is_pressed(
-    const ControllerAxis ca, const ControllerID id) const
+    const ControllerAxis ca, const ControllerId id) const
 {
     return this->get_axis_motion(ca, id);
 }
 
 bool
 InputManager::ControllerManager::is_released(
-    const ControllerAxis ca, const ControllerID id) const
+    const ControllerAxis ca, const ControllerId id) const
 {
     return not this->is_pressed(ca, id);
 }
 
 double
 InputManager::ControllerManager::get_axis_motion(
-    const ControllerAxis axis, const ControllerID id) const
+    const ControllerAxis axis, const ControllerId id) const
 {
     if (not this->is_connected(id)) {
         return 0;
@@ -600,7 +600,7 @@ InputManager::ControllerManager::get_axis_motion(
 }
 
 std::string
-InputManager::ControllerManager::get_name(const ControllerID id) const
+InputManager::ControllerManager::get_name(const ControllerId id) const
 {
     if (not this->is_connected(id)) {
         return "";
@@ -613,7 +613,7 @@ InputManager::ControllerManager::get_name(const ControllerID id) const
 }
 
 glm::dvec2
-InputManager::ControllerManager::get_triggers(const ControllerID id) const
+InputManager::ControllerManager::get_triggers(const ControllerId id) const
 {
     return {
         this->get_axis_motion(ControllerAxis::trigger_left, id),
@@ -623,7 +623,7 @@ InputManager::ControllerManager::get_triggers(const ControllerID id) const
 
 glm::dvec2
 InputManager::ControllerManager::get_sticks(
-    const CompoundControllerAxis axis, const ControllerID id) const
+    const CompoundControllerAxis axis, const ControllerId id) const
 {
     if (axis == CompoundControllerAxis::left_stick) {
         return {this->get_axis_motion(ControllerAxis::left_x, id),
@@ -635,17 +635,17 @@ InputManager::ControllerManager::get_sticks(
     return {0, 0};
 }
 
-std::vector<ControllerID>
+std::vector<ControllerId>
 InputManager::ControllerManager::get_connected_controllers() const
 {
-    std::vector<ControllerID> result(this->_connected_map.size());
+    std::vector<ControllerId> result(this->_connected_map.size());
     for (auto& it : this->_connected_map) {
         result.push_back(it.first);
     }
     return result;
 }
 
-ControllerID
+ControllerId
 InputManager::ControllerManager::connect(int device_index)
 {
     auto controller = SDL_GameControllerOpen(device_index);
@@ -663,7 +663,7 @@ InputManager::ControllerManager::connect(int device_index)
 }
 
 void
-InputManager::ControllerManager::disconnect(ControllerID id)
+InputManager::ControllerManager::disconnect(ControllerId id)
 {
     SDL_GameControllerClose(this->_connected_map[id]);
     this->_connected_map.erase(id);
