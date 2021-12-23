@@ -28,6 +28,7 @@ class Scene;
 class ViewportsManager;
 
 struct ViewportState {
+    uint16_t index;
     glm::fvec4 view_rect;
     glm::fvec4 viewport_rect;
     glm::fmat4 view_matrix;
@@ -48,7 +49,7 @@ class Viewport {
     glm::ivec4 viewport_rect() const;
 
   private:
-    int16_t _index;
+    uint16_t _index;
     bool _is_dirty = true;
     glm::uvec2 _dimensions;
     glm::ivec2 _origin = {0, 0};

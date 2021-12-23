@@ -139,7 +139,7 @@ Viewport::_reset_required() const
 ViewportState
 Viewport::_take_snapshot()
 {
-    return {this->_view_rect, this->_viewport_rect,
+    return {this->_index, this->_view_rect, this->_viewport_rect,
             this->camera._calculated_view, this->_projection_matrix};
 }
 

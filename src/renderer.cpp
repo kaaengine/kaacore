@@ -461,7 +461,7 @@ Renderer::set_render_state(
             projection_matrix = glm::scale(projection_matrix, {1., -1., 1.});
         }
     } else {
-        // backbuffer case, borders might be needed
+        // back buffer case, borders might be needed
         bgfx::setViewRect(
             view_index, this->border_size.x, this->border_size.y,
             this->view_size.x, this->view_size.y);
@@ -518,19 +518,13 @@ Renderer::render_batch(
                           target_render_passes](const DrawCall& call) {
         target_render_passes.each_active_index([this, target_viewports,
                                                 &call](uint16_t pass_index) {
-            target_viewports.each_active_index([this, pass_index, &call](
-                                                   uint16_t viewport_index) {
-                call.bind_buffers();
-                auto& ctx = this->_frame_context;
-                auto pass_state = ctx.render_pass_states[pass_index];
-                auto viewport_state = ctx.viewport_states[viewport_index];
-                this->set_render_state(call.state, viewport_state, pass_state);
-                uint32_t depth = call.sorting_hint | (viewport_index << 24);
-                bgfx::submit(
-                    pass_index + _views_reserved_offset,
-                    this->_get_program_handle(call.state.material), depth,
-                    BGFX_DISCARD_ALL);
-            });
+            target_viewports.each_active_index(
+                [this, pass_index, &call](uint16_t viewport_index) {
+                    auto& ctx = this->_frame_context;
+                    auto pass_state = ctx.render_pass_states[pass_index];
+                    auto viewport_state = ctx.viewport_states[viewport_index];
+                    this->render_draw_call(call, pass_state, viewport_state);
+                });
         });
     });
 }
@@ -539,8 +533,9 @@ void
 Renderer::render_effect(const Effect& effect, const uint16_t pass_index)
 {
     glm::dvec4 view_rect = {this->border_size, this->view_size};
-    ViewportState viewport_state{view_rect, view_rect, glm::fmat4(1.f),
-                                 glm::fmat4(1.f)};
+    uint16_t max_viewport_index = KAACORE_MAX_VIEWPORTS - 1;
+    ViewportState viewport_state{max_viewport_index, view_rect, view_rect,
+                                 glm::fmat4(1.f), glm::fmat4(1.f)};
     auto pass_state = this->_frame_context.render_pass_states[pass_index];
     this->render_draw_call(effect.draw_call(), pass_state, viewport_state);
 }
@@ -561,9 +556,10 @@ Renderer::render_draw_call(
 {
     call.bind_buffers();
     this->set_render_state(call.state, viewport_state, pass_state);
+    uint32_t depth = call.sorting_hint | (viewport_state.index << 24);
     bgfx::submit(
         pass_state.index + _views_reserved_offset,
-        this->_get_program_handle(call.state.material), call.sorting_hint,
+        this->_get_program_handle(call.state.material), depth,
         BGFX_DISCARD_ALL);
 }
 
