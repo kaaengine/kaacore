@@ -1,21 +1,13 @@
-#include <cstdlib>
-#include <vector>
-
-#include <glm/glm.hpp>
-
 #include "kaacore/engine.h"
 #include "kaacore/log.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
 
 struct TestDemoScene : kaacore::Scene {
-    std::vector<glm::dvec2> points;
-    kaacore::NodePtr shape_repr;
-    kaacore::Engine* engine;
 
     TestDemoScene()
     {
-        this->engine = kaacore::get_engine();
+        kaacore::get_engine();
         this->camera().position({0., 0.});
 
         auto shape_repr = kaacore::make_node();
@@ -27,7 +19,7 @@ struct TestDemoScene : kaacore::Scene {
         shape_repr->position(glm::dvec2(0, 0));
         shape_repr->shape(kaacore::Shape::Box({150, 150}));
         shape_repr->add_child(shape_repr2);
-        this->shape_repr = this->root_node.add_child(shape_repr);
+        this->root_node.add_child(shape_repr);
     }
 
     void update(const kaacore::Duration dt) override
@@ -38,7 +30,7 @@ struct TestDemoScene : kaacore::Scene {
                 if (mouse_button->button() == kaacore::MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
                     auto query = this->spatial_index.query_point(pos);
-                    KAACORE_LOG_DEBUG("Number of nodes: {}", query.size());
+                    KAACORE_APP_LOG_INFO("Number of nodes: {}", query.size());
                 }
                 if(mouse_button->button() == kaacore::MouseButton::right){
                     auto child = this->root_node.children()[0];
