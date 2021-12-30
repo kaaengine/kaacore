@@ -55,8 +55,6 @@ struct RenderState {
     Material* material;
     uint64_t state_flags;
     uint32_t stencil_flags;
-
-    static RenderState from_bucket_key(const DrawBucketKey& key);
 };
 
 struct DrawCall {

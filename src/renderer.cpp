@@ -111,12 +111,6 @@ DefaultShadingContext::destroy()
     this->_uniforms.clear();
 }
 
-RenderState
-RenderState::from_bucket_key(const DrawBucketKey& key)
-{
-    return {key.texture, key.material, key.state_flags, key.stencil_flags};
-}
-
 DrawCall
 DrawCall::allocate(
     const RenderState& state, const uint32_t sorting_hint,
@@ -165,7 +159,8 @@ RenderBatch::from_bucket(const DrawBucketKey& key, const DrawBucket& bucket)
         (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
     sorting_hint <<= 16;
     sorting_hint |= key.root_distance;
-    auto state = RenderState::from_bucket_key(key);
+    RenderState state{key.texture, key.material, key.state_flags,
+                      key.stencil_flags};
     return {state, sorting_hint, bucket.geometry_stream()};
 }
 
