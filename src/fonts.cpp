@@ -363,6 +363,7 @@ std::vector<FontRenderGlyph>
 FontData::generate_render_glyphs(
     const std::string& text, const double pixel_height)
 {
+    bool is_empty = true;
     std::vector<FontRenderGlyph> render_glyphs;
     const double scale_factor = pixel_height / font_baker_pixel_height;
     const glm::dvec2 inv_texture_size = {
@@ -384,6 +385,9 @@ FontData::generate_render_glyphs(
             ch_value =
                 static_cast<UnicodeCodepoint>('?') - font_baker_first_glyph;
         }
+        if (ch_value > 0){
+            is_empty = false;
+        }
 
         auto glyph_data = this->baked_font.at(ch_value);
 
@@ -397,7 +401,11 @@ FontData::generate_render_glyphs(
         }
     }
 
-    return render_glyphs;
+    if (is_empty){
+        return {};
+    } else {
+        return render_glyphs;
+    }
 }
 
 void
