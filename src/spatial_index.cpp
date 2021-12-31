@@ -73,7 +73,7 @@ NodeSpatialData::refresh()
             this->bounding_box.min_x, this->bounding_box.max_x,
             this->bounding_box.min_y, this->bounding_box.max_y);
 
-        node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX);
+        node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX_RECURSIVE);
     }
 }
 
