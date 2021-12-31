@@ -5,6 +5,6 @@ $output v_texcoord0
 
 void main()
 {
-	gl_Position = mul(u_proj_matrix, vec4(a_position, 1.0));
+	gl_Position = mul(u_projMat, vec4(a_position, 1.0));
 	v_texcoord0 = a_texcoord0;
 }

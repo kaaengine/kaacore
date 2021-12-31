@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <bgfx/bgfx.h>
@@ -173,7 +174,7 @@ class Renderer {
     void render_draw_call(
         const DrawCall& call, const RenderPassState& pass_state,
         const ViewportState& viewport_state);
-    static std::unordered_set<std::string>& reserved_uniform_names();
+    static const std::unordered_set<std::string>& reserved_uniform_names();
 
   private:
     bool _vertical_sync = true;

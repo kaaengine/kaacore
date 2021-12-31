@@ -1,3 +1,4 @@
+#include <array>
 #include <cstring>
 #include <iterator>
 #include <tuple>
@@ -23,14 +24,19 @@ constexpr uint16_t _views_reserved_offset = 1;
 constexpr uint8_t _internal_sampler_stage_index = 0;
 const UniformSpecificationMap _default_uniforms = {
     {"s_texture", UniformSpecification(UniformType::sampler)},
-    {"u_vec4_slot1", UniformSpecification(UniformType::vec4)},
-    {"u_view_rect", UniformSpecification(UniformType::vec4)},
-    {"u_view_matrix", UniformSpecification(UniformType::mat4)},
-    {"u_proj_matrix", UniformSpecification(UniformType::mat4)},
-    {"u_view_proj_matrix", UniformSpecification(UniformType::mat4)},
-    {"u_inv_view_matrix", UniformSpecification(UniformType::mat4)},
-    {"u_inv_proj_matrix", UniformSpecification(UniformType::mat4)},
-    {"u_inv_view_proj_matrix", UniformSpecification(UniformType::mat4)},
+    {"u_vec4Slot1", UniformSpecification(UniformType::vec4)},
+    {"u_viewportRect", UniformSpecification(UniformType::vec4)},
+    {"u_viewMat", UniformSpecification(UniformType::mat4)},
+    {"u_projMat", UniformSpecification(UniformType::mat4)},
+    {"u_viewProjMat", UniformSpecification(UniformType::mat4)},
+    {"u_invViewMat", UniformSpecification(UniformType::mat4)},
+    {"u_invProjMat", UniformSpecification(UniformType::mat4)},
+    {"u_invViewProjMat", UniformSpecification(UniformType::mat4)},
+};
+constexpr std::array<const std::string_view, 12> _bgfx_reserved_uniforms = {
+    "u_viewRect", "u_viewTexel", "u_view",          "u_invView",
+    "u_proj",     "u_invProj",   "u_viewProj",      "u_invViewProj",
+    "u_model",    "u_modelView", "u_modelViewProj", "u_alphaRef4",
 };
 
 // Since the memory that is used to load texture to bgfx should be available
@@ -422,8 +428,8 @@ Renderer::set_global_uniforms()
     glm::vec4 u_vec4_slot1{this->_frame_context.last_dt.count(),
                            this->_frame_context.total_time.count(), 0, 0};
     this->shading_context.set_uniform_value<glm::fvec4>(
-        "u_vec4_slot1", u_vec4_slot1);
-    this->shading_context.bind("u_vec4_slot1");
+        "u_vec4Slot1", u_vec4_slot1);
+    this->shading_context.bind("u_vec4Slot1");
 }
 
 void
@@ -476,28 +482,28 @@ Renderer::set_render_state(
     this->shading_context._set_uniform_texture(
         "s_texture", texture, _internal_sampler_stage_index);
     this->shading_context.set_uniform_value<glm::fvec4>(
-        "u_view_rect", viewport_rect);
+        "u_viewportRect", viewport_rect);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_view_matrix", viewport_state.view_matrix);
+        "u_viewMat", viewport_state.view_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_inv_view_matrix", glm::inverse(view_matrix));
+        "u_projMat", projection_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_proj_matrix", projection_matrix);
+        "u_viewProjMat", view_projection_matrix);
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_view_proj_matrix", view_projection_matrix);
+        "u_invViewMat", glm::inverse(view_matrix));
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_inv_proj_matrix", glm::inverse(projection_matrix));
+        "u_invProjMat", glm::inverse(projection_matrix));
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_inv_view_proj_matrix", glm::inverse(view_projection_matrix));
+        "u_invViewProjMat", glm::inverse(view_projection_matrix));
 
     this->shading_context.bind("s_texture");
-    this->shading_context.bind("u_view_rect");
-    this->shading_context.bind("u_view_matrix");
-    this->shading_context.bind("u_proj_matrix");
-    this->shading_context.bind("u_view_proj_matrix");
-    this->shading_context.bind("u_inv_view_matrix");
-    this->shading_context.bind("u_inv_proj_matrix");
-    this->shading_context.bind("u_inv_view_proj_matrix");
+    this->shading_context.bind("u_viewportRect");
+    this->shading_context.bind("u_viewMat");
+    this->shading_context.bind("u_projMat");
+    this->shading_context.bind("u_viewProjMat");
+    this->shading_context.bind("u_invViewMat");
+    this->shading_context.bind("u_invProjMat");
+    this->shading_context.bind("u_invViewProjMat");
 
     auto material = render_state.material ? render_state.material
                                           : this->default_material.get_valid();
@@ -558,13 +564,16 @@ Renderer::render_draw_call(
         BGFX_DISCARD_ALL);
 }
 
-std::unordered_set<std::string>&
+const std::unordered_set<std::string>&
 Renderer::reserved_uniform_names()
 {
     static std::unordered_set<std::string> reserved_names;
     if (not reserved_names.size()) {
         for (auto& kv_pair : _default_uniforms) {
             reserved_names.insert(kv_pair.first);
+        }
+        for (auto& name : _bgfx_reserved_uniforms) {
+            reserved_names.insert(std::string(name));
         }
     }
     return reserved_names;
