@@ -527,7 +527,7 @@ Renderer::render_batch(
 void
 Renderer::render_effect(const Effect& effect, const uint16_t pass_index)
 {
-    glm::dvec4 view_rect = {this->border_size, this->view_size};
+    glm::dvec4 view_rect = {0, 0, this->view_size};
     uint16_t max_viewport_index = KAACORE_MAX_VIEWPORTS - 1;
     ViewportState viewport_state{max_viewport_index, view_rect, view_rect,
                                  glm::fmat4(1.f), glm::fmat4(1.f)};
