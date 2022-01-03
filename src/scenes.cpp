@@ -52,7 +52,7 @@ Scene::build_processing_queue()
         }
         i++;
     }
-    // KAACORE_LOG_DEBUG("Nodes to process count: {}", processing_queue.size());
+    KAACORE_LOG_DEBUG("Nodes to process count: {}", processing_queue.size());
     return processing_queue;
 }
 

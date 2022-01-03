@@ -92,7 +92,7 @@ class Effect {
 
 struct RenderPassState {
     uint16_t index;
-    bool requires_clean;
+    bool requires_clear;
     uint16_t clear_flags;
     glm::dvec4 clear_color;
     bgfx::FrameBufferHandle frame_buffer;

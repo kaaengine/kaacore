@@ -187,6 +187,11 @@ Renderer::Renderer(
     KAACORE_LOG_INFO("Initializing renderer.");
     _vertex_layout = StandardVertexData::init();
     this->reset(window_size, virtual_resolution, mode);
+    auto start_index = _internal_view_index + _views_reserved_offset;
+    for (auto view_index = start_index;
+         view_index < start_index + KAACORE_MAX_RENDER_PASSES; ++view_index) {
+        bgfx::setViewMode(view_index, bgfx::ViewMode::DepthAscending);
+    }
     this->default_texture = load_default_texture();
     KAACORE_LOG_INFO("Loading embedded default shader.");
     auto default_program = load_embedded_program("vs_default", "fs_default");
@@ -323,24 +328,11 @@ Renderer::begin_frame()
 {
     this->set_global_uniforms();
     bgfx::touch(_internal_view_index);
-    for (auto pass_index = _internal_view_index;
-         pass_index <= KAACORE_MAX_RENDER_PASSES; ++pass_index) {
-        auto view_index = pass_index + _views_reserved_offset;
-        bgfx::touch(view_index);
-        bgfx::setViewMode(view_index, bgfx::ViewMode::DepthAscending);
-        auto state = this->_frame_context.render_pass_states[pass_index];
-
-        if (not state.requires_clean) {
-            continue;
-        }
-
-        if (state.clear_color.a) {
-            glm::fvec4 clear_color = state.clear_color;
-            bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
-            bgfx::setViewClear(view_index, state.clear_flags, 0.f, 0, 0);
-        } else {
-            bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
-        }
+    for (auto pass_index = 0; pass_index < KAACORE_MAX_RENDER_PASSES;
+         ++pass_index) {
+        bgfx::touch(pass_index + _views_reserved_offset);
+        this->set_render_pass_state(
+            this->_frame_context.render_pass_states[pass_index]);
     }
 }
 
@@ -434,16 +426,14 @@ Renderer::set_global_uniforms()
 
 void
 Renderer::set_render_state(
-    const RenderState& render_state, const ViewportState& viewport_state,
-    const RenderPassState& pass_state)
+    const RenderState& render_state, const RenderPassState& pass_state,
+    const ViewportState& viewport_state)
 {
     auto view_index = pass_state.index + _views_reserved_offset;
     bgfx::setState(
         BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
         BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | render_state.state_flags);
     bgfx::setStencil(render_state.stencil_flags);
-    bgfx::setViewFrameBuffer(view_index, pass_state.frame_buffer);
-
     // rect clipped to drawable area - used for scissor test
     auto view_rect = viewport_state.view_rect;
     // user defined rect - no cliping applied
@@ -451,9 +441,7 @@ Renderer::set_render_state(
     auto projection_matrix = viewport_state.projection_matrix;
     if (pass_state.has_custom_framebuffer()) {
         // render target is always size of a drawable area
-        // therefore use full available size and adjust projection accordingly
-        bgfx::setViewRect(
-            view_index, 0, 0, this->view_size.x, this->view_size.y);
+        // therefore project full available size
         float x = this->_frame_context.virtual_resolution.x;
         float y = this->_frame_context.virtual_resolution.y;
         projection_matrix = glm::ortho(-x / 2, x / 2, y / 2, -y / 2);
@@ -462,10 +450,7 @@ Renderer::set_render_state(
             projection_matrix = glm::scale(projection_matrix, {1., -1., 1.});
         }
     } else {
-        // back buffer case, borders might be needed
-        bgfx::setViewRect(
-            view_index, this->border_size.x, this->border_size.y,
-            this->view_size.x, this->view_size.y);
+        // view_rect and viewport_rect weren't adjusted for borders yet
         auto offset = glm::fvec4({this->border_size, 0, 0});
         view_rect += offset;
         viewport_rect += offset;
@@ -508,6 +493,35 @@ Renderer::set_render_state(
     auto material = render_state.material ? render_state.material
                                           : this->default_material.get_valid();
     material->bind();
+}
+
+void
+Renderer::set_render_pass_state(const RenderPassState& state)
+{
+    auto view_index = state.index + _views_reserved_offset;
+    bgfx::setViewFrameBuffer(view_index, state.frame_buffer);
+    if (state.has_custom_framebuffer()) {
+        // render target is always size of a drawable area
+        bgfx::setViewRect(
+            view_index, 0, 0, this->view_size.x, this->view_size.y);
+    } else {
+        // back buffer case, adjust for borders
+        bgfx::setViewRect(
+            view_index, this->border_size.x, this->border_size.y,
+            this->view_size.x, this->view_size.y);
+    }
+
+    if (not state.requires_clear) {
+        return;
+    }
+
+    if (state.clear_color.a) {
+        glm::fvec4 clear_color = state.clear_color;
+        bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
+        bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
+    } else {
+        bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
+    }
 }
 
 void
@@ -556,7 +570,7 @@ Renderer::render_draw_call(
     const ViewportState& viewport_state)
 {
     call.bind_buffers();
-    this->set_render_state(call.state, viewport_state, pass_state);
+    this->set_render_state(call.state, pass_state, viewport_state);
     uint32_t depth = call.sorting_hint | (viewport_state.index << 24);
     bgfx::submit(
         pass_state.index + _views_reserved_offset,

@@ -32,7 +32,7 @@ struct TestDemoScene : kaacore::Scene {
                     auto query = this->spatial_index.query_point(pos);
                     KAACORE_APP_LOG_INFO("Number of nodes: {}", query.size());
                 }
-                if(mouse_button->button() == kaacore::MouseButton::right){
+                if (mouse_button->button() == kaacore::MouseButton::right) {
                     auto child = this->root_node.children()[0];
                     pos = this->camera().unproject_position(pos);
                     child->position(pos);

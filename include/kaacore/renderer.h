@@ -164,8 +164,9 @@ class Renderer {
         VirtualResolutionMode mode);
     void set_global_uniforms();
     void set_render_state(
-        const RenderState& render_state, const ViewportState& viewport_state,
-        const RenderPassState& pass_state);
+        const RenderState& render_state, const RenderPassState& pass_state,
+        const ViewportState& viewport_state);
+    void set_render_pass_state(const RenderPassState& pass_state);
     void render_batch(
         const RenderBatch& batch, const RenderPassIndexSet render_passes,
         const ViewportIndexSet viewports);

@@ -157,7 +157,7 @@ RenderPass::_take_snapshot()
 {
     RenderPassState result;
     result.index = this->_index;
-    result.requires_clean = this->_is_dirty;
+    result.requires_clear = this->_is_dirty;
     result.clear_flags = this->_clear_flags;
     result.clear_color = this->_clear_color;
     this->_is_dirty = false;
