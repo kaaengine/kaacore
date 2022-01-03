@@ -440,8 +440,8 @@ Renderer::set_render_state(
     auto viewport_rect = viewport_state.viewport_rect;
     auto projection_matrix = viewport_state.projection_matrix;
     if (pass_state.has_custom_framebuffer()) {
-        // render target is always size of a drawable area
-        // therefore project full available size
+        // render target is always size of a drawable area size
+        // therefore project onto full available area
         float x = this->_frame_context.virtual_resolution.x;
         float y = this->_frame_context.virtual_resolution.y;
         projection_matrix = glm::ortho(-x / 2, x / 2, y / 2, -y / 2);
