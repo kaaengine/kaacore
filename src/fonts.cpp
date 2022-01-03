@@ -131,6 +131,10 @@ _pack_sdf_glyphs(
         stbtt_GetCodepointHMetrics(
             &font_info, sdf.codepoint, &horizontal_advance, &left_side_bearing);
 
+        if (rect.w == 0 && rect.h == 0){
+            rect.w = horizontal_advance * sdf.scale / 2;
+            rect.h = horizontal_advance * sdf.scale / 2;
+        }
         stbtt_packedchar glyph_data;
         glyph_data.x0 = rect.x;
         glyph_data.y0 = rect.y;
@@ -396,6 +400,7 @@ FontData::generate_render_glyphs(
                 ch, glyph_data, scale_factor, inv_texture_size);
         }
     }
+
     return render_glyphs;
 }
 
