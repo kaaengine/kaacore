@@ -23,9 +23,13 @@ add_subdirectory(third_party/bgfx)
 target_compile_options(
     bgfx PUBLIC
     -DBGFX_CONFIG_MAX_VIEWS=${BGFX_MAX_VIEWS}
-    -DBGFX_CONFIG_MULTITHREADED=$<BOOL:${KAACORE_MULTITHREADING_MODE}>)
+    -DBGFX_CONFIG_MULTITHREADED=$<BOOL:${KAACORE_MULTITHREADING_MODE}>
+)
 if (TARGET astc-codec)
     set_target_properties(astc-codec PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+if (TARGET tinyexr)
+    set_target_properties(tinyexr PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 set(SDL_STATIC OFF CACHE BOOL "")
