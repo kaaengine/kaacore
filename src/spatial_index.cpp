@@ -42,8 +42,8 @@ container_node(const NodeSpatialData* spatial_data)
 void
 NodeSpatialData::refresh()
 {
-    if (this->is_dirty) {
-        Node* node = container_node(this);
+    Node* node = container_node(this);
+    if (node->query_dirty_flags(Node::DIRTY_SPATIAL_INDEX)) {
         KAACORE_LOG_TRACE(
             "Trigerred refresh of NodeSpatialData of node: {}", fmt::ptr(node));
         const auto node_transformation = node->absolute_transformation();
@@ -73,7 +73,7 @@ NodeSpatialData::refresh()
             this->bounding_box.min_x, this->bounding_box.max_x,
             this->bounding_box.min_y, this->bounding_box.max_y);
 
-        node->_spatial_data.is_dirty = false;
+        node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX_RECURSIVE);
     }
 }
 
@@ -118,7 +118,7 @@ SpatialIndex::stop_tracking(Node* node)
         this->_remove_from_phony_index(node);
     }
     node->_spatial_data.is_indexed = false;
-    node->_spatial_data.is_dirty = false;
+    node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX_RECURSIVE);
 }
 
 void
@@ -149,7 +149,7 @@ SpatialIndex::update_single(Node* node)
             node->_spatial_data.index_uid);
     } else {
         // phony index needs no updates
-        node->_spatial_data.is_dirty = false;
+        node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX_RECURSIVE);
     }
 }
 
@@ -229,7 +229,7 @@ void
 SpatialIndex::_add_to_cp_index(Node* node)
 {
     node->_spatial_data.index_uid = ++this->_index_counter;
-    node->_spatial_data.is_dirty = true;
+    node->set_dirty_flags(Node::DIRTY_SPATIAL_INDEX);
     cpSpatialIndexInsert(
         this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
     node->_spatial_data.is_phony_indexed = false;

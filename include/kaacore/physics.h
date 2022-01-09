@@ -32,6 +32,10 @@ class Node;
 class SpaceNode;
 class BodyNode;
 class HitboxNode;
+enum struct NodeType;
+
+Transformation
+calculate_inherited_hitbox_transformation(Node* const node);
 
 enum struct CollisionPhase {
     begin = 1,
@@ -323,6 +327,8 @@ class HitboxNode {
     void update_physics_shape();
     void attach_to_simulation();
     void detach_from_simulation();
+    void _mark_hitbox_chain();
+    Node* _find_nearest_parent(const NodeType type) const;
 
     cpShape* _cp_shape = nullptr;
 

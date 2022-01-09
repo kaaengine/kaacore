@@ -54,6 +54,7 @@ Scene::build_processing_queue()
         }
         i++;
     }
+    KAACORE_LOG_DEBUG("Nodes to process count: {}", processing_queue.size());
     return processing_queue;
 }
 
@@ -116,7 +117,7 @@ Scene::resolve_spatial_index_changes(const Scene::NodesQueue& processing_queue)
             continue;
         }
 
-        if (node->_spatial_data.is_dirty) {
+        if (node->query_dirty_flags(Node::DIRTY_SPATIAL_INDEX)) {
             this->spatial_index.update_single(node);
             spatial_updates_counter += 1;
         }
@@ -130,23 +131,28 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
     StopwatchStatAutoPusher stopwatch{"scene.nodes_drawing:time"};
 
     for (Node* node : processing_queue) {
-        if (not node->_marked_to_delete and node->has_draw_unit_updates()) {
-            KAACORE_LOG_TRACE(
-                "DrawUnit modifications detected for node: {}", fmt::ptr(node));
-            auto [upsert_mod, remove_mod] = node->calculate_draw_unit_updates();
-            if (upsert_mod) {
-                this->draw_queue.enqueue_modification(std::move(*upsert_mod));
-                node->clear_draw_unit_updates(upsert_mod->lookup_key);
-            } else {
-                node->clear_draw_unit_updates(std::nullopt);
-            }
-            if (remove_mod) {
-                KAACORE_ASSERT(
-                    remove_mod->type == DrawUnitModification::Type::remove,
-                    "Expected modification type == remove");
-                this->draw_queue.enqueue_modification(std::move(*remove_mod));
+        if (not node->_marked_to_delete) {
+            auto mods_pack = node->calculate_draw_unit_updates();
+            if (mods_pack) {
+                KAACORE_LOG_TRACE(
+                    "DrawUnit modifications detected for node: {}",
+                    fmt::ptr(node));
+                auto new_lookup_key = mods_pack.new_lookup_key();
+                if (mods_pack.upsert_mod) {
+                    // TODO enque modification should accept pack
+                    this->draw_queue.enqueue_modification(
+                        std::move(*mods_pack.upsert_mod));
+                }
+                if (mods_pack.remove_mod) {
+                    this->draw_queue.enqueue_modification(
+                        std::move(*mods_pack.remove_mod));
+                }
+                node->clear_draw_unit_updates(new_lookup_key);
             }
         }
+        node->clear_dirty_flags(
+            Node::DIRTY_DRAW_KEYS_RECURSIVE |
+            Node::DIRTY_DRAW_VERTICES_RECURSIVE);
     }
 }
 

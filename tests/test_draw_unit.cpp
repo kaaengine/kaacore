@@ -130,9 +130,11 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
     };
 
     const auto simulate_frame_step = [](const kaacore::NodePtr node) {
-        if (node->has_draw_unit_updates()) {
-            auto node_mod = node->calculate_draw_unit_updates().first;
-            node->clear_draw_unit_updates(node_mod->lookup_key);
+        if (auto mods_pack = node->calculate_draw_unit_updates()) {
+            node->clear_draw_unit_updates(mods_pack.new_lookup_key());
+            node->clear_dirty_flags(
+                kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
         }
     };
 
@@ -145,7 +147,7 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
 
     SECTION("Test insert")
     {
-        REQUIRE(node_1->has_draw_unit_updates());
+        REQUIRE(node_1->calculate_draw_unit_updates());
         auto [node_1_mod_1, node_1_mod_2] =
             node_1->calculate_draw_unit_updates();
 
@@ -169,8 +171,10 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         // no remove
         REQUIRE(not node_1_mod_2.has_value());
 
-        node_1->clear_draw_unit_updates(node_1_mod_1->lookup_key);
-        REQUIRE(not node_1->has_draw_unit_updates());
+        node_1->clear_dirty_flags(
+            kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+        REQUIRE(not node_1->calculate_draw_unit_updates());
     }
 
     SECTION("Test remove")
@@ -202,53 +206,53 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
     {
         simulate_frame_step(node_1);
         simulate_frame_step(node_2);
-        REQUIRE(not node_1->has_draw_unit_updates());
-        REQUIRE(not node_2->has_draw_unit_updates());
+        REQUIRE(not node_1->calculate_draw_unit_updates());
+        REQUIRE(not node_2->calculate_draw_unit_updates());
 
         node_1->shape(test_shape_3);
-        REQUIRE(node_1->has_draw_unit_updates());
-        REQUIRE(not node_2->has_draw_unit_updates());
+        REQUIRE(node_1->calculate_draw_unit_updates());
+        REQUIRE(not node_2->calculate_draw_unit_updates());
 
         node_2->shape(test_shape_3);
-        REQUIRE(node_2->has_draw_unit_updates());
+        REQUIRE(node_2->calculate_draw_unit_updates());
     }
 
     SECTION("Test update - position (parent)")
     {
         simulate_frame_step(node_1);
         simulate_frame_step(node_2);
-        REQUIRE(not node_1->has_draw_unit_updates());
-        REQUIRE(not node_2->has_draw_unit_updates());
+        REQUIRE(not node_1->calculate_draw_unit_updates());
+        REQUIRE(not node_2->calculate_draw_unit_updates());
 
         node_1->position({10., 10.});
-        REQUIRE(node_1->has_draw_unit_updates());
-        REQUIRE(node_2->has_draw_unit_updates());
+        REQUIRE(node_1->calculate_draw_unit_updates());
+        REQUIRE(node_2->calculate_draw_unit_updates());
     }
 
     SECTION("Test update - position (child)")
     {
         simulate_frame_step(node_1);
         simulate_frame_step(node_2);
-        REQUIRE(not node_1->has_draw_unit_updates());
-        REQUIRE(not node_2->has_draw_unit_updates());
+        REQUIRE(not node_1->calculate_draw_unit_updates());
+        REQUIRE(not node_2->calculate_draw_unit_updates());
 
         node_2->position({10., 10.});
-        REQUIRE(not node_1->has_draw_unit_updates());
-        REQUIRE(node_2->has_draw_unit_updates());
+        REQUIRE(not node_1->calculate_draw_unit_updates());
+        REQUIRE(node_2->calculate_draw_unit_updates());
     }
 
     SECTION("Test update - z-index")
     {
         simulate_frame_step(node_1);
         simulate_frame_step(node_2);
-        REQUIRE(not node_1->has_draw_unit_updates());
-        REQUIRE(not node_2->has_draw_unit_updates());
+        REQUIRE(not node_1->calculate_draw_unit_updates());
+        REQUIRE(not node_2->calculate_draw_unit_updates());
 
         node_1->z_index(100);
-        REQUIRE(node_1->has_draw_unit_updates());
-        REQUIRE(not node_2->has_draw_unit_updates());
+        REQUIRE(node_1->calculate_draw_unit_updates());
+        REQUIRE(node_2->calculate_draw_unit_updates());
 
-        auto [mod_1, mod_2] = node_1->calculate_draw_unit_updates();
+        auto [mod_1, mod_2] = node_1->calculate_draw_unit_updates().unpack();
         REQUIRE(mod_1->type == kaacore::DrawUnitModification::Type::insert);
         REQUIRE(mod_1->lookup_key.z_index == 100);
         REQUIRE(mod_2.has_value());
@@ -292,20 +296,28 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
     const auto gather_modifications =
         [](const kaacore::NodePtr node,
            std::vector<kaacore::DrawUnitModification>& out) {
-            if (node->has_draw_unit_updates()) {
-                auto [node_mod_1, node_mod_2] =
-                    node->calculate_draw_unit_updates();
-                if (node_mod_1) {
-                    out.push_back(*node_mod_1);
-                    node->clear_draw_unit_updates(node_mod_1->lookup_key);
-                } else {
-                    node->clear_draw_unit_updates(std::nullopt);
+            if (auto mods_pack = node->calculate_draw_unit_updates()) {
+                if (mods_pack.upsert_mod) {
+                    out.push_back(*mods_pack.upsert_mod);
                 }
-                if (node_mod_2) {
-                    out.push_back(*node_mod_2);
+                if (mods_pack.remove_mod) {
+                    out.push_back(*mods_pack.remove_mod);
                 }
+                node->clear_draw_unit_updates(mods_pack.new_lookup_key());
             }
+            node->clear_dirty_flags(
+                kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
         };
+
+    const auto reset_modifications = [](const kaacore::NodePtr node) {
+        if (auto mods_pack = node->calculate_draw_unit_updates()) {
+            node->clear_draw_unit_updates(mods_pack.new_lookup_key());
+        }
+        node->clear_dirty_flags(
+            kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
+            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+    };
 
     const auto validate_bucket_content =
         [](const kaacore::DrawBucket& db,
@@ -339,7 +351,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
     SECTION("Test lifecycle - insert and modify")
     {
         for (auto n : {node_2, node_3, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -353,7 +365,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         // simple position changes
         for (auto n : {node_2, node_3, node_4}) {
             n->position(n->position() + glm::dvec2{4., 10.});
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -368,7 +380,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
     SECTION("Test lifecycle - insert and swap buckets")
     {
         for (auto n : {node_2, node_3, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -383,7 +395,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         node_3->z_index(15);
         node_4->position({5., 0.});
         for (auto n : {node_2, node_3, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -411,7 +423,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
     SECTION("Test lifecycle - insert and remove all")
     {
         for (auto n : {node_2, node_3, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -424,7 +436,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         for (auto n : {node_2, node_3, node_4}) {
             n->z_index(15);
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -451,7 +463,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
     SECTION("Test lifecycle - insert and swap buckets and add new node")
     {
         for (auto n : {node_2, node_3, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -471,7 +483,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         node_5->shape(test_shape_2);
 
         for (auto n : {node_2, node_3, node_4, node_5}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -499,7 +511,7 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
     SECTION("Test lifecycle - toggle visibility")
     {
         for (auto n : {node_2, node_3, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
 
@@ -515,10 +527,10 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         node_4->visible(false);
 
         for (auto n : {node_2, node_4}) {
-            REQUIRE(n->has_draw_unit_updates());
+            REQUIRE(n->calculate_draw_unit_updates());
             gather_modifications(n, modifications);
         }
-        REQUIRE(not node_3->has_draw_unit_updates());
+        REQUIRE(not node_3->calculate_draw_unit_updates());
 
         REQUIRE(modifications.size() == 2);
 
@@ -528,5 +540,111 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_3});
+    }
+
+    SECTION("Test lifecycle - toggle visibility back and forth")
+    {
+        for (auto n : {node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            gather_modifications(n, modifications);
+        }
+
+        std::sort(modifications.begin(), modifications.end());
+        draw_bucket.consume_modifications(
+            modifications.begin(), modifications.end());
+        modifications.clear();
+
+        validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
+
+        node_2->visible(false);
+        node_3->visible(true);
+        node_4->visible(false);
+        node_4->visible(true);
+
+        for (auto n : {node_2, node_3, node_4}) {
+            if (n->calculate_draw_unit_updates()) {
+                gather_modifications(n, modifications);
+            }
+        }
+
+        REQUIRE(modifications.size() == 1);
+
+        std::sort(modifications.begin(), modifications.end());
+        draw_bucket.consume_modifications(
+            modifications.begin(), modifications.end());
+        modifications.clear();
+
+        validate_bucket_content(draw_bucket, {node_3, node_4});
+    }
+
+    SECTION("Test lifecycle - parent position change")
+    {
+        for (auto n : {node_1, node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            reset_modifications(n);
+        }
+
+        node_1->position({50., 50.});
+
+        for (auto n : {node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            gather_modifications(n, modifications);
+        }
+
+        REQUIRE(modifications.size() == 3);
+        for (auto& mod : modifications) {
+            REQUIRE(mod.type == kaacore::DrawUnitModification::Type::update);
+        }
+    }
+
+    SECTION("Test lifecycle - parent color change")
+    {
+        for (auto n : {node_1, node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            reset_modifications(n);
+        }
+
+        node_1->color({0., 1., 0., 1.});
+
+        REQUIRE(node_1->calculate_draw_unit_updates());
+        for (auto n : {node_2, node_3, node_4}) {
+            REQUIRE(not n->calculate_draw_unit_updates());
+        }
+    }
+
+    SECTION("Test lifecycle - parent position then color change")
+    {
+        for (auto n : {node_1, node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            reset_modifications(n);
+        }
+
+        node_1->position({50., 50.});
+        node_1->color({0., 1., 0., 1.});
+
+        for (auto n : {node_1, node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            REQUIRE(
+                n->calculate_draw_unit_updates().upsert_mod->type ==
+                kaacore::DrawUnitModification::Type::update);
+        }
+    }
+
+    SECTION("Test lifecycle - parent color then position change")
+    {
+        for (auto n : {node_1, node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            reset_modifications(n);
+        }
+
+        node_1->color({0., 1., 0., 1.});
+        node_1->position({50., 50.});
+
+        for (auto n : {node_1, node_2, node_3, node_4}) {
+            REQUIRE(n->calculate_draw_unit_updates());
+            REQUIRE(
+                n->calculate_draw_unit_updates().upsert_mod->type ==
+                kaacore::DrawUnitModification::Type::update);
+        }
     }
 }
