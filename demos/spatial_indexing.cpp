@@ -110,13 +110,9 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
 
         auto query_results = this->spatial_index.query_bounding_box(
             kaacore::BoundingBox{-50., -50., 50., 50.}, true);
-        auto query_results_for_drawing =
-            this->spatial_index.query_bounding_box_for_drawing(
-                kaacore::BoundingBox{-50., -50., 50., 50.});
+
         this->stats_text_node->text.content(
-            "Nodes visible (normal/drawing):\n" +
-            std::to_string(query_results.size()) + "/" +
-            std::to_string(query_results_for_drawing.size()));
+            "Nodes visible: " + std::to_string(query_results.size()));
     }
 };
 
