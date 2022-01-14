@@ -50,6 +50,7 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
         for (int i = -20; i <= 20; i++) {
             for (int j = -20; j <= 20; j++) {
                 kaacore::NodeOwnerPtr node = kaacore::make_node();
+                node->indexable(true);
                 node->shape(shapes[(i + j) % shapes.size()]);
                 node->position({10. * i, 10. * j});
                 node->color({0.5, 0.5, 0.5, 1.0});
@@ -109,13 +110,9 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
 
         auto query_results = this->spatial_index.query_bounding_box(
             kaacore::BoundingBox{-50., -50., 50., 50.}, true);
-        auto query_results_for_drawing =
-            this->spatial_index.query_bounding_box_for_drawing(
-                kaacore::BoundingBox{-50., -50., 50., 50.});
+
         this->stats_text_node->text.content(
-            "Nodes visible (normal/drawing):\n" +
-            std::to_string(query_results.size()) + "/" +
-            std::to_string(query_results_for_drawing.size()));
+            "Nodes visible: " + std::to_string(query_results.size()));
     }
 };
 
