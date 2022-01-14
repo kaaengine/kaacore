@@ -22,7 +22,7 @@ strategy:
       build_exe_directory: './Release/'
     macos:
       system_name: 'macos'
-      image_name: 'macOS-10.14'
+      image_name: 'macOS-10.15'
       cmake_generator: 'Unix Makefiles'
       cmake_generator_platform: ''
       build_exe_directory: './'
