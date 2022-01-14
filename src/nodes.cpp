@@ -236,6 +236,8 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
             } else if (n->_type == NodeType::hitbox) {
                 n->hitbox.attach_to_simulation();
             }
+
+            n->set_dirty_flags(DIRTY_MODEL_MATRIX);
         }
 
         std::for_each(
@@ -628,7 +630,7 @@ Transformation
 Node::get_relative_transformation(const Node* const ancestor)
 {
     if (ancestor == nullptr) {
-        return this->absolute_transformation();
+        return Transformation{this->_compute_model_matrix(glm::dmat4(1.0))};
     } else if (ancestor == this) {
         return Transformation{glm::dmat4(1.)};
     }
