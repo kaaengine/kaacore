@@ -515,12 +515,21 @@ Renderer::set_render_pass_state(const RenderPassState& state)
         return;
     }
 
-    if (state.clear_color.a) {
-        glm::fvec4 clear_color = state.clear_color;
-        bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
-        bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
+    if (state.has_custom_framebuffer()) {
+        auto flags = state.clear_flags;
+        for (auto i = 0; i < state.clear_colors.size(); ++i) {
+            glm::fvec4 clear_color = state.clear_colors[i];
+            bgfx::setPaletteColor(i, glm::value_ptr(clear_color));
+        }
+        bgfx::setViewClear(view_index, flags, 1.f, 0, 0, 1, 2, 3, 4, 5, 6, 7);
     } else {
-        bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
+        glm::fvec4 clear_color = state.clear_colors[0];
+        if (clear_color.a) {
+            bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
+            bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
+        } else {
+            bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
+        }
     }
 }
 

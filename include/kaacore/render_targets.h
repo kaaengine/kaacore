@@ -10,6 +10,8 @@ namespace kaacore {
 
 using FrameBufferId = uint32_t;
 using RenderTargetId = uint32_t;
+// setViewClear has only 8 slots for attachment clear values
+constexpr auto max_attachments_number = 8u;
 constexpr bgfx::FrameBufferHandle backbuffer_handle = BGFX_INVALID_HANDLE;
 
 void
@@ -28,9 +30,13 @@ class RenderTarget : public Texture {
     ~RenderTarget();
     static ResourceReference<RenderTarget> create();
     glm::uvec2 get_dimensions() const override;
+    glm::dvec4 clear_color() const;
+    void clear_color(const glm::dvec4& value);
 
   private:
     RenderTargetId _id;
+    bool _is_dirty = false;
+    glm::dvec4 _clear_color = {0, 0, 0, 0};
 
     RenderTarget(RenderTargetId id);
     void _reset();
@@ -47,6 +53,12 @@ class RenderTarget : public Texture {
 };
 
 class RenderPass;
+
+struct FrameBufferState {
+    bool requires_clear;
+    size_t active_attachments_number;
+    std::array<glm::dvec4, max_attachments_number> clear_colors;
+};
 
 class FrameBuffer : public Resource {
   public:
@@ -67,6 +79,7 @@ class FrameBuffer : public Resource {
         const FrameBufferId id,
         const std::vector<ResourceReference<RenderTarget>>& targets);
     void _reset();
+    FrameBufferState _take_snapshot();
     bgfx::FrameBufferHandle _create_frame_buffer();
     virtual void _initialize() override;
     virtual void _uninitialize() override;

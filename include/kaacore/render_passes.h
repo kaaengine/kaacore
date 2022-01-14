@@ -92,10 +92,11 @@ class Effect {
 
 struct RenderPassState {
     uint16_t index;
-    bool requires_clear;
     uint16_t clear_flags;
-    glm::dvec4 clear_color;
+    bool requires_clear;
+    size_t active_attachments_number;
     bgfx::FrameBufferHandle frame_buffer;
+    std::array<glm::dvec4, max_attachments_number> clear_colors;
 
     inline bool has_custom_framebuffer() const
     {
@@ -127,7 +128,6 @@ class RenderPass {
     std::optional<Effect> _effect;
     ResourceReference<FrameBuffer> _frame_buffer;
 
-    void _mark_dirty();
     RenderPassState _take_snapshot();
 
     friend class RenderPassesManager;

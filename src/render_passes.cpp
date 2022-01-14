@@ -111,7 +111,7 @@ void
 RenderPass::clear_color(const glm::dvec4& color)
 {
     this->_clear_color = color;
-    this->_mark_dirty();
+    this->_is_dirty = true;
 }
 
 std::optional<Effect>
@@ -146,26 +146,25 @@ RenderPass::render_targets()
     return std::nullopt;
 }
 
-void
-RenderPass::_mark_dirty()
-{
-    this->_is_dirty = true;
-}
-
 RenderPassState
 RenderPass::_take_snapshot()
 {
     RenderPassState result;
     result.index = this->_index;
-    result.requires_clear = this->_is_dirty;
     result.clear_flags = this->_clear_flags;
-    result.clear_color = this->_clear_color;
-    this->_is_dirty = false;
-
     if (this->_frame_buffer) {
+        auto fb_state = this->_frame_buffer->_take_snapshot();
+        result.requires_clear = fb_state.requires_clear;
+        result.active_attachments_number = fb_state.active_attachments_number;
         result.frame_buffer = this->_frame_buffer->_handle;
+        result.clear_colors = fb_state.clear_colors;
     } else {
+        result.requires_clear = this->_is_dirty;
+        result.active_attachments_number = 0;
         result.frame_buffer = backbuffer_handle;
+        result.clear_colors[0] = this->_clear_color;
+
+        this->_is_dirty = false;
     }
 
     return result;
@@ -213,7 +212,7 @@ void
 RenderPassesManager::_mark_dirty()
 {
     for (auto& pass : *this) {
-        pass._mark_dirty();
+        pass._is_dirty = true;
     }
 }
 

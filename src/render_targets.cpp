@@ -1,3 +1,5 @@
+#include <array>
+
 #include <bgfx/bgfx.h>
 
 #include "kaacore/engine.h"
@@ -79,6 +81,19 @@ RenderTarget::get_dimensions() const
     return this->_dimensions;
 }
 
+glm::dvec4
+RenderTarget::clear_color() const
+{
+    return this->_clear_color;
+}
+
+void
+RenderTarget::clear_color(const glm::dvec4& value)
+{
+    this->_clear_color = value;
+    this->_is_dirty = true;
+}
+
 void
 RenderTarget::_reset()
 {
@@ -138,7 +153,8 @@ FrameBuffer::~FrameBuffer()
 ResourceReference<FrameBuffer>
 FrameBuffer::create(const std::vector<ResourceReference<RenderTarget>>& targets)
 {
-    auto max_attachments = bgfx::getCaps()->limits.maxFBAttachments;
+    auto max_attachments = std::min(
+        bgfx::getCaps()->limits.maxFBAttachments, max_attachments_number);
     KAACORE_CHECK(
         targets.size() <= max_attachments,
         "The maximum supported number of render targets is {}.",
@@ -166,6 +182,23 @@ FrameBuffer::_reset()
     this->_handle = this->_create_frame_buffer();
 }
 
+FrameBufferState
+FrameBuffer::_take_snapshot()
+{
+    bool requires_clear = false;
+    std::array<glm::dvec4, max_attachments_number> clear_colors;
+    for (auto i = 0; i < this->_render_targets.size(); ++i) {
+        auto& render_target = this->_render_targets[i];
+        if (render_target->_is_dirty) {
+            requires_clear = true;
+            render_target->_is_dirty = false;
+        }
+        clear_colors[i] = render_target->_clear_color;
+    }
+
+    return {requires_clear, this->_render_targets.size(), clear_colors};
+}
+
 void
 FrameBuffer::_initialize()
 {
@@ -176,7 +209,7 @@ FrameBuffer::_initialize()
 bgfx::FrameBufferHandle
 FrameBuffer::_create_frame_buffer()
 {
-    std::vector<bgfx::Attachment> attachments(this->_render_targets.size());
+    std::array<bgfx::Attachment, max_attachments_number> attachments;
     for (auto i = 0; i < this->_render_targets.size(); ++i) {
         auto& render_target = this->_render_targets[i];
         attachments[i].init(render_target->_handle);
