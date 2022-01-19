@@ -35,6 +35,12 @@ struct Shape {
         const double radius, const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices,
         const std::vector<glm::dvec2>& bounding_points);
+    Shape(
+        const ShapeType type, const std::vector<glm::dvec2>& points,
+        const double radius, const std::vector<VertexIndex>& indices,
+        const std::vector<StandardVertexData>& vertices,
+        const BoundingBox<double> vertices_bbox,
+        const std::vector<glm::dvec2>& bounding_points);
 
     inline operator bool() const { return this->type != ShapeType::none; }
     bool operator==(const Shape& other);
@@ -48,6 +54,10 @@ struct Shape {
     static Shape Freeform(
         const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices);
+    static Shape Freeform(
+        const std::vector<VertexIndex>& indices,
+        const std::vector<StandardVertexData>& vertices,
+        const BoundingBox<double> bounding_box);
 
     Shape transform(const Transformation& transformation) const;
     bool contains_point(const glm::dvec2 point) const;

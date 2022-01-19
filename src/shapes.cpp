@@ -17,9 +17,19 @@ Shape::Shape(
     const double radius, const std::vector<VertexIndex>& indices,
     const std::vector<StandardVertexData>& vertices,
     const std::vector<glm::dvec2>& bounding_points)
+    : Shape(type, points, radius, indices, vertices,
+            BoundingBox<double>::from_points(bounding_points),
+            bounding_points)
+{}
+
+Shape::Shape(
+    const ShapeType type, const std::vector<glm::dvec2>& points,
+    const double radius, const std::vector<VertexIndex>& indices,
+    const std::vector<StandardVertexData>& vertices,
+    const BoundingBox<double> vertices_bbox,
+    const std::vector<glm::dvec2>& bounding_points)
     : type(type), points(points), radius(radius), indices(indices),
-      vertices(vertices),
-      vertices_bbox(BoundingBox<double>::from_points(bounding_points)),
+      vertices(vertices), vertices_bbox(vertices_bbox),
       bounding_points(bounding_points)
 {
     KAACORE_ASSERT(
@@ -192,6 +202,23 @@ Shape::Freeform(
                                                      {min_pt.x, max_pt.y}};
     return Shape(
         ShapeType::freeform, {}, 0., indices, vertices, bounding_points);
+}
+
+Shape
+Shape::Freeform(
+    const std::vector<VertexIndex>& indices,
+    const std::vector<StandardVertexData>& vertices,
+    const BoundingBox<double> bounding_box)
+{
+    const std::vector<glm::dvec2> bounding_points{
+        {bounding_box.min_x, bounding_box.min_y},
+        {bounding_box.max_x, bounding_box.min_y},
+        {bounding_box.max_x, bounding_box.max_y},
+        {bounding_box.min_x, bounding_box.max_y}
+    };
+
+    return Shape(
+        ShapeType::freeform, {}, 0., indices, vertices, bounding_box, bounding_points);
 }
 
 Shape
