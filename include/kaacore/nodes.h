@@ -310,7 +310,7 @@ class Node {
         std::optional<DrawBucketKey> current_key;
     } _draw_unit_data;
 
-    bool _indexable = true;
+    bool _indexable = false;
     NodeSpatialData _spatial_data;
 
     bool _marked_to_delete = false;
