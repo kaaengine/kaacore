@@ -237,7 +237,7 @@ class BodyNode {
     void torque(const double torque);
     double torque();
 
-    void angular_velocity(const double& angular_velocity);
+    void angular_velocity(const double angular_velocity);
     double angular_velocity();
 
     void damping(const std::optional<double>& damping);
@@ -296,16 +296,16 @@ class HitboxNode {
   public:
     SpaceNode* space() const;
 
-    void trigger_id(const CollisionTriggerId& trigger_id);
+    void trigger_id(const CollisionTriggerId trigger_id);
     CollisionTriggerId trigger_id();
 
-    void group(const CollisionGroup& group);
+    void group(const CollisionGroup group);
     CollisionGroup group();
 
-    void mask(const CollisionBitmask& mask);
+    void mask(const CollisionBitmask mask);
     CollisionBitmask mask();
 
-    void collision_mask(const CollisionBitmask& mask);
+    void collision_mask(const CollisionBitmask mask);
     CollisionBitmask collision_mask();
 
     void sensor(const bool sensor);

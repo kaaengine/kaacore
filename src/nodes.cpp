@@ -556,7 +556,7 @@ Node::absolute_rotation()
 }
 
 void
-Node::rotation(const double& rotation)
+Node::rotation(const double rotation)
 {
     this->_set_rotation(rotation);
     if (this->_type == NodeType::body) {
@@ -751,7 +751,7 @@ Node::visible()
 }
 
 void
-Node::visible(const bool& visible)
+Node::visible(const bool visible)
 {
     if (visible == this->_visible) {
         return;
@@ -768,7 +768,7 @@ Node::origin_alignment()
 }
 
 void
-Node::origin_alignment(const Alignment& alignment)
+Node::origin_alignment(const Alignment alignment)
 {
     if (alignment == this->_origin_alignment) {
         return;
@@ -796,7 +796,7 @@ Node::lifetime()
 }
 
 void
-Node::lifetime(const Duration& lifetime)
+Node::lifetime(const Duration lifetime)
 {
     this->_lifetime =
         std::chrono::duration_cast<HighPrecisionDuration>(lifetime);
