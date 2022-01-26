@@ -53,3 +53,21 @@ TEST_CASE("test_normalize_angle", "[geometry][normalize_angle][no_engine]")
     REQUIRE(normalize_angle(0., AngleSign::positive) == 0.);
     REQUIRE(normalize_angle(2 * M_PI, AngleSign::positive) == 0.);
 }
+
+TEST_CASE("test_bounding_box_operations_with_nan", "[geometry][bounding_box][no_engine]")
+{
+    using kaacore::BoundingBox;
+
+    BoundingBox<double> bbox_a{-10., -10., 10., 10.};
+    BoundingBox<double> bbox_nan;
+
+    SECTION("BoundingBox::merge__nan_left") {
+        auto bbox_out = bbox_nan.merge(bbox_a);
+        REQUIRE(bbox_out.is_nan());
+    }
+
+    SECTION("BoundingBox::merge__nan_right") {
+        auto bbox_out = bbox_a.merge(bbox_nan);
+        REQUIRE(bbox_out == bbox_a);
+    }
+}
