@@ -18,8 +18,9 @@ enum struct AttributeTransitionMethod {
     multiply = 3,
 };
 
-template<typename T, typename N, N Node::*N_member, T (N::*F_getter)()>
-T
+template<
+    typename N, N Node::*N_member, typename T_getter, T_getter (N::*F_getter)()>
+T_getter
 get_node_property(NodePtr node)
 {
     if constexpr (std::is_same_v<N, Node>) {
@@ -33,9 +34,10 @@ get_node_property(NodePtr node)
 }
 
 template<
-    typename T, typename N, N Node::*N_member, void (N::*F_setter)(const T&)>
+    typename N, N Node::*N_member, typename T_setter,
+    void (N::*F_setter)(T_setter)>
 void
-set_node_property(NodePtr node, const T value)
+set_node_property(NodePtr node, T_setter value)
 {
     if constexpr (std::is_same_v<N, Node>) {
         static_assert(N_member == nullptr);
@@ -87,10 +89,11 @@ struct NodeAttributeTransitionState : TransitionStateBase {
 };
 
 template<
-    typename T, typename N, N Node::*N_member, T (N::*F_getter)(),
-    void (N::*F_setter)(const T&)>
+    typename N, N Node::*N_member, typename T_getter, T_getter (N::*F_getter)(),
+    typename T_setter, void (N::*F_setter)(T_setter)>
 class NodeAttributeTransition : public NodeTransitionCustomizable {
     AttributeTransitionMethod _advance_method;
+    using T = T_getter;
     T _value_advance;
 
   public:
@@ -115,7 +118,7 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
     std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
     {
         return std::make_unique<NodeAttributeTransitionState<T>>(
-            get_node_property<T, N, N_member, F_getter>(node),
+            get_node_property<N, N_member, T_getter, F_getter>(node),
             this->_value_advance, this->_advance_method);
     }
 
@@ -125,32 +128,34 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
         auto state = static_cast<NodeAttributeTransitionState<T>*>(state_b);
         T new_value =
             glm::mix(state->origin_value, state->destination_value, t);
-        set_node_property<T, N, N_member, F_setter>(node, new_value);
+        set_node_property<N, N_member, T_setter, F_setter>(node, new_value);
     }
 };
 
 typedef NodeAttributeTransition<
-    glm::dvec2, Node, nullptr, &Node::position, &Node::position>
+    Node, nullptr, glm::dvec2, &Node::position, const glm::dvec2&,
+    &Node::position>
     NodePositionTransition;
 
 typedef NodeAttributeTransition<
-    double, Node, nullptr, &Node::rotation, &Node::rotation>
+    Node, nullptr, double, &Node::rotation, const double, &Node::rotation>
     NodeRotationTransition;
 
 typedef NodeAttributeTransition<
-    glm::dvec2, Node, nullptr, &Node::scale, &Node::scale>
+    Node, nullptr, glm::dvec2, &Node::scale, const glm::dvec2&, &Node::scale>
     NodeScaleTransition;
 
 typedef NodeAttributeTransition<
-    glm::dvec4, Node, nullptr, &Node::color, &Node::color>
+    Node, nullptr, glm::dvec4, &Node::color, const glm::dvec4&, &Node::color>
     NodeColorTransition;
 
 typedef NodeAttributeTransition<
-    glm::dvec2, BodyNode, &Node::body, &BodyNode::velocity, &BodyNode::velocity>
+    BodyNode, &Node::body, glm::dvec2, &BodyNode::velocity, const glm::dvec2&,
+    &BodyNode::velocity>
     BodyNodeVelocityTransition;
 
 typedef NodeAttributeTransition<
-    double, BodyNode, &Node::body, &BodyNode::angular_velocity,
+    BodyNode, &Node::body, double, &BodyNode::angular_velocity, const double,
     &BodyNode::angular_velocity>
     BodyNodeAngularVelocityTransition;
 
@@ -165,10 +170,11 @@ struct NodeAttributeSteppingTransitionState : TransitionStateBase {
 };
 
 template<
-    typename T, typename N, N Node::*N_member, T (N::*F_getter)(),
-    void (N::*F_setter)(const T&)>
+    typename N, N Node::*N_member, typename T_getter, T_getter (N::*F_getter)(),
+    typename T_setter, void (N::*F_setter)(T_setter)>
 class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
     AttributeTransitionMethod _advance_method;
+    using T = T_getter;
     std::vector<T> _steps;
 
   public:
@@ -193,7 +199,7 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
     std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
     {
         return std::make_unique<NodeAttributeSteppingTransitionState<T>>(
-            get_node_property<T, N, N_member, F_getter>(node));
+            get_node_property<N, N_member, T_getter, F_getter>(node));
     }
 
     void evaluate(
@@ -211,7 +217,7 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
         if (target_step != state->last_step_index) {
             state->last_step_index = target_step;
             const auto advance_value = this->_steps[target_step];
-            set_node_property<T, N, N_member, F_setter>(
+            set_node_property<N, N_member, T_setter, F_setter>(
                 node,
                 calculate_attribute_advancement(
                     state->origin_value, advance_value, this->_advance_method));
@@ -220,27 +226,29 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
 };
 
 typedef NodeAttributeSteppingTransition<
-    glm::dvec2, Node, nullptr, &Node::position, &Node::position>
+    Node, nullptr, glm::dvec2, &Node::position, const glm::dvec2&,
+    &Node::position>
     NodePositionSteppingTransition;
 
 typedef NodeAttributeSteppingTransition<
-    double, Node, nullptr, &Node::rotation, &Node::rotation>
+    Node, nullptr, double, &Node::rotation, const double, &Node::rotation>
     NodeRotationSteppingTransition;
 
 typedef NodeAttributeSteppingTransition<
-    glm::dvec2, Node, nullptr, &Node::scale, &Node::scale>
+    Node, nullptr, glm::dvec2, &Node::scale, const glm::dvec2&, &Node::scale>
     NodeScaleSteppingTransition;
 
 typedef NodeAttributeSteppingTransition<
-    glm::dvec4, Node, nullptr, &Node::color, &Node::color>
+    Node, nullptr, glm::dvec4, &Node::color, const glm::dvec4&, &Node::color>
     NodeColorSteppingTransition;
 
 typedef NodeAttributeSteppingTransition<
-    glm::dvec2, BodyNode, &Node::body, &BodyNode::velocity, &BodyNode::velocity>
+    BodyNode, &Node::body, glm::dvec2, &BodyNode::velocity, const glm::dvec2&,
+    &BodyNode::velocity>
     BodyNodeVelocitySteppingTransition;
 
 typedef NodeAttributeSteppingTransition<
-    double, BodyNode, &Node::body, &BodyNode::angular_velocity,
+    BodyNode, &Node::body, double, &BodyNode::angular_velocity, const double,
     &BodyNode::angular_velocity>
     BodyNodeAngularVelocitySteppingTransition;
 
@@ -249,9 +257,11 @@ struct _NodeSteppingTransitionBasicState : TransitionStateBase {
 };
 
 template<
-    typename T, typename N, N Node::*N_member, void (N::*F_setter)(const T&)>
+    typename N, N Node::*N_member, typename T_setter,
+    void (N::*F_setter)(T_setter)>
 class NodeInoperableAttributeSteppingTransition
     : public NodeTransitionCustomizable {
+    using T = std::decay_t<T_setter>;
     std::vector<T> _steps;
 
   public:
@@ -285,22 +295,22 @@ class NodeInoperableAttributeSteppingTransition
 
         if (target_step != state->last_step_index) {
             state->last_step_index = target_step;
-            set_node_property<T, N, N_member, F_setter>(
+            set_node_property<N, N_member, T_setter, F_setter>(
                 node, this->_steps[target_step]);
         };
     }
 };
 
 typedef NodeInoperableAttributeSteppingTransition<
-    Sprite, Node, nullptr, &Node::sprite>
+    Node, nullptr, const Sprite&, &Node::sprite>
     NodeSpriteTransition;
 
 typedef NodeInoperableAttributeSteppingTransition<
-    Shape, Node, nullptr, &Node::shape>
+    Node, nullptr, const Shape&, &Node::shape>
     NodeShapeSteppingTransition;
 
 typedef NodeInoperableAttributeSteppingTransition<
-    std::optional<int16_t>, Node, nullptr, &Node::z_index>
+    Node, nullptr, const std::optional<int16_t>&, &Node::z_index>
     NodeZIndexSteppingTransition;
 
 } // namespace kaacore

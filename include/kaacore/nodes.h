@@ -81,7 +81,7 @@ class Node {
 
     double rotation();
     double absolute_rotation();
-    void rotation(const double& rotation);
+    void rotation(const double rotation);
 
     glm::dvec2 scale();
     glm::dvec2 absolute_scale();
@@ -111,13 +111,13 @@ class Node {
     void color(const glm::dvec4& color);
 
     bool visible();
-    void visible(const bool& visible);
+    void visible(const bool visible);
 
     Alignment origin_alignment();
-    void origin_alignment(const Alignment& alignment);
+    void origin_alignment(const Alignment alignment);
 
     Duration lifetime();
-    void lifetime(const Duration& lifetime);
+    void lifetime(const Duration lifetime);
 
     NodeTransitionHandle transition();
     void transition(const NodeTransitionHandle& transition);
