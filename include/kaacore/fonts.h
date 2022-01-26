@@ -44,6 +44,20 @@ const int font_sdf_edge_value = 180;
 const float font_sdf_pixel_dist_scale =
     font_sdf_edge_value / double(font_sdf_padding);
 
+struct FontMetrics {
+    FontMetrics() = default;
+    inline FontMetrics(
+        const double ascent, const double descent, const double line_gap)
+        : ascent(ascent), descent(descent), line_gap(line_gap)
+    {}
+    FontMetrics scale_for_pixel_height(const double font_pixel_height) const;
+    double height() const;
+
+    double ascent;
+    double descent;
+    double line_gap;
+};
+
 struct FontRenderGlyph {
     UnicodeCodepoint codepoint;
     glm::dvec2 offset;
@@ -61,10 +75,14 @@ struct FontRenderGlyph {
         double scale_factor, const glm::dvec2 inv_texture_size,
         const FontRenderGlyph& other_glyph);
 
+    bool has_size() const;
+
     static void arrange_glyphs(
         std::vector<FontRenderGlyph>& render_glyphs, const double indent,
         const double line_height, const double line_width = INFINITY);
-    static Shape make_shape(const std::vector<FontRenderGlyph>& render_glyphs);
+    static Shape make_shape(
+        const std::vector<FontRenderGlyph>& render_glyphs,
+        const FontMetrics font_metrics);
 };
 
 class FontData : public Resource {
@@ -72,6 +90,7 @@ class FontData : public Resource {
     const std::string path;
     BakedFontData baked_font;
     ResourceReference<Texture> baked_texture;
+    FontMetrics font_metrics;
 
     ~FontData();
     static ResourceReference<FontData> load(const std::string& path);
@@ -80,12 +99,13 @@ class FontData : public Resource {
         const std::string& text, double size, double indent, double max_width);
     std::vector<FontRenderGlyph> generate_render_glyphs(
         const std::string& text, const double scale_factor);
+    inline FontMetrics metrics() { return this->font_metrics; }
 
   private:
     FontData(const std::string& path);
     FontData(
         const ResourceReference<Texture> baked_texture,
-        const BakedFontData baked_font);
+        const BakedFontData baked_font, const FontMetrics font_metrics);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 

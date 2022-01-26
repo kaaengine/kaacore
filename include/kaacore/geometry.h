@@ -120,7 +120,7 @@ struct BoundingBox {
         : min_x(min_x), min_y(min_y), max_x(max_x), max_y(max_y)
     {}
 
-    bool operator==(const BoundingBox<T>& other)
+    bool operator==(const BoundingBox<T>& other) const
     {
         return (
             this->min_x == other.min_x and this->min_y == other.min_y and
@@ -134,7 +134,7 @@ struct BoundingBox {
             std::isnan(this->min_y) or std::isnan(this->max_y));
     }
 
-    BoundingBox<T> merge(const BoundingBox<T>& other)
+    BoundingBox<T> merge(const BoundingBox<T>& other) const
     {
         return BoundingBox<T>{glm::min(this->min_x, other.min_x),
                               glm::min(this->min_y, other.min_y),
@@ -142,28 +142,28 @@ struct BoundingBox {
                               glm::max(this->max_y, other.max_y)};
     }
 
-    bool contains(const BoundingBox<T>& bbox)
+    bool contains(const BoundingBox<T>& bbox) const
     {
         return (
             this->min_x <= bbox.min_x and this->max_x >= bbox.max_x and
             this->min_y <= bbox.min_y and this->max_y >= bbox.max_y);
     }
 
-    bool contains(const glm::tvec2<T> point)
+    bool contains(const glm::tvec2<T> point) const
     {
         return (
             this->min_x <= point.x and this->max_x >= point.x and
             this->min_y <= point.y and this->max_y >= point.y);
     }
 
-    bool intersects(const BoundingBox<T>& other)
+    bool intersects(const BoundingBox<T>& other) const
     {
         return (
             this->min_x <= other.max_x and other.min_x <= this->max_x and
             this->min_y <= other.max_y and other.min_y <= this->max_y);
     }
 
-    BoundingBox intersection(const BoundingBox<T>& other)
+    BoundingBox intersection(const BoundingBox<T>& other) const
     {
         auto min_x = glm::max<T>(this->min_x, other.min_x);
         auto min_y = glm::max<T>(this->min_y, other.min_y);
@@ -177,19 +177,19 @@ struct BoundingBox {
         return BoundingBox<T>(min_x, min_y, max_x, max_y);
     }
 
-    BoundingBox<T> grow(glm::tvec2<T> vec)
+    BoundingBox<T> grow(glm::tvec2<T> vec) const
     {
         return BoundingBox<T>{this->min_x - vec.x, this->min_y - vec.y,
                               this->max_x + vec.x, this->max_y + vec.y};
     }
 
-    glm::tvec2<T> center()
+    glm::tvec2<T> center() const
     {
         return {(this->max_x + this->min_x) / 2,
                 (this->max_y + this->min_y) / 2};
     }
 
-    glm::tvec2<T> dimensions()
+    glm::tvec2<T> dimensions() const
     {
         return {this->max_x - this->min_x, this->max_y - this->min_y};
     }
