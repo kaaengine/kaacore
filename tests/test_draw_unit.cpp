@@ -647,4 +647,73 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                 kaacore::DrawUnitModification::Type::update);
         }
     }
+
+    SECTION("Test node basic changes - change position")
+    {
+        auto node_new_owner = kaacore::make_node();
+        kaacore::NodePtr node_new = node_1->add_child(node_new_owner);
+
+        node_new->position({50., 50.});
+        node_new->shape(test_shape_1);
+        REQUIRE(node_new->calculate_draw_unit_updates());
+        REQUIRE(
+            node_new->calculate_draw_unit_updates().upsert_mod->type ==
+            kaacore::DrawUnitModification::Type::insert);
+        reset_modifications(node_new);
+
+        node_new->position({100., 100.});
+
+        REQUIRE(node_new->calculate_draw_unit_updates());
+        REQUIRE(
+            node_new->calculate_draw_unit_updates().upsert_mod->type ==
+            kaacore::DrawUnitModification::Type::update);
+    }
+
+    SECTION("Test node basic changes - add shape")
+    {
+        auto node_new_owner = kaacore::make_node();
+        kaacore::NodePtr node_new = node_1->add_child(node_new_owner);
+
+        node_new->position({50., 50.});
+        // no shape added yet
+        REQUIRE(not node_new->calculate_draw_unit_updates());
+
+        node_new->shape(test_shape_1);
+        REQUIRE(node_new->calculate_draw_unit_updates());
+        REQUIRE(
+            node_new->calculate_draw_unit_updates().upsert_mod->type ==
+            kaacore::DrawUnitModification::Type::insert);
+        REQUIRE(
+            node_new->calculate_draw_unit_updates().remove_mod == std::nullopt);
+    }
+
+    SECTION("Test fonts - empty string to some text and text update")
+    {
+        auto node_txt_owner = kaacore::make_node(kaacore::NodeType::text);
+        kaacore::NodePtr node_txt = node_1->add_child(node_txt_owner);
+
+        node_txt->text.content("");
+        // no shape at this point
+        REQUIRE(not node_txt->calculate_draw_unit_updates());
+
+        node_txt->text.content("Hello World!");
+
+        REQUIRE(node_txt->calculate_draw_unit_updates());
+        REQUIRE(
+            node_txt->calculate_draw_unit_updates().upsert_mod->type ==
+            kaacore::DrawUnitModification::Type::insert);
+        REQUIRE(
+            node_txt->calculate_draw_unit_updates().remove_mod == std::nullopt);
+        reset_modifications(node_txt);
+
+        node_txt->text.content("Hello KAA!");
+
+        REQUIRE(node_txt->calculate_draw_unit_updates());
+        REQUIRE(
+            node_txt->calculate_draw_unit_updates().upsert_mod->type ==
+            kaacore::DrawUnitModification::Type::update);
+        REQUIRE(
+            node_txt->calculate_draw_unit_updates().remove_mod == std::nullopt);
+        reset_modifications(node_txt);
+    }
 }

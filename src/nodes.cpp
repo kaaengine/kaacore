@@ -393,7 +393,6 @@ Node::calculate_draw_unit_updates()
         is_visible ? std::optional<DrawBucketKey>{this->_make_draw_bucket_key()}
                    : std::nullopt;
     const bool changed_draw_bucket_key =
-        this->query_dirty_flags(DIRTY_DRAW_KEYS) and
         this->_draw_unit_data.current_key != calculated_draw_bucket_key;
     const bool changed_vertices_indices =
         this->query_dirty_flags(DIRTY_DRAW_VERTICES);
