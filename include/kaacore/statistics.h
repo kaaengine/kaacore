@@ -4,6 +4,7 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -44,6 +45,7 @@ class FrameStatisticTracker {
 class StatisticsManager {
   public:
     void push_value(const std::string& stat_name, const double value);
+    std::optional<StatisticAnalysis> get_analysis(const std::string& name);
     std::vector<std::pair<std::string, StatisticAnalysis>> get_analysis_all();
     std::vector<std::pair<std::string, double>> get_last_all();
 

@@ -7,11 +7,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "kaacore/capture.h"
 #include "kaacore/draw_queue.h"
 #include "kaacore/draw_unit.h"
 #include "kaacore/files.h"
 #include "kaacore/log.h"
 #include "kaacore/materials.h"
+#include "kaacore/renderer_callbacks.h"
 #include "kaacore/resources.h"
 #include "kaacore/shaders.h"
 #include "kaacore/textures.h"
@@ -66,8 +68,9 @@ class Renderer {
     void destroy_texture(const bgfx::TextureHandle& handle) const;
     void begin_frame();
     void end_frame();
+    void final_frame();
     void push_statistics() const;
-    void reset();
+    void reset(bool no_flags = false);
     void process_view(View& view) const;
     void render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit);
     void render_draw_bucket(
@@ -75,14 +78,21 @@ class Renderer {
     void render_draw_queue(const DrawQueue& draw_queue);
     void set_global_uniforms(const float last_dt, const float scene_time);
     static std::unordered_set<std::string>& reserved_uniform_names();
+    void setup_capture();
+    void clear_capture();
+    CapturedFrames get_captured_frames() const;
 
   private:
-    bool _vertical_sync = true;
-
     uint32_t _calculate_reset_flags() const;
     void _submit_draw_bucket_state(const DrawBucketKey& key);
     bgfx::RendererType::Enum _choose_bgfx_renderer(
         const std::string& name) const;
+
+    bool _needs_reset = false;
+    bool _vertical_sync = true;
+    std::unique_ptr<CapturingAdapter> _capturing_adapter;
+
+    RendererCallbacks _renderer_callbacks;
 
     friend class Engine;
 };

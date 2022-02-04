@@ -25,6 +25,7 @@ constexpr std::array _log_categories{
     "fonts"sv, "timers"sv, "transitions"sv, "node_transitions"sv, "camera"sv,
     "views"sv, "spatial_index"sv, "threading"sv, "utils"sv, "embedded_data"sv,
     "easings"sv, "shaders"sv, "statistics"sv, "draw_unit"sv, "draw_queue"sv,
+    "renderer_callbacks"sv, "capture"sv,
     // special-purpose categories
     "other"sv, "app"sv, "wrapper"sv};
 

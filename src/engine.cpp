@@ -62,7 +62,8 @@ get_persistent_path(
 Engine::Engine(
     const glm::uvec2& virtual_resolution,
     const VirtualResolutionMode vr_mode) noexcept(false)
-    : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
+    : _virtual_resolution(virtual_resolution),
+      _virtual_resolution_mode(vr_mode), _runtime_handler(nullptr)
 {
     std::scoped_lock<std::mutex> lock(init_mutex);
     KAACORE_CHECK(engine == nullptr, "Engine already initialized.");
@@ -154,17 +155,37 @@ Engine::~Engine()
 }
 
 void
-Engine::run(Scene* scene)
+Engine::run_with_handler(EngineRuntimeHandler* runtime_handler, Scene* scene)
 {
+    KAACORE_CHECK(
+        runtime_handler != nullptr, "No EngineRuntimeHandler provided.");
+    auto handler_scope_guard =
+        runtime_handler->attach(this, &this->_runtime_handler);
     this->_scene = scene;
-
-    this->window->_activate();
 #if KAACORE_MULTITHREADING_MODE
     this->_main_thread_entrypoint();
 #else
     this->_single_thread_entrypoint();
 #endif
+}
+
+void
+Engine::run(Scene* scene)
+{
+    BasicEngineRuntimeHandler runtime_handler;
+    this->window->_activate();
+    this->run_with_handler(&runtime_handler, scene);
     this->window->_deactivate();
+}
+
+CapturedFrames
+Engine::run_capture(
+    Scene* scene, const uint32_t frames_limit, const Duration fixed_dt)
+{
+    CapturingEngineRuntimeHandler capturing_runtime_handler{frames_limit,
+                                                            fixed_dt};
+    this->run_with_handler(&capturing_runtime_handler, scene);
+    return capturing_runtime_handler.get_captured_frames();
 }
 
 void
@@ -251,17 +272,28 @@ Engine::get_displays()
 Duration
 Engine::total_time() const
 {
-    return this->_total_time;
+    return std::chrono::duration_cast<Duration>(
+        this->runtime_handler()->total_time());
 }
 
 double
 Engine::get_fps() const
 {
-    auto duration = this->clock.average_duration();
-    if (duration > 0us) {
-        return 1.s / duration;
+    const auto stats =
+        get_global_statistics_manager().get_analysis("engine.frame:time");
+    if (stats) {
+        return 1. / stats->mean_value;
     }
-    return 0;
+    return 0.;
+}
+
+EngineRuntimeHandler*
+Engine::runtime_handler() const
+{
+    KAACORE_CHECK(
+        this->_runtime_handler != nullptr,
+        "Engine loop is not running currently.");
+    return this->_runtime_handler;
 }
 
 bgfx::Init
@@ -292,6 +324,7 @@ Engine::_gather_platform_data()
     bgfx_init_data.platformData.backBuffer = nullptr;
     bgfx_init_data.platformData.backBufferDS = nullptr;
     bgfx_init_data.debug = true;
+
     return bgfx_init_data;
 }
 
@@ -301,9 +334,13 @@ Engine::_scene_processing()
     this->is_running = true;
     try {
         KAACORE_LOG_INFO("Engine is running.");
+        this->runtime_handler()->on_session_start();
         this->_scene->on_enter();
-        while (this->is_running) {
-            auto dt = this->clock.measure();
+        while (this->is_running and
+               this->runtime_handler()->check_loop_condition()) {
+            this->runtime_handler()->on_frame_start();
+            HighPrecisionDuration dt = this->runtime_handler()->measure_time();
+
             {
                 StopwatchStatAutoPusher stopwatch{"engine.frame:time"};
                 this->renderer->begin_frame();
@@ -318,7 +355,6 @@ Engine::_scene_processing()
                 auto scaled_dt =
                     std::chrono::duration_cast<HighPrecisionDuration>(
                         scaled_dt_sec);
-                this->_total_time += scaled_dt_sec;
                 {
                     StopwatchStatAutoPusher stopwatch{"scene.update:time"};
                     this->_scene->process_update(scaled_dt_sec);
@@ -342,21 +378,25 @@ Engine::_scene_processing()
                 this->_scene->remove_marked_nodes();
             }
 
+            this->renderer->push_statistics();
             if (this->udp_stats_exporter) {
-                this->renderer->push_statistics();
                 this->udp_stats_exporter->send_sync(
                     get_global_statistics_manager().get_last_all());
             }
+
+            this->runtime_handler()->on_frame_end();
         }
         this->_scene->on_exit();
         KAACORE_LOG_INFO("Engine stopped.");
     } catch (...) {
         this->_detach_scenes();
+        this->runtime_handler()->on_session_end();
         this->is_running = false;
         throw;
     }
     this->_detach_scenes();
     this->is_running = false;
+    this->runtime_handler()->on_session_end();
 }
 
 void
@@ -460,7 +500,7 @@ Engine::_engine_thread_entrypoint()
             KAACORE_ASSERT(this->_scene, "Running scene not selected.");
             this->_engine_loop_state.set(EngineLoopState::running);
             this->_scene_processing();
-        } catch (const std::exception exc) {
+        } catch (const std::exception& exc) {
             KAACORE_LOG_ERROR(
                 "Engine loop interrupted by exception: {}", exc.what());
             this->_engine_loop_exception = std::current_exception();
@@ -469,7 +509,7 @@ Engine::_engine_thread_entrypoint()
         this->_engine_loop_state.set(EngineLoopState::stopping);
         KAACORE_LOG_DEBUG("Rendering final frame.");
         // render one more frame to stop waiting renderFrame() from main thread
-        this->renderer->end_frame();
+        this->renderer->final_frame();
         KAACORE_LOG_INFO("Engine loop stopped.");
     }
 }
@@ -540,6 +580,142 @@ Scene*
 Engine::_ScenePointerWrapper::data()
 {
     return this->_scene_ptr;
+}
+
+EngineRuntimeHandler::EngineRuntimeHandler()
+    : _engine(nullptr), _handler_slot(nullptr), _total_running_time(0u),
+      _total_frames_count(0u)
+{}
+
+EngineRuntimeHandler::~EngineRuntimeHandler() {}
+
+HighPrecisionDuration
+EngineRuntimeHandler::total_time() const
+{
+    return this->_total_running_time;
+}
+
+uint32_t
+EngineRuntimeHandler::total_frames() const
+{
+    return this->_total_frames_count;
+}
+
+EngineRuntimeHandler::ScopeGuard
+EngineRuntimeHandler::attach(
+    Engine* engine, EngineRuntimeHandler** runtime_handler_slot)
+{
+    KAACORE_CHECK(engine != nullptr, "`engine` cannot be NULL.");
+    KAACORE_CHECK(
+        runtime_handler_slot != nullptr,
+        "`runtime_handler_slot` cannot be NULL.");
+    KAACORE_CHECK(
+        *runtime_handler_slot == nullptr, "Runtime handler is already set.");
+
+    EngineRuntimeHandler::ScopeGuard scope_guard{this};
+    this->_engine = engine;
+    this->_handler_slot = runtime_handler_slot;
+    *this->_handler_slot = this;
+    this->on_attach();
+
+    return scope_guard;
+}
+
+void
+EngineRuntimeHandler::on_attach()
+{}
+
+void
+EngineRuntimeHandler::on_session_start()
+{}
+
+void
+EngineRuntimeHandler::on_frame_start()
+{}
+
+bool
+EngineRuntimeHandler::check_loop_condition() const
+{
+    return true;
+}
+
+HighPrecisionDuration
+EngineRuntimeHandler::measure_time()
+{
+    auto elapsed_time = this->get_elapsed_time();
+    this->_total_running_time += elapsed_time;
+    this->_total_frames_count++;
+    return elapsed_time;
+}
+
+void
+EngineRuntimeHandler::on_frame_end()
+{}
+
+void
+EngineRuntimeHandler::on_session_end()
+{}
+
+void
+EngineRuntimeHandler::on_detach() noexcept
+{}
+
+void
+EngineRuntimeHandler::handle_detach() noexcept
+{
+    this->on_detach();
+    *this->_handler_slot = nullptr;
+    this->_handler_slot = nullptr;
+    this->_engine = nullptr;
+}
+
+void
+BasicEngineRuntimeHandler::on_session_start()
+{
+    this->_clock.reset();
+}
+
+HighPrecisionDuration
+BasicEngineRuntimeHandler::get_elapsed_time()
+{
+    return this->_clock.measure();
+}
+
+CapturingEngineRuntimeHandler::CapturingEngineRuntimeHandler(
+    const uint32_t frames_limit, const Duration fixed_dt)
+    : _frames_limit(frames_limit),
+      _fixed_dt(std::chrono::duration_cast<HighPrecisionDuration>(fixed_dt))
+{}
+
+void
+CapturingEngineRuntimeHandler::on_session_start()
+{
+    this->_engine->renderer->setup_capture();
+}
+
+bool
+CapturingEngineRuntimeHandler::check_loop_condition() const
+{
+    return this->_total_frames_count < this->_frames_limit;
+}
+
+void
+CapturingEngineRuntimeHandler::on_session_end()
+{
+    this->_captured_frames = this->_engine->renderer->get_captured_frames();
+    this->_engine->renderer->clear_capture();
+}
+
+HighPrecisionDuration
+CapturingEngineRuntimeHandler::get_elapsed_time()
+{
+    return this->_fixed_dt;
+}
+
+CapturedFrames
+CapturingEngineRuntimeHandler::get_captured_frames() const
+{
+    return this->_captured_frames;
 }
 
 } // namespace kaacore

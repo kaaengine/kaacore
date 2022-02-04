@@ -173,6 +173,7 @@ DefaultShadingContext::destroy()
 Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
 {
     KAACORE_LOG_INFO("Initializing bgfx.");
+    bgfx_init_data.callback = &this->_renderer_callbacks;
     bgfx_init_data.resolution.width = window_size.x;
     bgfx_init_data.resolution.height = window_size.y;
 
@@ -311,6 +312,10 @@ Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 void
 Renderer::begin_frame()
 {
+    if (this->_needs_reset) {
+        this->reset();
+        this->_needs_reset = false;
+    }
     for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
         bgfx::setViewMode(i, bgfx::ViewMode::DepthAscending);
     }
@@ -323,6 +328,13 @@ Renderer::end_frame()
     for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
         bgfx::touch(i);
     }
+    bgfx::frame();
+}
+
+void
+Renderer::final_frame()
+{
+    this->reset(true);
     bgfx::frame();
 }
 
@@ -354,11 +366,13 @@ Renderer::push_statistics() const
 }
 
 void
-Renderer::reset()
+Renderer::reset(bool no_flags)
 {
     KAACORE_LOG_DEBUG("Calling Renderer::reset()");
     auto window_size = get_engine()->window->_peek_size();
-    bgfx::reset(window_size.x, window_size.y, this->_calculate_reset_flags());
+    bgfx::reset(
+        window_size.x, window_size.y,
+        no_flags ? 0 : this->_calculate_reset_flags());
 
     glm::uvec2 view_size, border_size;
     auto virtual_resolution = get_engine()->virtual_resolution();
@@ -546,7 +560,8 @@ Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
 uint32_t
 Renderer::_calculate_reset_flags() const
 {
-    return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
+    return (this->_capturing_adapter != nullptr ? BGFX_RESET_CAPTURE : 0) |
+           (this->_vertical_sync ? BGFX_RESET_VSYNC : 0);
 }
 
 bgfx::RendererType::Enum
@@ -570,6 +585,37 @@ Renderer::_choose_bgfx_renderer(const std::string& renderer_name) const
         throw exception(
             fmt::format("Unsupported renderer: {}.\n", renderer_name));
     }
+}
+
+void
+Renderer::setup_capture()
+{
+    KAACORE_ASSERT(
+        this->_renderer_callbacks.capturing_adapter == nullptr,
+        "capturing_adapter already set");
+    this->_capturing_adapter = std::make_unique<CapturingAdapter>();
+    this->_renderer_callbacks.capturing_adapter =
+        this->_capturing_adapter.get();
+    this->_needs_reset = true;
+}
+
+void
+Renderer::clear_capture()
+{
+    KAACORE_ASSERT(
+        this->_renderer_callbacks.capturing_adapter != nullptr,
+        "capturing_adapter is not set");
+    this->_renderer_callbacks.capturing_adapter = nullptr;
+    this->_capturing_adapter.reset(nullptr);
+    this->_needs_reset = true;
+}
+
+CapturedFrames
+Renderer::get_captured_frames() const
+{
+    KAACORE_ASSERT(
+        this->_capturing_adapter != nullptr, "capturing_adapter is not set");
+    return this->_capturing_adapter->get_captured_frames();
 }
 
 } // namespace kaacore
