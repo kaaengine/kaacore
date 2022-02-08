@@ -71,17 +71,14 @@ uninitialize_fonts()
 
 std::vector<GlyphSDF>
 _rasterize_sdf_bitmaps(
-    const stbtt_fontinfo& font_info, const double font_baking_size,
+    const stbtt_fontinfo& font_info, const double font_baking_scale,
     const UnicodeCodepoint first_glyph_index, const size_t glyphs_count)
 {
     std::vector<GlyphSDF> sdfs;
-    const double font_specific_scale =
-        stbtt_ScaleForPixelHeight(&font_info, font_baking_size);
 
     for (UnicodeCodepoint codepoint = first_glyph_index;
          codepoint < (first_glyph_index + glyphs_count); codepoint++) {
-        auto& sdf =
-            sdfs.emplace_back(font_info, codepoint, font_specific_scale);
+        auto& sdf = sdfs.emplace_back(font_info, codepoint, font_baking_scale);
         KAACORE_LOG_TRACE(
             "Generated SDF glyph for character: #{}, dimensions: ({}, {}), "
             "offset: ({}, {})",
@@ -156,7 +153,7 @@ _pack_sdf_glyphs(
     return {baked_font_image, baked_font_data};
 }
 
-std::pair<bimg::ImageContainer*, BakedFontData>
+std::tuple<bimg::ImageContainer*, BakedFontData, FontMetrics>
 bake_font_texture(const uint8_t* font_file_content, const size_t size)
 {
     if (memcmp(
@@ -166,23 +163,55 @@ bake_font_texture(const uint8_t* font_file_content, const size_t size)
             "Provided file is not TTF - magic number mismatched.");
     }
 
+    KAACORE_LOG_DEBUG("Loading font data.");
     stbtt_fontinfo font_info;
     font_info.userdata = nullptr;
     stbtt_InitFont(
         &font_info, font_file_content,
         stbtt_GetFontOffsetForIndex(font_file_content, 0));
 
+    const double font_baking_scale =
+        stbtt_ScaleForPixelHeight(&font_info, font_baker_pixel_height);
+    KAACORE_LOG_DEBUG(
+        "Calculated font baking scale: {:.4f}", font_baking_scale);
+
     auto sdf_bitmaps = _rasterize_sdf_bitmaps(
-        font_info, font_baker_pixel_height, font_baker_first_glyph,
+        font_info, font_baking_scale, font_baker_first_glyph,
         font_baker_glyphs_count);
-    return _pack_sdf_glyphs(font_info, sdf_bitmaps);
+    auto [image_container, baked_font_data] =
+        _pack_sdf_glyphs(font_info, sdf_bitmaps);
+
+    int ascent, descent, line_gap;
+    stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &line_gap);
+    FontMetrics font_metrics{static_cast<double>(ascent),
+                             static_cast<double>(descent),
+                             static_cast<double>(line_gap)};
+    KAACORE_LOG_DEBUG(
+        "Font metrics - ascent: {:.2f}, descent: {:.2f}, line gap: {:.2f}",
+        font_metrics.ascent, font_metrics.descent, font_metrics.line_gap);
+
+    return {image_container, baked_font_data, font_metrics};
 }
 
-std::pair<bimg::ImageContainer*, BakedFontData>
+std::tuple<bimg::ImageContainer*, BakedFontData, FontMetrics>
 bake_font_texture(const File& font_file)
 {
     return bake_font_texture(
         font_file.content.data(), font_file.content.size());
+}
+
+FontMetrics
+FontMetrics::scale_for_pixel_height(const double font_pixel_height) const
+{
+    const double scaling = font_pixel_height / this->height();
+    return {this->ascent * scaling, this->descent * scaling,
+            this->line_gap * scaling};
+}
+
+double
+FontMetrics::height() const
+{
+    return (this->ascent - this->descent);
 }
 
 FontRenderGlyph::FontRenderGlyph(
@@ -210,6 +239,12 @@ FontRenderGlyph::FontRenderGlyph(
     : FontRenderGlyph(codepoint, glyph_data, scale_factor, inv_texture_size)
 {
     this->position.x = other_glyph.position.x + other_glyph.advance;
+}
+
+bool
+FontRenderGlyph::has_size() const
+{
+    return this->size.x > 0 and this->size.y > 0;
 }
 
 void
@@ -252,7 +287,9 @@ FontRenderGlyph::arrange_glyphs(
 }
 
 Shape
-FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
+FontRenderGlyph::make_shape(
+    const std::vector<FontRenderGlyph>& render_glyphs,
+    const FontMetrics font_metrics)
 {
     if (render_glyphs.empty()) {
         return Shape{};
@@ -260,6 +297,7 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
 
     std::vector<StandardVertexData> vertices;
     std::vector<VertexIndex> indices;
+    BoundingBox<double> bounding_box;
 
     auto glyphs_count = render_glyphs.size();
 
@@ -267,6 +305,14 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
     indices.reserve(glyphs_count * 6);
 
     for (const FontRenderGlyph& rg : render_glyphs) {
+        BoundingBox<double> rg_bounding_box{
+            rg.position.x, rg.position.y - font_metrics.ascent,
+            rg.position.x + rg.advance, rg.position.y - font_metrics.descent};
+        bounding_box = rg_bounding_box.merge(bounding_box);
+
+        if (not rg.has_size()) {
+            continue;
+        }
         auto vertices_count = vertices.size();
 
         vertices.push_back(
@@ -301,15 +347,17 @@ FontRenderGlyph::make_shape(const std::vector<FontRenderGlyph>& render_glyphs)
         indices.push_back(vertices_count + 3);
     }
 
-    return Shape::Freeform(indices, vertices);
+    return Shape::Freeform(indices, vertices, bounding_box);
 }
 
 FontData::FontData(const std::string& path) : path(path)
 {
     File file(this->path);
-    auto [baked_font_image, baked_font_data] = bake_font_texture(file);
+    auto [baked_font_image, baked_font_data, font_metrics] =
+        bake_font_texture(file);
     this->baked_texture = MemoryTexture::create(baked_font_image);
     this->baked_font = std::move(baked_font_data);
+    this->font_metrics = font_metrics;
 
     if (is_engine_initialized()) {
         this->_initialize();
@@ -318,10 +366,11 @@ FontData::FontData(const std::string& path) : path(path)
 
 FontData::FontData(
     const ResourceReference<Texture> baked_texture,
-    const BakedFontData baked_font)
+    const BakedFontData baked_font, const FontMetrics font_metrics)
 {
     this->baked_texture = baked_texture;
     this->baked_font = std::move(baked_font);
+    this->font_metrics = font_metrics;
 
     if (is_engine_initialized()) {
         this->_initialize();
@@ -345,11 +394,12 @@ ResourceReference<FontData>
 FontData::load_from_memory(const Memory& memory)
 {
     auto raw_memory = reinterpret_cast<const uint8_t*>(memory.get());
-    auto [baked_font_texture, baked_font_data] =
+    auto [baked_font_texture, baked_font_data, font_metrics] =
         bake_font_texture(raw_memory, memory.size());
 
     return std::shared_ptr<FontData>(new FontData(
-        MemoryTexture::create(baked_font_texture), baked_font_data));
+        MemoryTexture::create(baked_font_texture), baked_font_data,
+        font_metrics));
 }
 
 FontData::~FontData()
@@ -361,10 +411,9 @@ FontData::~FontData()
 
 std::vector<FontRenderGlyph>
 FontData::generate_render_glyphs(
-    const std::string& text, const double pixel_height)
+    const std::string& text, const double scale_factor)
 {
     std::vector<FontRenderGlyph> render_glyphs;
-    const double scale_factor = pixel_height / font_baker_pixel_height;
     const glm::dvec2 inv_texture_size = {
         1. / this->baked_texture->get_dimensions().x,
         1. / this->baked_texture->get_dimensions().y};
@@ -461,15 +510,20 @@ void
 TextNode::_update_shape()
 {
     KAACORE_ASSERT(this->_font._font_data, "Invalid internal font state.");
+    const double scale_factor = this->_font_size / font_baker_pixel_height;
+    const auto scaled_metrics =
+        this->_font._font_data->metrics().scale_for_pixel_height(
+            this->_font_size);
     this->_render_glyphs = this->_font._font_data->generate_render_glyphs(
-        this->_content, this->_font_size);
+        this->_content, scale_factor);
     FontRenderGlyph::arrange_glyphs(
         this->_render_glyphs, this->_first_line_indent,
         this->_font_size * this->_interline_spacing, this->_line_width);
 
     Node* node = container_node(this);
     node->sprite(this->_font._font_data->baked_texture);
-    node->shape(FontRenderGlyph::make_shape(this->_render_glyphs));
+    node->shape(
+        FontRenderGlyph::make_shape(this->_render_glyphs, scaled_metrics));
 }
 
 std::string

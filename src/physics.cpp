@@ -934,7 +934,7 @@ BodyNode::angular_velocity()
 }
 
 void
-BodyNode::angular_velocity(const double& angular_velocity)
+BodyNode::angular_velocity(const double angular_velocity)
 {
     ASSERT_VALID_BODY_NODE(this);
     cpBodySetAngularVelocity(this->_cp_body, angular_velocity);
@@ -1315,7 +1315,7 @@ HitboxNode::trigger_id()
 }
 
 void
-HitboxNode::trigger_id(const CollisionTriggerId& trigger_id)
+HitboxNode::trigger_id(const CollisionTriggerId trigger_id)
 {
     ASSERT_VALID_HITBOX_NODE(this);
     cpShapeSetCollisionType(
@@ -1330,7 +1330,7 @@ HitboxNode::group()
 }
 
 void
-HitboxNode::group(const CollisionGroup& group)
+HitboxNode::group(const CollisionGroup group)
 {
     ASSERT_VALID_HITBOX_NODE(this);
     auto filter = cpShapeGetFilter(this->_cp_shape);
@@ -1346,7 +1346,7 @@ HitboxNode::mask()
 }
 
 void
-HitboxNode::mask(const CollisionBitmask& mask)
+HitboxNode::mask(const CollisionBitmask mask)
 {
     ASSERT_VALID_HITBOX_NODE(this);
     auto filter = cpShapeGetFilter(this->_cp_shape);
@@ -1362,7 +1362,7 @@ HitboxNode::collision_mask()
 }
 
 void
-HitboxNode::collision_mask(const CollisionBitmask& mask)
+HitboxNode::collision_mask(const CollisionBitmask mask)
 {
     ASSERT_VALID_HITBOX_NODE(this);
     auto filter = cpShapeGetFilter(this->_cp_shape);

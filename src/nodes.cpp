@@ -411,7 +411,6 @@ Node::calculate_draw_unit_updates()
         is_visible ? std::optional<DrawBucketKey>{this->_make_draw_bucket_key()}
                    : std::nullopt;
     const bool changed_draw_bucket_key =
-        this->query_dirty_flags(DIRTY_DRAW_KEYS) and
         this->_draw_unit_data.current_key != calculated_draw_bucket_key;
     const bool changed_vertices_indices =
         this->query_dirty_flags(DIRTY_DRAW_VERTICES);
@@ -574,7 +573,7 @@ Node::absolute_rotation()
 }
 
 void
-Node::rotation(const double& rotation)
+Node::rotation(const double rotation)
 {
     this->_set_rotation(rotation);
     if (this->_type == NodeType::body) {
@@ -769,7 +768,7 @@ Node::visible()
 }
 
 void
-Node::visible(const bool& visible)
+Node::visible(const bool visible)
 {
     if (visible == this->_visible) {
         return;
@@ -786,7 +785,7 @@ Node::origin_alignment()
 }
 
 void
-Node::origin_alignment(const Alignment& alignment)
+Node::origin_alignment(const Alignment alignment)
 {
     if (alignment == this->_origin_alignment) {
         return;
@@ -814,7 +813,7 @@ Node::lifetime()
 }
 
 void
-Node::lifetime(const Duration& lifetime)
+Node::lifetime(const Duration lifetime)
 {
     this->_lifetime =
         std::chrono::duration_cast<HighPrecisionDuration>(lifetime);
