@@ -164,6 +164,7 @@ class Engine {
     std::exception_ptr _engine_loop_exception;
 #endif
 
+    void _reset(const glm::uvec2& window_size);
     bgfx::Init _gather_platform_data();
     void _scene_processing();
     void _swap_scenes();

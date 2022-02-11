@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <bgfx/bgfx.h>
@@ -8,15 +9,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "kaacore/draw_queue.h"
-#include "kaacore/draw_unit.h"
-#include "kaacore/files.h"
-#include "kaacore/log.h"
+#include "kaacore/engine.h"
 #include "kaacore/materials.h"
+#include "kaacore/render_passes.h"
 #include "kaacore/resources.h"
 #include "kaacore/shaders.h"
 #include "kaacore/textures.h"
 #include "kaacore/utils.h"
-#include "kaacore/views.h"
+#include "kaacore/viewports.h"
 
 namespace kaacore {
 
@@ -31,21 +31,107 @@ enum class RendererType {
     unsupported
 };
 
+class Renderer;
+
 class DefaultShadingContext : public ShadingContext {
   public:
     DefaultShadingContext() = default;
     DefaultShadingContext(const UniformSpecificationMap& uniforms);
     DefaultShadingContext& operator=(DefaultShadingContext&& other);
     void destroy();
-    void set_uniform_texture(
-        const std::string& name, const Texture* texture, const uint8_t stage,
-        const uint32_t flags = std::numeric_limits<uint32_t>::max());
+
+    friend class Renderer;
 };
+
+struct FrameContext {
+    Duration last_dt;
+    Duration total_time;
+    glm::uvec2 virtual_resolution;
+    ViewportStateArray viewport_states;
+    RenderPassStateArray render_pass_states;
+};
+
+struct RenderState {
+    Texture* texture;
+    Material* material;
+    uint64_t state_flags;
+    uint32_t stencil_flags;
+};
+
+struct DrawCall {
+    RenderState state;
+    uint32_t sorting_hint = 0;
+    bgfx::TransientVertexBuffer vertices;
+    bgfx::TransientIndexBuffer indices;
+
+    static DrawCall allocate(
+        const RenderState& state, const uint32_t sorting_hint,
+        const size_t vertices_count, const size_t indices_count);
+
+    static DrawCall create(
+        const RenderState& state, const uint32_t sorting_hint,
+        const std::vector<StandardVertexData>& vertices,
+        const std::vector<VertexIndex>& indices);
+
+    void bind_buffers() const;
+};
+
+struct DrawCommand {
+    uint16_t pass;
+    uint16_t viewport;
+    DrawCall call;
+};
+
+struct RenderBatch {
+    RenderState state;
+    uint32_t sorting_hint;
+    GeometryStream geometry_stream;
+
+    template<typename Func>
+    void each_draw_call(Func&& func) const
+    {
+        auto range = this->geometry_stream.find_range();
+        while (not range.empty()) {
+            auto call = DrawCall::allocate(
+                this->state, this->sorting_hint, range.vertices_count,
+                range.indices_count);
+            this->geometry_stream.copy_range(
+                range, call.vertices, call.indices);
+            func(call);
+            range = this->geometry_stream.find_range(range.end);
+        }
+    }
+
+    static RenderBatch from_bucket(
+        const DrawBucketKey& key, const DrawBucket& bucket);
+};
+
+struct RendererCapabilities {
+    struct GpuInfo {
+        uint16_t vendor_id;
+        uint16_t device_id;
+    };
+
+    bool homogeneous_depth;
+    bool origin_bottom_left;
+    uint32_t max_draw_calls;
+    uint32_t max_texture_size;
+    uint32_t max_texture_layers;
+    uint32_t max_render_passes;
+    uint32_t max_render_targets;
+    uint32_t max_programs;
+    uint32_t max_shaders;
+    uint32_t max_textures;
+    uint32_t max_samplers;
+    uint32_t max_uniforms;
+    std::vector<GpuInfo> gpus;
+};
+
+enum class VirtualResolutionMode;
 
 class Renderer {
   public:
     DefaultShadingContext shading_context;
-    bgfx::VertexLayout vertex_layout;
     std::unique_ptr<Texture> default_texture;
     ResourceReference<Material> default_material;
     ResourceReference<Material> sdf_font_material;
@@ -54,33 +140,49 @@ class Renderer {
     glm::uvec2 border_size;
     uint32_t border_color = 0x000000ff;
 
-    Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size);
+    Renderer(
+        bgfx::Init bgfx_init_data, const glm::uvec2 window_size,
+        glm::uvec2 virtual_resolution, VirtualResolutionMode mode);
     ~Renderer();
 
     bgfx::TextureHandle make_texture(
         std::shared_ptr<bimg::ImageContainer> image_container,
         const uint64_t flags) const;
+    void destroy_texture(const bgfx::TextureHandle& handle) const;
     RendererType type() const;
     ShaderModel shader_model() const;
-
-    void destroy_texture(const bgfx::TextureHandle& handle) const;
+    const RendererCapabilities capabilities() const;
+    void set_frame_context(
+        const Duration last_dt, const Duration total_time,
+        const RenderPassStateArray& render_pass_states,
+        const ViewportStateArray& viewport_states);
     void begin_frame();
     void end_frame();
     void push_statistics() const;
-    void reset();
-    void process_view(View& view) const;
-    void render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit);
-    void render_draw_bucket(
-        const DrawBucketKey& key, const DrawBucket& draw_bucket);
-    void render_draw_queue(const DrawQueue& draw_queue);
-    void set_global_uniforms(const float last_dt, const float scene_time);
-    static std::unordered_set<std::string>& reserved_uniform_names();
+    void reset(
+        const glm::uvec2 windows_size, glm::uvec2 virtual_resolution,
+        VirtualResolutionMode mode);
+    void set_global_uniforms();
+    void set_render_state(
+        const RenderState& render_state, const RenderPassState& pass_state,
+        const ViewportState& viewport_state);
+    void set_render_pass_state(const RenderPassState& pass_state);
+    void render_batch(
+        const RenderBatch& batch, const RenderPassIndexSet render_passes,
+        const ViewportIndexSet viewports);
+    void render_effect(const Effect& effect, const uint16_t pass_index);
+    void render_draw_command(const DrawCommand& command);
+    void render_draw_call(
+        const DrawCall& call, const RenderPassState& pass_state,
+        const ViewportState& viewport_state);
+    static const std::unordered_set<std::string>& reserved_uniform_names();
 
   private:
     bool _vertical_sync = true;
+    FrameContext _frame_context;
 
     uint32_t _calculate_reset_flags() const;
-    void _submit_draw_bucket_state(const DrawBucketKey& key);
+    bgfx::ProgramHandle _get_program_handle(const Material* material);
     bgfx::RendererType::Enum _choose_bgfx_renderer(
         const std::string& name) const;
 

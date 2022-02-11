@@ -9,10 +9,8 @@
 
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
-#include "kaacore/statistics.h"
-#include "kaacore/views.h"
-
 #include "kaacore/scenes.h"
+#include "kaacore/statistics.h"
 
 namespace kaacore {
 
@@ -35,7 +33,7 @@ Scene::~Scene()
 Camera&
 Scene::camera()
 {
-    return this->views[views_default_z_index].camera;
+    return this->viewports[default_viewport_z_index].camera;
 }
 
 std::vector<Node*>&
@@ -157,17 +155,13 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
 }
 
 void
-Scene::process_drawing()
+Scene::draw(
+    const uint16_t render_pass, const int16_t viewport,
+    const DrawCall& draw_call)
 {
-    auto& renderer = get_engine()->renderer;
-    for (auto& view : this->views) {
-        renderer->process_view(view);
-    }
-
-    this->draw_queue.process_modifications();
-    renderer->set_global_uniforms(
-        this->_last_dt.count(), this->_total_time.count());
-    renderer->render_draw_queue(this->draw_queue);
+    // translate z_index to index
+    uint16_t viewport_index = render_pass + std::abs(min_viewport_z_index);
+    this->_draw_commands.push_back({render_pass, viewport_index, draw_call});
 }
 
 void
@@ -200,6 +194,42 @@ Scene::on_exit()
 void
 Scene::on_detach()
 {}
+
+void
+Scene::attach_frame_context(const std::unique_ptr<Renderer>& renderer)
+{
+    renderer->set_frame_context(
+        this->_last_dt, this->_total_time, this->render_passes._take_snapshot(),
+        this->viewports._take_snapshot());
+}
+
+void
+Scene::render(const std::unique_ptr<Renderer>& renderer)
+{
+    this->draw_queue.process_modifications();
+
+    // render nodes tree
+    for (const auto& [key, bucket] : this->draw_queue) {
+        auto batch = RenderBatch::from_bucket(key, bucket);
+        if (batch.geometry_stream.empty()) {
+            continue;
+        }
+        renderer->render_batch(batch, key.render_passes, key.viewports);
+    }
+
+    // render custom draw calls
+    for (auto& draw_command : this->_draw_commands) {
+        renderer->render_draw_command(draw_command);
+    }
+    this->_draw_commands.clear();
+
+    // render effects
+    for (auto& render_pass : this->render_passes) {
+        if (auto effect = render_pass.effect()) {
+            renderer->render_effect(effect.value(), render_pass.index());
+        }
+    }
+}
 
 void
 Scene::register_simulation(Node* node)
@@ -283,9 +313,10 @@ Scene::get_events() const
 }
 
 void
-Scene::reset_views()
+Scene::_reset()
 {
-    this->views._mark_dirty();
+    this->viewports._mark_dirty();
+    this->render_passes._mark_dirty();
 }
 
 } // namespace kaacore

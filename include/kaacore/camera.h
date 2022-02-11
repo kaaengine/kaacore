@@ -6,13 +6,12 @@
 
 namespace kaacore {
 
-class View;
+class Viewport;
 class Renderer;
 
 class Camera {
   public:
     Camera();
-    void refresh();
     glm::dvec2 position() const;
     void position(const glm::dvec2& position);
     double rotation() const;
@@ -29,8 +28,9 @@ class Camera {
     glm::dvec2 _scale = {1., 1.};
     glm::fmat4 _calculated_view;
 
-    friend class View;
-    friend class Renderer;
+    void _reset();
+
+    friend class Viewport;
 };
 
 } // namespace kaacore

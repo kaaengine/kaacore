@@ -6,71 +6,42 @@
 #include <unordered_map>
 #include <vector>
 
+#include <bgfx/bgfx.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 #undef GLM_ENABLE_EXPERIMENTAL
 
 #include "kaacore/materials.h"
+#include "kaacore/render_passes.h"
 #include "kaacore/resources.h"
 #include "kaacore/textures.h"
 #include "kaacore/utils.h"
-#include "kaacore/views.h"
+#include "kaacore/vertex_layout.h"
+#include "kaacore/viewports.h"
 
 namespace kaacore {
 
-typedef uint16_t VertexIndex;
 typedef size_t DrawUnitId;
 
-struct StandardVertexData {
-    glm::fvec3 xyz;
-    glm::fvec2 uv;
-    glm::fvec2 mn;
-    glm::fvec4 rgba;
-
-    StandardVertexData(
-        float x = 0., float y = 0., float z = 0., float u = 0., float v = 0.,
-        float m = 0., float n = 0., float r = 1., float g = 1., float b = 1.,
-        float a = 1.)
-        : xyz(x, y, z), uv(u, v), mn(m, n), rgba(r, g, b, a){};
-
-    static inline StandardVertexData xy_uv(float x, float y, float u, float v)
-    {
-        return StandardVertexData(x, y, 0., u, v);
-    }
-
-    static inline StandardVertexData xy_uv_mn(
-        float x, float y, float u, float v, float m, float n)
-    {
-        return StandardVertexData(x, y, 0., u, v, m, n);
-    }
-
-    inline bool operator==(const StandardVertexData& other) const
-    {
-        return (
-            this->xyz == other.xyz and this->uv == other.uv and
-            this->mn == other.mn and this->rgba == other.rgba);
-    }
-};
-
-typedef std::pair<std::vector<StandardVertexData>, std::vector<VertexIndex>>
-    VerticesIndicesVectorPair;
-
 struct DrawBucketKey {
-    ViewIndexSet views;
+    RenderPassIndexSet render_passes;
+    ViewportIndexSet viewports;
     int16_t z_index;
     uint8_t root_distance;
-    Texture* texture_raw_ptr;
-    Material* material_raw_ptr;
+    Texture* texture;
+    Material* material;
     uint64_t state_flags;
     uint32_t stencil_flags;
 
     inline bool operator==(const DrawBucketKey& other) const
     {
         return (
-            this->views == other.views and this->z_index == other.z_index and
+            this->render_passes == other.render_passes and
+            this->viewports == other.viewports and
+            this->z_index == other.z_index and
             this->root_distance == other.root_distance and
-            this->texture_raw_ptr == other.texture_raw_ptr and
-            this->material_raw_ptr == other.material_raw_ptr and
+            this->texture == other.texture and
+            this->material == other.material and
             this->state_flags == other.state_flags and
             this->stencil_flags == other.stencil_flags);
     }
@@ -83,12 +54,12 @@ struct DrawBucketKey {
     inline bool operator<(const DrawBucketKey& other) const
     {
         return std::tie(
-                   this->views, this->z_index, this->root_distance,
-                   this->texture_raw_ptr, this->material_raw_ptr,
+                   this->render_passes, this->viewports, this->z_index,
+                   this->root_distance, this->texture, this->material,
                    this->state_flags, this->stencil_flags) <
                std::tie(
-                   other.views, other.z_index, other.root_distance,
-                   other.texture_raw_ptr, other.material_raw_ptr,
+                   other.render_passes, this->viewports, other.z_index,
+                   other.root_distance, other.texture, other.material,
                    other.state_flags, other.stencil_flags);
     }
 };
@@ -171,10 +142,12 @@ typedef std::pair<
     std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>
     DrawUnitModificationPair;
 
-struct DrawBucket {
-    using DrawUnitIter = std::vector<DrawUnit>::const_iterator;
-    using ModsIter = std::vector<DrawUnitModification>::const_iterator;
+class DrawBucket;
 
+class GeometryStream {
+    using DrawUnitIter = std::vector<DrawUnit>::const_iterator;
+
+  public:
     struct Range {
         DrawUnitIter begin;
         DrawUnitIter end;
@@ -187,12 +160,26 @@ struct DrawBucket {
         }
     };
 
+    inline bool empty() const { return this->_draw_units.empty(); }
     Range find_range() const;
     Range find_range(const DrawUnitIter start_pos) const;
-    void copy_range_details_to_transient_buffers(
+    void copy_range(
         const Range& range, bgfx::TransientVertexBuffer& vertex_buffer,
         bgfx::TransientIndexBuffer& index_buffer) const;
 
+  private:
+    const std::vector<DrawUnit>& _draw_units;
+
+    GeometryStream(const std::vector<DrawUnit>& draw_units);
+
+    friend class DrawBucket;
+};
+
+using DrawUnitModificationPair = std::pair<
+    std::optional<DrawUnitModification>, std::optional<DrawUnitModification>>;
+
+struct DrawBucket {
+    GeometryStream geometry_stream() const;
     void consume_modifications(
         const std::vector<DrawUnitModification>::iterator src_begin,
         const std::vector<DrawUnitModification>::iterator src_end);
@@ -216,8 +203,8 @@ struct hash<kaacore::DrawBucketKey> {
     size_t operator()(const kaacore::DrawBucketKey& key) const
     {
         return kaacore::hash_combined(
-            key.views, key.z_index, key.root_distance, key.texture_raw_ptr,
-            key.material_raw_ptr, key.state_flags, key.stencil_flags);
+            key.render_passes, key.viewports, key.z_index, key.root_distance,
+            key.texture, key.material, key.state_flags, key.stencil_flags);
     }
 };
 }

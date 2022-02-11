@@ -1,9 +1,11 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+
+#include <bgfx/bgfx.h>
 
 #include "kaacore/memory.h"
 #include "kaacore/resources.h"
@@ -28,6 +30,7 @@ enum class ShaderModel { hlsl_dx9, hlsl_dx11, glsl, spirv, metal, unknown };
 using ShaderModelMap = std::unordered_map<ShaderModel, std::string>;
 using ShaderModelMemoryMap = std::unordered_map<ShaderModel, Memory>;
 
+class Effect;
 class Program;
 class Renderer;
 
@@ -42,19 +45,34 @@ class Shader : public Resource {
     static ResourceReference<Shader> create(
         const ShaderType type, const ShaderModelMemoryMap& memory_map);
 
-  private:
+  protected:
     ShaderType _type;
     ShaderModelMemoryMap _models;
     ShaderModel _used_model = ShaderModel::unknown;
     bgfx::ShaderHandle _handle = BGFX_INVALID_HANDLE;
 
-    Shader(const ShaderModelMemoryMap& model_map, const ShaderType type);
-    Shader(ShaderModelMemoryMap&& model_map, const ShaderType type);
+    Shader(const ShaderType type, const ShaderModelMemoryMap& model_map);
+    Shader(const ShaderType type, ShaderModelMemoryMap&& model_map);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
+    friend class Effect;
     friend class Program;
     friend class Renderer;
+    friend class ResourcesRegistry<ShaderKey, Shader>;
+};
+
+class EmbeddedShader : public Shader {
+  public:
+    static ResourceReference<EmbeddedShader> load(
+        const ShaderType type, const std::string& shader_name);
+
+  private:
+    const std::string _name;
+
+    EmbeddedShader(const ShaderType type, const std::string& _name);
+    virtual void _initialize() override;
+
     friend class ResourcesRegistry<ShaderKey, Shader>;
 };
 

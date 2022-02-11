@@ -38,4 +38,4 @@ class Clock {
     DurationRingBuffer _buffer;
 };
 
-}
+} // namespace kaacore

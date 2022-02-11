@@ -12,6 +12,8 @@
 
 namespace kaacore {
 
+using MaterialId = uint32_t;
+
 void
 initialize_materials();
 void
@@ -55,6 +57,9 @@ class ShadingContext : public Resource {
     virtual void _initialize() override;
     virtual void _uninitialize() override;
     bool _name_in_registry(const std::string& name) const;
+    void _set_uniform_texture(
+        const std::string& name, const Texture* texture, const uint8_t stage,
+        const uint32_t flags = std::numeric_limits<uint32_t>::max());
 };
 
 class Material : public ShadingContext {
@@ -73,14 +78,14 @@ class Material : public ShadingContext {
         const std::string& name, const SamplerValue& value);
 
   private:
-    MaterialID _id;
-    static inline std::atomic<MaterialID> _last_id = 0u;
+    MaterialId _id;
+    static inline std::atomic<MaterialId> _last_id = 0u;
 
     Material(
-        const MaterialID id, const ResourceReference<Program>& program,
+        const MaterialId id, const ResourceReference<Program>& program,
         const UniformSpecificationMap& uniforms);
 
-    friend class ResourcesRegistry<MaterialID, Material>;
+    friend class ResourcesRegistry<MaterialId, Material>;
 };
 
 } // namespace kaacore

@@ -3,11 +3,15 @@
 #include <sstream>
 #include <utility>
 
+#include "kaacore/embedded_data.h"
 #include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
+#include "kaacore/platform.h"
 #include "kaacore/renderer.h"
 #include "kaacore/shaders.h"
+
+#include <cmrc/cmrc.hpp>
 
 namespace kaacore {
 
@@ -44,15 +48,78 @@ _load_shader(const std::string& path)
         reinterpret_cast<std::byte*>(file.content.data()), file.content.size());
 }
 
-Shader::Shader(const ShaderModelMemoryMap& memory_map, const ShaderType type)
-    : _models(memory_map), _type(type)
+Memory
+_load_embedded_shader_memory(const std::string& path)
+{
+    try {
+        return get_embedded_file_content(embedded_shaders_filesystem, path);
+    } catch (embedded_file_error& err) {
+        KAACORE_LOG_ERROR(
+            "Failed to load embedded binary shader: {} ({})", path, err.what());
+        throw;
+    }
+}
+
+std::string
+_get_shader_model_tag(ShaderModel model)
+{
+    switch (model) {
+        case ShaderModel::glsl:
+            return "glsl";
+        case ShaderModel::spirv:
+            return "spirv";
+        case ShaderModel::metal:
+            return "metal";
+        case ShaderModel::hlsl_dx9:
+            return "dx9";
+        case ShaderModel::hlsl_dx11:
+            return "dx11";
+        default:
+            return "unknown";
+    }
+}
+
+ShaderModelMemoryMap
+_load_embedded_shader_memory_map(
+    const std::string& shader_name, const PlatformType platform)
+{
+    std::vector<ShaderModel> models;
+    switch (platform) {
+        case PlatformType::linux:
+            models = {ShaderModel::glsl, ShaderModel::spirv};
+            break;
+        case PlatformType::osx:
+            models = {ShaderModel::metal, ShaderModel::glsl,
+                      ShaderModel::spirv};
+            break;
+        case PlatformType::windows:
+            models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
+                      ShaderModel::glsl, ShaderModel::spirv};
+            break;
+        default:
+            KAACORE_LOG_ERROR(
+                "Unsupported platform! Can't load embedded shaders.");
+    }
+
+    std::string path;
+    ShaderModelMemoryMap memory_map;
+    for (auto model : models) {
+        auto shader_model_tag = _get_shader_model_tag(model);
+        path = fmt::format("{}/{}.bin", shader_model_tag, shader_name);
+        memory_map[model] = _load_embedded_shader_memory(path);
+    }
+    return memory_map;
+}
+
+Shader::Shader(const ShaderType type, const ShaderModelMemoryMap& memory_map)
+    : _type(type), _models(memory_map)
 {
     if (is_engine_initialized()) {
         this->_initialize();
     }
 }
 
-Shader::Shader(ShaderModelMemoryMap&& memory_map, const ShaderType type)
+Shader::Shader(const ShaderType type, ShaderModelMemoryMap&& memory_map)
     : _models(std::move(memory_map)), _type(type)
 {
     if (is_engine_initialized()) {
@@ -86,7 +153,7 @@ Shader::load(const ShaderType type, const ShaderModelMap& model_map)
         memory_map[kv_pair.first] = std::move(_load_shader(kv_pair.second));
     }
 
-    shader = std::shared_ptr<Shader>(new Shader(std::move(memory_map), type));
+    shader = std::shared_ptr<Shader>(new Shader(type, std::move(memory_map)));
     _shaders_registry.register_resource(key, shader);
     return shader;
 }
@@ -94,7 +161,7 @@ Shader::load(const ShaderType type, const ShaderModelMap& model_map)
 ResourceReference<Shader>
 Shader::create(const ShaderType type, const ShaderModelMemoryMap& memory_map)
 {
-    return std::shared_ptr<Shader>(new Shader(memory_map, type));
+    return std::shared_ptr<Shader>(new Shader(type, memory_map));
 }
 
 const Memory
@@ -143,6 +210,39 @@ Shader::_uninitialize()
 {
     bgfx::destroy(this->_handle);
     this->is_initialized = false;
+}
+
+EmbeddedShader::EmbeddedShader(const ShaderType type, const std::string& name)
+    : _name(name)
+{
+    this->_type = type;
+    if (is_engine_initialized()) {
+        this->_initialize();
+    }
+}
+
+ResourceReference<EmbeddedShader>
+EmbeddedShader::load(const ShaderType type, const std::string& shader_name)
+{
+    ShaderKey key{fmt::format("EMBEDDED::{}", shader_name), "str"};
+    auto shader = std::static_pointer_cast<EmbeddedShader>(
+        _shaders_registry.get_resource(key));
+    if (shader) {
+        return shader;
+    }
+
+    shader =
+        std::shared_ptr<EmbeddedShader>(new EmbeddedShader(type, shader_name));
+    _shaders_registry.register_resource(key, shader);
+    return shader;
+}
+
+void
+EmbeddedShader::_initialize()
+{
+    this->_models =
+        _load_embedded_shader_memory_map(this->_name, get_platform());
+    Shader::_initialize();
 }
 
 Program::Program() : vertex_shader(nullptr), fragment_shader(nullptr) {}

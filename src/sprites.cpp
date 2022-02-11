@@ -14,9 +14,9 @@ Sprite::Sprite(const ResourceReference<Texture>& texture)
 {}
 
 Sprite
-Sprite::load(const std::string& path, uint64_t flags)
+Sprite::load(const std::string& path)
 {
-    return Sprite(Texture::load(path, flags));
+    return Sprite(ImageTexture::load(path));
 }
 
 bool

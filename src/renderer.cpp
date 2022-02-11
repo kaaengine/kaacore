@@ -1,3 +1,4 @@
+#include <array>
 #include <cstring>
 #include <iterator>
 #include <tuple>
@@ -6,24 +7,36 @@
 #include <bgfx/bgfx.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "kaacore/embedded_data.h"
-#include "kaacore/engine.h"
 #include "kaacore/exceptions.h"
 #include "kaacore/files.h"
 #include "kaacore/log.h"
-#include "kaacore/memory.h"
 #include "kaacore/platform.h"
 #include "kaacore/renderer.h"
+#include "kaacore/scenes.h"
 #include "kaacore/statistics.h"
 #include "kaacore/textures.h"
 
 namespace kaacore {
 
+bgfx::VertexLayout _vertex_layout;
 constexpr uint16_t _internal_view_index = 0;
+constexpr uint16_t _views_reserved_offset = 1;
 constexpr uint8_t _internal_sampler_stage_index = 0;
 const UniformSpecificationMap _default_uniforms = {
     {"s_texture", UniformSpecification(UniformType::sampler)},
-    {"u_vec4_slot1", UniformSpecification(UniformType::vec4)},
+    {"u_vec4Slot1", UniformSpecification(UniformType::vec4)},
+    {"u_viewportRect", UniformSpecification(UniformType::vec4)},
+    {"u_viewMat", UniformSpecification(UniformType::mat4)},
+    {"u_projMat", UniformSpecification(UniformType::mat4)},
+    {"u_viewProjMat", UniformSpecification(UniformType::mat4)},
+    {"u_invViewMat", UniformSpecification(UniformType::mat4)},
+    {"u_invProjMat", UniformSpecification(UniformType::mat4)},
+    {"u_invViewProjMat", UniformSpecification(UniformType::mat4)},
+};
+constexpr std::array<const std::string_view, 12> _bgfx_reserved_uniforms = {
+    "u_viewRect", "u_viewTexel", "u_view",          "u_invView",
+    "u_proj",     "u_invProj",   "u_viewProj",      "u_invViewProj",
+    "u_model",    "u_modelView", "u_modelViewProj", "u_alphaRef4",
 };
 
 // Since the memory that is used to load texture to bgfx should be available
@@ -43,37 +56,6 @@ _release_used_container(void* _data, void* image_container)
     _used_containers.erase(key);
 }
 
-std::string
-get_shader_model_tag(ShaderModel model)
-{
-    switch (model) {
-        case ShaderModel::glsl:
-            return "glsl";
-        case ShaderModel::spirv:
-            return "spirv";
-        case ShaderModel::metal:
-            return "metal";
-        case ShaderModel::hlsl_dx9:
-            return "dx9";
-        case ShaderModel::hlsl_dx11:
-            return "dx11";
-        default:
-            return "unknown";
-    }
-}
-
-Memory
-load_embedded_shader(const std::string& path)
-{
-    try {
-        return get_embedded_file_content(embedded_shaders_filesystem, path);
-    } catch (embedded_file_error& err) {
-        KAACORE_LOG_ERROR(
-            "Failed to load embedded binary shader: {} ({})", path, err.what());
-        throw;
-    }
-}
-
 std::pair<ResourceReference<Shader>, ResourceReference<Shader>>
 load_embedded_shaders(
     const std::string vertex_shader_name,
@@ -83,48 +65,23 @@ load_embedded_shaders(
         "Loading embedded shaders: {}, {}", vertex_shader_name,
         fragment_shader_name);
     KAACORE_LOG_TRACE("Detected platform : {}", get_platform_name());
-
-    std::vector<ShaderModel> models;
-    switch (get_platform()) {
-        case PlatformType::linux:
-            models = {ShaderModel::glsl, ShaderModel::spirv};
-            break;
-        case PlatformType::osx:
-            models = {ShaderModel::metal, ShaderModel::glsl,
-                      ShaderModel::spirv};
-            break;
-        case PlatformType::windows:
-            models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
-                      ShaderModel::glsl, ShaderModel::spirv};
-            break;
-        default:
-            KAACORE_LOG_ERROR(
-                "Unsupported platform! Can't load embedded shaders.");
-    }
-
-    std::string path;
-    ShaderModelMemoryMap vertex_memory_map;
-    ShaderModelMemoryMap fragment_memory_map;
-    for (auto model : models) {
-        auto shader_model_tag = get_shader_model_tag(model);
-        path = fmt::format("{}/{}.bin", shader_model_tag, vertex_shader_name);
-        vertex_memory_map[model] = load_embedded_shader(path);
-        path = fmt::format("{}/{}.bin", shader_model_tag, fragment_shader_name);
-        fragment_memory_map[model] = load_embedded_shader(path);
-    }
-    return {Shader::create(ShaderType::vertex, vertex_memory_map),
-            Shader::create(ShaderType::fragment, fragment_memory_map)};
+    return {
+        EmbeddedShader::load(ShaderType::fragment, fragment_shader_name),
+        EmbeddedShader::load(ShaderType::vertex, vertex_shader_name),
+    };
 }
 
-std::unique_ptr<Texture>
+std::unique_ptr<MemoryTexture>
 load_default_texture()
 {
     // 1x1 white texture
     static const std::vector<uint8_t> image_content{0xFF, 0xFF, 0xFF, 0xFF};
     auto image_container =
         load_raw_image(bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
-    auto texture = std::unique_ptr<Texture>(new Texture(image_container));
-    bgfx::setName(texture->handle, "DEFAULT TEXTURE");
+    auto texture =
+        std::unique_ptr<MemoryTexture>(new MemoryTexture(image_container));
+
+    bgfx::setName(texture->handle(), "DEFAULT TEXTURE");
     return texture;
 }
 
@@ -154,23 +111,68 @@ DefaultShadingContext::operator=(DefaultShadingContext&& other)
 }
 
 void
-DefaultShadingContext::set_uniform_texture(
-    const std::string& name, const Texture* texture, const uint8_t stage,
-    const uint32_t flags)
-{
-    KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
-    std::get<Sampler>(this->_uniforms[name]).set(texture, stage, flags);
-}
-
-void
 DefaultShadingContext::destroy()
 {
     this->_uninitialize();
     this->_uniforms.clear();
 }
 
-Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
+DrawCall
+DrawCall::allocate(
+    const RenderState& state, const uint32_t sorting_hint,
+    const size_t vertices_count, const size_t indices_count)
+{
+    // TODO exception?
+    KAACORE_LOG_TRACE(
+        "Available transient vertex/index buffer size: {}/{}",
+        bgfx::getAvailTransientVertexBuffer(0xFFFFFFFF, _vertex_layout),
+        bgfx::getAvailTransientIndexBuffer(0xFFFFFFFF));
+
+    bgfx::TransientVertexBuffer vertices_buffer;
+    bgfx::TransientIndexBuffer indices_buffer;
+    bgfx::allocTransientVertexBuffer(
+        &vertices_buffer, vertices_count, _vertex_layout);
+    bgfx::allocTransientIndexBuffer(&indices_buffer, indices_count);
+    return DrawCall{state, sorting_hint, vertices_buffer, indices_buffer};
+}
+
+DrawCall
+DrawCall::create(
+    const RenderState& state, const uint32_t sorting_hint,
+    const std::vector<StandardVertexData>& vertices,
+    const std::vector<VertexIndex>& indices)
+{
+    auto call = DrawCall::allocate(
+        state, sorting_hint, vertices.size(), indices.size());
+    auto vertices_data_size = sizeof(StandardVertexData) * vertices.size();
+    auto indices_data_size = sizeof(VertexIndex) * indices.size();
+    std::memcpy(call.vertices.data, vertices.data(), vertices_data_size);
+    std::memcpy(call.indices.data, indices.data(), indices_data_size);
+    return call;
+}
+
+void
+DrawCall::bind_buffers() const
+{
+    bgfx::setVertexBuffer(0, &this->vertices);
+    bgfx::setIndexBuffer(&this->indices);
+}
+
+RenderBatch
+RenderBatch::from_bucket(const DrawBucketKey& key, const DrawBucket& bucket)
+{
+    uint32_t sorting_hint =
+        (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
+    sorting_hint <<= 16;
+    sorting_hint |= key.root_distance;
+    RenderState state{key.texture, key.material, key.state_flags,
+                      key.stencil_flags};
+    return {state, sorting_hint, bucket.geometry_stream()};
+}
+
+Renderer::Renderer(
+    bgfx::Init bgfx_init_data, const glm::uvec2 window_size,
+    glm::uvec2 virtual_resolution, VirtualResolutionMode mode)
 {
     KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
@@ -183,14 +185,13 @@ Renderer::Renderer(bgfx::Init bgfx_init_data, const glm::uvec2& window_size)
     bgfx::init(bgfx_init_data);
     KAACORE_LOG_INFO("Initializing bgfx completed.");
     KAACORE_LOG_INFO("Initializing renderer.");
-    this->vertex_layout.begin()
-        .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float)
-        .add(bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float)
-        .add(bgfx::Attrib::Enum::TexCoord1, 2, bgfx::AttribType::Enum::Float)
-        .add(bgfx::Attrib::Enum::Color0, 4, bgfx::AttribType::Enum::Float)
-        .end();
-
-    this->reset();
+    _vertex_layout = StandardVertexData::init();
+    this->reset(window_size, virtual_resolution, mode);
+    auto start_index = _internal_view_index + _views_reserved_offset;
+    for (auto view_index = start_index;
+         view_index < start_index + KAACORE_MAX_RENDER_PASSES; ++view_index) {
+        bgfx::setViewMode(view_index, bgfx::ViewMode::DepthAscending);
+    }
     this->default_texture = load_default_texture();
     KAACORE_LOG_INFO("Loading embedded default shader.");
     auto default_program = load_embedded_program("vs_default", "fs_default");
@@ -206,29 +207,6 @@ Renderer::~Renderer()
     KAACORE_LOG_INFO("Destroying renderer");
     this->default_texture.reset();
     this->shading_context.destroy();
-
-    // since default shaders are embeded and not present
-    // in registry, free them manually
-    if (this->default_material) {
-        this->default_material.get()
-            ->program.get()
-            ->vertex_shader->_uninitialize();
-        this->default_material.get()
-            ->program.get()
-            ->fragment_shader->_uninitialize();
-        this->default_material.get()->program.get()->_uninitialize();
-    }
-
-    if (this->sdf_font_material) {
-        this->sdf_font_material.get()
-            ->program.get()
-            ->vertex_shader->_uninitialize();
-        this->sdf_font_material.get()
-            ->program.get()
-            ->fragment_shader->_uninitialize();
-        this->sdf_font_material.get()->program.get()->_uninitialize();
-    }
-
     bgfx::shutdown();
 }
 
@@ -255,6 +233,14 @@ Renderer::make_texture(
     KAACORE_ASSERT(bgfx::isValid(handle), "Failed to create texture.");
     _used_containers.insert(std::move(image_container));
     return handle;
+}
+
+void
+Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
+{
+    KAACORE_ASSERT_TERMINATE(
+        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed.");
+    bgfx::destroy(handle);
 }
 
 RendererType
@@ -300,29 +286,59 @@ Renderer::shader_model() const
     }
 }
 
-void
-Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
+const RendererCapabilities
+Renderer::capabilities() const
 {
-    KAACORE_ASSERT_TERMINATE(
-        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed.");
-    bgfx::destroy(handle);
+    auto caps = bgfx::getCaps();
+    std::vector<RendererCapabilities::GpuInfo> gpus;
+    for (int i = 0; i < caps->numGPUs; ++i) {
+        auto gpu = caps->gpu[i];
+        gpus.push_back({gpu.vendorId, gpu.deviceId});
+    }
+
+    return {caps->homogeneousDepth,
+            caps->originBottomLeft,
+            caps->limits.maxDrawCalls,
+            caps->limits.maxTextureSize,
+            caps->limits.maxTextureLayers,
+            caps->limits.maxViews,
+            caps->limits.maxFBAttachments,
+            caps->limits.maxPrograms,
+            caps->limits.maxShaders,
+            caps->limits.maxTextures,
+            caps->limits.maxShaders,
+            caps->limits.maxUniforms,
+            gpus};
+}
+
+void
+Renderer::set_frame_context(
+    const Duration last_dt, const Duration total_time,
+    const RenderPassStateArray& render_pass_states,
+    const ViewportStateArray& viewport_states)
+{
+    this->_frame_context.last_dt = last_dt;
+    this->_frame_context.total_time = total_time;
+    this->_frame_context.viewport_states = viewport_states;
+    this->_frame_context.render_pass_states = render_pass_states;
 }
 
 void
 Renderer::begin_frame()
 {
-    for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
-        bgfx::setViewMode(i, bgfx::ViewMode::DepthAscending);
+    this->set_global_uniforms();
+    bgfx::touch(_internal_view_index);
+    for (auto pass_index = 0; pass_index < KAACORE_MAX_RENDER_PASSES;
+         ++pass_index) {
+        bgfx::touch(pass_index + _views_reserved_offset);
+        this->set_render_pass_state(
+            this->_frame_context.render_pass_states[pass_index]);
     }
 }
 
 void
 Renderer::end_frame()
 {
-    // TODO: optimize!
-    for (int i = 0; i <= KAACORE_MAX_VIEWS; ++i) {
-        bgfx::touch(i);
-    }
     bgfx::frame();
 }
 
@@ -354,17 +370,15 @@ Renderer::push_statistics() const
 }
 
 void
-Renderer::reset()
+Renderer::reset(
+    const glm::uvec2 window_size, glm::uvec2 virtual_resolution,
+    VirtualResolutionMode mode)
 {
     KAACORE_LOG_DEBUG("Calling Renderer::reset()");
-    auto window_size = get_engine()->window->_peek_size();
+
     bgfx::reset(window_size.x, window_size.y, this->_calculate_reset_flags());
-
     glm::uvec2 view_size, border_size;
-    auto virtual_resolution = get_engine()->virtual_resolution();
-    auto virtual_resolution_mode = get_engine()->_virtual_resolution_mode;
-
-    if (virtual_resolution_mode == VirtualResolutionMode::adaptive_stretch) {
+    if (mode == VirtualResolutionMode::adaptive_stretch) {
         double aspect_ratio =
             double(virtual_resolution.x) / double(virtual_resolution.y);
         double window_aspect_ratio =
@@ -379,11 +393,10 @@ Renderer::reset()
         }
         border_size = {(window_size.x - view_size.x) / 2,
                        (window_size.y - view_size.y) / 2};
-    } else if (
-        virtual_resolution_mode == VirtualResolutionMode::aggresive_stretch) {
+    } else if (mode == VirtualResolutionMode::aggresive_stretch) {
         view_size = window_size;
         border_size = {0, 0};
-    } else if (virtual_resolution_mode == VirtualResolutionMode::no_stretch) {
+    } else if (mode == VirtualResolutionMode::no_stretch) {
         view_size = virtual_resolution;
         border_size = {
             window_size.x > view_size.x ? (window_size.x - view_size.x) / 2 : 0,
@@ -394,111 +407,187 @@ Renderer::reset()
     }
     this->view_size = view_size;
     this->border_size = border_size;
+    this->_frame_context.virtual_resolution = virtual_resolution;
 
-    bgfx::setViewRect(_internal_view_index, 0, 0, window_size.x, window_size.y);
     bgfx::setViewClear(
         _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
+    bgfx::setViewRect(_internal_view_index, 0, 0, bgfx::BackbufferRatio::Equal);
 }
 
 void
-Renderer::process_view(View& view) const
+Renderer::set_global_uniforms()
 {
-    if (view._requires_clean) {
-        uint32_t r, g, b, a;
-        a = static_cast<uint32_t>(view._clear_color.a * 255.0 + 0.5);
-        b = static_cast<uint32_t>(view._clear_color.b * 255.0 + 0.5) << 8;
-        g = static_cast<uint32_t>(view._clear_color.g * 255.0 + 0.5) << 16;
-        r = static_cast<uint32_t>(view._clear_color.r * 255.0 + 0.5) << 24;
-        auto clear_color_hex = a + b + g + r;
-        bgfx::setViewClear(view._index, view._clear_flags, clear_color_hex);
-        view._requires_clean = false;
+    glm::vec4 u_vec4_slot1{this->_frame_context.last_dt.count(),
+                           this->_frame_context.total_time.count(), 0, 0};
+    this->shading_context.set_uniform_value<glm::fvec4>(
+        "u_vec4Slot1", u_vec4_slot1);
+    this->shading_context.bind("u_vec4Slot1");
+}
+
+void
+Renderer::set_render_state(
+    const RenderState& render_state, const RenderPassState& pass_state,
+    const ViewportState& viewport_state)
+{
+    auto view_index = pass_state.index + _views_reserved_offset;
+    bgfx::setState(
+        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | render_state.state_flags);
+    bgfx::setStencil(render_state.stencil_flags);
+    // rect clipped to drawable area - used for scissor test
+    auto view_rect = viewport_state.view_rect;
+    // user defined rect - no cliping applied
+    auto viewport_rect = viewport_state.viewport_rect;
+    auto projection_matrix = viewport_state.projection_matrix;
+    if (pass_state.has_custom_framebuffer()) {
+        // render target is always size of a drawable area size
+        // therefore project onto full available area
+        float x = this->_frame_context.virtual_resolution.x;
+        float y = this->_frame_context.virtual_resolution.y;
+        projection_matrix = glm::ortho(-x / 2, x / 2, y / 2, -y / 2);
+        if (bgfx::getCaps()->originBottomLeft) {
+            // adjust for NDC origin being at the bottom left
+            projection_matrix = glm::scale(projection_matrix, {1., -1., 1.});
+        }
+    } else {
+        // view_rect and viewport_rect weren't adjusted for borders yet
+        auto offset = glm::fvec4({this->border_size, 0, 0});
+        view_rect += offset;
+        viewport_rect += offset;
     }
 
-    if (view.is_dirty()) {
-        view._refresh();
+    bgfx::setScissor(
+        static_cast<uint16_t>(view_rect.x), static_cast<uint16_t>(view_rect.y),
+        static_cast<uint16_t>(view_rect.z), static_cast<uint16_t>(view_rect.w));
 
+    auto view_matrix = viewport_state.view_matrix;
+    auto texture = render_state.texture ? render_state.texture
+                                        : this->default_texture.get();
+    auto view_projection_matrix = projection_matrix * view_matrix;
+    this->shading_context._set_uniform_texture(
+        "s_texture", texture, _internal_sampler_stage_index);
+    this->shading_context.set_uniform_value<glm::fvec4>(
+        "u_viewportRect", viewport_rect);
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_viewMat", viewport_state.view_matrix);
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_projMat", projection_matrix);
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_viewProjMat", view_projection_matrix);
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_invViewMat", glm::inverse(view_matrix));
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_invProjMat", glm::inverse(projection_matrix));
+    this->shading_context.set_uniform_value<glm::fmat4>(
+        "u_invViewProjMat", glm::inverse(view_projection_matrix));
+
+    this->shading_context.bind("s_texture");
+    this->shading_context.bind("u_viewportRect");
+    this->shading_context.bind("u_viewMat");
+    this->shading_context.bind("u_projMat");
+    this->shading_context.bind("u_viewProjMat");
+    this->shading_context.bind("u_invViewMat");
+    this->shading_context.bind("u_invProjMat");
+    this->shading_context.bind("u_invViewProjMat");
+
+    auto material = render_state.material ? render_state.material
+                                          : this->default_material.get_valid();
+    material->bind();
+}
+
+void
+Renderer::set_render_pass_state(const RenderPassState& state)
+{
+    auto view_index = state.index + _views_reserved_offset;
+    bgfx::setViewFrameBuffer(view_index, state.frame_buffer);
+    if (state.has_custom_framebuffer()) {
+        // render target is always size of a drawable area
         bgfx::setViewRect(
-            view._index, static_cast<uint16_t>(view._view_rect.x),
-            static_cast<uint16_t>(view._view_rect.y),
-            static_cast<uint16_t>(view._view_rect.z),
-            static_cast<uint16_t>(view._view_rect.w));
+            view_index, 0, 0, this->view_size.x, this->view_size.y);
+    } else {
+        // back buffer case, adjust for borders
+        bgfx::setViewRect(
+            view_index, this->border_size.x, this->border_size.y,
+            this->view_size.x, this->view_size.y);
+    }
 
-        bgfx::setViewTransform(
-            view._index, glm::value_ptr(view.camera._calculated_view),
-            glm::value_ptr(view._projection_matrix));
+    if (not state.requires_clear) {
+        return;
+    }
+
+    if (state.has_custom_framebuffer()) {
+        auto flags = state.clear_flags;
+        for (auto i = 0; i < state.clear_colors.size(); ++i) {
+            glm::fvec4 clear_color = state.clear_colors[i];
+            bgfx::setPaletteColor(i, glm::value_ptr(clear_color));
+        }
+        bgfx::setViewClear(view_index, flags, 1.f, 0, 0, 1, 2, 3, 4, 5, 6, 7);
+    } else {
+        glm::fvec4 clear_color = state.clear_colors[0];
+        if (clear_color.a) {
+            bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
+            bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
+        } else {
+            bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
+        }
     }
 }
 
 void
-Renderer::render_draw_unit(const DrawBucketKey& key, const DrawUnit& draw_unit)
+Renderer::render_batch(
+    const RenderBatch& batch, const RenderPassIndexSet target_render_passes,
+    const ViewportIndexSet target_viewports)
 {
-    bgfx::TransientVertexBuffer vertices_buffer;
-    bgfx::TransientIndexBuffer indices_buffer;
-
-    bgfx::allocTransientVertexBuffer(
-        &vertices_buffer, draw_unit.details.vertices.size(),
-        this->vertex_layout);
-    bgfx::allocTransientIndexBuffer(
-        &indices_buffer, draw_unit.details.indices.size());
-
-    std::memcpy(
-        vertices_buffer.data, draw_unit.details.vertices.data(),
-        sizeof(StandardVertexData) * draw_unit.details.vertices.size());
-    std::memcpy(
-        indices_buffer.data, draw_unit.details.indices.data(),
-        sizeof(VertexIndex) * draw_unit.details.indices.size());
-
-    bgfx::setVertexBuffer(0, &vertices_buffer);
-    bgfx::setIndexBuffer(&indices_buffer);
-    this->_submit_draw_bucket_state(key);
+    batch.each_draw_call([this, target_viewports,
+                          target_render_passes](const DrawCall& call) {
+        target_render_passes.each_active_index([this, target_viewports,
+                                                &call](uint16_t pass_index) {
+            target_viewports.each_active_index(
+                [this, pass_index, &call](uint16_t viewport_index) {
+                    auto& ctx = this->_frame_context;
+                    auto pass_state = ctx.render_pass_states[pass_index];
+                    auto viewport_state = ctx.viewport_states[viewport_index];
+                    this->render_draw_call(call, pass_state, viewport_state);
+                });
+        });
+    });
 }
 
 void
-Renderer::render_draw_bucket(
-    const DrawBucketKey& key, const DrawBucket& draw_bucket)
+Renderer::render_effect(const Effect& effect, const uint16_t pass_index)
 {
-    DrawBucket::Range range = draw_bucket.find_range();
-    while (not range.empty()) {
-        bgfx::TransientVertexBuffer vertices_buffer;
-        bgfx::TransientIndexBuffer indices_buffer;
-        KAACORE_LOG_TRACE(
-            "Available transient vertex/index buffer size: {}/{}",
-            bgfx::getAvailTransientVertexBuffer(
-                0xFFFFFFFF, this->vertex_layout),
-            bgfx::getAvailTransientIndexBuffer(0xFFFFFFFF));
-        bgfx::allocTransientVertexBuffer(
-            &vertices_buffer, range.vertices_count, this->vertex_layout);
-        bgfx::allocTransientIndexBuffer(&indices_buffer, range.indices_count);
-
-        draw_bucket.copy_range_details_to_transient_buffers(
-            range, vertices_buffer, indices_buffer);
-
-        bgfx::setVertexBuffer(0, &vertices_buffer);
-        bgfx::setIndexBuffer(&indices_buffer);
-        this->_submit_draw_bucket_state(key);
-
-        range = draw_bucket.find_range(range.end);
-    }
+    glm::dvec4 view_rect = {0, 0, this->view_size};
+    uint16_t max_viewport_index = KAACORE_MAX_VIEWPORTS - 1;
+    ViewportState viewport_state{max_viewport_index, view_rect, view_rect,
+                                 glm::fmat4(1.f), glm::fmat4(1.f)};
+    auto pass_state = this->_frame_context.render_pass_states[pass_index];
+    this->render_draw_call(effect.draw_call(), pass_state, viewport_state);
 }
 
 void
-Renderer::render_draw_queue(const DrawQueue& draw_queue)
+Renderer::render_draw_command(const DrawCommand& command)
 {
-    for (const auto& [key, draw_bucket] : draw_queue) {
-        this->render_draw_bucket(key, draw_bucket);
-    }
+    uint16_t pass_index = command.pass, viewport_index = command.viewport;
+    auto pass_state = this->_frame_context.render_pass_states[pass_index];
+    auto viewport_state = this->_frame_context.viewport_states[viewport_index];
+    this->render_draw_call(command.call, pass_state, viewport_state);
 }
 
 void
-Renderer::set_global_uniforms(const float last_dt, const float scene_time)
+Renderer::render_draw_call(
+    const DrawCall& call, const RenderPassState& pass_state,
+    const ViewportState& viewport_state)
 {
-    glm::vec4 u_vec4_slot1{last_dt, scene_time, 0, 0};
-    this->shading_context.set_uniform_value<glm::vec4>(
-        "u_vec4_slot1", u_vec4_slot1);
-    this->shading_context.bind("u_vec4_slot1");
+    call.bind_buffers();
+    this->set_render_state(call.state, pass_state, viewport_state);
+    uint32_t depth = call.sorting_hint | (viewport_state.index << 24);
+    bgfx::submit(
+        pass_state.index + _views_reserved_offset,
+        this->_get_program_handle(call.state.material), depth,
+        BGFX_DISCARD_ALL);
 }
 
-std::unordered_set<std::string>&
+const std::unordered_set<std::string>&
 Renderer::reserved_uniform_names()
 {
     static std::unordered_set<std::string> reserved_names;
@@ -506,47 +595,24 @@ Renderer::reserved_uniform_names()
         for (auto& kv_pair : _default_uniforms) {
             reserved_names.insert(kv_pair.first);
         }
+        for (auto& name : _bgfx_reserved_uniforms) {
+            reserved_names.insert(std::string(name));
+        }
     }
     return reserved_names;
-}
-
-void
-Renderer::_submit_draw_bucket_state(const DrawBucketKey& key)
-{
-    bgfx::ProgramHandle program_handle;
-    bgfx::TextureHandle texture_handle;
-    auto texture =
-        key.texture_raw_ptr ? key.texture_raw_ptr : this->default_texture.get();
-    this->shading_context.set_uniform_texture(
-        "s_texture", texture, _internal_sampler_stage_index);
-    this->shading_context.bind("s_texture");
-    auto material = key.material_raw_ptr ? key.material_raw_ptr
-                                         : this->default_material.get();
-    material->bind();
-    program_handle = material->program->_handle;
-
-    bgfx::setState(
-        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | key.state_flags);
-    bgfx::setStencil(key.stencil_flags);
-
-    uint32_t sorting_value =
-        (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
-    sorting_value <<= 16;
-    sorting_value |= key.root_distance;
-    key.views.each_active_internal_index([&](uint16_t view_internal_index) {
-        // TODO calculate bgfx-depth value based on key
-        bgfx::submit(
-            view_internal_index, program_handle, sorting_value,
-            BGFX_DISCARD_NONE);
-    });
-    bgfx::discard(BGFX_DISCARD_ALL);
 }
 
 uint32_t
 Renderer::_calculate_reset_flags() const
 {
     return this->_vertical_sync ? BGFX_RESET_VSYNC : 0;
+}
+
+bgfx::ProgramHandle
+Renderer::_get_program_handle(const Material* material)
+{
+    auto ptr = material ? material : this->default_material.get_valid();
+    return ptr->program->_handle;
 }
 
 bgfx::RendererType::Enum

@@ -22,6 +22,7 @@
 #include "kaacore/spatial_index.h"
 #include "kaacore/sprites.h"
 #include "kaacore/transitions.h"
+#include "kaacore/viewports.h"
 
 namespace kaacore {
 
@@ -129,9 +130,14 @@ class Node {
     std::vector<Node*> children();
     bool is_root() const;
 
-    void views(const std::optional<std::unordered_set<int16_t>>& z_indices);
-    const std::optional<std::vector<int16_t>> views() const;
-    const std::vector<int16_t> effective_views();
+    void render_passes(
+        const std::optional<std::unordered_set<int16_t>>& indices);
+    const std::optional<std::vector<int16_t>> render_passes() const;
+    const std::vector<int16_t> effective_render_passes();
+
+    void viewports(const std::optional<std::unordered_set<int16_t>>& z_indices);
+    const std::optional<std::vector<int16_t>> viewports() const;
+    const std::vector<int16_t> effective_viewports();
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
@@ -283,7 +289,8 @@ class Node {
     uint64_t _scene_tree_id = 0;
     Node* _parent = nullptr;
     std::vector<Node*> _children;
-    std::optional<ViewIndexSet> _views = std::nullopt;
+    std::optional<RenderPassIndexSet> _render_passes = std::nullopt;
+    std::optional<ViewportIndexSet> _viewports = std::nullopt;
     uint16_t _root_distance = 0;
 
     std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
@@ -292,7 +299,8 @@ class Node {
         glm::fmat4 value;
     } _model_matrix;
     struct {
-        ViewIndexSet calculated_views;
+        RenderPassIndexSet calculated_render_passes;
+        ViewportIndexSet calculated_viewports;
         int16_t calculated_z_index;
     } _ordering_data;
     struct {

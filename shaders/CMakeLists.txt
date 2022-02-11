@@ -186,6 +186,7 @@ macro(add_embedded_shader)
     endforeach()
 endmacro()
 
+add_embedded_shader(vs_effect.sc VERTEX)
 add_embedded_shader(vs_default.sc VERTEX)
 add_embedded_shader(fs_default.sc FRAGMENT)
 add_embedded_shader(fs_sdf_font.sc FRAGMENT)

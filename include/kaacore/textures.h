@@ -6,9 +6,7 @@
 #include <vector>
 
 #include <bgfx/bgfx.h>
-#include <bimg/decode.h>
-#include <bx/bx.h>
-#include <bx/file.h>
+#include <bimg/bimg.h>
 #include <glm/glm.hpp>
 
 #include "kaacore/log.h"
@@ -34,29 +32,44 @@ class FontData;
 
 class Texture : public Resource {
   public:
-    const std::string path;
-    bgfx::TextureHandle handle;
-    const uint64_t flags = BGFX_SAMPLER_NONE;
+    bgfx::TextureHandle handle() const;
+    virtual glm::uvec2 get_dimensions() const = 0;
+
+  protected:
+    bgfx::TextureHandle _handle;
+
+    friend class FontData;
+};
+
+class MemoryTexture : public Texture {
+  public:
+    MemoryTexture() = default;
+    ~MemoryTexture();
     std::shared_ptr<bimg::ImageContainer> image_container;
 
-    Texture();
-    ~Texture();
-    glm::uvec2 get_dimensions();
-
-    static ResourceReference<Texture> load(
-        const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
-    static ResourceReference<Texture> load(
+    glm::uvec2 get_dimensions() const override;
+    static ResourceReference<MemoryTexture> create(
         bimg::ImageContainer* image_container);
 
-  private:
-    Texture(bimg::ImageContainer* image_container);
-    Texture(const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
+  protected:
+    MemoryTexture(bimg::ImageContainer* image_container);
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
-    friend class FontData;
-    friend class ResourcesRegistry<std::string, Texture>;
-    friend std::unique_ptr<Texture> load_default_texture();
+    friend std::unique_ptr<MemoryTexture> load_default_texture();
+};
+
+class ImageTexture : public MemoryTexture {
+  public:
+    const std::string path;
+
+    static ResourceReference<ImageTexture> load(const std::string& path);
+
+  private:
+    ImageTexture(const std::string& path);
+    virtual void _initialize() override;
+
+    friend class ResourcesRegistry<std::string, ImageTexture>;
 };
 
 template<typename T = uint8_t>

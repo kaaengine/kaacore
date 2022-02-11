@@ -7,7 +7,7 @@
 
 namespace kaacore {
 
-ResourcesRegistry<MaterialID, Material> _materials_registry;
+ResourcesRegistry<MaterialId, Material> _materials_registry;
 
 void
 initialize_materials()
@@ -141,8 +141,18 @@ ShadingContext::_name_in_registry(const std::string& name) const
     return this->_uniforms.find(name) != this->_uniforms.end();
 }
 
+void
+ShadingContext::_set_uniform_texture(
+    const std::string& name, const Texture* texture, const uint8_t stage,
+    const uint32_t flags)
+{
+    KAACORE_CHECK(
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+    std::get<Sampler>(this->_uniforms[name])._set(texture, stage, flags);
+}
+
 Material::Material(
-    const MaterialID id, const ResourceReference<Program>& program,
+    const MaterialId id, const ResourceReference<Program>& program,
     const UniformSpecificationMap& uniforms)
     : ShadingContext(uniforms), program(program), _id(id)
 {}

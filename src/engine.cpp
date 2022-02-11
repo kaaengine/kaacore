@@ -90,8 +90,10 @@ Engine::Engine(
                          // meaning it will talk with system graphics.
     this->_engine_loop_thread =
         std::thread{[this, bgfx_init_data, window_size]() {
-            this->renderer =
-                std::make_unique<Renderer>(bgfx_init_data, window_size);
+            this->renderer = std::make_unique<Renderer>(
+                bgfx_init_data, window_size, this->_virtual_resolution,
+                this->_virtual_resolution_mode);
+            reset_render_targets(this->renderer->view_size);
             this->resources_manager = std::make_unique<ResourcesManager>();
             this->_engine_thread_entrypoint();
             // When _engine_thread_entrypoint() exits it means engine is
@@ -114,7 +116,10 @@ Engine::Engine(
         }
     }
 #else
-    this->renderer = std::make_unique<Renderer>(bgfx_init_data, window_size);
+    this->renderer = std::make_unique<Renderer>(
+        bgfx_init_data, window_size, this->_virtual_resolution,
+        this->_virtual_resolution_mode);
+    reset_render_targets(this->renderer->view_size);
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
     this->window->show();
@@ -198,7 +203,7 @@ Engine::virtual_resolution(const glm::uvec2& resolution)
         resolution.x > 0 and resolution.y > 0,
         "Virtual resolution must be greater than zero.");
     this->_virtual_resolution = resolution;
-    this->renderer->reset();
+    this->_reset(this->window->size());
 }
 
 VirtualResolutionMode
@@ -211,7 +216,7 @@ void
 Engine::virtual_resolution_mode(const VirtualResolutionMode vr_mode)
 {
     this->_virtual_resolution_mode = vr_mode;
-    this->renderer->reset();
+    this->_reset(this->window->size());
 }
 
 bool
@@ -224,7 +229,9 @@ void
 Engine::vertical_sync(const bool vsync)
 {
     this->renderer->_vertical_sync = vsync;
-    this->renderer->reset();
+    this->renderer->reset(
+        this->window->size(), this->_virtual_resolution,
+        this->_virtual_resolution_mode);
 }
 
 std::vector<Display>
@@ -262,6 +269,15 @@ Engine::get_fps() const
         return 1.s / duration;
     }
     return 0;
+}
+
+void
+Engine::_reset(const glm::uvec2& window_size)
+{
+    this->renderer->reset(
+        window_size, this->_virtual_resolution, this->_virtual_resolution_mode);
+    this->_scene->_reset();
+    reset_render_targets(this->renderer->view_size);
 }
 
 bgfx::Init
@@ -306,7 +322,6 @@ Engine::_scene_processing()
             auto dt = this->clock.measure();
             {
                 StopwatchStatAutoPusher stopwatch{"engine.frame:time"};
-                this->renderer->begin_frame();
 #if KAACORE_MULTITHREADING_MODE
                 this->_event_processing_state.wait(EventProcessingState::ready);
 #endif
@@ -331,14 +346,16 @@ Engine::_scene_processing()
                     this->_scene->build_processing_queue();
                 this->_scene->update_nodes_drawing_queue(
                     nodes_processing_queue);
-                this->_scene->process_drawing();
+                this->_scene->attach_frame_context(this->renderer);
+                this->renderer->begin_frame();
+                this->_scene->render(this->renderer);
+                this->renderer->end_frame();
                 this->_scene->resolve_spatial_index_changes(
                     nodes_processing_queue);
                 this->_scene->process_physics(scaled_dt);
                 this->timers.process(dt);
                 this->_scene->timers.process(scaled_dt);
                 this->_scene->process_nodes(scaled_dt, nodes_processing_queue);
-                this->renderer->end_frame();
                 this->_scene->remove_marked_nodes();
             }
 
@@ -365,7 +382,7 @@ Engine::_swap_scenes()
     this->_scene->on_exit();
     this->_next_scene->on_enter();
     this->_scene = std::move(this->_next_scene);
-    this->_scene->reset_views();
+    this->_scene->_reset();
 }
 
 void
@@ -393,8 +410,7 @@ Engine::_process_events()
         } else if (
             event.type == SDL_WINDOWEVENT and
             event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-            this->renderer->reset();
-            this->_scene->reset_views();
+            this->_reset({event.window.data1, event.window.data2});
         }
         this->input_manager->push_event(event);
     }

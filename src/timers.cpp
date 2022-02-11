@@ -9,7 +9,7 @@
 
 namespace kaacore {
 
-_TimerState::_TimerState(TimerID id, TimerCallback&& callback)
+_TimerState::_TimerState(TimerId id, TimerCallback&& callback)
     : id(id), callback(std::move(callback))
 {}
 
@@ -59,7 +59,7 @@ TimersManager::TimersManager() : _scene(nullptr) {}
 TimersManager::TimersManager(Scene* const scene) : _scene(scene) {}
 
 TimersManager::_InvocationInstance::_InvocationInstance(
-    TimerID invocation_id, Duration interval, TimePoint triggered_at,
+    TimerId invocation_id, Duration interval, TimePoint triggered_at,
     std::weak_ptr<_TimerState>&& state)
     : invocation_id(invocation_id), interval(interval),
       triggered_at(triggered_at), state(state)

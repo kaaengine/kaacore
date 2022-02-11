@@ -17,9 +17,9 @@ Shape::Shape(
     const double radius, const std::vector<VertexIndex>& indices,
     const std::vector<StandardVertexData>& vertices,
     const std::vector<glm::dvec2>& bounding_points)
-    : Shape(type, points, radius, indices, vertices,
-            BoundingBox<double>::from_points(bounding_points),
-            bounding_points)
+    : Shape(
+          type, points, radius, indices, vertices,
+          BoundingBox<double>::from_points(bounding_points), bounding_points)
 {}
 
 Shape::Shape(
@@ -214,11 +214,11 @@ Shape::Freeform(
         {bounding_box.min_x, bounding_box.min_y},
         {bounding_box.max_x, bounding_box.min_y},
         {bounding_box.max_x, bounding_box.max_y},
-        {bounding_box.min_x, bounding_box.max_y}
-    };
+        {bounding_box.min_x, bounding_box.max_y}};
 
     return Shape(
-        ShapeType::freeform, {}, 0., indices, vertices, bounding_box, bounding_points);
+        ShapeType::freeform, {}, 0., indices, vertices, bounding_box,
+        bounding_points);
 }
 
 Shape

@@ -22,7 +22,9 @@ TestingScene::update(const kaacore::Duration dt)
         kaacore::get_engine()->quit();
         return;
     }
-    this->update_function(dt);
+    if (this->update_function) {
+        this->update_function(dt);
+    }
     this->frames_left--;
 }
 

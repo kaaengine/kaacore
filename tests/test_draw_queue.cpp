@@ -17,11 +17,14 @@ TEST_CASE("test_draw_queue_rendering", "[.][visual_test][draw_queue]")
         [](const size_t id, const int16_t z_index,
            const kaacore::Shape& shape) {
             kaacore::DrawBucketKey dbk;
-            dbk.views = kaacore::ViewIndexSet{std::unordered_set<int16_t>{0}};
+            dbk.render_passes =
+                kaacore::RenderPassIndexSet{std::unordered_set<int16_t>{0}};
+            dbk.viewports =
+                kaacore::ViewportIndexSet{std::unordered_set<int16_t>{0}};
             dbk.z_index = z_index;
             dbk.root_distance = 0;
-            dbk.texture_raw_ptr = nullptr;
-            dbk.material_raw_ptr =
+            dbk.texture = nullptr;
+            dbk.material =
                 kaacore::get_engine()->renderer->default_material.res_ptr.get();
             ;
             dbk.state_flags = 0;
@@ -66,8 +69,6 @@ TEST_CASE("test_draw_queue_rendering", "[.][visual_test][draw_queue]")
 
     draw_queue.process_modifications();
 
-    scene.update_function = [&](auto dt) {
-        engine->renderer->render_draw_queue(draw_queue);
-    };
+    scene.draw_queue = draw_queue;
     scene.run_on_engine(500);
 }

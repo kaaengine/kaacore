@@ -22,9 +22,7 @@ struct Sprite {
 
     Sprite();
     Sprite(const ResourceReference<Texture>& texture);
-
-    static Sprite load(
-        const std::string& path, uint64_t flags = BGFX_SAMPLER_NONE);
+    static Sprite load(const std::string& path);
 
     inline bool has_texture() const { return bool(this->texture); }
     inline operator bool() const { return this->has_texture(); }

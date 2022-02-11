@@ -114,16 +114,18 @@ Sampler::Sampler(const std::string& name)
 
 Sampler::Sampler(const Sampler& other)
     : UniformBase(other), _stage(other._stage), _flags(other._flags),
-      _value(other._value), _texture(other._texture)
+      _value(other._value)
 {}
 
 Sampler::Sampler(Sampler&& other)
     : UniformBase(std::move(other)), _stage(other._stage), _flags(other._flags),
-      _value(other._value), _texture(std::move(other._texture))
+      _value(std::move(other._value))
 {
     other._stage = 0u;
     other._flags = 0u;
-    other._value = BGFX_INVALID_HANDLE;
+    if (auto ptr = std::get_if<bgfx::TextureHandle>(&other._value)) {
+        *ptr = BGFX_INVALID_HANDLE;
+    }
 }
 
 Sampler&
@@ -138,11 +140,13 @@ Sampler::operator=(Sampler&& other)
     this->_stage = other._stage;
     this->_flags = other._flags;
     this->_value = other._value;
-    this->_texture = std::move(other._texture);
+    this->_value = std::move(other._value);
 
     other._stage = 0u;
     other._flags = 0u;
-    other._value = BGFX_INVALID_HANDLE;
+    if (auto ptr = std::get_if<bgfx::TextureHandle>(&other._value)) {
+        *ptr = BGFX_INVALID_HANDLE;
+    }
 
     return *this;
 }
@@ -150,9 +154,10 @@ Sampler::operator=(Sampler&& other)
 std::optional<SamplerValue>
 Sampler::get() const
 {
-    if (this->_texture) {
-        return SamplerValue{this->_stage, this->_flags, this->_texture};
+    if (auto ptr = std::get_if<std::shared_ptr<Texture>>(&this->_value)) {
+        return SamplerValue{this->_stage, this->_flags, *ptr};
     }
+
     return std::nullopt;
 }
 
@@ -161,8 +166,7 @@ Sampler::set(
     const ResourceReference<Texture>& texture, const uint8_t stage,
     const uint32_t flags)
 {
-    this->_value = texture->handle;
-    this->_texture = texture.res_ptr;
+    this->_value = texture.res_ptr;
     this->_stage = stage;
     this->_flags = flags;
 }
@@ -170,17 +174,30 @@ Sampler::set(
 void
 Sampler::set(const SamplerValue& value)
 {
-    this->_value = value.texture->handle;
-    this->_texture = value.texture.res_ptr;
+    this->_value = value.texture.res_ptr;
     this->_stage = value.stage;
     this->_flags = value.flags;
 }
 
-void
-Sampler::set(const Texture* texture, const uint8_t stage, const uint32_t flags)
+bgfx::TextureHandle
+Sampler::_texture_handle()
 {
-    this->_value = texture->handle;
-    this->_texture = std::shared_ptr<Texture>(nullptr);
+    return std::visit(
+        [](auto&& variant) -> bgfx::TextureHandle {
+            using T = std::decay_t<decltype(variant)>;
+            if constexpr (std::is_same_v<T, bgfx::TextureHandle>) {
+                return variant;
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Texture>>) {
+                return variant->handle();
+            }
+        },
+        this->_value);
+}
+
+void
+Sampler::_set(const Texture* texture, const uint8_t stage, const uint32_t flags)
+{
+    this->_value = texture->handle();
     this->_stage = stage;
     this->_flags = flags;
 }
@@ -188,7 +205,8 @@ Sampler::set(const Texture* texture, const uint8_t stage, const uint32_t flags)
 void
 Sampler::_bind()
 {
-    bgfx::setTexture(this->_stage, this->_handle, this->_value, this->_flags);
+    bgfx::setTexture(
+        this->_stage, this->_handle, this->_texture_handle(), this->_flags);
 }
 
 } // namespace kaacore
