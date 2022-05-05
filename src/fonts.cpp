@@ -262,13 +262,14 @@ FontRenderGlyph::arrange_glyphs(
                 continue;
             }
         }
+        it->position = current_pos;
+
         if (it->codepoint == static_cast<UnicodeCodepoint>('\n')) {
             word_start = it + 1;
             current_pos.x = 0.;
             current_pos.y += line_height;
             continue;
         }
-        it->position = current_pos;
         current_pos.x += it->advance;
 
         if (current_pos.x > line_width and
