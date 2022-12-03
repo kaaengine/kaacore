@@ -70,10 +70,46 @@ load_raw_image(
     return image_container;
 }
 
+glm::dvec4 query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position)
+{
+    KAACORE_CHECK(image->m_format == bimg::TextureFormat::RGBA8 or image->m_format == bimg::TextureFormat::RGB8, "Unhandled texture format ({}/{})!",
+            image->m_format, bimg::getName(image->m_format));
+    std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(image->m_data);
+    if (image->m_format == bimg::TextureFormat::RGBA8) {
+        ptr += 4 * ((position.y * image->m_width) + position.x);
+        return {
+            ptr[0] / 255.,
+            ptr[1] / 255.,
+            ptr[2] / 255.,
+            ptr[3] / 255.
+        };
+    } else {
+        ptr += 3 * ((position.y * image->m_width) + position.x);
+        return {
+            ptr[0] / 255.,
+            ptr[1] / 255.,
+            ptr[2] / 255.,
+            1.
+        };
+    }
+}
+
 bgfx::TextureHandle
 Texture::handle() const
 {
     return this->_handle;
+}
+
+bool
+Texture::can_query() const
+{
+    return false;
+}
+
+glm::dvec4
+Texture::query_pixel(const glm::uvec2 position) const
+{
+    throw kaacore::exception{"Texture is unsuitable for querying!"};
 }
 
 MemoryTexture::MemoryTexture(bimg::ImageContainer* image_container)
@@ -104,6 +140,18 @@ MemoryTexture::get_dimensions() const
 {
     KAACORE_CHECK(this->image_container != nullptr, "Invalid image container.");
     return {this->image_container->m_width, this->image_container->m_height};
+}
+
+bool
+MemoryTexture::can_query() const
+{
+    return true;
+}
+
+glm::dvec4
+MemoryTexture::query_pixel(const glm::uvec2 position) const
+{
+    return query_image_pixel(this->image_container.get(), position);
 }
 
 void

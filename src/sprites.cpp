@@ -19,6 +19,20 @@ Sprite::load(const std::string& path)
     return Sprite(ImageTexture::load(path));
 }
 
+bool Sprite::can_query() const
+{
+    if (this->has_texture()) {
+        return this->texture->can_query();
+    }
+    return false;
+}
+
+glm::dvec4
+Sprite::query_pixel(const glm::dvec2 position) const
+{
+    return this->texture->query_pixel(glm::round(origin + position));
+}
+
 bool
 Sprite::operator==(const Sprite& other)
 {
