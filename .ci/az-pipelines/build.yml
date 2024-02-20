@@ -10,7 +10,7 @@ strategy:
   matrix:
     linux:
       system_name: 'linux'
-      image_name: 'ubuntu-18.04'
+      image_name: 'ubuntu-20.04'
       cmake_generator: 'Unix Makefiles'
       cmake_generator_platform: ''
       build_exe_directory: './'
@@ -22,7 +22,7 @@ strategy:
       build_exe_directory: './Release/'
     macos:
       system_name: 'macos'
-      image_name: 'macOS-10.15'
+      image_name: 'macOS-11'
       cmake_generator: 'Unix Makefiles'
       cmake_generator_platform: ''
       build_exe_directory: './'
@@ -48,7 +48,7 @@ steps:
       -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
       cmake --build ./cmake_build --config Release -j 5
     env:
-      MACOSX_DEPLOYMENT_TARGET: '10.14'
+      MACOSX_DEPLOYMENT_TARGET: '11'
     displayName: 'Build kaacore'
 
   - bash: cp ./cmake_build/third_party/sdl2/$(build_exe_directory)/SDL2.dll .
