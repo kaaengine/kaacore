@@ -66,8 +66,8 @@ load_embedded_shaders(
         fragment_shader_name);
     KAACORE_LOG_TRACE("Detected platform : {}", get_platform_name());
     return {
-        EmbeddedShader::load(ShaderType::fragment, fragment_shader_name),
         EmbeddedShader::load(ShaderType::vertex, vertex_shader_name),
+        EmbeddedShader::load(ShaderType::fragment, fragment_shader_name),
     };
 }
 
@@ -177,10 +177,6 @@ Renderer::Renderer(
     KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
     bgfx_init_data.resolution.height = window_size.y;
-
-    if (auto renderer_name = SDL_getenv("KAACORE_RENDERER")) {
-        bgfx_init_data.type = this->_choose_bgfx_renderer(renderer_name);
-    }
 
     bgfx::init(bgfx_init_data);
     KAACORE_LOG_INFO("Initializing bgfx completed.");
@@ -613,29 +609,6 @@ Renderer::_get_program_handle(const Material* material)
 {
     auto ptr = material ? material : this->default_material.get_valid();
     return ptr->program->_handle;
-}
-
-bgfx::RendererType::Enum
-Renderer::_choose_bgfx_renderer(const std::string& renderer_name) const
-{
-    if (renderer_name == "noop") {
-        return bgfx::RendererType::Noop;
-    } else if (renderer_name == "dx9") {
-        return bgfx::RendererType::Direct3D9;
-    } else if (renderer_name == "dx11") {
-        return bgfx::RendererType::Direct3D11;
-    } else if (renderer_name == "dx12") {
-        return bgfx::RendererType::Direct3D12;
-    } else if (renderer_name == "metal") {
-        return bgfx::RendererType::Metal;
-    } else if (renderer_name == "opengl") {
-        return bgfx::RendererType::OpenGL;
-    } else if (renderer_name == "vulkan") {
-        return bgfx::RendererType::Vulkan;
-    } else {
-        throw exception(
-            fmt::format("Unsupported renderer: {}.\n", renderer_name));
-    }
 }
 
 } // namespace kaacore
