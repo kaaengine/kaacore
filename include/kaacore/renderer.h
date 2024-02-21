@@ -185,8 +185,6 @@ class Renderer {
 
     uint32_t _calculate_reset_flags() const;
     bgfx::ProgramHandle _get_program_handle(const Material* material);
-    bgfx::RendererType::Enum _choose_bgfx_renderer(
-        const std::string& name) const;
 
     friend class Engine;
 };

@@ -6,6 +6,7 @@
 
 #include <SDL_config.h>
 #include <SDL_syswm.h>
+#include <bgfx/bgfx.h>
 
 #include "kaacore/audio.h"
 #include "kaacore/display.h"
@@ -14,6 +15,7 @@
 #include "kaacore/log.h"
 #include "kaacore/scenes.h"
 #include "kaacore/statistics.h"
+#include "kaacore/platform.h"
 
 #include "kaacore/engine.h"
 
@@ -45,6 +47,63 @@ class InitGuard {
     bool _sdl_initialized;
     std::scoped_lock<std::mutex> _lock;
 };
+
+std::string
+get_env_or_empty_string(const char* env_name) {
+    if (auto value = SDL_getenv(env_name)) {
+        return value;
+    }
+    return "";
+}
+
+bgfx::RendererType::Enum
+choose_renderer_backend(const std::string& renderer_name)
+{
+    if (renderer_name == "noop") {
+        return bgfx::RendererType::Noop;
+    } else if (renderer_name == "dx9") {
+        return bgfx::RendererType::Direct3D9;
+    } else if (renderer_name == "dx11") {
+        return bgfx::RendererType::Direct3D11;
+    } else if (renderer_name == "dx12") {
+        return bgfx::RendererType::Direct3D12;
+    } else if (renderer_name == "metal") {
+        return bgfx::RendererType::Metal;
+    } else if (renderer_name == "opengl") {
+        return bgfx::RendererType::OpenGL;
+    } else if (renderer_name == "vulkan") {
+        return bgfx::RendererType::Vulkan;
+    } else if (renderer_name == "bgfx_default") {
+        return bgfx::RendererType::Count;  // bgfx default
+    } else if (renderer_name == "default" or renderer_name == "") {
+        if (get_platform() == PlatformType::linux) {
+            return bgfx::RendererType::OpenGL;
+        }
+        return bgfx::RendererType::Count;  // bgfx default
+    } else {
+        throw exception(
+            fmt::format("Unsupported renderer: {}.\n", renderer_name));
+    }
+}
+
+uint16_t
+choose_gpu_vendor(const std::string& vendor_name)
+{
+    if (vendor_name == "software") {
+        return BGFX_PCI_ID_SOFTWARE_RASTERIZER;
+    } else if (vendor_name == "amd") {
+        return BGFX_PCI_ID_AMD;
+    } else if (vendor_name == "intel") {
+        return BGFX_PCI_ID_INTEL;
+    } else if (vendor_name == "nvidia") {
+        return BGFX_PCI_ID_NVIDIA;
+    } else if (vendor_name == "default" or vendor_name == "") {
+        return BGFX_PCI_ID_NONE;
+    } else {
+        throw exception(
+            fmt::format("Unsupported GPU vendor: {}.\n", vendor_name));
+    }
+}
 
 std::string
 get_persistent_path(
@@ -288,11 +347,23 @@ Engine::_gather_platform_data()
     SDL_VERSION(&wminfo.version);
     SDL_GetWindowWMInfo(this->window->_window, &wminfo);
 
+    auto renderer_type = choose_renderer_backend(get_env_or_empty_string("KAACORE_RENDERER"));
+    bgfx_init_data.type = renderer_type;
+    bgfx_init_data.vendorId = choose_gpu_vendor(get_env_or_empty_string("KAACORE_GPU_VENDOR"));
 #if SDL_VIDEO_DRIVER_X11
-    // using sdl's provided ndt pointer might cause
-    // segfault during engine 2nd initialization,
-    // bgfx is capable of querying this info on it's own
-    bgfx_init_data.platformData.ndt = nullptr;
+    if (renderer_type == bgfx::RendererType::OpenGL) {
+        // using sdl's provided ndt pointer might cause
+        // segfault during engine 2nd initialization,
+        // bgfx is capable of querying this info on it's own
+        bgfx_init_data.platformData.ndt = nullptr;
+    } else {
+        // Vulkan renderer implementation in bgfx is not capable
+        // of querying the display details on their own so we have to
+        // fetch this data from SDL.
+        // Unfortunately it will most cause a SEGFAULT
+        // on 2nd kaaengine initialization.
+        bgfx_init_data.platformData.ndt = wminfo.info.x11.display;
+    }
     bgfx_init_data.platformData.nwh =
         reinterpret_cast<void*>(wminfo.info.x11.window);
 #elif SDL_VIDEO_DRIVER_WINDOWS
