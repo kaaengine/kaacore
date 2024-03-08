@@ -38,18 +38,6 @@ enum class ClearFlag : uint16_t {
     color = BGFX_CLEAR_COLOR,
     depth = BGFX_CLEAR_DEPTH,
     stencil = BGFX_CLEAR_STENCIL,
-    discard_color0 = BGFX_CLEAR_DISCARD_COLOR_0,
-    discard_color1 = BGFX_CLEAR_DISCARD_COLOR_1,
-    discard_color2 = BGFX_CLEAR_DISCARD_COLOR_2,
-    discard_color3 = BGFX_CLEAR_DISCARD_COLOR_3,
-    discard_color4 = BGFX_CLEAR_DISCARD_COLOR_4,
-    discard_color5 = BGFX_CLEAR_DISCARD_COLOR_5,
-    discard_color6 = BGFX_CLEAR_DISCARD_COLOR_6,
-    discard_color7 = BGFX_CLEAR_DISCARD_COLOR_7,
-    discard_depth = BGFX_CLEAR_DISCARD_DEPTH,
-    discard_stencil = BGFX_CLEAR_DISCARD_STENCIL,
-    discard_color_mask = BGFX_CLEAR_DISCARD_COLOR_MASK,
-    discard_mask = BGFX_CLEAR_DISCARD_MASK
 };
 
 uint16_t

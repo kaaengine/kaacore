@@ -517,12 +517,12 @@ Renderer::set_render_pass_state(const RenderPassState& state)
             glm::fvec4 clear_color = state.clear_colors[i];
             bgfx::setPaletteColor(i, glm::value_ptr(clear_color));
         }
-        bgfx::setViewClear(view_index, 0 | flags, 1.f, 0, 0, 1, 2, 3, 4, 5, 6, 7);
+        bgfx::setViewClear(view_index, flags, 1.f, 0, 0, 1, 2, 3, 4, 5, 6, 7);
     } else {
         glm::fvec4 clear_color = state.clear_colors[0];
         if (clear_color.a) {
             bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
-            bgfx::setViewClear(view_index, 0 | state.clear_flags, 1.f, 0, 0);
+            bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
         } else {
             bgfx::setViewClear(view_index, state.clear_flags & ~BGFX_CLEAR_COLOR);
         }
