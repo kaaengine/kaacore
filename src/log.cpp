@@ -47,6 +47,7 @@ void
 initialize_logging()
 {
     if (not logging_initialized) {
+        // global pattern
         spdlog::set_pattern("%H:%M:%S.%e | %^%-17n %L%$ %v [%s:%#]");
         const char* logging_settings_env =
             std::getenv("KAACORE_LOGGING_LEVELS");
@@ -95,6 +96,15 @@ initialize_logging()
             } else {
                 logger->set_level(default_level);
             }
+
+            // custom formatting for wrapper categories
+            if (index == _log_category_app
+                or index == _log_category_wrapper
+                or index == _log_category_tools
+            ) {
+                logger->set_pattern("%H:%M:%S.%e | %^%-17n %L%$ %v");
+            }
+
             logger->debug("Initialized new logger (index: {})", index);
             _loggers[index] = logger;
         }
