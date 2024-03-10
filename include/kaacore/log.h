@@ -9,6 +9,7 @@
 #include <SDL.h>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/pattern_formatter.h>
 
 #include "kaacore/config.h"
 #include "kaacore/utils.h"
@@ -26,7 +27,7 @@ constexpr std::array _log_categories{
     "views"sv, "spatial_index"sv, "threading"sv, "utils"sv, "embedded_data"sv,
     "easings"sv, "shaders"sv, "statistics"sv, "draw_unit"sv, "draw_queue"sv,
     // special-purpose categories
-    "other"sv, "app"sv, "wrapper"sv};
+    "other"sv, "app"sv, "wrapper"sv, "tools"sv};
 
 constexpr auto _log_category_fallback =
     find_array_element(_log_categories, "other"sv).value();
@@ -34,10 +35,18 @@ constexpr auto _log_category_app =
     find_array_element(_log_categories, "app"sv).value();
 constexpr auto _log_category_wrapper =
     find_array_element(_log_categories, "wrapper"sv).value();
+constexpr auto _log_category_tools =
+    find_array_element(_log_categories, "tools"sv).value();
 
 extern std::array<std::shared_ptr<spdlog::logger>, _log_categories.size()>
     _loggers;
 extern bool logging_initialized;
+
+class ConditionalSourceFlag : public spdlog::custom_flag_formatter {
+public:
+    std::unique_ptr<custom_flag_formatter> clone() const override;
+    void format(const spdlog::details::log_msg&, const std::tm&, spdlog::memory_buf_t& dest) override;
+};
 
 spdlog::level::level_enum
 get_logging_level(const std::string_view& category);
