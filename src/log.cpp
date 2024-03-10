@@ -120,7 +120,6 @@ initialize_logging()
             } else {
                 logger->set_level(default_level);
             }
-
             logger->debug("Initialized new logger (index: {})", index);
             _loggers[index] = logger;
         }
