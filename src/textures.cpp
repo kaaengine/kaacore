@@ -72,26 +72,17 @@ load_raw_image(
 
 glm::dvec4 query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position)
 {
-    KAACORE_CHECK(image->m_format == bimg::TextureFormat::RGBA8 or image->m_format == bimg::TextureFormat::RGB8, "Unhandled texture format ({}/{})!",
-            image->m_format, bimg::getName(image->m_format));
+    const std::uint32_t bpp = bimg::getBitsPerPixel(image->m_format) / 8;
     std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(image->m_data);
-    if (image->m_format == bimg::TextureFormat::RGBA8) {
-        ptr += 4 * ((position.y * image->m_width) + position.x);
-        return {
-            ptr[0] / 255.,
-            ptr[1] / 255.,
-            ptr[2] / 255.,
-            ptr[3] / 255.
-        };
-    } else {
-        ptr += 3 * ((position.y * image->m_width) + position.x);
-        return {
-            ptr[0] / 255.,
-            ptr[1] / 255.,
-            ptr[2] / 255.,
-            1.
-        };
-    }
+    ptr += bpp * ((position.y * image->m_width) + position.x);
+
+    float rgba[4];
+    bimg::UnpackFn unpack_fn = bimg::getUnpack(image->m_format);
+    unpack_fn(rgba, ptr);
+
+    return {
+        rgba[0], rgba[1], rgba[2], rgba[3]
+    };
 }
 
 bgfx::TextureHandle

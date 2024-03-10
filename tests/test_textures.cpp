@@ -127,11 +127,11 @@ TEST_CASE("Test texture pixel query", "[texture][query]")
         bimg::TextureFormat::Enum::RGBA8, 2, 2, image_content);
 
     REQUIRE(kaacore::query_image_pixel(image_container, {0, 0})
-            == glm::dvec4{10 / 255., 11 / 255., 12 / 255., 255 / 255.});
+            == glm::dvec4{10 / 255.f, 11 / 255.f, 12 / 255.f, 255 / 255.f});
     REQUIRE(kaacore::query_image_pixel(image_container, {1, 0})
-            == glm::dvec4{20 / 255., 21 / 255., 22 / 255., 255 / 255.});
+            == glm::dvec4{20 / 255.f, 21 / 255.f, 22 / 255.f, 255 / 255.f});
     REQUIRE(kaacore::query_image_pixel(image_container, {0, 1})
-            == glm::dvec4{30 / 255., 31 / 255., 32 / 255., 255 / 255.});
+            == glm::dvec4{30 / 255.f, 31 / 255.f, 32 / 255.f, 255 / 255.f});
     REQUIRE(kaacore::query_image_pixel(image_container, {1, 1})
-            == glm::dvec4{40 / 255., 41 / 255., 42 / 255., 255 / 255.});
+            == glm::dvec4{40 / 255.f, 41 / 255.f, 42 / 255.f, 255 / 255.f});
 }
