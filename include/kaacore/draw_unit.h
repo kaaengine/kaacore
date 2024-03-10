@@ -58,7 +58,7 @@ struct DrawBucketKey {
                    this->root_distance, this->texture, this->material,
                    this->state_flags, this->stencil_flags) <
                std::tie(
-                   other.render_passes, this->viewports, other.z_index,
+                   other.render_passes, other.viewports, other.z_index,
                    other.root_distance, other.texture, other.material,
                    other.state_flags, other.stencil_flags);
     }
