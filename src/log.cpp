@@ -28,9 +28,9 @@ ConditionalSourceFlag::format(const spdlog::details::log_msg &msg, const std::tm
     }
 
     dest.push_back('[');
-    std::string path = msg.source.filename;
+    std::string_view path = msg.source.filename;
     auto filename = path.substr(path.find_last_of("/\\") + 1);
-    spdlog::details::fmt_helper::append_string_view(filename, dest);
+    spdlog::details::fmt_helper::append_string_view(filename.data(), dest);
     dest.push_back(':');
     spdlog::details::fmt_helper::append_int(msg.source.line, dest);
     dest.push_back(']');
