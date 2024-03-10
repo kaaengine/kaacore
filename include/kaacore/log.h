@@ -45,7 +45,7 @@ extern bool logging_initialized;
 class ConditionalSourceFlag : public spdlog::custom_flag_formatter {
 public:
     std::unique_ptr<custom_flag_formatter> clone() const override;
-    void format(const spdlog::details::log_msg &, const std::tm &, spdlog::memory_buf_t &dest) override;
+    void format(const spdlog::details::log_msg&, const std::tm&, spdlog::memory_buf_t& dest) override;
 };
 
 spdlog::level::level_enum

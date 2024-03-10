@@ -21,7 +21,7 @@ constexpr auto _default_logging_level =
     _parse_logging_level_name(KAACORE_DEFAULT_LOGGING_LEVEL).value();
 
 void
-ConditionalSourceFlag::format(const spdlog::details::log_msg &msg, const std::tm &, spdlog::memory_buf_t &dest)
+ConditionalSourceFlag::format(const spdlog::details::log_msg& msg, const std::tm&, spdlog::memory_buf_t& dest)
 {
     if (msg.source.empty()) {
         return;
