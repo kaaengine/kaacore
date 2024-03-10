@@ -195,7 +195,7 @@ Node::_make_draw_bucket_key() const
         key.material = this->_material.get();
     }
     key.state_flags = 0u;
-    key.stencil_flags = 0u;
+    key.stencil_flags = this->_stencil_data.calculated_flags;
 
     return key;
 }
@@ -375,6 +375,37 @@ Node::recalculate_visibility_data()
     }
 }
 
+void
+Node::recalculate_stencil_data()
+{
+    if (not this->query_dirty_flags(DIRTY_STENCIL)) {
+        return;
+    }
+
+    const auto& inheritance_chain = this->build_inheritance_chain(
+        [](Node* n) { return n->query_dirty_flags(DIRTY_STENCIL); });
+
+    for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
+         it++) {
+        Node* node = *it;
+        if (not node->_stencil_mode.is_disabled()) {
+            node->_stencil_data.calculated_flags = node->_stencil_mode.stencil_flags();
+        } else if (node->is_root()) {
+            node->_stencil_data.calculated_flags = StencilMode::make_disabled().stencil_flags();
+        } else {
+            KAACORE_ASSERT(
+                node->_parent != nullptr,
+                "Nodes ({}) parent is not set, cannot determine "
+                "inheritance-based value",
+                fmt::ptr(node));
+            node->_stencil_data.calculated_flags =
+                node->_parent->_stencil_data.calculated_flags;
+        }
+
+        node->clear_dirty_flags(DIRTY_VISIBILITY_RECURSIVE);
+    }
+}
+
 std::optional<DrawUnitModification>
 Node::calculate_draw_unit_removal() const
 {
@@ -404,6 +435,7 @@ Node::calculate_draw_unit_updates()
     this->recalculate_model_matrix();
     this->recalculate_ordering_data();
     this->recalculate_visibility_data();
+    this->recalculate_stencil_data();
 
     const bool is_visible =
         this->_shape and this->_visibility_data.calculated_visible;
@@ -887,6 +919,29 @@ Node::effective_viewports()
 {
     this->recalculate_ordering_data();
     return this->_ordering_data.calculated_render_passes;
+}
+
+std::optional<StencilMode>
+Node::stencil_mode() const
+{
+    if (this->_stencil_mode.is_disabled()) {
+        return std::nullopt;
+    }
+    return this->_stencil_mode;
+}
+
+void
+Node::stencil_mode(const std::optional<StencilMode> stencil_mode)
+{
+    if (not stencil_mode.has_value()) {
+        if (this->_stencil_mode.is_disabled()) {
+            return;
+        }
+    } else if (this->_stencil_mode == stencil_mode.value()) {
+        return;
+    }
+    this->set_dirty_flags(DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_STENCIL_RECURSIVE);
+    this->_stencil_mode = stencil_mode.value_or(StencilMode::make_disabled());
 }
 
 void

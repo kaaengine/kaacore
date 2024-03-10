@@ -23,6 +23,7 @@
 #include "kaacore/sprites.h"
 #include "kaacore/transitions.h"
 #include "kaacore/viewports.h"
+#include "kaacore/stencil.h"
 
 namespace kaacore {
 
@@ -63,6 +64,7 @@ class Node {
     void recalculate_model_matrix();
     void recalculate_ordering_data();
     void recalculate_visibility_data();
+    void recalculate_stencil_data();
     VerticesIndicesVectorPair recalculate_vertices_indices_data();
 
     std::optional<DrawUnitModification> calculate_draw_unit_removal() const;
@@ -138,6 +140,9 @@ class Node {
     void viewports(const std::optional<std::unordered_set<int16_t>>& z_indices);
     const std::optional<std::vector<int16_t>> viewports() const;
     const std::vector<int16_t> effective_viewports();
+
+    std::optional<StencilMode> stencil_mode() const;
+    void stencil_mode(const std::optional<StencilMode> stencil_mode);
 
     void setup_wrapper(std::unique_ptr<ForeignNodeWrapper>&& wrapper);
     ForeignNodeWrapper* wrapper_ptr() const;
@@ -240,6 +245,7 @@ class Node {
     static inline const DirtyFlagsType DIRTY_VISIBILITY = 1u << 3;
     static inline const DirtyFlagsType DIRTY_ORDERING = 1u << 4;
     static inline const DirtyFlagsType DIRTY_SPATIAL_INDEX = 1u << 5;
+    static inline const DirtyFlagsType DIRTY_STENCIL = 1u << 6;
 
     static inline const DirtyFlagsType DIRTY_MODEL_MATRIX_RECURSIVE =
         DIRTY_MODEL_MATRIX | DIRTY_MODEL_MATRIX << DIRTY_FLAGS_SHIFT_RECURSIVE;
@@ -255,6 +261,9 @@ class Node {
     static inline const DirtyFlagsType DIRTY_SPATIAL_INDEX_RECURSIVE =
         DIRTY_SPATIAL_INDEX | DIRTY_SPATIAL_INDEX
                                   << DIRTY_FLAGS_SHIFT_RECURSIVE;
+    static inline const DirtyFlagsType DIRTY_STENCIL_RECURSIVE =
+        DIRTY_STENCIL | DIRTY_STENCIL
+                                  << DIRTY_FLAGS_SHIFT_RECURSIVE;
 
     static inline const DirtyFlagsType DIRTY_ANY_RECURSIVE =
         DIRTY_MODEL_MATRIX << DIRTY_FLAGS_SHIFT_RECURSIVE |
@@ -262,12 +271,14 @@ class Node {
         DIRTY_DRAW_VERTICES << DIRTY_FLAGS_SHIFT_RECURSIVE |
         DIRTY_VISIBILITY << DIRTY_FLAGS_SHIFT_RECURSIVE |
         DIRTY_ORDERING << DIRTY_FLAGS_SHIFT_RECURSIVE |
-        DIRTY_SPATIAL_INDEX << DIRTY_FLAGS_SHIFT_RECURSIVE;
+        DIRTY_SPATIAL_INDEX << DIRTY_FLAGS_SHIFT_RECURSIVE |
+        DIRTY_STENCIL << DIRTY_FLAGS_SHIFT_RECURSIVE;
 
     static inline const DirtyFlagsType DIRTY_ALL =
         DIRTY_MODEL_MATRIX_RECURSIVE | DIRTY_DRAW_KEYS_RECURSIVE |
         DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_VISIBILITY_RECURSIVE |
-        DIRTY_ORDERING_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE;
+        DIRTY_ORDERING_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
+        DIRTY_STENCIL_RECURSIVE;
 
   private:
     const NodeType _type = NodeType::basic;
@@ -291,6 +302,7 @@ class Node {
     std::vector<Node*> _children;
     std::optional<RenderPassIndexSet> _render_passes = std::nullopt;
     std::optional<ViewportIndexSet> _viewports = std::nullopt;
+    StencilMode _stencil_mode = StencilMode::make_disabled();
     uint16_t _root_distance = 0;
 
     std::unique_ptr<ForeignNodeWrapper> _node_wrapper;
@@ -306,6 +318,9 @@ class Node {
     struct {
         bool calculated_visible;
     } _visibility_data;
+    struct {
+        StencilMode::Flags calculated_flags;
+    } _stencil_data;
     struct {
         std::optional<DrawBucketKey> current_key;
     } _draw_unit_data;

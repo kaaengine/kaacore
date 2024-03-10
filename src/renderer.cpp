@@ -524,7 +524,7 @@ Renderer::set_render_pass_state(const RenderPassState& state)
             bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
             bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
         } else {
-            bgfx::setViewClear(view_index, BGFX_CLEAR_NONE);
+            bgfx::setViewClear(view_index, state.clear_flags & ~BGFX_CLEAR_COLOR);
         }
     }
 }
