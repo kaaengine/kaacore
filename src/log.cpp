@@ -4,6 +4,7 @@
 
 #include <SDL.h>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/details/fmt_helper.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "kaacore/exceptions.h"
@@ -18,6 +19,27 @@ std::array<std::shared_ptr<spdlog::logger>, _log_categories.size()> _loggers;
 
 constexpr auto _default_logging_level =
     _parse_logging_level_name(KAACORE_DEFAULT_LOGGING_LEVEL).value();
+
+void
+ConditionalSourceFlag::format(const spdlog::details::log_msg &msg, const std::tm &, spdlog::memory_buf_t &dest)
+{
+    if (msg.source.empty()) {
+        return;
+    }
+
+    dest.push_back('[');
+    std::string path = msg.source.filename;
+    auto filename = path.substr(path.find_last_of("/\\") + 1);
+    spdlog::details::fmt_helper::append_string_view(filename, dest);
+    dest.push_back(':');
+    spdlog::details::fmt_helper::append_int(msg.source.line, dest);
+    dest.push_back(']');
+}
+
+std::unique_ptr<spdlog::custom_flag_formatter>
+ConditionalSourceFlag::clone() const {
+    return std::make_unique<ConditionalSourceFlag>();
+}
 
 spdlog::level::level_enum
 get_logging_level(const std::string_view& category)
@@ -47,8 +69,10 @@ void
 initialize_logging()
 {
     if (not logging_initialized) {
-        // global pattern
-        spdlog::set_pattern("%H:%M:%S.%e | %^%-17n %L%$ %v [%s:%#]");
+        auto formatter = std::make_unique<spdlog::pattern_formatter>();
+        formatter->add_flag<ConditionalSourceFlag>('?');
+        formatter->set_pattern("%H:%M:%S.%e | %^%-17n %L%$ %v %?");
+        spdlog::set_formatter(std::move(formatter));
         const char* logging_settings_env =
             std::getenv("KAACORE_LOGGING_LEVELS");
 
@@ -95,14 +119,6 @@ initialize_logging()
                 }
             } else {
                 logger->set_level(default_level);
-            }
-
-            // custom formatting for wrapper categories
-            if (index == _log_category_app
-                or index == _log_category_wrapper
-                or index == _log_category_tools
-            ) {
-                logger->set_pattern("%H:%M:%S.%e | %^%-17n %L%$ %v");
             }
 
             logger->debug("Initialized new logger (index: {})", index);
