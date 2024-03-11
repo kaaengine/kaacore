@@ -28,12 +28,16 @@ load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,
     const std::vector<uint8_t>& data);
 
+glm::dvec4 query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position);
+
 class FontData;
 
 class Texture : public Resource {
   public:
     bgfx::TextureHandle handle() const;
     virtual glm::uvec2 get_dimensions() const = 0;
+    virtual bool can_query() const;
+    virtual glm::dvec4 query_pixel(const glm::uvec2 position) const;
 
   protected:
     bgfx::TextureHandle _handle;
@@ -47,6 +51,8 @@ class MemoryTexture : public Texture {
     ~MemoryTexture();
     std::shared_ptr<bimg::ImageContainer> image_container;
 
+    bool can_query() const override;
+    glm::dvec4 query_pixel(const glm::uvec2 position) const override;
     glm::uvec2 get_dimensions() const override;
     static ResourceReference<MemoryTexture> create(
         bimg::ImageContainer* image_container);

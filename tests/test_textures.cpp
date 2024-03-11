@@ -114,3 +114,24 @@ TEST_CASE("Test bitmap blitting", "[bitmap]")
         REQUIRE(bitmap.at(4, 4) == 0);
     }
 }
+
+TEST_CASE("Test texture pixel query", "[texture][query]")
+{
+    const std::vector<uint8_t> image_content{
+        10, 11, 12, 255,
+        20, 21, 22, 255,
+        30, 31, 32, 255,
+        40, 41, 42, 255
+    };
+    auto image_container = kaacore::load_raw_image(
+        bimg::TextureFormat::Enum::RGBA8, 2, 2, image_content);
+
+    REQUIRE(kaacore::query_image_pixel(image_container, {0, 0})
+            == glm::dvec4{10 / 255.f, 11 / 255.f, 12 / 255.f, 255 / 255.f});
+    REQUIRE(kaacore::query_image_pixel(image_container, {1, 0})
+            == glm::dvec4{20 / 255.f, 21 / 255.f, 22 / 255.f, 255 / 255.f});
+    REQUIRE(kaacore::query_image_pixel(image_container, {0, 1})
+            == glm::dvec4{30 / 255.f, 31 / 255.f, 32 / 255.f, 255 / 255.f});
+    REQUIRE(kaacore::query_image_pixel(image_container, {1, 1})
+            == glm::dvec4{40 / 255.f, 41 / 255.f, 42 / 255.f, 255 / 255.f});
+}

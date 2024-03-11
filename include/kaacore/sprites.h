@@ -26,6 +26,9 @@ struct Sprite {
 
     inline bool has_texture() const { return bool(this->texture); }
     inline operator bool() const { return this->has_texture(); }
+    bool can_query() const;
+    glm::dvec4 query_pixel(const glm::dvec2 position) const;
+
     bool operator==(const Sprite& other);
 
     Sprite crop(glm::dvec2 new_origin, glm::dvec2 new_dimensions) const;
