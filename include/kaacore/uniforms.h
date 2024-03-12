@@ -15,6 +15,8 @@
 
 namespace kaacore {
 
+using SamplerVariant = std::variant<bgfx::TextureHandle, std::shared_ptr<Texture>>;
+
 enum class UniformType {
     sampler = bgfx::UniformType::Sampler,
     vec4 = bgfx::UniformType::Vec4,
@@ -71,7 +73,6 @@ struct SamplerValue {
 };
 
 class Sampler : public UniformBase {
-    using _Value = std::variant<bgfx::TextureHandle, std::shared_ptr<Texture>>;
 
   public:
     Sampler();
@@ -82,19 +83,15 @@ class Sampler : public UniformBase {
     Sampler& operator=(const Sampler& other) = delete;
 
     std::optional<SamplerValue> get() const;
-    void set(
-        const ResourceReference<Texture>& texture, const uint8_t stage,
+    void set(const SamplerVariant texture,  const uint8_t stage,
         const uint32_t flags);
-    void set(const SamplerValue& value);
 
   private:
-    _Value _value;
     uint8_t _stage;
     uint32_t _flags;
+    SamplerVariant _value;
 
     bgfx::TextureHandle _texture_handle();
-    void _set(
-        const Texture* texture, const uint8_t stage, const uint32_t flags);
     void _bind();
 
     friend class ShadingContext;

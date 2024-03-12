@@ -157,26 +157,15 @@ Sampler::get() const
     if (auto ptr = std::get_if<std::shared_ptr<Texture>>(&this->_value)) {
         return SamplerValue{this->_stage, this->_flags, *ptr};
     }
-
     return std::nullopt;
 }
 
 void
-Sampler::set(
-    const ResourceReference<Texture>& texture, const uint8_t stage,
-    const uint32_t flags)
+Sampler::set(const SamplerVariant texture,  const uint8_t stage,const uint32_t flags)
 {
-    this->_value = texture.res_ptr;
     this->_stage = stage;
     this->_flags = flags;
-}
-
-void
-Sampler::set(const SamplerValue& value)
-{
-    this->_value = value.texture.res_ptr;
-    this->_stage = value.stage;
-    this->_flags = value.flags;
+    this->_value = std::move(texture);
 }
 
 bgfx::TextureHandle
@@ -192,14 +181,6 @@ Sampler::_texture_handle()
             }
         },
         this->_value);
-}
-
-void
-Sampler::_set(const Texture* texture, const uint8_t stage, const uint32_t flags)
-{
-    this->_value = texture->handle();
-    this->_stage = stage;
-    this->_flags = flags;
 }
 
 void

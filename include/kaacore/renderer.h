@@ -38,6 +38,9 @@ class DefaultShadingContext : public ShadingContext {
     DefaultShadingContext() = default;
     DefaultShadingContext(const UniformSpecificationMap& uniforms);
     DefaultShadingContext& operator=(DefaultShadingContext&& other);
+    void set_uniform_texture(
+        const std::string& name, const Texture* texture, const uint8_t stage,
+        const uint32_t flags = std::numeric_limits<uint32_t>::max());
     void destroy();
 
     friend class Renderer;

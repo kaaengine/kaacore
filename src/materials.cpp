@@ -73,6 +73,14 @@ ShadingContext::uniforms() const
     return result;
 }
 
+std::optional<SamplerValue>
+ShadingContext::get_uniform_texture(const std::string& name) const
+{
+    KAACORE_CHECK(
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+    return std::get<Sampler>(this->_uniforms.at(name)).get();
+}
+
 void
 ShadingContext::set_uniform_texture(
     const std::string& name, const ResourceReference<Texture>& texture,
@@ -80,24 +88,7 @@ ShadingContext::set_uniform_texture(
 {
     KAACORE_CHECK(
         this->_name_in_registry(name), "Unknown uniform name: {}.", name);
-    std::get<Sampler>(this->_uniforms[name]).set(texture, stage, flags);
-}
-
-void
-ShadingContext::set_uniform_texture(
-    const std::string& name, const SamplerValue& value)
-{
-    KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
-    std::get<Sampler>(this->_uniforms[name]).set(value);
-}
-
-std::optional<SamplerValue>
-ShadingContext::get_uniform_texture(const std::string& name) const
-{
-    KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
-    return std::get<Sampler>(this->_uniforms.at(name)).get();
+    std::get<Sampler>(this->_uniforms[name]).set(texture.res_ptr, stage, flags);
 }
 
 void
@@ -139,16 +130,6 @@ bool
 ShadingContext::_name_in_registry(const std::string& name) const
 {
     return this->_uniforms.find(name) != this->_uniforms.end();
-}
-
-void
-ShadingContext::_set_uniform_texture(
-    const std::string& name, const Texture* texture, const uint8_t stage,
-    const uint32_t flags)
-{
-    KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
-    std::get<Sampler>(this->_uniforms[name])._set(texture, stage, flags);
 }
 
 Material::Material(
@@ -195,8 +176,14 @@ Material::clone() const
         const auto& [name, uniform] = kv_pair;
         switch (uniform.type()) {
             case UniformType::sampler:
-                if (auto sampler_value = this->get_uniform_texture(name)) {
-                    material->set_uniform_texture(name, sampler_value.value());
+                if (auto sampler_value_opt = this->get_uniform_texture(name)) {
+                    auto sampler_value = sampler_value_opt.value();
+                    material->set_uniform_texture(
+                        name,
+                        sampler_value.texture,
+                        sampler_value.stage,
+                        sampler_value.flags
+                    );
                 }
                 break;
             case UniformType::vec4:
@@ -225,14 +212,6 @@ Material::set_uniform_texture(
 {
     KAACORE_CHECK(stage > 0, "Stage index must be greater than zero.");
     ShadingContext::set_uniform_texture(name, texture, stage, flags);
-}
-
-void
-Material::set_uniform_texture(
-    const std::string& name, const SamplerValue& value)
-{
-    KAACORE_CHECK(value.stage > 0, "Stage index must be greater than zero.");
-    ShadingContext::set_uniform_texture(name, value);
 }
 
 }
