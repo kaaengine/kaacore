@@ -25,14 +25,12 @@ class ShadingContext : public Resource {
     ShadingContext(const UniformSpecificationMap& uniforms);
     ~ShadingContext();
     UniformSpecificationMap uniforms() const;
+    std::optional<SamplerValue> get_uniform_texture(
+        const std::string& name) const;
     void set_uniform_texture(
         const std::string& name, const ResourceReference<Texture>& texture,
         const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
-    void set_uniform_texture(
-        const std::string& name, const SamplerValue& value);
-    std::optional<SamplerValue> get_uniform_texture(
-        const std::string& name) const;
 
     template<typename T>
     std::vector<T> get_uniform_value(const std::string& name) const
@@ -57,9 +55,6 @@ class ShadingContext : public Resource {
     virtual void _initialize() override;
     virtual void _uninitialize() override;
     bool _name_in_registry(const std::string& name) const;
-    void _set_uniform_texture(
-        const std::string& name, const Texture* texture, const uint8_t stage,
-        const uint32_t flags = std::numeric_limits<uint32_t>::max());
 };
 
 class Material : public ShadingContext {
@@ -74,8 +69,6 @@ class Material : public ShadingContext {
         const std::string& name, const ResourceReference<Texture>& texture,
         const uint8_t stage,
         const uint32_t flags = std::numeric_limits<uint32_t>::max());
-    void set_uniform_texture(
-        const std::string& name, const SamplerValue& value);
 
   private:
     MaterialId _id;

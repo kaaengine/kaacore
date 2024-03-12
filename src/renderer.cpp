@@ -111,6 +111,16 @@ DefaultShadingContext::operator=(DefaultShadingContext&& other)
 }
 
 void
+DefaultShadingContext::set_uniform_texture(
+    const std::string& name, const Texture* texture, const uint8_t stage,
+    const uint32_t flags)
+{
+    KAACORE_CHECK(
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+    std::get<Sampler>(this->_uniforms[name]).set(texture->handle(), stage, flags);
+}
+
+void
 DefaultShadingContext::destroy()
 {
     this->_uninitialize();
@@ -460,7 +470,7 @@ Renderer::set_render_state(
     auto texture = render_state.texture ? render_state.texture
                                         : this->default_texture.get();
     auto view_projection_matrix = projection_matrix * view_matrix;
-    this->shading_context._set_uniform_texture(
+    this->shading_context.set_uniform_texture(
         "s_texture", texture, _internal_sampler_stage_index);
     this->shading_context.set_uniform_value<glm::fvec4>(
         "u_viewportRect", viewport_rect);
