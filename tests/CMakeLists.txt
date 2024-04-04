@@ -13,6 +13,7 @@ set(TEST_SRC_CXX_FILES
     test_draw_queue.cpp
     test_geometry.cpp
     test_fonts.cpp
+    test_unicode_buffer.cpp
 )
 
 add_executable(runner runner.cpp ${TEST_SRC_CXX_FILES})
