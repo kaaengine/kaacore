@@ -6,65 +6,85 @@ pr:
     include:
       - '*'
 
-strategy:
-  matrix:
-    linux:
-      system_name: 'linux'
-      image_name: 'ubuntu-20.04'
-      cmake_generator: 'Unix Makefiles'
-      cmake_generator_platform: ''
-      build_exe_directory: './'
-    windows:
-      system_name: 'windows'
-      image_name: 'windows-2019'
-      cmake_generator: 'Visual Studio 16 2019'
-      cmake_generator_platform: 'x64'
-      build_exe_directory: './Release/'
-    macos:
-      system_name: 'macos'
-      image_name: 'macOS-11'
-      cmake_generator: 'Unix Makefiles'
-      cmake_generator_platform: ''
-      build_exe_directory: './'
+jobs:
+- job: lint
+  displayName: 'Lint source code'
+  variables:
+    image_name: 'ubuntu-latest'
+    clang_format_version: 'v18.1.3'
 
-pool:
-  vmImage: $(image_name)
+  pool:
+    vmImage: $(image_name)
 
-steps:
-  - checkout: self
+  steps:
+    - checkout: self
+    - script: pip install clang-format==$(clang_format_version)
+    - script: ./scripts/lint.sh
 
-  - bash: |
-      sudo apt-get update
-      sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev g++
-    displayName: 'Install dependencies (Linux)'
-    condition: eq(variables['system_name'], 'linux')
+- job: build
+  displayName: 'Build'
+  dependsOn:
+  - lint
 
-  - script: git submodule update --init --recursive
-    displayName: 'Fetch submodules'
+  strategy:
+    matrix:
+      linux:
+        system_name: 'linux'
+        image_name: 'ubuntu-20.04'
+        cmake_generator: 'Unix Makefiles'
+        cmake_generator_platform: ''
+        build_exe_directory: './'
+      windows:
+        system_name: 'windows'
+        image_name: 'windows-2019'
+        cmake_generator: 'Visual Studio 16 2019'
+        cmake_generator_platform: 'x64'
+        build_exe_directory: './Release/'
+      macos:
+        system_name: 'macos'
+        image_name: 'macOS-11'
+        cmake_generator: 'Unix Makefiles'
+        cmake_generator_platform: ''
+        build_exe_directory: './'
 
-  - bash: |
-      cmake -B ./cmake_build -DCMAKE_BUILD_TYPE=Release \
-      -G "$(cmake_generator)" \
-      -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
-      cmake --build ./cmake_build --config Release -j 5
-    env:
-      MACOSX_DEPLOYMENT_TARGET: '11'
-    displayName: 'Build kaacore'
+  pool:
+    vmImage: $(image_name)
 
-  - bash: cp ./cmake_build/third_party/sdl2/$(build_exe_directory)/SDL2.dll .
-    displayName: 'Prepare runtime libraries'
-    condition: eq(variables['system_name'], 'windows')
+  steps:
+    - checkout: self
 
-  - bash: |
-      if [[ $(system_name) == "windows" ]]
-      then
-        RUNNER="runner.exe"
-      else
-        RUNNER="runner"
-      fi
+    - bash: |
+        sudo apt-get update
+        sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev g++
+      displayName: 'Install dependencies (Linux)'
+      condition: eq(variables['system_name'], 'linux')
 
-      KAACORE_RENDERER=noop \
-      SDL_VIDEODRIVER=dummy \
-      SDL_AUDIODRIVER=dummy \
-      ./cmake_build/tests/$(build_exe_directory)/${RUNNER}
-    displayName: 'Test kaacore'
+    - script: git submodule update --init --recursive
+      displayName: 'Fetch submodules'
+
+    - bash: |
+        cmake -B ./cmake_build -DCMAKE_BUILD_TYPE=Release \
+        -G "$(cmake_generator)" \
+        -DCMAKE_GENERATOR_PLATFORM=$(cmake_generator_platform) .
+        cmake --build ./cmake_build --config Release -j 5
+      env:
+        MACOSX_DEPLOYMENT_TARGET: '11'
+      displayName: 'Build kaacore'
+
+    - bash: cp ./cmake_build/third_party/sdl2/$(build_exe_directory)/SDL2.dll .
+      displayName: 'Prepare runtime libraries'
+      condition: eq(variables['system_name'], 'windows')
+
+    - bash: |
+        if [[ $(system_name) == "windows" ]]
+        then
+          RUNNER="runner.exe"
+        else
+          RUNNER="runner"
+        fi
+
+        KAACORE_RENDERER=noop \
+        SDL_VIDEODRIVER=dummy \
+        SDL_AUDIODRIVER=dummy \
+        ./cmake_build/tests/$(build_exe_directory)/${RUNNER}
+      displayName: 'Test kaacore'
