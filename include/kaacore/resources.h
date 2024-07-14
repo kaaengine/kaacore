@@ -38,7 +38,8 @@ struct ResourceReference {
         if (not this->res_ptr or
             (this->res_ptr and not this->res_ptr->is_initialized)) {
             throw kaacore::exception(
-                "Detected access to uninitialized resource.");
+                "Detected access to uninitialized resource."
+            );
         }
         return this->get();
     }
@@ -79,12 +80,14 @@ class ResourcesRegistry {
     }
 
     void register_resource(
-        const Key_T& key, const std::weak_ptr<Resource_T> resource)
+        const Key_T& key, const std::weak_ptr<Resource_T> resource
+    )
     {
         auto it = this->_registry.find(key);
         if (it != this->_registry.end() and it->second.lock()) {
             throw kaacore::exception(
-                "An attempt to register resource with already existing key.");
+                "An attempt to register resource with already existing key."
+            );
         }
         this->_registry[key] = std::move(resource);
     }
@@ -114,4 +117,4 @@ struct hash<ResourceReference<T>> {
         return std::hash<T*>{}(res_ref.res_ptr.get());
     }
 };
-}
+} // namespace std

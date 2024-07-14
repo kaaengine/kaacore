@@ -27,7 +27,8 @@
     do {                                                                       \
         KAACORE_ASSERT(                                                        \
             get_engine()->main_thread_id() == std::this_thread::get_id(),      \
-            "Call did not originate from main thread.");                       \
+            "Call did not originate from main thread."                         \
+        );                                                                     \
     } while (0)
 
 namespace kaacore {
@@ -44,7 +45,8 @@ enum struct VirtualResolutionMode {
 
 std::string
 get_persistent_path(
-    const std::string& prefix, const std::string& organization_prefix = "");
+    const std::string& prefix, const std::string& organization_prefix = ""
+);
 
 class Engine {
   public:
@@ -68,7 +70,8 @@ class Engine {
     Engine(
         const glm::uvec2& virtual_resolution,
         const VirtualResolutionMode vr_mode =
-            VirtualResolutionMode::adaptive_stretch) noexcept(false);
+            VirtualResolutionMode::adaptive_stretch
+    ) noexcept(false);
     ~Engine();
 
     void run(Scene* scene);

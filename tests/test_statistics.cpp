@@ -29,7 +29,8 @@ TEST_CASE("Test statistics gathering", "[statistics][no_engine]")
 }
 
 TEST_CASE(
-    "Test statistics gathering overflow buffer", "[statistics][no_engine]")
+    "Test statistics gathering overflow buffer", "[statistics][no_engine]"
+)
 {
     FrameStatisticTracker stat_tracker;
 
@@ -71,7 +72,8 @@ TEST_CASE("Test statistics packing format", "[statistics][no_engine]")
     std::vector<std::pair<std::string, double>> sample_stats{
         {"some stat", 15.01},
         {"more stats", 0.00},
-        {"stat with very very very very very very very very long name", 13.37}};
+        {"stat with very very very very very very very very long name", 13.37}
+    };
 
     auto packed_message = pack_stats_data(sample_stats);
 
@@ -90,7 +92,8 @@ TEST_CASE("Test statistics packing format", "[statistics][no_engine]")
     // max stat name length is 40
     REQUIRE(
         _parse_string(reader_ptr, 40) ==
-        "stat with very very very very very very ");
+        "stat with very very very very very very "
+    );
     REQUIRE(_parse_type_bytes<double>(reader_ptr) == 13.37);
 }
 
@@ -101,13 +104,15 @@ TEST_CASE("Test UDPStatsExporter", "[statistics][udp_exporter][no_engine]")
     SECTION("Test malformed address")
     {
         REQUIRE_THROWS_AS(
-            UDPStatsExporter("invalid_address"), std::runtime_error);
+            UDPStatsExporter("invalid_address"), std::runtime_error
+        );
     }
 
     SECTION("Test sending (custom port)")
     {
         std::vector<std::pair<std::string, double>> sample_stats{
-            {"Test sending (custom port)", 1.01}, {"more stats", 0.00}};
+            {"Test sending (custom port)", 1.01}, {"more stats", 0.00}
+        };
         UDPStatsExporter udp_exporter{"127.0.0.1"};
         udp_exporter.send_sync(sample_stats);
     }
@@ -115,7 +120,8 @@ TEST_CASE("Test UDPStatsExporter", "[statistics][udp_exporter][no_engine]")
     SECTION("Test sending")
     {
         std::vector<std::pair<std::string, double>> sample_stats{
-            {"Test sending", 1.01}, {"more stats", 0.00}};
+            {"Test sending", 1.01}, {"more stats", 0.00}
+        };
         UDPStatsExporter udp_exporter{"127.0.0.1:1055"};
         udp_exporter.send_sync(sample_stats);
     }

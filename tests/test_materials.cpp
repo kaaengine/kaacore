@@ -14,7 +14,8 @@ _create_test_texture()
 {
     const std::vector<uint8_t> image_content{0xFF, 0xFF, 0xFF, 0xFF};
     auto image_container = kaacore::load_raw_image(
-        bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content);
+        bimg::TextureFormat::Enum::RGBA8, 1, 1, image_content
+    );
     return kaacore::MemoryTexture::create(image_container);
 }
 
@@ -34,14 +35,16 @@ TEST_CASE("Test materials")
                  kaacore::UniformSpecification(kaacore::UniformType::vec4)},
                 {"vector2",
                  kaacore::UniformSpecification(kaacore::UniformType::vec4, 2)},
-            });
+            }
+        );
         glm::fvec4 vector({1.f, 1.f, 0, 0});
         glm::fvec4 vector2({1.f, 1.f, 1.f, 0});
 
         material->set_uniform_texture("sampler", texture, 11, 11);
         material->set_uniform_value<glm::vec4>("vector", vector);
         material->set_uniform_value<glm::vec4>(
-            "vector2", std::vector<glm::vec4>({vector, vector2}));
+            "vector2", std::vector<glm::vec4>({vector, vector2})
+        );
 
         // sampler
         kaacore::SamplerValue sampler_value =
@@ -68,35 +71,37 @@ TEST_CASE("Test materials")
         auto texture = _create_test_texture();
         auto program = engine->renderer->default_material->program;
         auto material = kaacore::Material::create(
-            program, {{"sampler", kaacore::UniformSpecification(
-                                      kaacore::UniformType::sampler)}});
+            program,
+            {{"sampler",
+              kaacore::UniformSpecification(kaacore::UniformType::sampler)}}
+        );
 
         material->set_uniform_texture("sampler", texture, 11, 11);
         REQUIRE(material->get_uniform_texture("sampler").value().stage == 11);
         REQUIRE(material->get_uniform_texture("sampler").value().flags == 11);
         REQUIRE(
-            material->get_uniform_texture("sampler").value().texture ==
-            texture);
+            material->get_uniform_texture("sampler").value().texture == texture
+        );
 
         auto material2 = material->clone();
         REQUIRE(material2->get_uniform_texture("sampler").value().stage == 11);
         REQUIRE(material2->get_uniform_texture("sampler").value().flags == 11);
         REQUIRE(
-            material2->get_uniform_texture("sampler").value().texture ==
-            texture);
+            material2->get_uniform_texture("sampler").value().texture == texture
+        );
 
         material2->set_uniform_texture("sampler", texture, 12, 12);
         REQUIRE(material2->get_uniform_texture("sampler").value().stage == 12);
         REQUIRE(material2->get_uniform_texture("sampler").value().flags == 12);
         REQUIRE(
-            material2->get_uniform_texture("sampler").value().texture ==
-            texture);
+            material2->get_uniform_texture("sampler").value().texture == texture
+        );
 
         REQUIRE(material->get_uniform_texture("sampler").value().stage == 11);
         REQUIRE(material->get_uniform_texture("sampler").value().flags == 11);
         REQUIRE(
-            material->get_uniform_texture("sampler").value().texture ==
-            texture);
+            material->get_uniform_texture("sampler").value().texture == texture
+        );
     }
 
     SECTION("errors")
@@ -117,18 +122,22 @@ TEST_CASE("Test materials")
             {{"sampler",
               kaacore::UniformSpecification(kaacore::UniformType::sampler)},
              {"vector",
-              kaacore::UniformSpecification(kaacore::UniformType::vec4)}});
+              kaacore::UniformSpecification(kaacore::UniformType::vec4)}}
+        );
 
         // stage 0 is reserved for internal use
         REQUIRE_THROWS(material->set_uniform_texture("sampler", texture, 0));
 
         // invalid number of elements
         REQUIRE_THROWS(material->set_uniform_value<glm::fvec4>(
-            "vector", std::vector<glm::fvec4>({vector, vector2})));
+            "vector", std::vector<glm::fvec4>({vector, vector2})
+        ));
 
         // reserved uniform name
         REQUIRE_THROWS(kaacore::Material::create(
-            program, {{"s_texture", kaacore::UniformSpecification(
-                                        kaacore::UniformType::sampler)}}));
+            program,
+            {{"s_texture",
+              kaacore::UniformSpecification(kaacore::UniformType::sampler)}}
+        ));
     }
 }

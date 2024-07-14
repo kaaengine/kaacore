@@ -39,12 +39,14 @@ class Scene {
     void process_update(const Duration dt);
     void process_physics(const HighPrecisionDuration dt);
     void process_nodes(
-        const HighPrecisionDuration dt, const NodesQueue& processing_queue);
+        const HighPrecisionDuration dt, const NodesQueue& processing_queue
+    );
     void resolve_spatial_index_changes(const NodesQueue& processing_queue);
     void update_nodes_drawing_queue(const NodesQueue& processing_queue);
     void draw(
         const uint16_t render_pass, const int16_t viewport,
-        const DrawCall& draw_call);
+        const DrawCall& draw_call
+    );
     void attach_frame_context(const std::unique_ptr<Renderer>& renderer);
     void render(const std::unique_ptr<Renderer>& renderer);
     void remove_marked_nodes();

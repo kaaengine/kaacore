@@ -14,7 +14,8 @@ void
 DrawQueue::process_modifications()
 {
     std::sort(
-        this->_modifications_queue.begin(), this->_modifications_queue.end());
+        this->_modifications_queue.begin(), this->_modifications_queue.end()
+    );
     auto it_begin = this->_modifications_queue.begin();
     const auto queue_end = this->_modifications_queue.end();
     while (it_begin != queue_end) {
@@ -22,7 +23,8 @@ DrawQueue::process_modifications()
             it_begin, queue_end,
             [key = it_begin->lookup_key](const DrawUnitModification& du_mod) {
                 return du_mod.lookup_key == key;
-            });
+            }
+        );
         auto [bucket_it, created] =
             this->_buckets_map.try_emplace(it_begin->lookup_key);
         std::get<DrawBucket>(*bucket_it)

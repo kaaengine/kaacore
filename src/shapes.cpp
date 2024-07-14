@@ -16,10 +16,12 @@ Shape::Shape(
     const ShapeType type, const std::vector<glm::dvec2>& points,
     const double radius, const std::vector<VertexIndex>& indices,
     const std::vector<StandardVertexData>& vertices,
-    const std::vector<glm::dvec2>& bounding_points)
+    const std::vector<glm::dvec2>& bounding_points
+)
     : Shape(
           type, points, radius, indices, vertices,
-          BoundingBox<double>::from_points(bounding_points), bounding_points)
+          BoundingBox<double>::from_points(bounding_points), bounding_points
+      )
 {}
 
 Shape::Shape(
@@ -27,14 +29,16 @@ Shape::Shape(
     const double radius, const std::vector<VertexIndex>& indices,
     const std::vector<StandardVertexData>& vertices,
     const BoundingBox<double> vertices_bbox,
-    const std::vector<glm::dvec2>& bounding_points)
+    const std::vector<glm::dvec2>& bounding_points
+)
     : type(type), points(points), radius(radius), indices(indices),
       vertices(vertices), vertices_bbox(vertices_bbox),
       bounding_points(bounding_points)
 {
     KAACORE_ASSERT(
         classify_polygon(this->bounding_points) == PolygonType::convex_ccw,
-        "Invalid shape - expected convex counterclockwise polygon.");
+        "Invalid shape - expected convex counterclockwise polygon."
+    );
 };
 
 bool
@@ -43,7 +47,8 @@ Shape::operator==(const Shape& other)
     return (
         this->type == other.type and this->points == other.points and
         this->radius == other.radius and this->indices == other.indices and
-        this->vertices == other.vertices);
+        this->vertices == other.vertices
+    );
 }
 
 BoundingBox<double>
@@ -72,14 +77,16 @@ Shape::Segment(const glm::dvec2 a, const glm::dvec2 b)
         StandardVertexData::xy_uv(a0.x, a0.y, 0., 0.),
         StandardVertexData::xy_uv(b0.x, b0.y, 1., 0.),
         StandardVertexData::xy_uv(b1.x, b1.y, 1., 1.),
-        StandardVertexData::xy_uv(a1.x, a1.y, 0., 1.)};
+        StandardVertexData::xy_uv(a1.x, a1.y, 0., 1.)
+    };
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
     const std::vector<glm::dvec2> bounding_points = {a0, b0, b1, a1};
 
     return Shape(
-        ShapeType::segment, points, radius, indices, vertices, bounding_points);
+        ShapeType::segment, points, radius, indices, vertices, bounding_points
+    );
 }
 
 Shape
@@ -89,13 +96,18 @@ Shape::Circle(const double radius, const glm::dvec2 center)
 
     const std::vector<StandardVertexData> vertices = {
         StandardVertexData::xy_uv_mn(
-            center.x - radius, center.y - radius, 0., 0., -0.5, -0.5),
+            center.x - radius, center.y - radius, 0., 0., -0.5, -0.5
+        ),
         StandardVertexData::xy_uv_mn(
-            center.x + radius, center.y - radius, 1., 0., +0.5, -0.5),
+            center.x + radius, center.y - radius, 1., 0., +0.5, -0.5
+        ),
         StandardVertexData::xy_uv_mn(
-            center.x + radius, center.y + radius, 1., 1., +0.5, +0.5),
+            center.x + radius, center.y + radius, 1., 1., +0.5, +0.5
+        ),
         StandardVertexData::xy_uv_mn(
-            center.x - radius, center.y + radius, 0., 1., -0.5, +0.5)};
+            center.x - radius, center.y + radius, 0., 1., -0.5, +0.5
+        )
+    };
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
@@ -103,12 +115,14 @@ Shape::Circle(const double radius, const glm::dvec2 center)
     bounding_points.reserve(circle_shape_generated_points_count);
     for (int i = circle_shape_generated_points_count - 1; i >= 0; i--) {
         double t = (2 * M_PI / circle_shape_generated_points_count) * i;
-        bounding_points.push_back(glm::dvec2{center.x + radius * std::sin(t),
-                                             center.y + radius * std::cos(t)});
+        bounding_points.push_back(glm::dvec2{
+            center.x + radius * std::sin(t), center.y + radius * std::cos(t)
+        });
     }
 
     return Shape(
-        ShapeType::circle, points, radius, indices, vertices, bounding_points);
+        ShapeType::circle, points, radius, indices, vertices, bounding_points
+    );
 }
 
 Shape
@@ -120,16 +134,19 @@ Shape::Circle(const double radius)
 Shape
 Shape::Box(const glm::dvec2 size)
 {
-    const std::vector<glm::dvec2> points = {{-0.5 * size.x, -0.5 * size.y},
-                                            {+0.5 * size.x, -0.5 * size.y},
-                                            {+0.5 * size.x, +0.5 * size.y},
-                                            {-0.5 * size.x, +0.5 * size.y}};
+    const std::vector<glm::dvec2> points = {
+        {-0.5 * size.x, -0.5 * size.y},
+        {+0.5 * size.x, -0.5 * size.y},
+        {+0.5 * size.x, +0.5 * size.y},
+        {-0.5 * size.x, +0.5 * size.y}
+    };
 
     const std::vector<StandardVertexData> vertices = {
         StandardVertexData::xy_uv(-0.5 * size.x, -0.5 * size.y, 0., 0.),
         StandardVertexData::xy_uv(+0.5 * size.x, -0.5 * size.y, 1., 0.),
         StandardVertexData::xy_uv(+0.5 * size.x, +0.5 * size.y, 1., 1.),
-        StandardVertexData::xy_uv(-0.5 * size.x, +0.5 * size.y, 0., 1.)};
+        StandardVertexData::xy_uv(-0.5 * size.x, +0.5 * size.y, 0., 1.)
+    };
 
     const std::vector<VertexIndex> indices = {0, 2, 1, 0, 3, 2};
 
@@ -141,7 +158,8 @@ Shape::Polygon(const std::vector<glm::dvec2>& points)
 {
     auto polygon_type = classify_polygon(points);
     KAACORE_CHECK(
-        polygon_type != PolygonType::not_convex, "Convex polygon required.");
+        polygon_type != PolygonType::not_convex, "Convex polygon required."
+    );
 
     std::vector<glm::dvec2> polygon_points = points;
 
@@ -182,13 +200,15 @@ Shape::Polygon(const std::vector<glm::dvec2>& points)
 
     return Shape(
         ShapeType::polygon, polygon_points, 0., indices, vertices,
-        polygon_points);
+        polygon_points
+    );
 }
 
 Shape
 Shape::Freeform(
     const std::vector<VertexIndex>& indices,
-    const std::vector<StandardVertexData>& vertices)
+    const std::vector<StandardVertexData>& vertices
+)
 {
     std::vector<glm::dvec2> vertices_points;
     vertices_points.reserve(vertices.size());
@@ -196,29 +216,35 @@ Shape::Freeform(
         vertices_points.push_back({vt.xyz.x, vt.xyz.y});
     }
     auto [min_pt, max_pt] = find_points_minmax(vertices_points);
-    const std::vector<glm::dvec2> bounding_points = {{min_pt.x, min_pt.y},
-                                                     {max_pt.x, min_pt.y},
-                                                     {max_pt.x, max_pt.y},
-                                                     {min_pt.x, max_pt.y}};
+    const std::vector<glm::dvec2> bounding_points = {
+        {min_pt.x, min_pt.y},
+        {max_pt.x, min_pt.y},
+        {max_pt.x, max_pt.y},
+        {min_pt.x, max_pt.y}
+    };
     return Shape(
-        ShapeType::freeform, {}, 0., indices, vertices, bounding_points);
+        ShapeType::freeform, {}, 0., indices, vertices, bounding_points
+    );
 }
 
 Shape
 Shape::Freeform(
     const std::vector<VertexIndex>& indices,
     const std::vector<StandardVertexData>& vertices,
-    const BoundingBox<double> bounding_box)
+    const BoundingBox<double> bounding_box
+)
 {
     const std::vector<glm::dvec2> bounding_points{
         {bounding_box.min_x, bounding_box.min_y},
         {bounding_box.max_x, bounding_box.min_y},
         {bounding_box.max_x, bounding_box.max_y},
-        {bounding_box.min_x, bounding_box.max_y}};
+        {bounding_box.min_x, bounding_box.max_y}
+    };
 
     return Shape(
         ShapeType::freeform, {}, 0., indices, vertices, bounding_box,
-        bounding_points);
+        bounding_points
+    );
 }
 
 Shape
@@ -234,7 +260,8 @@ Shape::transform(const Transformation& transformation) const
         glm::dvec2 scale_ratio = glm::abs(transformation.decompose().scale);
         if (glm::epsilonNotEqual<double>(scale_ratio.x, scale_ratio.y, 1e-10)) {
             throw kaacore::exception(
-                "Cannot transform shape radius by non-equal scale");
+                "Cannot transform shape radius by non-equal scale"
+            );
         }
         radius *= scale_ratio.x;
     }
@@ -254,11 +281,12 @@ Shape::transform(const Transformation& transformation) const
         new_bounding_points.begin(),
         [&transformation](const glm::dvec2 pt) -> glm::dvec2 {
             return pt | transformation;
-        });
+        }
+    );
 
     return Shape(
-        this->type, points, radius, this->indices, vertices,
-        new_bounding_points);
+        this->type, points, radius, this->indices, vertices, new_bounding_points
+    );
 }
 
 bool

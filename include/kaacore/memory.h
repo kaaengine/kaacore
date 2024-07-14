@@ -40,4 +40,4 @@ struct hash<kaacore::Memory> {
         return std::hash<const std::byte*>{}(memory.get());
     }
 };
-}
+} // namespace std

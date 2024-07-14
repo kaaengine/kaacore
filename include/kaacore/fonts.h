@@ -47,7 +47,8 @@ const float font_sdf_pixel_dist_scale =
 struct FontMetrics {
     FontMetrics() = default;
     inline FontMetrics(
-        const double ascent, const double descent, const double line_gap)
+        const double ascent, const double descent, const double line_gap
+    )
         : ascent(ascent), descent(descent), line_gap(line_gap)
     {}
     FontMetrics scale_for_pixel_height(const double font_pixel_height) const;
@@ -69,20 +70,24 @@ struct FontRenderGlyph {
 
     FontRenderGlyph(
         UnicodeCodepoint codepoint, stbtt_packedchar glyph_data,
-        double scale_factor, const glm::dvec2 inv_texture_size);
+        double scale_factor, const glm::dvec2 inv_texture_size
+    );
     FontRenderGlyph(
         UnicodeCodepoint codepoint, stbtt_packedchar glyph_data,
         double scale_factor, const glm::dvec2 inv_texture_size,
-        const FontRenderGlyph& other_glyph);
+        const FontRenderGlyph& other_glyph
+    );
 
     bool has_size() const;
 
     static void arrange_glyphs(
         std::vector<FontRenderGlyph>& render_glyphs, const double indent,
-        const double line_height, const double line_width = INFINITY);
+        const double line_height, const double line_width = INFINITY
+    );
     static Shape make_shape(
         const std::vector<FontRenderGlyph>& render_glyphs,
-        const FontMetrics font_metrics);
+        const FontMetrics font_metrics
+    );
 };
 
 class FontData : public Resource {
@@ -96,16 +101,19 @@ class FontData : public Resource {
     static ResourceReference<FontData> load(const std::string& path);
     static ResourceReference<FontData> load_from_memory(const Memory& memory);
     Shape generate_text_shape(
-        const std::string& text, double size, double indent, double max_width);
+        const std::string& text, double size, double indent, double max_width
+    );
     std::vector<FontRenderGlyph> generate_render_glyphs(
-        const std::string& text, const double scale_factor);
+        const std::string& text, const double scale_factor
+    );
     inline FontMetrics metrics() { return this->font_metrics; }
 
   private:
     FontData(const std::string& path);
     FontData(
         const ResourceReference<Texture> baked_texture,
-        const BakedFontData baked_font, const FontMetrics font_metrics);
+        const BakedFontData baked_font, const FontMetrics font_metrics
+    );
     virtual void _initialize() override;
     virtual void _uninitialize() override;
 
@@ -186,4 +194,4 @@ struct hash<kaacore::Font> {
         return std::hash<ResourceReference<FontData>>{}(font._font_data);
     }
 };
-}
+} // namespace std

@@ -33,32 +33,39 @@ namespace kaacore {
 #define ASSERT_VALID_SPACE_NODE(space_node)                                    \
     KAACORE_ASSERT(                                                            \
         container_node(space_node)->_type == NodeType::space,                  \
-        "Invalid type - space type expected.");                                \
+        "Invalid type - space type expected."                                  \
+    );                                                                         \
     KAACORE_ASSERT(                                                            \
         (space_node)->_cp_space != nullptr,                                    \
-        "Space node has invalid internal state.");
+        "Space node has invalid internal state."                               \
+    );
 
 #define ASSERT_VALID_BODY_NODE(body_node)                                      \
     KAACORE_ASSERT(                                                            \
         container_node(body_node)->_type == NodeType::body,                    \
-        "Invalid type - body type expected.");                                 \
+        "Invalid type - body type expected."                                   \
+    );                                                                         \
     KAACORE_ASSERT(                                                            \
         (body_node)->_cp_body != nullptr,                                      \
-        "Body node has invalid internal state.");
+        "Body node has invalid internal state."                                \
+    );
 
 #define ASSERT_DYNAMIC_BODY_NODE(body_node)                                    \
     ASSERT_VALID_BODY_NODE(body_node);                                         \
     KAACORE_ASSERT(                                                            \
         (body_node)->body_type() == BodyNodeType::dynamic,                     \
-        "Invalid body type - dynamic body type expected.");
+        "Invalid body type - dynamic body type expected."                      \
+    );
 
 #define ASSERT_VALID_HITBOX_NODE(hitbox_node)                                  \
     KAACORE_ASSERT(                                                            \
         container_node(hitbox_node)->_type == NodeType::hitbox,                \
-        "Invalid type = hitbox type expected.");                               \
+        "Invalid type = hitbox type expected."                                 \
+    );                                                                         \
     KAACORE_ASSERT(                                                            \
         (hitbox_node)->_cp_shape != nullptr,                                   \
-        "Hitbox node has invalid internal state.");
+        "Hitbox node has invalid internal state."                              \
+    );
 
 // conversions
 
@@ -83,7 +90,8 @@ convert_contact_points(const cpContactPointSet* const cp_contact_points)
         contact_points.push_back(CollisionContactPoint{
             convert_vector(cp_contact_points->points[i].pointA),
             convert_vector(cp_contact_points->points[i].pointB),
-            cp_contact_points->points[i].distance});
+            cp_contact_points->points[i].distance
+        });
     }
 
     return contact_points;
@@ -122,7 +130,8 @@ space_safe_call(Node* space_node, const SpacePostStepFunc& func)
 {
     KAACORE_ASSERT(
         space_node->type() == NodeType::space,
-        "Invalid type - space type expected.");
+        "Invalid type - space type expected."
+    );
     space_safe_call(&space_node->space, func);
 }
 
@@ -152,7 +161,8 @@ calculate_inherited_hitbox_transformation(Node* const node)
 }
 
 Arbiter::Arbiter(
-    CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter)
+    CollisionPhase phase, SpaceNode* space_phys, cpArbiter* cp_arbiter
+)
     : phase(phase), cp_arbiter(cp_arbiter), space(container_node(space_phys))
 {}
 
@@ -167,7 +177,8 @@ Arbiter::total_kinetic_energy() const
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::post_solve,
-        "Kinetic energy may only be retrieved in the post_solve phase.");
+        "Kinetic energy may only be retrieved in the post_solve phase."
+    );
     return cpArbiterTotalKE(this->cp_arbiter);
 }
 
@@ -176,7 +187,8 @@ Arbiter::total_impulse() const
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::post_solve,
-        "Impulse may only be retrieved in the post_solve phase.");
+        "Impulse may only be retrieved in the post_solve phase."
+    );
     auto result = cpArbiterTotalImpulse(this->cp_arbiter);
     return {result.x, result.y};
 }
@@ -192,7 +204,8 @@ Arbiter::elasticity(double value)
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::pre_solve,
-        "Elasticity may only be set in the pre_solve phase.");
+        "Elasticity may only be set in the pre_solve phase."
+    );
     cpArbiterSetRestitution(this->cp_arbiter, value);
 }
 
@@ -207,7 +220,8 @@ Arbiter::friction(const double value)
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::pre_solve,
-        "Friction may only be set in the pre_solve phase.");
+        "Friction may only be set in the pre_solve phase."
+    );
     cpArbiterSetFriction(this->cp_arbiter, value);
 }
 
@@ -223,7 +237,8 @@ Arbiter::surface_velocity(const glm::dvec2 value)
 {
     KAACORE_ASSERT(
         this->phase == CollisionPhase::pre_solve,
-        "Surface velocity may only be set in the pre_solve phase.");
+        "Surface velocity may only be set in the pre_solve phase."
+    );
     cpArbiterSetSurfaceVelocity(this->cp_arbiter, {value.x, value.y});
 }
 
@@ -240,7 +255,8 @@ Arbiter::contact_points(const std::vector<CollisionContactPoint>& value)
     auto number_of_points = value.size();
     KAACORE_ASSERT(
         number_of_points == cpArbiterGetCount(this->cp_arbiter),
-        "Number of contact points cannot be changed.");
+        "Number of contact points cannot be changed."
+    );
     cpContactPointSet set;
     set.count = number_of_points;
     for (int i = 0; i < number_of_points; ++i) {
@@ -282,12 +298,14 @@ operator|(CollisionPhase phase, CollisionPhase other)
     return uint8_t(phase) | uint8_t(other);
 }
 
-uint8_t operator&(CollisionPhase phase, uint8_t other)
+uint8_t
+operator&(CollisionPhase phase, uint8_t other)
 {
     return uint8_t(phase) & other;
 }
 
-uint8_t operator&(CollisionPhase phase, CollisionPhase other)
+uint8_t
+operator&(CollisionPhase phase, CollisionPhase other)
 {
     return uint8_t(phase) & uint8_t(other);
 }
@@ -299,7 +317,8 @@ SpatialQueryResultBase::SpatialQueryResultBase(const cpShape* cp_shape)
     if (cp_body) {
         KAACORE_ASSERT(
             cpBodyGetUserData(cp_body) != nullptr,
-            "Invalid internal state of body node.");
+            "Invalid internal state of body node."
+        );
         this->body_node =
             container_node(static_cast<BodyNode*>(cpBodyGetUserData(cp_body)));
     } else {
@@ -308,26 +327,30 @@ SpatialQueryResultBase::SpatialQueryResultBase(const cpShape* cp_shape)
 
     KAACORE_ASSERT(
         cpShapeGetUserData(cp_shape) != nullptr,
-        "Invalid internal state of shape.");
+        "Invalid internal state of shape."
+    );
     this->hitbox_node =
         container_node(static_cast<HitboxNode*>(cpShapeGetUserData(cp_shape)));
 }
 
 ShapeQueryResult::ShapeQueryResult(
-    const cpShape* cp_shape, const cpContactPointSet* points)
+    const cpShape* cp_shape, const cpContactPointSet* points
+)
     : SpatialQueryResultBase(cp_shape),
       contact_points(convert_contact_points(points))
 {}
 
 RayQueryResult::RayQueryResult(
     const cpShape* cp_shape, const cpVect point, const cpVect normal,
-    const double alpha)
+    const double alpha
+)
     : SpatialQueryResultBase(cp_shape), point(convert_vector(point)),
       normal(convert_vector(normal)), alpha(alpha)
 {}
 
 PointQueryResult::PointQueryResult(
-    const cpShape* cp_shape, const cpVect point, const double distance)
+    const cpShape* cp_shape, const cpVect point, const double distance
+)
     : SpatialQueryResultBase(cp_shape), point(convert_vector(point)),
       distance(distance)
 {}
@@ -337,7 +360,8 @@ SpaceNode::SpaceNode()
     this->_cp_space = cpSpaceNew();
     KAACORE_LOG_DEBUG(
         "Creating space node {} (cpSpace: {})", fmt::ptr(container_node(this)),
-        fmt::ptr(this->_cp_space));
+        fmt::ptr(this->_cp_space)
+    );
     cpSpaceSetUserData(this->_cp_space, this);
 }
 
@@ -346,7 +370,8 @@ _release_cp_collision_handler_callback(cpCollisionHandler* cp_collision_handler)
 {
     KAACORE_ASSERT_TERMINATE(
         cp_collision_handler->userData != nullptr,
-        "Invalid internal state of collision callback.");
+        "Invalid internal state of collision callback."
+    );
     auto collision_handler_func =
         static_cast<CollisionHandlerFunc*>(cp_collision_handler->userData);
     delete collision_handler_func;
@@ -356,10 +381,12 @@ SpaceNode::~SpaceNode()
 {
     KAACORE_LOG_DEBUG(
         "Destroying space node {} (cpSpace: {})",
-        fmt::ptr(container_node(this)), fmt::ptr(this->_cp_space));
+        fmt::ptr(container_node(this)), fmt::ptr(this->_cp_space)
+    );
 
     KAACORE_ASSERT_TERMINATE(
-        this->_cp_space != nullptr, "Invalid internal state of space node.");
+        this->_cp_space != nullptr, "Invalid internal state of space node."
+    );
 
     // deleting allocated collision handlers
     cpHashSetEach(
@@ -370,7 +397,8 @@ SpaceNode::~SpaceNode()
             // since we blindly cast void* to CollisionHandlerFunc*
             _release_cp_collision_handler_callback(cp_handler);
         },
-        nullptr);
+        nullptr
+    );
 
     cpSpaceFree(this->_cp_space);
     this->_cp_space = nullptr;
@@ -378,7 +406,8 @@ SpaceNode::~SpaceNode()
 
 void
 cp_call_post_step_callbacks(
-    cpSpace* cp_space, void* space_node_phys_ptr, void* data)
+    cpSpace* cp_space, void* space_node_phys_ptr, void* data
+)
 {
     SpaceNode* space_node_phys = static_cast<SpaceNode*>(space_node_phys_ptr);
     for (const auto& func : space_node_phys->_post_step_callbacks) {
@@ -392,7 +421,8 @@ SpaceNode::add_post_step_callback(const SpacePostStepFunc& func)
 {
     if (this->_post_step_callbacks.empty()) {
         cpSpaceAddPostStepCallback(
-            this->_cp_space, cp_call_post_step_callbacks, this, nullptr);
+            this->_cp_space, cp_call_post_step_callbacks, this, nullptr
+        );
     }
     this->_post_step_callbacks.push_back(func);
 }
@@ -402,14 +432,15 @@ SpaceNode::simulate(const HighPrecisionDuration dt)
 {
     ASSERT_VALID_SPACE_NODE(this);
     KAACORE_LOG_TRACE(
-        "Simulating SpaceNode({}) physics, dt = {}", fmt::ptr(this),
-        dt.count());
+        "Simulating SpaceNode({}) physics, dt = {}", fmt::ptr(this), dt.count()
+    );
     auto time_left = dt + this->_time_acc;
     while (time_left > default_simulation_step_size) {
         cpSpaceStep(
             this->_cp_space,
             std::chrono::duration_cast<Duration>(default_simulation_step_size)
-                .count());
+                .count()
+        );
         time_left -= default_simulation_step_size;
     }
     this->_time_acc = time_left;
@@ -418,7 +449,8 @@ SpaceNode::simulate(const HighPrecisionDuration dt)
 template<typename R_type, CollisionPhase phase, bool non_null_nodes>
 R_type
 _chipmunk_collision_handler(
-    cpArbiter* cp_arbiter, cpSpace* cp_space, cpDataPointer data)
+    cpArbiter* cp_arbiter, cpSpace* cp_space, cpDataPointer data
+)
 {
     auto func = static_cast<CollisionHandlerFunc*>(data);
 
@@ -449,13 +481,15 @@ _chipmunk_collision_handler(
     auto arbiter = Arbiter(phase, space_phys, cp_arbiter);
     return (R_type)(*func)(
         arbiter, CollisionPair(body_a, hitbox_a),
-        CollisionPair(body_b, hitbox_b));
+        CollisionPair(body_b, hitbox_b)
+    );
 }
 
 template<typename R_type>
 R_type
 _chipmunk_collision_noop(
-    cpArbiter* cp_arbiter, cpSpace* cp_space, cpDataPointer data)
+    cpArbiter* cp_arbiter, cpSpace* cp_space, cpDataPointer data
+)
 {
     return R_type(1);
 }
@@ -464,11 +498,13 @@ void
 SpaceNode::set_collision_handler(
     CollisionTriggerId trigger_a, CollisionTriggerId trigger_b,
     CollisionHandlerFunc handler, uint8_t phases_mask,
-    bool only_non_deleted_nodes)
+    bool only_non_deleted_nodes
+)
 {
     cpCollisionHandler* cp_handler = cpSpaceAddCollisionHandler(
         this->_cp_space, static_cast<cpCollisionType>(trigger_a),
-        static_cast<cpCollisionType>(trigger_b));
+        static_cast<cpCollisionType>(trigger_b)
+    );
 
     if (cp_handler->userData != nullptr) {
         _release_cp_collision_handler_callback(cp_handler);
@@ -521,7 +557,8 @@ SpaceNode::set_collision_handler(
 
 void
 _cp_space_query_shape_callback(
-    cpShape* cp_shape, cpContactPointSet* points, void* data)
+    cpShape* cp_shape, cpContactPointSet* points, void* data
+)
 {
     auto results = reinterpret_cast<std::vector<ShapeQueryResult>*>(data);
     results->push_back(ShapeQueryResult{cp_shape, points});
@@ -529,7 +566,8 @@ _cp_space_query_shape_callback(
 
 void
 _cp_space_query_raycast_callback(
-    cpShape* cp_shape, cpVect point, cpVect normal, double alpha, void* data)
+    cpShape* cp_shape, cpVect point, cpVect normal, double alpha, void* data
+)
 {
     auto results = reinterpret_cast<std::vector<RayQueryResult>*>(data);
     results->push_back(RayQueryResult{cp_shape, point, normal, alpha});
@@ -538,7 +576,8 @@ _cp_space_query_raycast_callback(
 void
 _cp_space_query_point_callback(
     cpShape* cp_shape, cpVect point, double distance, cpVect gradient,
-    void* data)
+    void* data
+)
 {
     auto results = reinterpret_cast<std::vector<PointQueryResult>*>(data);
     results->push_back(PointQueryResult{cp_shape, point, distance});
@@ -547,7 +586,8 @@ _cp_space_query_point_callback(
 const std::vector<ShapeQueryResult>
 SpaceNode::query_shape_overlaps(
     const Shape& shape, const CollisionBitmask mask,
-    const CollisionBitmask collision_mask, const CollisionGroup group)
+    const CollisionBitmask collision_mask, const CollisionGroup group
+)
 {
     std::vector<ShapeQueryResult> results;
     auto shape_uptr = prepare_hitbox_shape(shape, Transformation{});
@@ -562,7 +602,8 @@ SpaceNode::query_shape_overlaps(
 
     cpSpaceShapeQuery(
         this->_cp_space, shape_uptr.get(), _cp_space_query_shape_callback,
-        &results);
+        &results
+    );
 
     return results;
 }
@@ -571,7 +612,8 @@ const std::vector<RayQueryResult>
 SpaceNode::query_ray(
     const glm::dvec2 ray_start, const glm::dvec2 ray_end, const double radius,
     const CollisionBitmask mask, const CollisionBitmask collision_mask,
-    const CollisionGroup group)
+    const CollisionGroup group
+)
 {
     std::vector<RayQueryResult> results;
     cpShapeFilter filter;
@@ -582,7 +624,8 @@ SpaceNode::query_ray(
 
     cpSpaceSegmentQuery(
         this->_cp_space, convert_vector(ray_start), convert_vector(ray_end),
-        radius, filter, _cp_space_query_raycast_callback, &results);
+        radius, filter, _cp_space_query_raycast_callback, &results
+    );
 
     return results;
 }
@@ -591,7 +634,8 @@ const std::vector<PointQueryResult>
 SpaceNode::query_point_neighbors(
     const glm::dvec2 point, const double max_distance,
     const CollisionBitmask mask, const CollisionBitmask collision_mask,
-    const CollisionGroup group)
+    const CollisionGroup group
+)
 {
     std::vector<PointQueryResult> results;
     cpShapeFilter filter;
@@ -602,7 +646,8 @@ SpaceNode::query_point_neighbors(
 
     cpSpacePointQuery(
         this->_cp_space, convert_vector(point), max_distance, filter,
-        _cp_space_query_point_callback, &results);
+        _cp_space_query_point_callback, &results
+    );
 
     return results;
 }
@@ -661,7 +706,8 @@ BodyNode::BodyNode()
     this->_cp_body = cpBodyNewKinematic();
     KAACORE_LOG_DEBUG(
         "Creating body node {} (cpBody: {})", fmt::ptr(container_node(this)),
-        fmt::ptr(this->_cp_body));
+        fmt::ptr(this->_cp_body)
+    );
     cpBodySetUserData(this->_cp_body, this);
     this->body_type(BodyNodeType::dynamic);
 }
@@ -678,18 +724,22 @@ BodyNode::attach_to_simulation()
     Node* node = container_node(this);
     KAACORE_LOG_DEBUG(
         "Attaching body node {} to simulation (space) (cpBody: {})",
-        fmt::ptr(node), fmt::ptr(this->_cp_body));
+        fmt::ptr(node), fmt::ptr(this->_cp_body)
+    );
     KAACORE_ASSERT(
         node->_parent != nullptr,
-        "Node must have a parent in order to attach it to the simulation.");
+        "Node must have a parent in order to attach it to the simulation."
+    );
     ASSERT_VALID_SPACE_NODE(&node->_parent->space);
     space_safe_call(
         node->_parent,
         [cp_body = this->_cp_body](const SpaceNode* space_node_phys) {
             KAACORE_LOG_DEBUG(
-                "Simulation callback: attaching cpBody {}", fmt::ptr(cp_body));
+                "Simulation callback: attaching cpBody {}", fmt::ptr(cp_body)
+            );
             cpSpaceAddBody(space_node_phys->_cp_space, cp_body);
-        });
+        }
+    );
 }
 
 void
@@ -698,19 +748,22 @@ BodyNode::detach_from_simulation()
     if (this->_cp_body != nullptr) {
         KAACORE_LOG_DEBUG(
             "Destroying body node {} (cpBody: {})",
-            fmt::ptr(container_node(this)), fmt::ptr(this->_cp_body));
+            fmt::ptr(container_node(this)), fmt::ptr(this->_cp_body)
+        );
         cpBodySetUserData(this->_cp_body, nullptr);
         space_safe_call(
             this->space(),
             [body_ptr = this->_cp_body](const SpaceNode* space_node_phys) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: destroying cpBody {}",
-                    fmt::ptr(body_ptr));
+                    fmt::ptr(body_ptr)
+                );
                 if (space_node_phys) {
                     cpSpaceRemoveBody(space_node_phys->_cp_space, body_ptr);
                 }
                 cpBodyFree(body_ptr);
-            });
+            }
+        );
         this->_cp_body = nullptr;
     }
 }
@@ -720,7 +773,8 @@ BodyNode::override_simulation_position()
 {
     ASSERT_VALID_BODY_NODE(this);
     cpBodySetPosition(
-        this->_cp_body, convert_vector(container_node(this)->_position));
+        this->_cp_body, convert_vector(container_node(this)->_position)
+    );
 }
 
 void
@@ -728,7 +782,8 @@ BodyNode::sync_simulation_position() const
 {
     ASSERT_VALID_BODY_NODE(this);
     container_node(this)->_set_position(
-        convert_vector(cpBodyGetPosition(this->_cp_body)));
+        convert_vector(cpBodyGetPosition(this->_cp_body))
+    );
 }
 
 void
@@ -857,7 +912,8 @@ BodyNode::local_force()
     ASSERT_VALID_BODY_NODE(this);
     auto cp_vector = cpBodyGetForce(this->_cp_body);
     auto transformed_cp_vector = cpTransformVect(
-        cpTransformInverse(this->_cp_body->transform), cp_vector);
+        cpTransformInverse(this->_cp_body->transform), cp_vector
+    );
     return convert_vector(transformed_cp_vector);
 }
 
@@ -883,33 +939,37 @@ BodyNode::force(const glm::dvec2& force)
 }
 
 void
-BodyNode::apply_force_at_local(
-    const glm::dvec2& force, const glm::dvec2& at) const
+BodyNode::apply_force_at_local(const glm::dvec2& force, const glm::dvec2& at)
+    const
 {
     cpBodyApplyForceAtLocalPoint(
-        this->_cp_body, convert_vector(force), convert_vector(at));
+        this->_cp_body, convert_vector(force), convert_vector(at)
+    );
 }
 
 void
-BodyNode::apply_impulse_at_local(
-    const glm::dvec2& force, const glm::dvec2& at) const
+BodyNode::apply_impulse_at_local(const glm::dvec2& force, const glm::dvec2& at)
+    const
 {
     cpBodyApplyImpulseAtLocalPoint(
-        this->_cp_body, convert_vector(force), convert_vector(at));
+        this->_cp_body, convert_vector(force), convert_vector(at)
+    );
 }
 
 void
 BodyNode::apply_force_at(const glm::dvec2& force, const glm::dvec2& at) const
 {
     cpBodyApplyForceAtWorldPoint(
-        this->_cp_body, convert_vector(force), convert_vector(at));
+        this->_cp_body, convert_vector(force), convert_vector(at)
+    );
 }
 
 void
 BodyNode::apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at) const
 {
     cpBodyApplyImpulseAtWorldPoint(
-        this->_cp_body, convert_vector(force), convert_vector(at));
+        this->_cp_body, convert_vector(force), convert_vector(at)
+    );
 }
 
 double
@@ -946,9 +1006,8 @@ BodyNode::damping(const std::optional<double>& damping)
     this->_damping = damping;
     if (this->_damping) {
         cpBodySetVelocityUpdateFunc(this->_cp_body, _velocity_update_wrapper);
-    } else if (
-        this->_gravity == std::nullopt and
-        this->_velocity_update_callback == nullptr) {
+    } else if (this->_gravity == std::nullopt and
+               this->_velocity_update_callback == nullptr) {
         // if custom velocity wrapper is not in use anymore, switch back to
         // default chipmunk function
         cpBodySetVelocityUpdateFunc(this->_cp_body, cpBodyUpdateVelocity);
@@ -1039,7 +1098,8 @@ BodyNode::_angular_velocity_bias(const double torque)
 
 void
 _velocity_update_wrapper(
-    cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt)
+    cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt
+)
 {
     auto* body = static_cast<BodyNode*>(cpBodyGetUserData(cp_body));
     if (not body) {
@@ -1083,7 +1143,8 @@ BodyNode::set_velocity_update_callback(VelocityUpdateCallback callback)
     this->_velocity_update_callback = std::move(callback);
     if (this->_velocity_update_callback == nullptr) {
         return cpBodySetVelocityUpdateFunc(
-            this->_cp_body, cpBodyUpdateVelocity);
+            this->_cp_body, cpBodyUpdateVelocity
+        );
     }
     cpBodySetVelocityUpdateFunc(this->_cp_body, _velocity_update_wrapper);
 }
@@ -1096,7 +1157,8 @@ BodyNode::set_position_update_callback(PositionUpdateCallback callback)
         // if custom position wrapper is not in use anymore, switch back to
         // default chipmunk function
         return cpBodySetPositionUpdateFunc(
-            this->_cp_body, cpBodyUpdatePosition);
+            this->_cp_body, cpBodyUpdatePosition
+        );
     }
 
     cpBodySetPositionUpdateFunc(this->_cp_body, _position_update_wrapper);
@@ -1108,7 +1170,8 @@ prepare_hitbox_shape(const Shape& shape, const Transformation& transformation)
     KAACORE_ASSERT(shape.type != ShapeType::none, "Hitbox must have a shape.");
     KAACORE_ASSERT(
         shape.type != ShapeType::freeform,
-        "Hitbox must not have a freeform shape.");
+        "Hitbox must not have a freeform shape."
+    );
 
     auto transformed_shape = shape.transform(transformation);
 
@@ -1119,13 +1182,16 @@ prepare_hitbox_shape(const Shape& shape, const Transformation& transformation)
     if (shape.type == ShapeType::segment) {
         KAACORE_ASSERT(
             shape.points.size() == 2,
-            "Invalid number of points for segment shape.");
+            "Invalid number of points for segment shape."
+        );
         shape_ptr = cpSegmentShapeNew(
-            nullptr, cp_points[0], cp_points[1], transformed_shape.radius);
+            nullptr, cp_points[0], cp_points[1], transformed_shape.radius
+        );
     } else if (shape.type == ShapeType::circle) {
         KAACORE_ASSERT(
             shape.points.size() == 1,
-            "Invalid number of points for circle shape.");
+            "Invalid number of points for circle shape."
+        );
         shape_ptr =
             cpCircleShapeNew(nullptr, transformed_shape.radius, cp_points[0]);
     } else if (shape.type == ShapeType::polygon) {
@@ -1166,7 +1232,8 @@ HitboxNode::update_physics_shape()
     new_cp_shape = prepare_hitbox_shape(node->_shape, transformation).release();
     KAACORE_LOG_DEBUG(
         "Updating hitbox node {} shape (cpShape: {})", fmt::ptr(node),
-        fmt::ptr(new_cp_shape));
+        fmt::ptr(new_cp_shape)
+    );
 
     cpShapeSetUserData(new_cp_shape, this);
 
@@ -1175,21 +1242,26 @@ HitboxNode::update_physics_shape()
 
         // copy over existing cpShape parameters
         cpShapeSetCollisionType(
-            new_cp_shape, cpShapeGetCollisionType(this->_cp_shape));
+            new_cp_shape, cpShapeGetCollisionType(this->_cp_shape)
+        );
         cpShapeSetFilter(new_cp_shape, cpShapeGetFilter(this->_cp_shape));
         cpShapeSetSensor(new_cp_shape, cpShapeGetSensor(this->_cp_shape));
         cpShapeSetElasticity(
-            new_cp_shape, cpShapeGetElasticity(this->_cp_shape));
+            new_cp_shape, cpShapeGetElasticity(this->_cp_shape)
+        );
         cpShapeSetFriction(new_cp_shape, cpShapeGetFriction(this->_cp_shape));
         cpShapeSetSurfaceVelocity(
-            new_cp_shape, cpShapeGetSurfaceVelocity(this->_cp_shape));
+            new_cp_shape, cpShapeGetSurfaceVelocity(this->_cp_shape)
+        );
 
         space_safe_call(
-            this->space(), [cp_shape = this->_cp_shape,
-                            new_cp_shape](const SpaceNode* space_node) {
+            this->space(),
+            [cp_shape = this->_cp_shape,
+             new_cp_shape](const SpaceNode* space_node) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: destroying old cpShape {}",
-                    fmt::ptr(cp_shape));
+                    fmt::ptr(cp_shape)
+                );
                 // copy over existing cpSape's relations
                 if (auto cp_body = cpShapeGetBody(cp_shape)) {
                     cpShapeSetBody(new_cp_shape, cp_body);
@@ -1200,7 +1272,8 @@ HitboxNode::update_physics_shape()
                     cpSpaceAddShape(cp_space, new_cp_shape);
                 }
                 cpShapeFree(cp_shape);
-            });
+            }
+        );
         this->_cp_shape = nullptr;
     } else {
         cpShapeSetElasticity(new_cp_shape, 0.95); // default elasticity value
@@ -1213,21 +1286,25 @@ void
 HitboxNode::attach_to_simulation()
 {
     KAACORE_ASSERT(
-        this->_cp_shape != nullptr, "Invalid internal state of hitbox.");
+        this->_cp_shape != nullptr, "Invalid internal state of hitbox."
+    );
     // we might need to adjust for parents' transformation
     this->update_physics_shape();
     Node* node = container_node(this);
     KAACORE_LOG_DEBUG(
         "Attaching hitbox node {} to simulation (body) (cpShape: {})",
-        fmt::ptr(node), fmt::ptr(this->_cp_shape));
+        fmt::ptr(node), fmt::ptr(this->_cp_shape)
+    );
     auto body_node = this->_find_nearest_parent(NodeType::body);
     KAACORE_ASSERT(
         body_node,
         "Encountered error while attaching hitbox node to simulation. "
-        "Couldn't find body node in the inheritance chain.");
+        "Couldn't find body node in the inheritance chain."
+    );
     KAACORE_ASSERT(
         (body_node->body)._cp_body != nullptr,
-        "Body node has invalid internal state.");
+        "Body node has invalid internal state."
+    );
     space_safe_call(
         body_node->body.space(),
         [body_ptr = body_node->body._cp_body,
@@ -1235,15 +1312,18 @@ HitboxNode::attach_to_simulation()
             KAACORE_LOG_DEBUG(
                 "Simulation callback: attaching cpShape {} to body "
                 "(cpBody: {})",
-                fmt::ptr(shape_ptr), fmt::ptr(body_ptr));
+                fmt::ptr(shape_ptr), fmt::ptr(body_ptr)
+            );
             cpShapeSetBody(shape_ptr, body_ptr);
-        });
+        }
+    );
     this->_mark_hitbox_chain();
 
     auto space_node = this->_find_nearest_parent(NodeType::space);
     KAACORE_LOG_DEBUG(
         "Attaching hitbox node {} to simulation (space) (cpShape: {})",
-        fmt::ptr(node), fmt::ptr(this->_cp_shape));
+        fmt::ptr(node), fmt::ptr(this->_cp_shape)
+    );
     ASSERT_VALID_SPACE_NODE(&space_node->space);
     space_safe_call(
         &space_node->space,
@@ -1251,9 +1331,11 @@ HitboxNode::attach_to_simulation()
             KAACORE_LOG_DEBUG(
                 "Simulation callback: attaching cpShape {} to space "
                 "(cpSpace: {})",
-                fmt::ptr(shape_ptr), fmt::ptr(space_node_phys->_cp_space));
+                fmt::ptr(shape_ptr), fmt::ptr(space_node_phys->_cp_space)
+            );
             cpSpaceAddShape(space_node_phys->_cp_space, shape_ptr);
-        });
+        }
+    );
 }
 
 void
@@ -1262,19 +1344,22 @@ HitboxNode::detach_from_simulation()
     if (this->_cp_shape != nullptr) {
         KAACORE_LOG_DEBUG(
             "Destroying hitbox node {} (cpShape: {})",
-            fmt::ptr(container_node(this)), fmt::ptr(this->_cp_shape));
+            fmt::ptr(container_node(this)), fmt::ptr(this->_cp_shape)
+        );
         cpShapeSetUserData(this->_cp_shape, nullptr);
         space_safe_call(
             this->space(),
             [shape_ptr = this->_cp_shape](const SpaceNode* space_node_phys) {
                 KAACORE_LOG_DEBUG(
                     "Simulation callback: destroying cpShape {}",
-                    fmt::ptr(shape_ptr));
+                    fmt::ptr(shape_ptr)
+                );
                 if (space_node_phys) {
                     cpSpaceRemoveShape(space_node_phys->_cp_space, shape_ptr);
                 }
                 cpShapeFree(shape_ptr);
-            });
+            }
+        );
         this->_cp_shape = nullptr;
     }
 }
@@ -1311,7 +1396,8 @@ HitboxNode::trigger_id()
 {
     ASSERT_VALID_HITBOX_NODE(this);
     return static_cast<CollisionTriggerId>(
-        cpShapeGetCollisionType(this->_cp_shape));
+        cpShapeGetCollisionType(this->_cp_shape)
+    );
 }
 
 void
@@ -1319,7 +1405,8 @@ HitboxNode::trigger_id(const CollisionTriggerId trigger_id)
 {
     ASSERT_VALID_HITBOX_NODE(this);
     cpShapeSetCollisionType(
-        this->_cp_shape, static_cast<cpCollisionType>(trigger_id));
+        this->_cp_shape, static_cast<cpCollisionType>(trigger_id)
+    );
 }
 
 CollisionGroup
@@ -1417,7 +1504,8 @@ HitboxNode::surface_velocity(const glm::dvec2 surface_velocity)
 {
     ASSERT_VALID_HITBOX_NODE(this);
     cpShapeSetSurfaceVelocity(
-        this->_cp_shape, convert_vector(surface_velocity));
+        this->_cp_shape, convert_vector(surface_velocity)
+    );
 }
 
 glm::dvec2

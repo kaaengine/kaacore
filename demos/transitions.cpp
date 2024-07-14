@@ -21,7 +21,8 @@ struct TransitionsDemoScene : kaacore::Scene {
         const kaacore::Duration tr_time = 2.s;
         const std::vector<kaacore::Shape> shapes = {
             kaacore::Shape::Circle(2.5), kaacore::Shape::Box({4., 4.}),
-            kaacore::Shape::Polygon({{-2., -2.}, {2., -2.}, {-2., 2.}})};
+            kaacore::Shape::Polygon({{-2., -2.}, {2., -2.}, {-2., 2.}})
+        };
         const std::vector<double> rotations = {M_PI, M_PI / 4., 3 * M_PI / 2.};
 
         const auto movement_transitions_par =
@@ -31,67 +32,81 @@ struct TransitionsDemoScene : kaacore::Scene {
                          kaacore::make_node_transition<
                              kaacore::NodePositionSteppingTransition>(
                              std::vector<glm::dvec2>{
-                                 {-3., -3.}, {3., -3.}, {3., 3.}, {-3., 3.}},
+                                 {-3., -3.}, {3., -3.}, {3., 3.}, {-3., 3.}
+                             },
                              kaacore::AttributeTransitionMethod::add,
-                             tr_time * 2),
+                             tr_time * 2
+                         ),
                          kaacore::make_node_transition<
                              kaacore::NodePositionTransition>(
                              glm::dvec2(-15., -15.),
                              kaacore::AttributeTransitionMethod::add, tr_time,
                              kaacore::TransitionWarping{},
-                             kaacore::Easing::back_in_out),
+                             kaacore::Easing::back_in_out
+                         ),
                          kaacore::make_node_transition<
                              kaacore::NodeColorTransition>(
                              glm::dvec4(0., 1., 0., 1.),
                              kaacore::AttributeTransitionMethod::set, 0.s,
-                             kaacore::TransitionWarping{}),
+                             kaacore::TransitionWarping{}
+                         ),
                          kaacore::make_node_transition<
                              kaacore::NodePositionTransition>(
                              glm::dvec2(-25., 0.),
                              kaacore::AttributeTransitionMethod::add,
                              tr_time * 4, kaacore::TransitionWarping{},
-                             kaacore::Easing::sine_in_out),
+                             kaacore::Easing::sine_in_out
+                         ),
                          kaacore::make_node_transition<
                              kaacore::NodeScaleTransition>(
                              glm::dvec2(2., 2.),
                              kaacore::AttributeTransitionMethod::multiply,
                              tr_time * 2, kaacore::TransitionWarping{},
-                             kaacore::Easing::quintic_in_out),
+                             kaacore::Easing::quintic_in_out
+                         ),
                          kaacore::make_node_transitions_parallel({
                              kaacore::make_node_transition<
                                  kaacore::NodeScaleTransition>(
                                  glm::dvec2(2., 2.),
                                  kaacore::AttributeTransitionMethod::multiply,
-                                 tr_time * 5),
+                                 tr_time * 5
+                             ),
                              kaacore::make_node_transition<
                                  kaacore::NodeColorTransition>(
                                  glm::dvec4(1., 0.2, 0.2, 0.5), tr_time * 5,
                                  kaacore::TransitionWarping{},
-                                 kaacore::Easing::elastic_in_out),
+                                 kaacore::Easing::elastic_in_out
+                             ),
                          }),
                          kaacore::make_node_transitions_parallel({
                              kaacore::make_node_transition<
                                  kaacore::NodePositionTransition>(
                                  glm::dvec2(0., 0.),
                                  kaacore::AttributeTransitionMethod::set,
-                                 tr_time * 6),
+                                 tr_time * 6
+                             ),
                              kaacore::make_node_transition<
                                  kaacore::NodeScaleTransition>(
                                  glm::dvec2(0.3, 0.3),
                                  kaacore::AttributeTransitionMethod::multiply,
-                                 tr_time * 3),
+                                 tr_time * 3
+                             ),
                          }),
                      },
-                     kaacore::TransitionWarping(1, true)),
+                     kaacore::TransitionWarping(1, true)
+                 ),
                  kaacore::make_node_transition<
                      kaacore::NodeShapeSteppingTransition>(
                      shapes, tr_time * 2.4,
-                     kaacore::TransitionWarping(12, false)),
+                     kaacore::TransitionWarping(12, false)
+                 ),
                  kaacore::make_node_transition<
                      kaacore::NodeRotationSteppingTransition>(
                      rotations, tr_time * 2.4,
-                     kaacore::TransitionWarping(12, false))},
-                kaacore::TransitionWarping(0, true));
+                     kaacore::TransitionWarping(12, false)
+                 )},
+                kaacore::TransitionWarping(0, true)
+            );
 
         for (int i = 0; i < 625; i++) {
             kaacore::NodeOwnerPtr node = kaacore::make_node();

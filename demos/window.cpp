@@ -20,7 +20,9 @@ struct WindowDemoScene : kaacore::Scene {
         circle_node->transition(
             kaacore::make_node_transition<kaacore::NodeColorTransition>(
                 glm::dvec4{1., 0.3, 0.3, 0.7}, 1.s,
-                kaacore::TransitionWarping{0, true}));
+                kaacore::TransitionWarping{0, true}
+            )
+        );
         this->root_node.add_child(circle_node);
     }
 
@@ -35,27 +37,31 @@ struct WindowDemoScene : kaacore::Scene {
                 } else if (key == kaacore::Keycode::w) {
                     kaacore::get_engine()->window->position(
                         kaacore::get_engine()->window->position() -
-                        glm::uvec2{0, 1});
+                        glm::uvec2{0, 1}
+                    );
                 } else if (key == kaacore::Keycode::s) {
                     kaacore::get_engine()->window->position(
                         kaacore::get_engine()->window->position() +
-                        glm::uvec2{0, 1});
+                        glm::uvec2{0, 1}
+                    );
                 } else if (key == kaacore::Keycode::a) {
                     kaacore::get_engine()->window->position(
                         kaacore::get_engine()->window->position() -
-                        glm::uvec2{1, 0});
+                        glm::uvec2{1, 0}
+                    );
                 } else if (key == kaacore::Keycode::d) {
                     kaacore::get_engine()->window->position(
                         kaacore::get_engine()->window->position() +
-                        glm::uvec2{1, 0});
+                        glm::uvec2{1, 0}
+                    );
                 } else if (key == kaacore::Keycode::r) {
                     kaacore::get_engine()->window->size(
-                        kaacore::get_engine()->window->size() +
-                        glm::uvec2{5, 5});
+                        kaacore::get_engine()->window->size() + glm::uvec2{5, 5}
+                    );
                 } else if (key == kaacore::Keycode::t) {
                     kaacore::get_engine()->window->size(
-                        kaacore::get_engine()->window->size() -
-                        glm::uvec2{5, 5});
+                        kaacore::get_engine()->window->size() - glm::uvec2{5, 5}
+                    );
                 } else if (key == kaacore::Keycode::z) {
                     kaacore::get_engine()->window->minimize();
                 } else if (key == kaacore::Keycode::x) {
@@ -64,7 +70,8 @@ struct WindowDemoScene : kaacore::Scene {
                     kaacore::get_engine()->window->restore();
                 } else if (key == kaacore::Keycode::f) {
                     kaacore::get_engine()->window->fullscreen(
-                        not kaacore::get_engine()->window->fullscreen());
+                        not kaacore::get_engine()->window->fullscreen()
+                    );
                 } else if (key == kaacore::Keycode::p) {
                     std::cout
                         << "Clipboard: "
@@ -79,14 +86,15 @@ struct WindowDemoScene : kaacore::Scene {
                 std::cout << "EVENT: Window moved\n";
             } else if (event.window() and event.window()->is_resized()) {
                 std::cout << "EVENT: Window resized\n";
-            } else if (
-                event.system() and event.system()->is_clipboard_updated()) {
+            } else if (event.system() and
+                       event.system()->is_clipboard_updated()) {
                 std::cout << "EVENT: Clipboard updated\n";
             }
         }
 
         if (kaacore::get_engine()->input_manager->keyboard.is_pressed(
-                kaacore::Keycode::space)) {
+                kaacore::Keycode::space
+            )) {
             std::cout << "STATE: SPACE is pressed\n";
         }
     }

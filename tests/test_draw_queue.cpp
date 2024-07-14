@@ -55,17 +55,23 @@ TEST_CASE("test_draw_queue_rendering", "[.][visual_test][draw_queue]")
     kaacore::DrawQueue draw_queue;
 
     draw_queue.enqueue_modification(
-        make_draw_unit_insert_modification(0, 0, test_shape1.transform(tr1)));
+        make_draw_unit_insert_modification(0, 0, test_shape1.transform(tr1))
+    );
     draw_queue.enqueue_modification(
-        make_draw_unit_insert_modification(1, 0, test_shape1.transform(tr2)));
+        make_draw_unit_insert_modification(1, 0, test_shape1.transform(tr2))
+    );
     draw_queue.enqueue_modification(
-        make_draw_unit_insert_modification(2, 0, test_shape1.transform(tr3)));
+        make_draw_unit_insert_modification(2, 0, test_shape1.transform(tr3))
+    );
     draw_queue.enqueue_modification(
-        make_draw_unit_insert_modification(3, 1, test_shape1.transform(tr4)));
+        make_draw_unit_insert_modification(3, 1, test_shape1.transform(tr4))
+    );
     draw_queue.enqueue_modification(
-        make_draw_unit_insert_modification(4, 1, test_shape1.transform(tr5)));
+        make_draw_unit_insert_modification(4, 1, test_shape1.transform(tr5))
+    );
     draw_queue.enqueue_modification(
-        make_draw_unit_insert_modification(5, 1, test_shape1.transform(tr7)));
+        make_draw_unit_insert_modification(5, 1, test_shape1.transform(tr7))
+    );
 
     draw_queue.process_modifications();
 

@@ -45,26 +45,32 @@ operator|=(uint16_t& left, ClearFlag right)
 
 Quad::Quad()
 {
-    this->vertices = {StandardVertexData::xy_uv(-1., +1., 0., 0.),
-                      StandardVertexData::xy_uv(+1., +1., 1., 0.),
-                      StandardVertexData::xy_uv(+1., -1., 1., 1.),
-                      StandardVertexData::xy_uv(-1., -1., 0., 1.)};
+    this->vertices = {
+        StandardVertexData::xy_uv(-1., +1., 0., 0.),
+        StandardVertexData::xy_uv(+1., +1., 1., 0.),
+        StandardVertexData::xy_uv(+1., -1., 1., 1.),
+        StandardVertexData::xy_uv(-1., -1., 0., 1.)
+    };
     this->indices = {0, 2, 1, 0, 3, 2};
 }
 
 Effect::Effect(
     const ResourceReference<Shader>& fragment_shader,
-    const UniformSpecificationMap& uniforms)
+    const UniformSpecificationMap& uniforms
+)
 {
     KAACORE_CHECK(
         fragment_shader->type() == ShaderType::fragment,
-        "Fragment shader is expected.");
+        "Fragment shader is expected."
+    );
 
     this->_material = std::move(Material::create(
         Program::create(
             EmbeddedShader::load(ShaderType::vertex, "vs_effect"),
-            fragment_shader),
-        uniforms));
+            fragment_shader
+        ),
+        uniforms
+    ));
 }
 
 ResourceReference<Material>&
@@ -92,7 +98,8 @@ Effect::draw_call() const
 {
     RenderState state{nullptr, this->_material.get_valid(), 0, 0};
     return DrawCall::create(
-        state, -1, this->_quad.vertices, this->_quad.indices);
+        state, -1, this->_quad.vertices, this->_quad.indices
+    );
 }
 
 uint16_t
@@ -177,10 +184,12 @@ RenderPassesManager::RenderPassesManager()
     }
 }
 
-RenderPass& RenderPassesManager::operator[](const uint16_t index)
+RenderPass&
+RenderPassesManager::operator[](const uint16_t index)
 {
     KAACORE_CHECK(
-        validate_render_pass_index(index), "Invalid render pass index.");
+        validate_render_pass_index(index), "Invalid render pass index."
+    );
     return this->_render_passes[index];
 }
 

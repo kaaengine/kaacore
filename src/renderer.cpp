@@ -52,18 +52,20 @@ _release_used_container(void* _data, void* image_container)
     // use as a key
     std::shared_ptr<bimg::ImageContainer> key(
         std::shared_ptr<Texture>(),
-        static_cast<bimg::ImageContainer*>(image_container));
+        static_cast<bimg::ImageContainer*>(image_container)
+    );
     _used_containers.erase(key);
 }
 
 std::pair<ResourceReference<Shader>, ResourceReference<Shader>>
 load_embedded_shaders(
-    const std::string vertex_shader_name,
-    const std::string fragment_shader_name)
+    const std::string vertex_shader_name, const std::string fragment_shader_name
+)
 {
     KAACORE_LOG_DEBUG(
         "Loading embedded shaders: {}, {}", vertex_shader_name,
-        fragment_shader_name);
+        fragment_shader_name
+    );
     KAACORE_LOG_TRACE("Detected platform : {}", get_platform_name());
     return {
         EmbeddedShader::load(ShaderType::vertex, vertex_shader_name),
@@ -88,7 +90,8 @@ load_default_texture()
 ResourceReference<Program>
 load_embedded_program(
     const std::string& vertex_shader_name,
-    const std::string& fragment_shader_name)
+    const std::string& fragment_shader_name
+)
 {
     auto [vs, fs] =
         load_embedded_shaders(vertex_shader_name, fragment_shader_name);
@@ -96,7 +99,8 @@ load_embedded_program(
 }
 
 DefaultShadingContext::DefaultShadingContext(
-    const UniformSpecificationMap& uniforms)
+    const UniformSpecificationMap& uniforms
+)
     : ShadingContext(uniforms)
 {}
 
@@ -120,18 +124,21 @@ DefaultShadingContext::destroy()
 DrawCall
 DrawCall::allocate(
     const RenderState& state, const uint32_t sorting_hint,
-    const size_t vertices_count, const size_t indices_count)
+    const size_t vertices_count, const size_t indices_count
+)
 {
     // TODO exception?
     KAACORE_LOG_TRACE(
         "Available transient vertex/index buffer size: {}/{}",
         bgfx::getAvailTransientVertexBuffer(0xFFFFFFFF, _vertex_layout),
-        bgfx::getAvailTransientIndexBuffer(0xFFFFFFFF));
+        bgfx::getAvailTransientIndexBuffer(0xFFFFFFFF)
+    );
 
     bgfx::TransientVertexBuffer vertices_buffer;
     bgfx::TransientIndexBuffer indices_buffer;
     bgfx::allocTransientVertexBuffer(
-        &vertices_buffer, vertices_count, _vertex_layout);
+        &vertices_buffer, vertices_count, _vertex_layout
+    );
     bgfx::allocTransientIndexBuffer(&indices_buffer, indices_count);
     return DrawCall{state, sorting_hint, vertices_buffer, indices_buffer};
 }
@@ -140,10 +147,12 @@ DrawCall
 DrawCall::create(
     const RenderState& state, const uint32_t sorting_hint,
     const std::vector<StandardVertexData>& vertices,
-    const std::vector<VertexIndex>& indices)
+    const std::vector<VertexIndex>& indices
+)
 {
     auto call = DrawCall::allocate(
-        state, sorting_hint, vertices.size(), indices.size());
+        state, sorting_hint, vertices.size(), indices.size()
+    );
     auto vertices_data_size = sizeof(StandardVertexData) * vertices.size();
     auto indices_data_size = sizeof(VertexIndex) * indices.size();
     std::memcpy(call.vertices.data, vertices.data(), vertices_data_size);
@@ -165,14 +174,16 @@ RenderBatch::from_bucket(const DrawBucketKey& key, const DrawBucket& bucket)
         (std::abs(std::numeric_limits<int16_t>::min()) + key.z_index);
     sorting_hint <<= 16;
     sorting_hint |= key.root_distance;
-    RenderState state{key.texture, key.material, key.state_flags,
-                      key.stencil_flags};
+    RenderState state{
+        key.texture, key.material, key.state_flags, key.stencil_flags
+    };
     return {state, sorting_hint, bucket.geometry_stream()};
 }
 
 Renderer::Renderer(
     bgfx::Init bgfx_init_data, const glm::uvec2 window_size,
-    glm::uvec2 virtual_resolution, VirtualResolutionMode mode)
+    glm::uvec2 virtual_resolution, VirtualResolutionMode mode
+)
 {
     KAACORE_LOG_INFO("Initializing bgfx.");
     bgfx_init_data.resolution.width = window_size.x;
@@ -208,23 +219,27 @@ Renderer::~Renderer()
 
 bgfx::TextureHandle
 Renderer::make_texture(
-    std::shared_ptr<bimg::ImageContainer> image_container,
-    const uint64_t flags) const
+    std::shared_ptr<bimg::ImageContainer> image_container, const uint64_t flags
+) const
 {
     KAACORE_ASSERT(
         bgfx::isTextureValid(
             0, false, image_container->m_numLayers,
-            bgfx::TextureFormat::Enum(image_container->m_format), flags),
-        "Invalid texture.");
+            bgfx::TextureFormat::Enum(image_container->m_format), flags
+        ),
+        "Invalid texture."
+    );
 
     const bgfx::Memory* memory = bgfx::makeRef(
         image_container->m_data, image_container->m_size,
-        _release_used_container, image_container.get());
+        _release_used_container, image_container.get()
+    );
 
     auto handle = bgfx::createTexture2D(
         uint16_t(image_container->m_width), uint16_t(image_container->m_height),
         1 < image_container->m_numMips, image_container->m_numLayers,
-        bgfx::TextureFormat::Enum(image_container->m_format), flags, memory);
+        bgfx::TextureFormat::Enum(image_container->m_format), flags, memory
+    );
 
     KAACORE_ASSERT(bgfx::isValid(handle), "Failed to create texture.");
     _used_containers.insert(std::move(image_container));
@@ -235,7 +250,8 @@ void
 Renderer::destroy_texture(const bgfx::TextureHandle& handle) const
 {
     KAACORE_ASSERT_TERMINATE(
-        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed.");
+        bgfx::isValid(handle), "Invalid handle - texture can't be destroyed."
+    );
     bgfx::destroy(handle);
 }
 
@@ -292,26 +308,29 @@ Renderer::capabilities() const
         gpus.push_back({gpu.vendorId, gpu.deviceId});
     }
 
-    return {caps->homogeneousDepth,
-            caps->originBottomLeft,
-            caps->limits.maxDrawCalls,
-            caps->limits.maxTextureSize,
-            caps->limits.maxTextureLayers,
-            caps->limits.maxViews,
-            caps->limits.maxFBAttachments,
-            caps->limits.maxPrograms,
-            caps->limits.maxShaders,
-            caps->limits.maxTextures,
-            caps->limits.maxShaders,
-            caps->limits.maxUniforms,
-            gpus};
+    return {
+        caps->homogeneousDepth,
+        caps->originBottomLeft,
+        caps->limits.maxDrawCalls,
+        caps->limits.maxTextureSize,
+        caps->limits.maxTextureLayers,
+        caps->limits.maxViews,
+        caps->limits.maxFBAttachments,
+        caps->limits.maxPrograms,
+        caps->limits.maxShaders,
+        caps->limits.maxTextures,
+        caps->limits.maxShaders,
+        caps->limits.maxUniforms,
+        gpus
+    };
 }
 
 void
 Renderer::set_frame_context(
     const Duration last_dt, const Duration total_time,
     const RenderPassStateArray& render_pass_states,
-    const ViewportStateArray& viewport_states)
+    const ViewportStateArray& viewport_states
+)
 {
     this->_frame_context.last_dt = last_dt;
     this->_frame_context.total_time = total_time;
@@ -328,7 +347,8 @@ Renderer::begin_frame()
          ++pass_index) {
         bgfx::touch(pass_index + _views_reserved_offset);
         this->set_render_pass_state(
-            this->_frame_context.render_pass_states[pass_index]);
+            this->_frame_context.render_pass_states[pass_index]
+        );
     }
 }
 
@@ -347,28 +367,35 @@ Renderer::push_statistics() const
     stats_manager.push_value("bgfx.draw_calls:count", bgfx_stats->numDraw);
     stats_manager.push_value(
         "bgfx.textures:memory",
-        float(bgfx_stats->textureMemoryUsed) / (1024. * 1024.));
+        float(bgfx_stats->textureMemoryUsed) / (1024. * 1024.)
+    );
     stats_manager.push_value(
         "bgfx.transient_vb:memory",
-        float(bgfx_stats->transientVbUsed) / (1024. * 1024.));
+        float(bgfx_stats->transientVbUsed) / (1024. * 1024.)
+    );
     stats_manager.push_value(
         "bgfx.transient_ib:memory",
-        float(bgfx_stats->transientIbUsed) / (1024. * 1024.));
+        float(bgfx_stats->transientIbUsed) / (1024. * 1024.)
+    );
     stats_manager.push_value(
         "bgfx.cpu_frame:time",
-        float(bgfx_stats->cpuTimeFrame) / bgfx_stats->cpuTimerFreq);
+        float(bgfx_stats->cpuTimeFrame) / bgfx_stats->cpuTimerFreq
+    );
     stats_manager.push_value(
         "bgfx.wait_submit:time",
-        float(bgfx_stats->waitSubmit) / bgfx_stats->cpuTimerFreq);
+        float(bgfx_stats->waitSubmit) / bgfx_stats->cpuTimerFreq
+    );
     stats_manager.push_value(
         "bgfx.wait_render:time",
-        float(bgfx_stats->waitRender) / bgfx_stats->cpuTimerFreq);
+        float(bgfx_stats->waitRender) / bgfx_stats->cpuTimerFreq
+    );
 }
 
 void
 Renderer::reset(
     const glm::uvec2 window_size, glm::uvec2 virtual_resolution,
-    VirtualResolutionMode mode)
+    VirtualResolutionMode mode
+)
 {
     KAACORE_LOG_DEBUG("Calling Renderer::reset()");
 
@@ -387,8 +414,9 @@ Renderer::reset(
         } else {
             view_size = window_size;
         }
-        border_size = {(window_size.x - view_size.x) / 2,
-                       (window_size.y - view_size.y) / 2};
+        border_size = {
+            (window_size.x - view_size.x) / 2, (window_size.y - view_size.y) / 2
+        };
     } else if (mode == VirtualResolutionMode::aggresive_stretch) {
         view_size = window_size;
         border_size = {0, 0};
@@ -396,8 +424,8 @@ Renderer::reset(
         view_size = virtual_resolution;
         border_size = {
             window_size.x > view_size.x ? (window_size.x - view_size.x) / 2 : 0,
-            window_size.y > view_size.y ? (window_size.y - view_size.y) / 2
-                                        : 0};
+            window_size.y > view_size.y ? (window_size.y - view_size.y) / 2 : 0
+        };
     } else {
         throw exception("Unrecognized virtual resolution");
     }
@@ -406,29 +434,35 @@ Renderer::reset(
     this->_frame_context.virtual_resolution = virtual_resolution;
 
     bgfx::setViewClear(
-        _internal_view_index, BGFX_CLEAR_COLOR, this->border_color);
+        _internal_view_index, BGFX_CLEAR_COLOR, this->border_color
+    );
     bgfx::setViewRect(_internal_view_index, 0, 0, bgfx::BackbufferRatio::Equal);
 }
 
 void
 Renderer::set_global_uniforms()
 {
-    glm::vec4 u_vec4_slot1{this->_frame_context.last_dt.count(),
-                           this->_frame_context.total_time.count(), 0, 0};
+    glm::vec4 u_vec4_slot1{
+        this->_frame_context.last_dt.count(),
+        this->_frame_context.total_time.count(), 0, 0
+    };
     this->shading_context.set_uniform_value<glm::fvec4>(
-        "u_vec4Slot1", u_vec4_slot1);
+        "u_vec4Slot1", u_vec4_slot1
+    );
     this->shading_context.bind("u_vec4Slot1");
 }
 
 void
 Renderer::set_render_state(
     const RenderState& render_state, const RenderPassState& pass_state,
-    const ViewportState& viewport_state)
+    const ViewportState& viewport_state
+)
 {
     auto view_index = pass_state.index + _views_reserved_offset;
     bgfx::setState(
         BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | render_state.state_flags);
+        BGFX_STATE_MSAA | BGFX_STATE_BLEND_ALPHA | render_state.state_flags
+    );
     bgfx::setStencil(render_state.stencil_flags);
     // rect clipped to drawable area - used for scissor test
     auto view_rect = viewport_state.view_rect;
@@ -454,28 +488,37 @@ Renderer::set_render_state(
 
     bgfx::setScissor(
         static_cast<uint16_t>(view_rect.x), static_cast<uint16_t>(view_rect.y),
-        static_cast<uint16_t>(view_rect.z), static_cast<uint16_t>(view_rect.w));
+        static_cast<uint16_t>(view_rect.z), static_cast<uint16_t>(view_rect.w)
+    );
 
     auto view_matrix = viewport_state.view_matrix;
     auto texture = render_state.texture ? render_state.texture
                                         : this->default_texture.get();
     auto view_projection_matrix = projection_matrix * view_matrix;
     this->shading_context._set_uniform_texture(
-        "s_texture", texture, _internal_sampler_stage_index);
+        "s_texture", texture, _internal_sampler_stage_index
+    );
     this->shading_context.set_uniform_value<glm::fvec4>(
-        "u_viewportRect", viewport_rect);
+        "u_viewportRect", viewport_rect
+    );
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_viewMat", viewport_state.view_matrix);
+        "u_viewMat", viewport_state.view_matrix
+    );
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_projMat", projection_matrix);
+        "u_projMat", projection_matrix
+    );
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_viewProjMat", view_projection_matrix);
+        "u_viewProjMat", view_projection_matrix
+    );
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_invViewMat", glm::inverse(view_matrix));
+        "u_invViewMat", glm::inverse(view_matrix)
+    );
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_invProjMat", glm::inverse(projection_matrix));
+        "u_invProjMat", glm::inverse(projection_matrix)
+    );
     this->shading_context.set_uniform_value<glm::fmat4>(
-        "u_invViewProjMat", glm::inverse(view_projection_matrix));
+        "u_invViewProjMat", glm::inverse(view_projection_matrix)
+    );
 
     this->shading_context.bind("s_texture");
     this->shading_context.bind("u_viewportRect");
@@ -499,12 +542,14 @@ Renderer::set_render_pass_state(const RenderPassState& state)
     if (state.has_custom_framebuffer()) {
         // render target is always size of a drawable area
         bgfx::setViewRect(
-            view_index, 0, 0, this->view_size.x, this->view_size.y);
+            view_index, 0, 0, this->view_size.x, this->view_size.y
+        );
     } else {
         // back buffer case, adjust for borders
         bgfx::setViewRect(
             view_index, this->border_size.x, this->border_size.y,
-            this->view_size.x, this->view_size.y);
+            this->view_size.x, this->view_size.y
+        );
     }
 
     if (not state.requires_clear) {
@@ -524,7 +569,9 @@ Renderer::set_render_pass_state(const RenderPassState& state)
             bgfx::setPaletteColor(0, glm::value_ptr(clear_color));
             bgfx::setViewClear(view_index, state.clear_flags, 1.f, 0, 0);
         } else {
-            bgfx::setViewClear(view_index, state.clear_flags & ~BGFX_CLEAR_COLOR);
+            bgfx::setViewClear(
+                view_index, state.clear_flags & ~BGFX_CLEAR_COLOR
+            );
         }
     }
 }
@@ -532,7 +579,8 @@ Renderer::set_render_pass_state(const RenderPassState& state)
 void
 Renderer::render_batch(
     const RenderBatch& batch, const RenderPassIndexSet target_render_passes,
-    const ViewportIndexSet target_viewports)
+    const ViewportIndexSet target_viewports
+)
 {
     batch.each_draw_call([this, target_viewports,
                           target_render_passes](const DrawCall& call) {
@@ -544,7 +592,8 @@ Renderer::render_batch(
                     auto pass_state = ctx.render_pass_states[pass_index];
                     auto viewport_state = ctx.viewport_states[viewport_index];
                     this->render_draw_call(call, pass_state, viewport_state);
-                });
+                }
+            );
         });
     });
 }
@@ -554,8 +603,10 @@ Renderer::render_effect(const Effect& effect, const uint16_t pass_index)
 {
     glm::dvec4 view_rect = {0, 0, this->view_size};
     uint16_t max_viewport_index = KAACORE_MAX_VIEWPORTS - 1;
-    ViewportState viewport_state{max_viewport_index, view_rect, view_rect,
-                                 glm::fmat4(1.f), glm::fmat4(1.f)};
+    ViewportState viewport_state{
+        max_viewport_index, view_rect, view_rect, glm::fmat4(1.f),
+        glm::fmat4(1.f)
+    };
     auto pass_state = this->_frame_context.render_pass_states[pass_index];
     this->render_draw_call(effect.draw_call(), pass_state, viewport_state);
 }
@@ -572,15 +623,16 @@ Renderer::render_draw_command(const DrawCommand& command)
 void
 Renderer::render_draw_call(
     const DrawCall& call, const RenderPassState& pass_state,
-    const ViewportState& viewport_state)
+    const ViewportState& viewport_state
+)
 {
     call.bind_buffers();
     this->set_render_state(call.state, pass_state, viewport_state);
     uint32_t depth = call.sorting_hint | (viewport_state.index << 24);
     bgfx::submit(
         pass_state.index + _views_reserved_offset,
-        this->_get_program_handle(call.state.material), depth,
-        BGFX_DISCARD_ALL);
+        this->_get_program_handle(call.state.material), depth, BGFX_DISCARD_ALL
+    );
 }
 
 const std::unordered_set<std::string>&

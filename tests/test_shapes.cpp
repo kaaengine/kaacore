@@ -24,6 +24,7 @@ TEST_CASE("Test circle transformation", "[shapes][no_engine]")
             complex_transformation | kaacore::Transformation::scale({0.5, 1.});
         REQUIRE_THROWS_WITH(
             circle_shape.transform(non_equal_scale_transformation),
-            "Cannot transform shape radius by non-equal scale");
+            "Cannot transform shape radius by non-equal scale"
+        );
     }
 }

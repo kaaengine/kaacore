@@ -49,15 +49,21 @@ struct DemoFontsScene : kaacore::Scene {
         this->node_text->transition(kaacore::make_node_transitions_parallel({
             kaacore::make_node_transitions_sequence(
                 {kaacore::make_node_transition<kaacore::NodePositionTransition>(
-                     glm::dvec2(200., 200.), 2.s),
+                     glm::dvec2(200., 200.), 2.s
+                 ),
                  kaacore::make_node_transition<kaacore::NodePositionTransition>(
-                     glm::dvec2(0., 300.), 2.s),
+                     glm::dvec2(0., 300.), 2.s
+                 ),
                  kaacore::make_node_transition<kaacore::NodeScaleTransition>(
-                     glm::dvec2(1.5, 1.5), 1.5s),
+                     glm::dvec2(1.5, 1.5), 1.5s
+                 ),
                  kaacore::make_node_transition<kaacore::NodePositionTransition>(
-                     glm::dvec2(0., -0.), 2.s)}),
+                     glm::dvec2(0., -0.), 2.s
+                 )}
+            ),
             kaacore::make_node_transition<kaacore::NodeColorTransition>(
-                glm::dvec4(1., 1., 1., 1.), 10.s),
+                glm::dvec4(1., 1., 1., 1.), 10.s
+            ),
         }));
     }
 
@@ -71,28 +77,36 @@ struct DemoFontsScene : kaacore::Scene {
                         break;
                     } else if (keyboard_key->key() == kaacore::Keycode::w) {
                         this->camera().position(
-                            this->camera().position() + glm::dvec2(0., -2.5));
+                            this->camera().position() + glm::dvec2(0., -2.5)
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::a) {
                         this->camera().position(
-                            this->camera().position() + glm::dvec2(-2.5, 0.));
+                            this->camera().position() + glm::dvec2(-2.5, 0.)
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::s) {
                         this->camera().position(
-                            this->camera().position() + glm::dvec2(0., 2.5));
+                            this->camera().position() + glm::dvec2(0., 2.5)
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::d) {
                         this->camera().position(
-                            this->camera().position() + glm::dvec2(2.5, 0.));
+                            this->camera().position() + glm::dvec2(2.5, 0.)
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::i) {
                         this->camera().scale(
-                            this->camera().scale() + glm::dvec2(0.1, 0.1));
+                            this->camera().scale() + glm::dvec2(0.1, 0.1)
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::o) {
                         this->camera().scale(
-                            this->camera().scale() - glm::dvec2(0.1, 0.1));
+                            this->camera().scale() - glm::dvec2(0.1, 0.1)
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::l) {
                         this->node_text->text.content(
-                            this->node_text->text.content() + "x");
+                            this->node_text->text.content() + "x"
+                        );
                     } else if (keyboard_key->key() == kaacore::Keycode::k) {
                         this->node_text->text.content(
-                            this->node_text->text.content() + " ");
+                            this->node_text->text.content() + " "
+                        );
                     }
                 }
             }

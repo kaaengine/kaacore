@@ -3,8 +3,8 @@
 #include <string_view>
 
 #include <SDL.h>
-#include <spdlog/fmt/fmt.h>
 #include <spdlog/details/fmt_helper.h>
+#include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "kaacore/exceptions.h"
@@ -21,7 +21,10 @@ constexpr auto _default_logging_level =
     _parse_logging_level_name(KAACORE_DEFAULT_LOGGING_LEVEL).value();
 
 void
-ConditionalSourceFlag::format(const spdlog::details::log_msg& msg, const std::tm&, spdlog::memory_buf_t& dest)
+ConditionalSourceFlag::format(
+    const spdlog::details::log_msg& msg, const std::tm&,
+    spdlog::memory_buf_t& dest
+)
 {
     if (msg.source.empty()) {
         return;
@@ -37,7 +40,8 @@ ConditionalSourceFlag::format(const spdlog::details::log_msg& msg, const std::tm
 }
 
 std::unique_ptr<spdlog::custom_flag_formatter>
-ConditionalSourceFlag::clone() const {
+ConditionalSourceFlag::clone() const
+{
     return std::make_unique<ConditionalSourceFlag>();
 }
 
@@ -49,12 +53,14 @@ get_logging_level(const std::string_view& category)
         return _loggers[found_index.value()]->level();
     }
     throw kaacore::exception(
-        fmt::format("Unknown logging category: {}", category));
+        fmt::format("Unknown logging category: {}", category)
+    );
 }
 
 void
 set_logging_level(
-    const std::string_view& category, spdlog::level::level_enum level)
+    const std::string_view& category, spdlog::level::level_enum level
+)
 {
     auto found_index = find_array_element(_log_categories, category);
     if (found_index.has_value()) {
@@ -62,7 +68,8 @@ set_logging_level(
         return;
     }
     throw kaacore::exception(
-        fmt::format("Unknown logging category: {}", category));
+        fmt::format("Unknown logging category: {}", category)
+    );
 }
 
 void
@@ -83,15 +90,18 @@ initialize_logging()
             if (requested_default_level_name) {
                 spdlog::info(
                     "Found requested default logger level: {}",
-                    requested_default_level_name.value());
+                    requested_default_level_name.value()
+                );
                 auto requested_level = _parse_logging_level_name(
-                    requested_default_level_name.value());
+                    requested_default_level_name.value()
+                );
                 if (requested_level) {
                     default_level = requested_level.value();
                 } else {
                     spdlog::warn(
                         "Unrecognized requested default logger level: {}",
-                        requested_default_level_name.value());
+                        requested_default_level_name.value()
+                    );
                 }
             }
         }
@@ -107,7 +117,8 @@ initialize_logging()
             if (requested_level_name) {
                 logger->info(
                     "Found requested logger level: {}",
-                    requested_level_name.value());
+                    requested_level_name.value()
+                );
                 auto requested_level =
                     _parse_logging_level_name(requested_level_name.value());
                 if (requested_level) {
@@ -115,7 +126,8 @@ initialize_logging()
                 } else {
                     logger->warn(
                         "Unrecognized requested logger level: {}",
-                        requested_level_name.value());
+                        requested_level_name.value()
+                    );
                 }
             } else {
                 logger->set_level(default_level);

@@ -34,4 +34,4 @@ get_platform_name()
 #endif
 }
 
-}
+} // namespace kaacore

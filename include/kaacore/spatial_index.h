@@ -31,12 +31,14 @@ class SpatialIndex {
     void stop_tracking(Node* node);
     void update_single(Node* node);
     std::vector<NodePtr> query_bounding_box(
-        const BoundingBox<double>& bbox, bool include_shapeless = true);
+        const BoundingBox<double>& bbox, bool include_shapeless = true
+    );
     std::vector<NodePtr> query_point(const glm::dvec2 point);
 
   private:
     std::vector<NodeSpatialData*> _query_wrappers(
-        const BoundingBox<double>& bbox);
+        const BoundingBox<double>& bbox
+    );
     void _add_to_cp_index(Node* node);
     void _update_cp_index(Node* node);
     void _remove_from_cp_index(Node* node);

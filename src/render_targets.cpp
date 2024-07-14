@@ -116,12 +116,14 @@ RenderTarget::_create_texture(const glm::uvec2& dimensions)
 {
     auto handle = bgfx::createTexture2D(
         dimensions.x, dimensions.y, false, 1, bgfx::TextureFormat::RGBA8,
-        BGFX_TEXTURE_RT);
+        BGFX_TEXTURE_RT
+    );
     KAACORE_CHECK(
-        bgfx::isValid(handle), "Failed to create render target texture.");
+        bgfx::isValid(handle), "Failed to create render target texture."
+    );
     bgfx::setName(
-        handle,
-        fmt::format("Texture for RenderTarget({})", handle.idx).c_str());
+        handle, fmt::format("Texture for RenderTarget({})", handle.idx).c_str()
+    );
     return handle;
 }
 
@@ -134,7 +136,8 @@ RenderTarget::_uninitialize()
 
 FrameBuffer::FrameBuffer(
     const FrameBufferId id,
-    const std::vector<ResourceReference<RenderTarget>>& targets)
+    const std::vector<ResourceReference<RenderTarget>>& targets
+)
     : _id(id), _render_targets(targets)
 {
 
@@ -154,11 +157,12 @@ ResourceReference<FrameBuffer>
 FrameBuffer::create(const std::vector<ResourceReference<RenderTarget>>& targets)
 {
     auto max_attachments = std::min(
-        bgfx::getCaps()->limits.maxFBAttachments, max_attachments_number);
+        bgfx::getCaps()->limits.maxFBAttachments, max_attachments_number
+    );
     KAACORE_CHECK(
         targets.size() <= max_attachments,
-        "The maximum supported number of render targets is {}.",
-        max_attachments);
+        "The maximum supported number of render targets is {}.", max_attachments
+    );
 
     auto id = FrameBuffer::_last_id.fetch_add(1, std::memory_order_relaxed);
     auto frame_buffer =
@@ -215,7 +219,8 @@ FrameBuffer::_create_frame_buffer()
         attachments[i].init(render_target->_handle);
     }
     auto handle = bgfx::createFrameBuffer(
-        this->_render_targets.size(), attachments.data(), false);
+        this->_render_targets.size(), attachments.data(), false
+    );
     KAACORE_CHECK(bgfx::isValid(handle), "Failed to create frame buffer.");
     return handle;
 }

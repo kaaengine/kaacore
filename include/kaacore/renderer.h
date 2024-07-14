@@ -66,12 +66,14 @@ struct DrawCall {
 
     static DrawCall allocate(
         const RenderState& state, const uint32_t sorting_hint,
-        const size_t vertices_count, const size_t indices_count);
+        const size_t vertices_count, const size_t indices_count
+    );
 
     static DrawCall create(
         const RenderState& state, const uint32_t sorting_hint,
         const std::vector<StandardVertexData>& vertices,
-        const std::vector<VertexIndex>& indices);
+        const std::vector<VertexIndex>& indices
+    );
 
     void bind_buffers() const;
 };
@@ -94,16 +96,19 @@ struct RenderBatch {
         while (not range.empty()) {
             auto call = DrawCall::allocate(
                 this->state, this->sorting_hint, range.vertices_count,
-                range.indices_count);
+                range.indices_count
+            );
             this->geometry_stream.copy_range(
-                range, call.vertices, call.indices);
+                range, call.vertices, call.indices
+            );
             func(call);
             range = this->geometry_stream.find_range(range.end);
         }
     }
 
     static RenderBatch from_bucket(
-        const DrawBucketKey& key, const DrawBucket& bucket);
+        const DrawBucketKey& key, const DrawBucket& bucket
+    );
 };
 
 struct RendererCapabilities {
@@ -142,12 +147,14 @@ class Renderer {
 
     Renderer(
         bgfx::Init bgfx_init_data, const glm::uvec2 window_size,
-        glm::uvec2 virtual_resolution, VirtualResolutionMode mode);
+        glm::uvec2 virtual_resolution, VirtualResolutionMode mode
+    );
     ~Renderer();
 
     bgfx::TextureHandle make_texture(
         std::shared_ptr<bimg::ImageContainer> image_container,
-        const uint64_t flags) const;
+        const uint64_t flags
+    ) const;
     void destroy_texture(const bgfx::TextureHandle& handle) const;
     RendererType type() const;
     ShaderModel shader_model() const;
@@ -155,26 +162,31 @@ class Renderer {
     void set_frame_context(
         const Duration last_dt, const Duration total_time,
         const RenderPassStateArray& render_pass_states,
-        const ViewportStateArray& viewport_states);
+        const ViewportStateArray& viewport_states
+    );
     void begin_frame();
     void end_frame();
     void push_statistics() const;
     void reset(
         const glm::uvec2 windows_size, glm::uvec2 virtual_resolution,
-        VirtualResolutionMode mode);
+        VirtualResolutionMode mode
+    );
     void set_global_uniforms();
     void set_render_state(
         const RenderState& render_state, const RenderPassState& pass_state,
-        const ViewportState& viewport_state);
+        const ViewportState& viewport_state
+    );
     void set_render_pass_state(const RenderPassState& pass_state);
     void render_batch(
         const RenderBatch& batch, const RenderPassIndexSet render_passes,
-        const ViewportIndexSet viewports);
+        const ViewportIndexSet viewports
+    );
     void render_effect(const Effect& effect, const uint16_t pass_index);
     void render_draw_command(const DrawCommand& command);
     void render_draw_call(
         const DrawCall& call, const RenderPassState& pass_state,
-        const ViewportState& viewport_state);
+        const ViewportState& viewport_state
+    );
     static const std::unordered_set<std::string>& reserved_uniform_names();
 
   private:

@@ -59,7 +59,8 @@ struct PolygonTesterDemoScene : kaacore::Scene {
         }
         auto polygon_type = kaacore::classify_polygon(this->points);
         KAACORE_APP_LOG_INFO(
-            "Polygon type: {}", static_cast<int>(polygon_type));
+            "Polygon type: {}", static_cast<int>(polygon_type)
+        );
         if (polygon_type != kaacore::PolygonType::not_convex) {
             this->shape_repr->shape(kaacore::Shape::Polygon(this->points));
         } else {
@@ -76,13 +77,15 @@ struct PolygonTesterDemoScene : kaacore::Scene {
                 if (mouse_button->button() == kaacore::MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
                     KAACORE_APP_LOG_INFO(
-                        "Adding point: ({}, {})", pos.x, pos.y);
+                        "Adding point: ({}, {})", pos.x, pos.y
+                    );
                     this->add_point(pos);
-                } else if (
-                    mouse_button->button() == kaacore::MouseButton::left) {
+                } else if (mouse_button->button() ==
+                           kaacore::MouseButton::left) {
                     pos = this->camera().unproject_position(pos);
                     KAACORE_APP_LOG_INFO(
-                        "Adding point: ({}, {})", pos.x, pos.y);
+                        "Adding point: ({}, {})", pos.x, pos.y
+                    );
                     this->add_point(pos);
                 }
             }
@@ -96,22 +99,28 @@ struct PolygonTesterDemoScene : kaacore::Scene {
                     this->finalize_polygon();
                 } else if (keyboard_key->key() == kaacore::Keycode::w) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(0., -2.5));
+                        this->camera().position() + glm::dvec2(0., -2.5)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::a) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(-2.5, 0.));
+                        this->camera().position() + glm::dvec2(-2.5, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::s) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(0., 2.5));
+                        this->camera().position() + glm::dvec2(0., 2.5)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::d) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(2.5, 0.));
+                        this->camera().position() + glm::dvec2(2.5, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::i) {
                     this->camera().scale(
-                        this->camera().scale() + glm::dvec2(0.1, 0.1));
+                        this->camera().scale() + glm::dvec2(0.1, 0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::o) {
                     this->camera().scale(
-                        this->camera().scale() - glm::dvec2(0.1, 0.1));
+                        this->camera().scale() - glm::dvec2(0.1, 0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::r) {
                     this->camera().rotation(this->camera().rotation() + 0.3);
                 }
@@ -124,7 +133,8 @@ extern "C" int
 main(int argc, char* argv[])
 {
     kaacore::Engine eng(
-        {800, 600}, kaacore::VirtualResolutionMode::aggresive_stretch);
+        {800, 600}, kaacore::VirtualResolutionMode::aggresive_stretch
+    );
     PolygonTesterDemoScene scene;
     eng.run(&scene);
 

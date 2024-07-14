@@ -2,22 +2,26 @@
 
 namespace kaacore {
 
-inline uint8_t bitwise_retrieve(const uint32_t bitmask, const uint8_t shift, const uint32_t container)
+inline uint8_t
+bitwise_retrieve(
+    const uint32_t bitmask, const uint8_t shift, const uint32_t container
+)
 {
     return (container & bitmask) >> shift;
 }
 
-inline uint32_t bitwise_store(const uint32_t bitmask, const uint8_t shift, const uint32_t container, uint8_t value)
+inline uint32_t
+bitwise_store(
+    const uint32_t bitmask, const uint8_t shift, const uint32_t container,
+    uint8_t value
+)
 {
     uint32_t new_container = container & ~bitmask;
     new_container |= (static_cast<uint32_t>(value) << shift) & bitmask;
     return new_container;
 }
 
-StencilMode::StencilMode()
-    : StencilMode(0, 0xFF, StencilTest::always)
-{
-}
+StencilMode::StencilMode() : StencilMode(0, 0xFF, StencilTest::always) {}
 
 StencilMode
 StencilMode::make_disabled()
@@ -25,9 +29,11 @@ StencilMode::make_disabled()
     return StencilMode{0, 0, StencilTest::disabled};
 }
 
-StencilMode::StencilMode(const uint8_t value, const uint8_t mask, const StencilTest test,
-        const StencilOp stencil_fail_op, const StencilOp depth_fail_op,
-        const StencilOp pass_op)
+StencilMode::StencilMode(
+    const uint8_t value, const uint8_t mask, const StencilTest test,
+    const StencilOp stencil_fail_op, const StencilOp depth_fail_op,
+    const StencilOp pass_op
+)
     : _stencil_flags(0u)
 {
     this->value(value);
@@ -94,8 +100,8 @@ void
 StencilMode::test(const StencilTest new_value)
 {
     this->_stencil_flags = bitwise_store(
-        BGFX_STENCIL_TEST_MASK, BGFX_STENCIL_TEST_SHIFT,
-        this->_stencil_flags, static_cast<uint8_t>(new_value)
+        BGFX_STENCIL_TEST_MASK, BGFX_STENCIL_TEST_SHIFT, this->_stencil_flags,
+        static_cast<uint8_t>(new_value)
     );
 }
 
@@ -103,8 +109,7 @@ StencilTest
 StencilMode::test() const
 {
     return static_cast<StencilTest>(bitwise_retrieve(
-        BGFX_STENCIL_TEST_MASK, BGFX_STENCIL_TEST_SHIFT,
-        this->_stencil_flags
+        BGFX_STENCIL_TEST_MASK, BGFX_STENCIL_TEST_SHIFT, this->_stencil_flags
     ));
 }
 

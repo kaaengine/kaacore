@@ -550,16 +550,17 @@ struct InputManager {
         ~ControllerManager();
         bool is_connected(const ControllerId id) const;
         bool is_pressed(const ControllerButton cb, const ControllerId id) const;
-        bool is_released(
-            const ControllerButton cb, const ControllerId id) const;
+        bool is_released(const ControllerButton cb, const ControllerId id)
+            const;
         bool is_pressed(const ControllerAxis ca, const ControllerId id) const;
         bool is_released(const ControllerAxis ca, const ControllerId id) const;
-        double get_axis_motion(
-            const ControllerAxis axis, const ControllerId id) const;
+        double get_axis_motion(const ControllerAxis axis, const ControllerId id)
+            const;
         std::string get_name(const ControllerId id) const;
         glm::dvec2 get_triggers(const ControllerId id) const;
         glm::dvec2 get_sticks(
-            const CompoundControllerAxis axis, const ControllerId id) const;
+            const CompoundControllerAxis axis, const ControllerId id
+        ) const;
         std::vector<ControllerId> get_connected_controllers() const;
 
         ControllerId connect(int device_index);

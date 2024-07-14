@@ -21,9 +21,9 @@
 #include "kaacore/shapes.h"
 #include "kaacore/spatial_index.h"
 #include "kaacore/sprites.h"
+#include "kaacore/stencil.h"
 #include "kaacore/transitions.h"
 #include "kaacore/viewports.h"
-#include "kaacore/stencil.h"
 
 namespace kaacore {
 
@@ -132,8 +132,8 @@ class Node {
     std::vector<Node*> children();
     bool is_root() const;
 
-    void render_passes(
-        const std::optional<std::unordered_set<int16_t>>& indices);
+    void render_passes(const std::optional<std::unordered_set<int16_t>>& indices
+    );
     const std::optional<std::vector<int16_t>> render_passes() const;
     const std::vector<int16_t> effective_render_passes();
 
@@ -179,7 +179,8 @@ class Node {
 
         nodes_to_process.insert(
             nodes_to_process.begin(), this->_children.begin(),
-            this->_children.end());
+            this->_children.end()
+        );
 
         while (not nodes_to_process.empty()) {
             Node* node = nodes_to_process.front();
@@ -196,7 +197,8 @@ class Node {
             }
             nodes_to_process.insert(
                 nodes_to_process.end(), node->_children.begin(),
-                node->_children.end());
+                node->_children.end()
+            );
         }
     }
 
@@ -262,8 +264,7 @@ class Node {
         DIRTY_SPATIAL_INDEX | DIRTY_SPATIAL_INDEX
                                   << DIRTY_FLAGS_SHIFT_RECURSIVE;
     static inline const DirtyFlagsType DIRTY_STENCIL_RECURSIVE =
-        DIRTY_STENCIL | DIRTY_STENCIL
-                                  << DIRTY_FLAGS_SHIFT_RECURSIVE;
+        DIRTY_STENCIL | DIRTY_STENCIL << DIRTY_FLAGS_SHIFT_RECURSIVE;
 
     static inline const DirtyFlagsType DIRTY_ANY_RECURSIVE =
         DIRTY_MODEL_MATRIX << DIRTY_FLAGS_SHIFT_RECURSIVE |
@@ -335,7 +336,8 @@ class Node {
     void _mark_to_delete();
     glm::fmat4 _compute_model_matrix(const glm::fmat4& parent_matrix) const;
     glm::fmat4 _compute_model_matrix_cumulative(
-        const Node* const ancestor = nullptr) const;
+        const Node* const ancestor = nullptr
+    ) const;
     void _recalculate_model_matrix();
     void _recalculate_model_matrix_cumulative();
     void _set_position(const glm::dvec2& position);

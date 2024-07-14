@@ -31,7 +31,8 @@ class SyncedSyscallQueue {
             } catch (std::future_error err) {
                 KAACORE_LOG_ERROR(
                     "SyncedSyscallQueue call failed to set promise value: {}",
-                    err.what());
+                    err.what()
+                );
                 throw;
             } catch (...) {
                 result_promise.set_exception(std::current_exception());

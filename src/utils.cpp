@@ -7,8 +7,8 @@ namespace kaacore {
 std::default_random_engine&
 get_random_engine()
 {
-    thread_local std::default_random_engine random_engine{
-        std::random_device{}()};
+    thread_local std::default_random_engine random_engine{std::random_device{}()
+    };
     return random_engine;
 }
 

@@ -17,9 +17,11 @@
         if (not(condition)) {                                                  \
             std::string msg = fmt::format(__VA_ARGS__);                        \
             KAACORE_LOG_ERROR(                                                 \
-                "{} - {}", KAACORE_TRACE_STRING(condition), msg);              \
+                "{} - {}", KAACORE_TRACE_STRING(condition), msg                \
+            );                                                                 \
             throw kaacore::exception(                                          \
-                fmt::format("{} - {}", KAACORE_TRACE_STRING(condition), msg)); \
+                fmt::format("{} - {}", KAACORE_TRACE_STRING(condition), msg)   \
+            );                                                                 \
         }                                                                      \
     } while (0)
 
@@ -28,7 +30,8 @@
         if (not(condition)) {                                                  \
             std::string msg = fmt::format(__VA_ARGS__);                        \
             KAACORE_LOG_CRITICAL(                                              \
-                "{} - {}", KAACORE_TRACE_STRING(condition), msg);              \
+                "{} - {}", KAACORE_TRACE_STRING(condition), msg                \
+            );                                                                 \
             std::terminate();                                                  \
         }                                                                      \
     } while (0)

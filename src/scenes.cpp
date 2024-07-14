@@ -27,7 +27,8 @@ Scene::~Scene()
     }
     KAACORE_ASSERT_TERMINATE(
         this->simulations_registry.empty(),
-        "Simulation registry not empty on scene deletion.");
+        "Simulation registry not empty on scene deletion."
+    );
 }
 
 Camera&
@@ -74,11 +75,13 @@ Scene::process_physics(const HighPrecisionDuration dt)
 
 void
 Scene::process_nodes(
-    const HighPrecisionDuration dt, const Scene::NodesQueue& processing_queue)
+    const HighPrecisionDuration dt, const Scene::NodesQueue& processing_queue
+)
 {
     StopwatchStatAutoPusher stopwatch{"scene.process_nodes:time"};
     CounterStatAutoPusher transitions_counter{
-        "scene.transitions_processed:count"};
+        "scene.transitions_processed:count"
+    };
     for (Node* node : processing_queue) {
         if (node->_marked_to_delete) {
             continue;
@@ -109,7 +112,8 @@ Scene::resolve_spatial_index_changes(const Scene::NodesQueue& processing_queue)
 {
     StopwatchStatAutoPusher stopwatch{"scene.resolve_nodes:time"};
     CounterStatAutoPusher spatial_updates_counter{
-        "scene.spatial_index_updates:count"};
+        "scene.spatial_index_updates:count"
+    };
     for (Node* node : processing_queue) {
         if (node->_marked_to_delete) {
             continue;
@@ -134,30 +138,35 @@ Scene::update_nodes_drawing_queue(const NodesQueue& processing_queue)
             if (mods_pack) {
                 KAACORE_LOG_TRACE(
                     "DrawUnit modifications detected for node: {}",
-                    fmt::ptr(node));
+                    fmt::ptr(node)
+                );
                 auto new_lookup_key = mods_pack.new_lookup_key();
                 if (mods_pack.upsert_mod) {
                     // TODO enque modification should accept pack
                     this->draw_queue.enqueue_modification(
-                        std::move(*mods_pack.upsert_mod));
+                        std::move(*mods_pack.upsert_mod)
+                    );
                 }
                 if (mods_pack.remove_mod) {
                     this->draw_queue.enqueue_modification(
-                        std::move(*mods_pack.remove_mod));
+                        std::move(*mods_pack.remove_mod)
+                    );
                 }
                 node->clear_draw_unit_updates(new_lookup_key);
             }
         }
         node->clear_dirty_flags(
             Node::DIRTY_DRAW_KEYS_RECURSIVE |
-            Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+            Node::DIRTY_DRAW_VERTICES_RECURSIVE
+        );
     }
 }
 
 void
 Scene::draw(
     const uint16_t render_pass, const int16_t viewport,
-    const DrawCall& draw_call)
+    const DrawCall& draw_call
+)
 {
     // translate z_index to index
     uint16_t viewport_index = render_pass + std::abs(min_viewport_z_index);
@@ -200,7 +209,8 @@ Scene::attach_frame_context(const std::unique_ptr<Renderer>& renderer)
 {
     renderer->set_frame_context(
         this->_last_dt, this->_total_time, this->render_passes._take_snapshot(),
-        this->viewports._take_snapshot());
+        this->viewports._take_snapshot()
+    );
 }
 
 void
@@ -236,10 +246,12 @@ Scene::register_simulation(Node* node)
 {
     KAACORE_ASSERT(
         node->_type == NodeType::space,
-        "Invalid type - space node type expected.");
+        "Invalid type - space node type expected."
+    );
     KAACORE_ASSERT(
         node->space._cp_space != nullptr,
-        "Space node has invalid internal state.");
+        "Space node has invalid internal state."
+    );
     if (this->simulations_registry.find(node) ==
         this->simulations_registry.end()) {
         this->simulations_registry.insert(node);
@@ -251,14 +263,17 @@ Scene::unregister_simulation(Node* node)
 {
     KAACORE_ASSERT(
         node->_type == NodeType::space,
-        "Invalid type - space node type expected.");
+        "Invalid type - space node type expected."
+    );
     KAACORE_ASSERT(
         node->space._cp_space != nullptr,
-        "Space node has invalid internal state.");
+        "Space node has invalid internal state."
+    );
     auto pos = this->simulations_registry.find(node);
     KAACORE_ASSERT(
         pos != this->simulations_registry.end(),
-        "Can't unregister from simulation, space node not in registry.");
+        "Can't unregister from simulation, space node not in registry."
+    );
     this->simulations_registry.erase(pos);
 }
 
@@ -269,7 +284,8 @@ Scene::handle_add_node_to_tree(Node* node)
     KAACORE_ASSERT(node->_scene != nullptr, "Node does not belong to a scene");
     this->spatial_index.start_tracking(node);
     node->_scene_tree_id = this->_node_scene_tree_id_counter.fetch_add(
-                               1, std::memory_order_relaxed) +
+                               1, std::memory_order_relaxed
+                           ) +
                            1;
 }
 

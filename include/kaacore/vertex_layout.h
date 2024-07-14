@@ -26,9 +26,11 @@ struct StandardVertexData {
         vertex_layout.begin()
             .add(bgfx::Attrib::Enum::Position, 3, bgfx::AttribType::Enum::Float)
             .add(
-                bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float)
+                bgfx::Attrib::Enum::TexCoord0, 2, bgfx::AttribType::Enum::Float
+            )
             .add(
-                bgfx::Attrib::Enum::TexCoord1, 2, bgfx::AttribType::Enum::Float)
+                bgfx::Attrib::Enum::TexCoord1, 2, bgfx::AttribType::Enum::Float
+            )
             .add(bgfx::Attrib::Enum::Color0, 4, bgfx::AttribType::Enum::Float)
             .end();
         return vertex_layout;
@@ -37,7 +39,8 @@ struct StandardVertexData {
     StandardVertexData(
         float x = 0., float y = 0., float z = 0., float u = 0., float v = 0.,
         float m = 0., float n = 0., float r = 1., float g = 1., float b = 1.,
-        float a = 1.)
+        float a = 1.
+    )
         : xyz(x, y, z), uv(u, v), mn(m, n), rgba(r, g, b, a){};
 
     static inline StandardVertexData xy_uv(float x, float y, float u, float v)
@@ -46,7 +49,8 @@ struct StandardVertexData {
     }
 
     static inline StandardVertexData xy_uv_mn(
-        float x, float y, float u, float v, float m, float n)
+        float x, float y, float u, float v, float m, float n
+    )
     {
         return StandardVertexData(x, y, 0., u, v, m, n);
     }
@@ -55,7 +59,8 @@ struct StandardVertexData {
     {
         return (
             this->xyz == other.xyz and this->uv == other.uv and
-            this->mn == other.mn and this->rgba == other.rgba);
+            this->mn == other.mn and this->rgba == other.rgba
+        );
     }
 };
 } // namespace kaacore

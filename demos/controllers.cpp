@@ -68,42 +68,50 @@ struct DemoScene : kaacore::Scene {
                     case kaacore::ControllerAxis::left_x:
                         KAACORE_APP_LOG_INFO(
                             "Left stick motion: {}, 0.0",
-                            controller_motion->motion());
+                            controller_motion->motion()
+                        );
                         break;
                     case kaacore::ControllerAxis::left_y:
                         KAACORE_APP_LOG_INFO(
                             "Left stick motion: 0.0, {}",
-                            controller_motion->motion());
+                            controller_motion->motion()
+                        );
                         break;
                     case kaacore::ControllerAxis::right_x:
                         KAACORE_APP_LOG_INFO(
                             "Right stick motion: {}, 0.0",
-                            controller_motion->motion());
+                            controller_motion->motion()
+                        );
                         break;
                     case kaacore::ControllerAxis::right_y:
                         KAACORE_APP_LOG_INFO(
                             "Right stick motion: 0.0, {}",
-                            controller_motion->motion());
+                            controller_motion->motion()
+                        );
                         break;
                     case kaacore::ControllerAxis::trigger_left:
                         KAACORE_APP_LOG_INFO(
                             "Right trigger motion: {}, 0.0",
-                            controller_motion->motion());
+                            controller_motion->motion()
+                        );
                         break;
                     case kaacore::ControllerAxis::trigger_right:
                         KAACORE_APP_LOG_INFO(
                             "Right trigger motion: 0.0, {}",
-                            controller_motion->motion());
+                            controller_motion->motion()
+                        );
                         break;
                 }
             } else if (auto controller_device = event.controller_device()) {
                 if (controller_device->is_added()) {
                     KAACORE_APP_LOG_INFO(
-                        "Controller added: {}", controller_device->id());
+                        "Controller added: {}", controller_device->id()
+                    );
 
                 } else if (controller_device->is_removed()) {
                     KAACORE_APP_LOG_INFO(
-                        "Controller removed: {}", controller_device->id());
+                        "Controller removed: {}", controller_device->id()
+                    );
                 }
             }
         }

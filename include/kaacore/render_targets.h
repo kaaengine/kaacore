@@ -66,7 +66,8 @@ class FrameBuffer : public Resource {
     ~FrameBuffer();
 
     static ResourceReference<FrameBuffer> create(
-        const std::vector<ResourceReference<RenderTarget>>& targets);
+        const std::vector<ResourceReference<RenderTarget>>& targets
+    );
     std::vector<ResourceReference<RenderTarget>>& render_targets();
 
   private:
@@ -77,7 +78,8 @@ class FrameBuffer : public Resource {
 
     FrameBuffer(
         const FrameBufferId id,
-        const std::vector<ResourceReference<RenderTarget>>& targets);
+        const std::vector<ResourceReference<RenderTarget>>& targets
+    );
     void _reset();
     FrameBufferState _take_snapshot();
     bgfx::FrameBufferHandle _create_frame_buffer();

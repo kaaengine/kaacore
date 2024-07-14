@@ -184,14 +184,16 @@ pack_stats_data(const std::vector<std::pair<std::string, double>>& stats)
     size_t write_offset = 0;
     std::vector<std::byte> packed_message;
     packed_message.resize(
-        header_size + stat_segment_size * segments_count, std::byte{'\0'});
+        header_size + stat_segment_size * segments_count, std::byte{'\0'}
+    );
 
     auto do_write = [&write_offset,
                      &packed_message](const void* src, const size_t count) {
         KAACORE_ASSERT(
             write_offset + count <= packed_message.size(),
             "Write outside message bounds, requested: {}, max: {}.",
-            write_offset + count, packed_message.size());
+            write_offset + count, packed_message.size()
+        );
         std::memcpy(packed_message.data() + write_offset, src, count);
         write_offset += count;
     };
@@ -202,7 +204,8 @@ pack_stats_data(const std::vector<std::pair<std::string, double>>& stats)
     do_write(&pack_version, 2);
 
     static_assert(
-        sizeof(segments_count) == 2, "Invalid size of `segments_count`");
+        sizeof(segments_count) == 2, "Invalid size of `segments_count`"
+    );
     do_write(&segments_count, 2);
 
     // RESERVED
@@ -225,8 +228,9 @@ _parse_endpoint(const std::string& endpoint_string)
 {
     const auto separator = endpoint_string.find_last_of(':');
     if (separator == std::string::npos) {
-        return kissnet::endpoint{endpoint_string,
-                                 udp_stats_exporter_default_port};
+        return kissnet::endpoint{
+            endpoint_string, udp_stats_exporter_default_port
+        };
     } else {
         return kissnet::endpoint{endpoint_string};
     }
@@ -236,12 +240,14 @@ UDPStatsExporter::UDPStatsExporter(const std::string& endpoint_string)
     : _socket(_parse_endpoint(endpoint_string))
 {
     KAACORE_LOG_INFO(
-        "Started UDP stats exporter (exporting to: {})", endpoint_string);
+        "Started UDP stats exporter (exporting to: {})", endpoint_string
+    );
 }
 
 void
 UDPStatsExporter::send_sync(
-    const std::vector<std::pair<std::string, double>>& stats)
+    const std::vector<std::pair<std::string, double>>& stats
+)
 {
     auto packed_stats = pack_stats_data(stats);
 
@@ -249,7 +255,8 @@ UDPStatsExporter::send_sync(
         this->_socket.send(packed_stats.data(), packed_stats.size());
     KAACORE_LOG_TRACE(
         "Sent bytes: {} of {}, status: {}", size, packed_stats.size(),
-        status.value);
+        status.value
+    );
 }
 
 std::unique_ptr<UDPStatsExporter>

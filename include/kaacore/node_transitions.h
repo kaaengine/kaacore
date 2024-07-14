@@ -53,7 +53,8 @@ inline int32_t
 find_matching_step(const int32_t steps_count, const double t)
 {
     KAACORE_ASSERT(
-        0. <= t and t <= 1., "t must be in range [0, 1], was: {}", t);
+        0. <= t and t <= 1., "t must be in range [0, 1], was: {}", t
+    );
     return std::min<int32_t>(steps_count * t, steps_count - 1);
 }
 
@@ -61,7 +62,8 @@ template<typename T>
 inline T
 calculate_attribute_advancement(
     const T origin_value, const T advance_value,
-    const AttributeTransitionMethod method)
+    const AttributeTransitionMethod method
+)
 {
     switch (method) {
         case AttributeTransitionMethod::set:
@@ -81,10 +83,12 @@ struct NodeAttributeTransitionState : TransitionStateBase {
     T destination_value;
 
     NodeAttributeTransitionState(
-        T origin, T value_advance, AttributeTransitionMethod advance_method)
+        T origin, T value_advance, AttributeTransitionMethod advance_method
+    )
         : origin_value(origin),
           destination_value(calculate_attribute_advancement(
-              origin, value_advance, advance_method))
+              origin, value_advance, advance_method
+          ))
     {}
 };
 
@@ -101,7 +105,8 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
         T value_advance, const AttributeTransitionMethod& advance_method,
         const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
-        const Easing easing = Easing::none)
+        const Easing easing = Easing::none
+    )
         : NodeTransitionCustomizable(duration, warping, easing),
           _value_advance(value_advance), _advance_method(advance_method)
     {}
@@ -109,21 +114,24 @@ class NodeAttributeTransition : public NodeTransitionCustomizable {
     NodeAttributeTransition(
         T value_advance, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
-        const Easing easing = Easing::none)
+        const Easing easing = Easing::none
+    )
         : NodeAttributeTransition(
               value_advance, AttributeTransitionMethod::set, duration, warping,
-              easing)
+              easing
+          )
     {}
 
     std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
     {
         return std::make_unique<NodeAttributeTransitionState<T>>(
             get_node_property<N, N_member, T_getter, F_getter>(node),
-            this->_value_advance, this->_advance_method);
+            this->_value_advance, this->_advance_method
+        );
     }
 
-    void evaluate(
-        TransitionStateBase* state_b, NodePtr node, const double t) const
+    void evaluate(TransitionStateBase* state_b, NodePtr node, const double t)
+        const
     {
         auto state = static_cast<NodeAttributeTransitionState<T>*>(state_b);
         T new_value =
@@ -183,7 +191,8 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
         const AttributeTransitionMethod& advance_method,
         const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
-        const Easing easing = Easing::none)
+        const Easing easing = Easing::none
+    )
         : NodeTransitionCustomizable(duration, warping, easing), _steps(steps),
           _advance_method(advance_method)
     {}
@@ -191,19 +200,22 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
     NodeAttributeSteppingTransition(
         const std::vector<T>& steps, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
-        const Easing easing = Easing::none)
+        const Easing easing = Easing::none
+    )
         : NodeAttributeSteppingTransition(
-              steps, AttributeTransitionMethod::set, duration, warping, easing)
+              steps, AttributeTransitionMethod::set, duration, warping, easing
+          )
     {}
 
     std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
     {
         return std::make_unique<NodeAttributeSteppingTransitionState<T>>(
-            get_node_property<N, N_member, T_getter, F_getter>(node));
+            get_node_property<N, N_member, T_getter, F_getter>(node)
+        );
     }
 
-    void evaluate(
-        TransitionStateBase* state_b, NodePtr node, const double t) const
+    void evaluate(TransitionStateBase* state_b, NodePtr node, const double t)
+        const
     {
         auto state =
             static_cast<NodeAttributeSteppingTransitionState<T>*>(state_b);
@@ -212,7 +224,8 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
             "NodeAttributeSteppingTransition({})::evaluate - node: {}, t: "
             "{}, steps_count: {}, target_step {}",
             fmt::ptr(this), fmt::ptr(node.get()), t, this->_steps.size(),
-            target_step);
+            target_step
+        );
 
         if (target_step != state->last_step_index) {
             state->last_step_index = target_step;
@@ -220,7 +233,9 @@ class NodeAttributeSteppingTransition : public NodeTransitionCustomizable {
             set_node_property<N, N_member, T_setter, F_setter>(
                 node,
                 calculate_attribute_advancement(
-                    state->origin_value, advance_value, this->_advance_method));
+                    state->origin_value, advance_value, this->_advance_method
+                )
+            );
         };
     }
 };
@@ -268,12 +283,14 @@ class NodeInoperableAttributeSteppingTransition
     NodeInoperableAttributeSteppingTransition(
         const std::vector<T>& steps, const Duration duration,
         const TransitionWarping& warping = TransitionWarping(),
-        const Easing easing = Easing::none)
+        const Easing easing = Easing::none
+    )
         : NodeTransitionCustomizable(duration, warping, easing), _steps(steps)
     {
         KAACORE_CHECK(
             this->_steps.size() > 0,
-            "Number of steps must be greater than zero.");
+            "Number of steps must be greater than zero."
+        );
     }
 
     std::unique_ptr<TransitionStateBase> prepare_state(NodePtr node) const
@@ -281,8 +298,8 @@ class NodeInoperableAttributeSteppingTransition
         return std::make_unique<_NodeSteppingTransitionBasicState>();
     }
 
-    void evaluate(
-        TransitionStateBase* state_b, NodePtr node, const double t) const
+    void evaluate(TransitionStateBase* state_b, NodePtr node, const double t)
+        const
     {
         auto state = static_cast<_NodeSteppingTransitionBasicState*>(state_b);
         auto target_step = find_matching_step(this->_steps.size(), t);
@@ -291,12 +308,14 @@ class NodeInoperableAttributeSteppingTransition
             "{}, t: "
             "{}, steps_count: {}, target_step {}",
             fmt::ptr(this), fmt::ptr(node.get()), t, this->_steps.size(),
-            target_step);
+            target_step
+        );
 
         if (target_step != state->last_step_index) {
             state->last_step_index = target_step;
             set_node_property<N, N_member, T_setter, F_setter>(
-                node, this->_steps[target_step]);
+                node, this->_steps[target_step]
+            );
         };
     }
 };

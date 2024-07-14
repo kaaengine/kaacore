@@ -3,13 +3,15 @@
 namespace kaacore {
 
 UniformSpecification::UniformSpecification(
-    const UniformType type, const uint16_t number_of_elements)
+    const UniformType type, const uint16_t number_of_elements
+)
     : _type(type), _number_of_elements(number_of_elements)
 {
     if (type == UniformType::sampler) {
         KAACORE_CHECK(
             number_of_elements == 1,
-            "Sampler uniform must not have multiple elements.");
+            "Sampler uniform must not have multiple elements."
+        );
     }
 }
 
@@ -34,7 +36,8 @@ UniformSpecification::number_of_elements() const
 
 UniformBase::UniformBase(
     const std::string& name, const UniformType type,
-    const uint16_t number_of_elements)
+    const uint16_t number_of_elements
+)
     : _name(name), _type(type), _number_of_elements(number_of_elements){};
 
 UniformBase::UniformBase(const UniformBase& other)
@@ -90,7 +93,8 @@ void
 UniformBase::_initialize()
 {
     this->_handle = bgfx::createUniform(
-        this->_name.c_str(), this->_internal_type(), this->_number_of_elements);
+        this->_name.c_str(), this->_internal_type(), this->_number_of_elements
+    );
 }
 
 void
@@ -164,7 +168,8 @@ Sampler::get() const
 void
 Sampler::set(
     const ResourceReference<Texture>& texture, const uint8_t stage,
-    const uint32_t flags)
+    const uint32_t flags
+)
 {
     this->_value = texture.res_ptr;
     this->_stage = stage;
@@ -191,7 +196,8 @@ Sampler::_texture_handle()
                 return variant->handle();
             }
         },
-        this->_value);
+        this->_value
+    );
 }
 
 void
@@ -206,7 +212,8 @@ void
 Sampler::_bind()
 {
     bgfx::setTexture(
-        this->_stage, this->_handle, this->_texture_handle(), this->_flags);
+        this->_stage, this->_handle, this->_texture_handle(), this->_flags
+    );
 }
 
 } // namespace kaacore

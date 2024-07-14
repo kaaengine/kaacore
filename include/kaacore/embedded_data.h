@@ -19,6 +19,7 @@ struct embedded_file_error : kaacore::exception {
 
 Memory
 get_embedded_file_content(
-    const cmrc::embedded_filesystem& filesystem, const std::string& path);
+    const cmrc::embedded_filesystem& filesystem, const std::string& path
+);
 
 } // namespace kaacore

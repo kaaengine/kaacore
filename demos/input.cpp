@@ -59,14 +59,15 @@ struct InputDemoScene : kaacore::Scene {
                 if (kb_ev->is_key_down() and
                     kb_ev->key() == kaacore::Keycode::space) {
                     this->_mark_box();
-                } else if (
-                    kb_ev->is_key_down() and
-                    kb_ev->key() == kaacore::Keycode::v) {
+                } else if (kb_ev->is_key_down() and
+                           kb_ev->key() == kaacore::Keycode::v) {
                     kaacore::get_engine()->vertical_sync(
-                        not kaacore::get_engine()->vertical_sync());
+                        not kaacore::get_engine()->vertical_sync()
+                    );
                     KAACORE_APP_LOG_INFO(
                         "Vertical sync: {}",
-                        kaacore::get_engine()->vertical_sync());
+                        kaacore::get_engine()->vertical_sync()
+                    );
                 }
             } else if (auto mc_ev = event.mouse_button()) {
                 if (mc_ev->is_button_down() and
@@ -79,7 +80,8 @@ struct InputDemoScene : kaacore::Scene {
         this->timer_txt->text.content(fmt::format("{:.6f}", delta.count()));
 
         this->cursor->position(this->camera().unproject_position(
-            kaacore::get_engine()->input_manager->mouse.get_position()));
+            kaacore::get_engine()->input_manager->mouse.get_position()
+        ));
     }
 };
 

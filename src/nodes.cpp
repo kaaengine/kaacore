@@ -46,7 +46,8 @@ Node::~Node()
     if (this->_parent != nullptr) {
         auto pos_in_parent = std::find(
             this->_parent->_children.begin(), this->_parent->_children.end(),
-            this);
+            this
+        );
         if (pos_in_parent != this->_parent->_children.end()) {
             this->_parent->_children.erase(pos_in_parent);
         }
@@ -105,9 +106,12 @@ Node::_compute_model_matrix(const glm::fmat4& parent_matrix) const
         glm::rotate(
             glm::translate(
                 parent_matrix,
-                glm::fvec3(this->_position.x, this->_position.y, 0.)),
-            static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)),
-        glm::fvec3(this->_scale.x, this->_scale.y, 1.));
+                glm::fvec3(this->_position.x, this->_position.y, 0.)
+            ),
+            static_cast<float>(this->_rotation), glm::fvec3(0., 0., 1.)
+        ),
+        glm::fvec3(this->_scale.x, this->_scale.y, 1.)
+    );
 }
 
 glm::fmat4
@@ -136,7 +140,8 @@ Node::_recalculate_model_matrix()
 {
     const static glm::fmat4 identity(1.0);
     this->_model_matrix.value = this->_compute_model_matrix(
-        this->_parent ? this->_parent->_model_matrix.value : identity);
+        this->_parent ? this->_parent->_model_matrix.value : identity
+    );
     this->clear_dirty_flags(DIRTY_MODEL_MATRIX_RECURSIVE);
 }
 
@@ -164,7 +169,8 @@ Node::_set_position(const glm::dvec2& position)
     }
     this->set_dirty_flags(
         DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
-        DIRTY_MODEL_MATRIX_RECURSIVE);
+        DIRTY_MODEL_MATRIX_RECURSIVE
+    );
     this->_position = position;
 }
 
@@ -176,7 +182,8 @@ Node::_set_rotation(const double rotation)
     }
     this->set_dirty_flags(
         DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
-        DIRTY_MODEL_MATRIX_RECURSIVE);
+        DIRTY_MODEL_MATRIX_RECURSIVE
+    );
     this->_rotation = rotation;
 }
 
@@ -241,7 +248,8 @@ Node::add_child(NodeOwnerPtr& owned_ptr)
         }
 
         std::for_each(
-            n->_children.begin(), n->_children.end(), initialize_node);
+            n->_children.begin(), n->_children.end(), initialize_node
+        );
     };
 
     initialize_node(child_node.get());
@@ -262,13 +270,15 @@ Node::recalculate_vertices_indices_data()
 {
     KAACORE_ASSERT(
         this->_shape,
-        "Node has no shape set to calcualte vertices and indices data");
+        "Node has no shape set to calcualte vertices and indices data"
+    );
 
     std::vector<StandardVertexData> computed_vertices;
     computed_vertices.resize(this->_shape.vertices.size());
 
     glm::dvec2 pos_realignment = calculate_realignment_vector(
-        this->_origin_alignment, this->_shape.vertices_bbox);
+        this->_origin_alignment, this->_shape.vertices_bbox
+    );
 
     std::optional<std::pair<glm::dvec2, glm::dvec2>> uv_rect;
     if (this->_sprite.has_texture()) {
@@ -278,8 +288,8 @@ Node::recalculate_vertices_indices_data()
     std::transform(
         this->_shape.vertices.cbegin(), this->_shape.vertices.cend(),
         computed_vertices.begin(),
-        [this, &uv_rect, pos_realignment](
-            const StandardVertexData& orig_vt) -> StandardVertexData {
+        [this, &uv_rect, pos_realignment](const StandardVertexData& orig_vt
+        ) -> StandardVertexData {
             StandardVertexData vt;
             vt.xyz = this->_model_matrix.value *
                      (glm::fvec4{orig_vt.xyz, 1.} +
@@ -291,7 +301,8 @@ Node::recalculate_vertices_indices_data()
             vt.mn = orig_vt.mn;
             vt.rgba *= this->_color;
             return vt;
-        });
+        }
+    );
 
     return {computed_vertices, this->_shape.indices};
 }
@@ -311,7 +322,8 @@ Node::recalculate_ordering_data()
     } else {
         KAACORE_ASSERT(
             this->_parent != nullptr,
-            "Can't inherit view data if node has no parent");
+            "Can't inherit view data if node has no parent"
+        );
         this->_parent->recalculate_ordering_data();
         this->_ordering_data.calculated_render_passes =
             this->_parent->_ordering_data.calculated_render_passes;
@@ -324,7 +336,8 @@ Node::recalculate_ordering_data()
     } else {
         KAACORE_ASSERT(
             this->_parent != nullptr,
-            "Can't inherit viewport data if node has no parent");
+            "Can't inherit viewport data if node has no parent"
+        );
         this->_parent->recalculate_ordering_data();
         this->_ordering_data.calculated_viewports =
             this->_parent->_ordering_data.calculated_viewports;
@@ -337,7 +350,8 @@ Node::recalculate_ordering_data()
     } else {
         KAACORE_ASSERT(
             this->_parent != nullptr,
-            "Can't inherit z_index data if node has no parent");
+            "Can't inherit z_index data if node has no parent"
+        );
         this->_ordering_data.calculated_z_index =
             this->_parent->_ordering_data.calculated_z_index;
     }
@@ -351,8 +365,9 @@ Node::recalculate_visibility_data()
         return;
     }
 
-    const auto& inheritance_chain = this->build_inheritance_chain(
-        [](Node* n) { return n->query_dirty_flags(DIRTY_VISIBILITY); });
+    const auto& inheritance_chain = this->build_inheritance_chain([](Node* n) {
+        return n->query_dirty_flags(DIRTY_VISIBILITY);
+    });
 
     for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
          it++) {
@@ -366,7 +381,8 @@ Node::recalculate_visibility_data()
                 node->_parent != nullptr,
                 "Nodes ({}) parent is not set, cannot determine "
                 "inheritance-based value",
-                fmt::ptr(node));
+                fmt::ptr(node)
+            );
             node->_visibility_data.calculated_visible =
                 node->_parent->_visibility_data.calculated_visible;
         }
@@ -382,22 +398,26 @@ Node::recalculate_stencil_data()
         return;
     }
 
-    const auto& inheritance_chain = this->build_inheritance_chain(
-        [](Node* n) { return n->query_dirty_flags(DIRTY_STENCIL); });
+    const auto& inheritance_chain = this->build_inheritance_chain([](Node* n) {
+        return n->query_dirty_flags(DIRTY_STENCIL);
+    });
 
     for (auto it = inheritance_chain.rbegin(); it != inheritance_chain.rend();
          it++) {
         Node* node = *it;
         if (not node->_stencil_mode.is_disabled()) {
-            node->_stencil_data.calculated_flags = node->_stencil_mode.stencil_flags();
+            node->_stencil_data.calculated_flags =
+                node->_stencil_mode.stencil_flags();
         } else if (node->is_root()) {
-            node->_stencil_data.calculated_flags = StencilMode::make_disabled().stencil_flags();
+            node->_stencil_data.calculated_flags =
+                StencilMode::make_disabled().stencil_flags();
         } else {
             KAACORE_ASSERT(
                 node->_parent != nullptr,
                 "Nodes ({}) parent is not set, cannot determine "
                 "inheritance-based value",
-                fmt::ptr(node));
+                fmt::ptr(node)
+            );
             node->_stencil_data.calculated_flags =
                 node->_parent->_stencil_data.calculated_flags;
         }
@@ -411,14 +431,16 @@ Node::calculate_draw_unit_removal() const
 {
     KAACORE_ASSERT(
         this->_scene_tree_id != 0u, "Node ({}) has no scene tree id",
-        fmt::ptr(this));
+        fmt::ptr(this)
+    );
     if (not this->_draw_unit_data.current_key) {
         return std::nullopt;
     }
 
-    return DrawUnitModification{DrawUnitModification::Type::remove,
-                                *this->_draw_unit_data.current_key,
-                                this->_scene_tree_id};
+    return DrawUnitModification{
+        DrawUnitModification::Type::remove, *this->_draw_unit_data.current_key,
+        this->_scene_tree_id
+    };
 }
 
 DrawUnitModificationPack
@@ -426,7 +448,8 @@ Node::calculate_draw_unit_updates()
 {
     KAACORE_ASSERT(
         this->_scene_tree_id != 0u, "Node ({}) has no scene tree id",
-        fmt::ptr(this));
+        fmt::ptr(this)
+    );
 
     if (not this->query_dirty_flags(DIRTY_DRAW_KEYS | DIRTY_DRAW_VERTICES)) {
         return {std::nullopt, std::nullopt};
@@ -460,7 +483,8 @@ Node::calculate_draw_unit_updates()
         upsert_mod = DrawUnitModification{
             changed_draw_bucket_key ? DrawUnitModification::Type::insert
                                     : DrawUnitModification::Type::update,
-            *calculated_draw_bucket_key, this->_scene_tree_id};
+            *calculated_draw_bucket_key, this->_scene_tree_id
+        };
 
         upsert_mod->updated_vertices_indices = true;
         auto vertices_indices_pair = this->recalculate_vertices_indices_data();
@@ -639,7 +663,8 @@ Node::scale(const glm::dvec2& scale)
     }
     this->set_dirty_flags(
         DIRTY_DRAW_VERTICES_RECURSIVE | DIRTY_SPATIAL_INDEX_RECURSIVE |
-        DIRTY_MODEL_MATRIX_RECURSIVE);
+        DIRTY_MODEL_MATRIX_RECURSIVE
+    );
     this->_scale = scale;
 
     auto body_in_tree = this->_type == NodeType::body and this->_scene;
@@ -806,7 +831,8 @@ Node::visible(const bool visible)
         return;
     }
     this->set_dirty_flags(
-        DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_VISIBILITY_RECURSIVE);
+        DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_VISIBILITY_RECURSIVE
+    );
     this->_visible = visible;
 }
 
@@ -875,7 +901,8 @@ Node::render_passes(const std::optional<std::unordered_set<int16_t>>& indices)
     if (indices.has_value()) {
         KAACORE_CHECK(
             indices->size() <= KAACORE_MAX_RENDER_PASSES,
-            "Invalid indices size.");
+            "Invalid indices size."
+        );
     }
 
     this->set_dirty_flags(DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_ORDERING_RECURSIVE);
@@ -900,8 +927,8 @@ Node::viewports(const std::optional<std::unordered_set<int16_t>>& z_indices)
 {
     if (z_indices.has_value()) {
         KAACORE_CHECK(
-            z_indices->size() <= KAACORE_MAX_VIEWPORTS,
-            "Invalid indices size.");
+            z_indices->size() <= KAACORE_MAX_VIEWPORTS, "Invalid indices size."
+        );
     }
 
     this->set_dirty_flags(DIRTY_DRAW_KEYS_RECURSIVE | DIRTY_ORDERING_RECURSIVE);
@@ -992,7 +1019,8 @@ Node::bounding_box()
     if (this->_shape) {
         KAACORE_ASSERT(
             not this->_shape.bounding_points.empty(),
-            "Shape must have bounding points");
+            "Shape must have bounding points"
+        );
         std::vector<glm::dvec2> bounding_points;
         bounding_points.resize(this->_shape.bounding_points.size());
         std::transform(
@@ -1000,11 +1028,13 @@ Node::bounding_box()
             this->_shape.bounding_points.end(), bounding_points.begin(),
             [&transformation](glm::dvec2 pt) -> glm::dvec2 {
                 return pt | transformation;
-            });
+            }
+        );
         return BoundingBox<double>::from_points(bounding_points);
     } else {
         return BoundingBox<double>::single_point(
-            this->_position | transformation);
+            this->_position | transformation
+        );
     }
 }
 
