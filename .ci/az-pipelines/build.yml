@@ -42,7 +42,7 @@ jobs:
         build_exe_directory: './Release/'
       macos:
         system_name: 'macos'
-        image_name: 'macOS-11'
+        image_name: 'macOS-12'
         cmake_generator: 'Unix Makefiles'
         cmake_generator_platform: ''
         build_exe_directory: './'
