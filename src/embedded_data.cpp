@@ -19,16 +19,19 @@ const cmrc::embedded_filesystem embedded_shaders_filesystem =
 
 Memory
 get_embedded_file_content(
-    const cmrc::embedded_filesystem& filesystem, const std::string& path)
+    const cmrc::embedded_filesystem& filesystem, const std::string& path
+)
 {
     std::lock_guard lock{embedded_resource_load_mutex};
     if (not filesystem.exists(path)) {
         throw embedded_file_error{
-            fmt::format("Requested embedded file not found: '{}'", path)};
+            fmt::format("Requested embedded file not found: '{}'", path)
+        };
     }
     auto file = filesystem.open(path);
     return Memory::reference(
-        reinterpret_cast<const std::byte*>(file.cbegin()), file.size());
+        reinterpret_cast<const std::byte*>(file.cbegin()), file.size()
+    );
 }
 
 } // namespace kaacore

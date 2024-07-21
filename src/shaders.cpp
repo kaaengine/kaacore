@@ -45,7 +45,8 @@ _load_shader(const std::string& path)
 {
     File file(path);
     return Memory::copy(
-        reinterpret_cast<std::byte*>(file.content.data()), file.content.size());
+        reinterpret_cast<std::byte*>(file.content.data()), file.content.size()
+    );
 }
 
 Memory
@@ -55,7 +56,8 @@ _load_embedded_shader_memory(const std::string& path)
         return get_embedded_file_content(embedded_shaders_filesystem, path);
     } catch (embedded_file_error& err) {
         KAACORE_LOG_ERROR(
-            "Failed to load embedded binary shader: {} ({})", path, err.what());
+            "Failed to load embedded binary shader: {} ({})", path, err.what()
+        );
         throw;
     }
 }
@@ -81,7 +83,8 @@ _get_shader_model_tag(ShaderModel model)
 
 ShaderModelMemoryMap
 _load_embedded_shader_memory_map(
-    const std::string& shader_name, const PlatformType platform)
+    const std::string& shader_name, const PlatformType platform
+)
 {
     std::vector<ShaderModel> models;
     switch (platform) {
@@ -89,16 +92,20 @@ _load_embedded_shader_memory_map(
             models = {ShaderModel::glsl, ShaderModel::spirv};
             break;
         case PlatformType::osx:
-            models = {ShaderModel::metal, ShaderModel::glsl,
-                      ShaderModel::spirv};
+            models = {
+                ShaderModel::metal, ShaderModel::glsl, ShaderModel::spirv
+            };
             break;
         case PlatformType::windows:
-            models = {ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
-                      ShaderModel::glsl, ShaderModel::spirv};
+            models = {
+                ShaderModel::hlsl_dx9, ShaderModel::hlsl_dx11,
+                ShaderModel::glsl, ShaderModel::spirv
+            };
             break;
         default:
             KAACORE_LOG_ERROR(
-                "Unsupported platform! Can't load embedded shaders.");
+                "Unsupported platform! Can't load embedded shaders."
+            );
     }
 
     std::string path;
@@ -189,7 +196,8 @@ Shader::_initialize()
     if (this->_models.find(model) == this->_models.end()) {
         auto msg = fmt::format(
             "No suitable shader provided for renderer type: {}.",
-            renderer->type());
+            renderer->type()
+        );
         throw kaacore::exception(msg);
     }
 
@@ -226,7 +234,8 @@ EmbeddedShader::load(const ShaderType type, const std::string& shader_name)
 {
     ShaderKey key{fmt::format("EMBEDDED::{}", shader_name), "str"};
     auto shader = std::static_pointer_cast<EmbeddedShader>(
-        _shaders_registry.get_resource(key));
+        _shaders_registry.get_resource(key)
+    );
     if (shader) {
         return shader;
     }
@@ -249,7 +258,8 @@ Program::Program() : vertex_shader(nullptr), fragment_shader(nullptr) {}
 
 Program::Program(
     const ResourceReference<Shader>& vertex,
-    const ResourceReference<Shader>& fragment)
+    const ResourceReference<Shader>& fragment
+)
     : vertex_shader(vertex), fragment_shader(fragment)
 {
     if (is_engine_initialized()) {
@@ -267,7 +277,8 @@ Program::~Program()
 ResourceReference<Program>
 Program::create(
     const ResourceReference<Shader>& vertex,
-    const ResourceReference<Shader>& fragment)
+    const ResourceReference<Shader>& fragment
+)
 {
     std::shared_ptr<Program> program;
     ProgramKey key =
@@ -286,7 +297,8 @@ Program::_initialize()
 {
     this->_validate_shaders();
     this->_handle = bgfx::createProgram(
-        this->vertex_shader->_handle, this->fragment_shader->_handle);
+        this->vertex_shader->_handle, this->fragment_shader->_handle
+    );
     if (not bgfx::isValid(this->_handle)) {
         std::ostringstream stream;
         stream << "Can't create program (vs handle: "
@@ -313,15 +325,19 @@ Program::_validate_shaders()
     std::size_t input_offset = hash_size, output_offset = hash_size * 2;
     KAACORE_CHECK(
         (vertex_memory.size() >= output_offset + hash_size),
-        "Invalid vertex shader format.");
+        "Invalid vertex shader format."
+    );
     KAACORE_CHECK(
         (fragment_memory.size() >= input_offset + hash_size),
-        "Invalid fragment shader format.");
+        "Invalid fragment shader format."
+    );
     auto match = std::memcmp(
                      vertex_memory.get() + output_offset,
-                     fragment_memory.get() + input_offset, hash_size) == 0;
+                     fragment_memory.get() + input_offset, hash_size
+                 ) == 0;
     KAACORE_CHECK(
-        match, "Vertex shader output doesn't match fragment shader input.");
+        match, "Vertex shader output doesn't match fragment shader input."
+    );
 }
 
 } // namespace kaacore

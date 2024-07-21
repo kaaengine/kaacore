@@ -24,15 +24,18 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
         const auto movement_transition =
             kaacore::make_node_transition<kaacore::NodePositionTransition>(
                 glm::dvec2(100, 30), kaacore::AttributeTransitionMethod::add,
-                10.s, kaacore::TransitionWarping(0, true));
+                10.s, kaacore::TransitionWarping(0, true)
+            );
         const auto scaling_transition =
             kaacore::make_node_transition<kaacore::NodeScaleTransition>(
                 glm::dvec2(3.0, 3.5), kaacore::AttributeTransitionMethod::set,
-                13.s, kaacore::TransitionWarping(0, true));
+                13.s, kaacore::TransitionWarping(0, true)
+            );
 
         const std::vector<kaacore::Shape> shapes{
             kaacore::Shape::Circle(3.5), kaacore::Shape::Box({4., 6.}),
-            kaacore::Shape::Segment({-4., 1.}, {1., 2.})};
+            kaacore::Shape::Segment({-4., 1.}, {1., 2.})
+        };
 
         auto stats_text_node = kaacore::make_node(kaacore::NodeType::text);
         stats_text_node->text.content("");
@@ -67,8 +70,8 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
             if (keyboard_key and keyboard_key->key() == kaacore::Keycode::q) {
                 kaacore::get_engine()->quit();
                 break;
-            } else if (
-                keyboard_key and keyboard_key->key() == kaacore::Keycode::r) {
+            } else if (keyboard_key and
+                       keyboard_key->key() == kaacore::Keycode::r) {
                 KAACORE_APP_LOG_INFO("Resetting non-indexable nodes...");
 
                 int count = 0;
@@ -89,17 +92,19 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
                     pos = this->camera().unproject_position(pos);
                     auto query_results = this->spatial_index.query_point(pos);
                     KAACORE_APP_LOG_INFO(
-                        "Clicked %ld nodes", query_results.size());
+                        "Clicked %ld nodes", query_results.size()
+                    );
                     for (auto& node : query_results) {
                         node->color({1., 0., 0., 1.});
                     }
-                } else if (
-                    mouse_button->is_button_down() and
-                    mouse_button->button() == kaacore::MouseButton::right) {
+                } else if (mouse_button->is_button_down() and
+                           mouse_button->button() ==
+                               kaacore::MouseButton::right) {
                     pos = this->camera().unproject_position(pos);
                     auto query_results = this->spatial_index.query_point(pos);
                     KAACORE_APP_LOG_INFO(
-                        "Clicked %ld nodes", query_results.size());
+                        "Clicked %ld nodes", query_results.size()
+                    );
                     for (auto& node : query_results) {
                         node->color({0., 0.5, 1., 1.});
                         node->indexable(false);
@@ -109,10 +114,12 @@ struct SpatialIndexingDemoScene : kaacore::Scene {
         }
 
         auto query_results = this->spatial_index.query_bounding_box(
-            kaacore::BoundingBox{-50., -50., 50., 50.}, true);
+            kaacore::BoundingBox{-50., -50., 50., 50.}, true
+        );
 
         this->stats_text_node->text.content(
-            "Nodes visible: " + std::to_string(query_results.size()));
+            "Nodes visible: " + std::to_string(query_results.size())
+        );
     }
 };
 

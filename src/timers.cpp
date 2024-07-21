@@ -35,7 +35,8 @@ Timer::_start(const Duration interval, TimersManager& manager)
 {
     KAACORE_CHECK(interval > 0.s, "Timer interval must be greater than zero.");
     KAACORE_CHECK(
-        interval.count() != INFINITY, "Timer interval cannot be infinity.");
+        interval.count() != INFINITY, "Timer interval cannot be infinity."
+    );
     if (this->is_running()) {
         this->stop();
     }
@@ -60,7 +61,8 @@ TimersManager::TimersManager(Scene* const scene) : _scene(scene) {}
 
 TimersManager::_InvocationInstance::_InvocationInstance(
     TimerId invocation_id, Duration interval, TimePoint triggered_at,
-    std::weak_ptr<_TimerState>&& state)
+    std::weak_ptr<_TimerState>&& state
+)
     : invocation_id(invocation_id), interval(interval),
       triggered_at(triggered_at), state(state)
 {}
@@ -76,7 +78,8 @@ TimersManager::start(const Duration interval, Timer& timer)
         state->id = invocation_id;
         state->is_running.store(true, std::memory_order_release);
         this->_awaiting_timers.data.emplace_back(
-            invocation_id, interval, state);
+            invocation_id, interval, state
+        );
     }
     this->_awaiting_timers.is_dirty.store(true, std::memory_order_release);
 }
@@ -91,7 +94,8 @@ TimersManager::process(const HighPrecisionDuration dt)
             for (auto& awaiting_state : this->_awaiting_timers.data) {
                 auto& [invocation_id, interval, weak_state] = awaiting_state;
                 this->_queue.data.emplace_back(
-                    invocation_id, interval, now, std::move(weak_state));
+                    invocation_id, interval, now, std::move(weak_state)
+                );
             }
             this->_awaiting_timers.data.clear();
         }
@@ -106,7 +110,8 @@ TimersManager::process(const HighPrecisionDuration dt)
             this->_queue.data.begin(), this->_queue.data.end(),
             [](const auto& lhs, const auto& rhs) -> bool {
                 return lhs.fire_at() > rhs.fire_at();
-            });
+            }
+        );
         this->_queue.is_dirty = false;
     }
 
@@ -152,4 +157,4 @@ TimersManager::time_point() const
     return TimePoint(this->_dt_accumulator);
 }
 
-}
+} // namespace kaacore

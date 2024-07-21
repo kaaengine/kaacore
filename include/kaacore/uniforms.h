@@ -26,7 +26,8 @@ class UniformSpecification {
   public:
     UniformSpecification() = default;
     UniformSpecification(
-        const UniformType type, const uint16_t number_of_elements = 1);
+        const UniformType type, const uint16_t number_of_elements = 1
+    );
     bool operator==(const UniformSpecification& other);
     UniformType type() const;
     uint16_t number_of_elements() const;
@@ -40,7 +41,8 @@ class UniformBase {
   public:
     UniformBase(
         const std::string& name, const UniformType type,
-        const uint16_t number_of_elements = 1);
+        const uint16_t number_of_elements = 1
+    );
     UniformBase(const UniformBase& other);
     UniformBase(UniformBase&& other);
     UniformBase& operator=(UniformBase&& other);
@@ -84,7 +86,8 @@ class Sampler : public UniformBase {
     std::optional<SamplerValue> get() const;
     void set(
         const ResourceReference<Texture>& texture, const uint8_t stage,
-        const uint32_t flags);
+        const uint32_t flags
+    );
     void set(const SamplerValue& value);
 
   private:
@@ -94,7 +97,8 @@ class Sampler : public UniformBase {
 
     bgfx::TextureHandle _texture_handle();
     void _set(
-        const Texture* texture, const uint8_t stage, const uint32_t flags);
+        const Texture* texture, const uint8_t stage, const uint32_t flags
+    );
     void _bind();
 
     friend class ShadingContext;
@@ -171,7 +175,8 @@ class FloatUniform : public UniformBase {
         KAACORE_CHECK(
             value.number_of_elements() == this->_number_of_elements,
             "Invald number of elements for uniform value, expected {}, got {}.",
-            this->_number_of_elements, value.number_of_elements());
+            this->_number_of_elements, value.number_of_elements()
+        );
         this->_value = std::move(value);
     }
 
@@ -194,7 +199,8 @@ class FloatUniform : public UniformBase {
     {
         bgfx::setUniform(
             this->_handle, this->_value.raw_data(),
-            this->_value.number_of_elements());
+            this->_value.number_of_elements()
+        );
     }
 
     friend class ShadingContext;

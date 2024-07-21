@@ -158,7 +158,8 @@ classify_polygon(const std::vector<glm::dvec2>& points)
 
 bool
 check_point_in_polygon(
-    const std::vector<glm::dvec2>& polygon_points, const glm::dvec2 point)
+    const std::vector<glm::dvec2>& polygon_points, const glm::dvec2 point
+)
 {
     const auto points_count = polygon_points.size();
     if (points_count < 3) {
@@ -207,7 +208,8 @@ find_points_minmax(const std::vector<glm::dvec2>& points)
 
 double
 _normalize_angle_values_range(
-    const double value, const double begin, const double end)
+    const double value, const double begin, const double end
+)
 {
     const double range_width = end - begin;
     const double range_offset = value - begin;

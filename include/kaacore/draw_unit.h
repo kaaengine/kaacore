@@ -43,7 +43,8 @@ struct DrawBucketKey {
             this->texture == other.texture and
             this->material == other.material and
             this->state_flags == other.state_flags and
-            this->stencil_flags == other.stencil_flags);
+            this->stencil_flags == other.stencil_flags
+        );
     }
 
     inline bool operator!=(const DrawBucketKey& other) const
@@ -56,11 +57,13 @@ struct DrawBucketKey {
         return std::tie(
                    this->render_passes, this->viewports, this->z_index,
                    this->root_distance, this->texture, this->material,
-                   this->state_flags, this->stencil_flags) <
+                   this->state_flags, this->stencil_flags
+               ) <
                std::tie(
                    other.render_passes, other.viewports, other.z_index,
                    other.root_distance, other.texture, other.material,
-                   other.state_flags, other.stencil_flags);
+                   other.state_flags, other.stencil_flags
+               );
     }
 };
 
@@ -68,7 +71,8 @@ struct DrawUnitDetails {
     DrawUnitDetails() = default;
     DrawUnitDetails(
         std::vector<StandardVertexData>&& vertices,
-        std::vector<VertexIndex>&& indices)
+        std::vector<VertexIndex>&& indices
+    )
         : vertices(std::move(vertices)), indices(std::move(indices))
     {}
 
@@ -86,7 +90,8 @@ struct DrawUnitModification {
     DrawUnitModification() = default;
     DrawUnitModification(
         const DrawUnitModification::Type type, const DrawBucketKey& lookup_key,
-        const DrawUnitId id)
+        const DrawUnitId id
+    )
         : lookup_key(lookup_key), id(id), type(type)
     {}
 
@@ -125,7 +130,8 @@ struct DrawUnit {
 struct DrawUnitModificationPack {
     DrawUnitModificationPack(
         std::optional<DrawUnitModification> upsert_mod_,
-        std::optional<DrawUnitModification> remove_mod_);
+        std::optional<DrawUnitModification> remove_mod_
+    );
 
     explicit operator bool() const;
     std::pair<
@@ -165,7 +171,8 @@ class GeometryStream {
     Range find_range(const DrawUnitIter start_pos) const;
     void copy_range(
         const Range& range, bgfx::TransientVertexBuffer& vertex_buffer,
-        bgfx::TransientIndexBuffer& index_buffer) const;
+        bgfx::TransientIndexBuffer& index_buffer
+    ) const;
 
   private:
     const std::vector<DrawUnit>& _draw_units;
@@ -182,7 +189,8 @@ struct DrawBucket {
     GeometryStream geometry_stream() const;
     void consume_modifications(
         const std::vector<DrawUnitModification>::iterator src_begin,
-        const std::vector<DrawUnitModification>::iterator src_end);
+        const std::vector<DrawUnitModification>::iterator src_end
+    );
 
     std::vector<DrawUnit> draw_units;
 };
@@ -204,7 +212,8 @@ struct hash<kaacore::DrawBucketKey> {
     {
         return kaacore::hash_combined(
             key.render_passes, key.viewports, key.z_index, key.root_distance,
-            key.texture, key.material, key.state_flags, key.stencil_flags);
+            key.texture, key.material, key.state_flags, key.stencil_flags
+        );
     }
 };
-}
+} // namespace std

@@ -65,7 +65,8 @@ class Effect {
     Effect() = default;
     Effect(
         const ResourceReference<Shader>& fragment_shader,
-        const UniformSpecificationMap& uniforms = {});
+        const UniformSpecificationMap& uniforms = {}
+    );
     bool operator==(const Effect& other);
     ResourceReference<Material>& material();
     Effect clone();
@@ -148,8 +149,8 @@ template<>
 struct hash<kaacore::RenderPassIndexSet> {
     size_t operator()(const kaacore::RenderPassIndexSet& render_passes) const
     {
-        return std::hash<std::bitset<KAACORE_MAX_RENDER_PASSES>>{}(
-            render_passes._bitset);
+        return std::hash<std::bitset<KAACORE_MAX_RENDER_PASSES>>{
+        }(render_passes._bitset);
     }
 };
 
@@ -157,8 +158,8 @@ template<>
 struct hash<kaacore::Effect> {
     size_t operator()(const kaacore::Effect& effect) const
     {
-        return std::hash<kaacore::ResourceReference<kaacore::Material>>{}(
-            effect._material);
+        return std::hash<kaacore::ResourceReference<kaacore::Material>>{
+        }(effect._material);
     }
 };
-}
+} // namespace std

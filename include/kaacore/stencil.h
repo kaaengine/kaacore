@@ -6,7 +6,6 @@
 
 #include "kaacore/utils.h"
 
-
 namespace kaacore {
 
 enum class StencilTest : uint8_t {
@@ -26,25 +25,31 @@ enum class StencilOp : uint8_t {
     keep = BGFX_STENCIL_OP_FAIL_S_KEEP >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
     replace = BGFX_STENCIL_OP_FAIL_S_REPLACE >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
     increase_wrap = BGFX_STENCIL_OP_FAIL_S_INCR >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
-    increase_clamp = BGFX_STENCIL_OP_FAIL_S_INCRSAT >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
+    increase_clamp =
+        BGFX_STENCIL_OP_FAIL_S_INCRSAT >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
     decrease_wrap = BGFX_STENCIL_OP_FAIL_S_DECR >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
-    decrease_clamp = BGFX_STENCIL_OP_FAIL_S_DECRSAT >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
+    decrease_clamp =
+        BGFX_STENCIL_OP_FAIL_S_DECRSAT >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
     invert = BGFX_STENCIL_OP_FAIL_S_INVERT >> BGFX_STENCIL_OP_FAIL_S_SHIFT,
 };
-
 
 class StencilMode {
   public:
     typedef uint32_t Flags;
 
     StencilMode();
-    StencilMode(const uint8_t value, const uint8_t mask, const StencilTest test,
+    StencilMode(
+        const uint8_t value, const uint8_t mask, const StencilTest test,
         const StencilOp stencil_fail_op = StencilOp::keep,
         const StencilOp depth_fail_op = StencilOp::keep,
-        const StencilOp pass_op = StencilOp::keep);
+        const StencilOp pass_op = StencilOp::keep
+    );
     static StencilMode make_disabled();
 
-    inline bool is_disabled() const { return this->test() == StencilTest::disabled; }
+    inline bool is_disabled() const
+    {
+        return this->test() == StencilTest::disabled;
+    }
 
     Flags stencil_flags() const;
     bool operator==(const StencilMode& other) const;
@@ -71,7 +76,7 @@ class StencilMode {
     Flags _stencil_flags;
     // uint32_t _children_modifiers;
 
-  friend class std::hash<StencilMode>;
+    friend class std::hash<StencilMode>;
 };
 
 } // namespace kaacore
@@ -84,4 +89,4 @@ struct hash<kaacore::StencilMode> {
         return std::hash<uint32_t>{}(stencil_mode._stencil_flags);
     }
 };
-}
+} // namespace std

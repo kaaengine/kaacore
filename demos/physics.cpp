@@ -96,8 +96,8 @@ struct DemoScene : kaacore::Scene {
 
             ball->shape(chosen_shape);
             ball->scale({1.5, 1.5});
-            ball->position(
-                {position_dist(generator), position_dist(generator)});
+            ball->position({position_dist(generator), position_dist(generator)}
+            );
             ball->color({1., 1., 0., 1.});
             ball->body.moment(10.);
 
@@ -124,13 +124,14 @@ struct DemoScene : kaacore::Scene {
             120, 120,
             [&, circle_shape, polygon_shape](
                 const kaacore::Arbiter arbiter, kaacore::CollisionPair pair_a,
-                kaacore::CollisionPair pair_b) -> uint8_t {
+                kaacore::CollisionPair pair_b
+            ) -> uint8_t {
                 KAACORE_APP_LOG_INFO("Collision! {}", int(arbiter.phase));
                 if (this->delete_on_collision) {
                     pair_a.body_node.destroy();
-                } else if (
-                    arbiter.phase == kaacore::CollisionPhase::separate and
-                    this->change_shape_on_collision) {
+                } else if (arbiter.phase ==
+                               kaacore::CollisionPhase::separate and
+                           this->change_shape_on_collision) {
                     if (pair_a.hitbox_node->shape().type ==
                         kaacore::ShapeType::circle) {
                         pair_a.body_node->shape(polygon_shape);
@@ -150,7 +151,8 @@ struct DemoScene : kaacore::Scene {
                 }
                 return 1;
             },
-            kaacore::CollisionPhase::begin | kaacore::CollisionPhase::separate);
+            kaacore::CollisionPhase::begin | kaacore::CollisionPhase::separate
+        );
         this->container->space.gravity({0.0, 2.5});
         this->box->body.angular_velocity(-0.10);
     }
@@ -166,10 +168,12 @@ struct DemoScene : kaacore::Scene {
                     break;
                 } else if (keyboard_key->key() == kaacore::Keycode::w) {
                     this->container->position(
-                        this->container->position() + glm::dvec2(0., -0.1));
+                        this->container->position() + glm::dvec2(0., -0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::a) {
                     this->container->position(
-                        this->container->position() + glm::dvec2(-0.1, 0.));
+                        this->container->position() + glm::dvec2(-0.1, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::t) {
                     if (this->time_scaled) {
                         this->time_scale(1.);
@@ -179,10 +183,12 @@ struct DemoScene : kaacore::Scene {
                     this->time_scaled = not this->time_scaled;
                 } else if (keyboard_key->key() == kaacore::Keycode::s) {
                     this->container->position(
-                        this->container->position() + glm::dvec2(0., 0.1));
+                        this->container->position() + glm::dvec2(0., 0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::d) {
                     this->container->position(
-                        this->container->position() + glm::dvec2(0.1, 0.));
+                        this->container->position() + glm::dvec2(0.1, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::r) {
                     this->box.destroy();
                 } else if (keyboard_key->key() == kaacore::Keycode::t) {
@@ -216,14 +222,17 @@ struct DemoScene : kaacore::Scene {
                     auto point_results =
                         this->container->space.query_point_neighbors(
                             this->camera().unproject_position(
-                                mouse_button->position()),
-                            10.);
+                                mouse_button->position()
+                            ),
+                            10.
+                        );
                     if (not point_results.empty()) {
                         auto nearest_neighbor = *std::min_element(
                             point_results.begin(), point_results.end(),
                             [](const auto a, const auto b) {
                                 return a.distance < b.distance;
-                            });
+                            }
+                        );
                         auto hit_indicator = kaacore::make_node();
                         hit_indicator->position(nearest_neighbor.point);
                         hit_indicator->shape(kaacore::Shape::Circle(0.1));
@@ -236,15 +245,18 @@ struct DemoScene : kaacore::Scene {
         }
 
         auto results = this->container->space.query_shape_overlaps(
-            this->query_shape, kaacore::collision_bitmask_all, mask_circle);
+            this->query_shape, kaacore::collision_bitmask_all, mask_circle
+        );
         for (auto& res : results) {
             res.hitbox_node->color(this->queried_hitbox_color);
         }
 
         auto raycast_results = this->container->space.query_ray(
-            glm::dvec2{-10, 0}, glm::dvec2{10, 0});
+            glm::dvec2{-10, 0}, glm::dvec2{10, 0}
+        );
         KAACORE_APP_LOG_INFO(
-            "Raycast results count: {}", raycast_results.size());
+            "Raycast results count: {}", raycast_results.size()
+        );
         for (auto& res : raycast_results) {
             auto hit_indicator = kaacore::make_node();
             hit_indicator->position(res.point);

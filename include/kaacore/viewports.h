@@ -110,8 +110,8 @@ template<>
 struct hash<kaacore::ViewportIndexSet> {
     size_t operator()(const kaacore::ViewportIndexSet& viewports) const
     {
-        return std::hash<std::bitset<KAACORE_MAX_VIEWPORTS>>{}(
-            viewports._bitset);
+        return std::hash<std::bitset<KAACORE_MAX_VIEWPORTS>>{
+        }(viewports._bitset);
     }
 };
-}
+} // namespace std

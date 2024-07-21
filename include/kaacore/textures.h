@@ -26,9 +26,11 @@ load_image(const std::string& path);
 bimg::ImageContainer*
 load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,
-    const std::vector<uint8_t>& data);
+    const std::vector<uint8_t>& data
+);
 
-glm::dvec4 query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position);
+glm::dvec4
+query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position);
 
 class FontData;
 
@@ -55,7 +57,8 @@ class MemoryTexture : public Texture {
     glm::dvec4 query_pixel(const glm::uvec2 position) const override;
     glm::uvec2 get_dimensions() const override;
     static ResourceReference<MemoryTexture> create(
-        bimg::ImageContainer* image_container);
+        bimg::ImageContainer* image_container
+    );
 
   protected:
     MemoryTexture(bimg::ImageContainer* image_container);
@@ -87,7 +90,8 @@ struct BitmapView {
     {
         KAACORE_ASSERT(
             content != nullptr,
-            "Can't create BitmapView with NULL content pointer");
+            "Can't create BitmapView with NULL content pointer"
+        );
     }
 
     T& at(const size_t x, const size_t y)
@@ -95,11 +99,13 @@ struct BitmapView {
         KAACORE_ASSERT(
             x < this->dimensions.x,
             "Requested x={} exceeds X dimensions size: {}", x,
-            this->dimensions.x);
+            this->dimensions.x
+        );
         KAACORE_ASSERT(
             y < this->dimensions.y,
             "Requested y={} exceeds Y dimensions size: {}", y,
-            this->dimensions.y);
+            this->dimensions.y
+        );
         return *(this->content + (y * this->dimensions.x) + x);
     }
 
@@ -108,18 +114,21 @@ struct BitmapView {
         KAACORE_ASSERT(
             source.dimensions.x + target_coords.x <= this->dimensions.x,
             "Blitting size ({}) would overflow X dimension ({})",
-            source.dimensions.x + target_coords.x, this->dimensions.x);
+            source.dimensions.x + target_coords.x, this->dimensions.x
+        );
         KAACORE_ASSERT(
             source.dimensions.y + target_coords.y <= this->dimensions.y,
             "Blitting size ({}) would overflow Y dimension ({})",
-            source.dimensions.y + target_coords.y, this->dimensions.y);
+            source.dimensions.y + target_coords.y, this->dimensions.y
+        );
 
         for (size_t row = 0; row < source.dimensions.y; row++) {
             std::memcpy(
                 this->content + (this->dimensions.x * (row + target_coords.y)) +
                     target_coords.x,
                 source.content + (source.dimensions.x * row),
-                sizeof(T) * source.dimensions.x);
+                sizeof(T) * source.dimensions.x
+            );
         }
     }
 

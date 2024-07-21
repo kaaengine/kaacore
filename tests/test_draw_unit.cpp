@@ -10,7 +10,8 @@
 #include "runner.h"
 
 TEST_CASE(
-    "Test direct rendering with DrawBucket", "[.][visual_test][draw_unit]")
+    "Test direct rendering with DrawBucket", "[.][visual_test][draw_unit]"
+)
 {
     auto engine = initialize_testing_engine(true);
 
@@ -79,7 +80,8 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
             node->clear_draw_unit_updates(mods_pack.new_lookup_key());
             node->clear_dirty_flags(
                 kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
-                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE
+            );
         }
     };
 
@@ -98,14 +100,16 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
 
         REQUIRE(node_1_mod_1.has_value());
         REQUIRE(
-            node_1_mod_1->type == kaacore::DrawUnitModification::Type::insert);
+            node_1_mod_1->type == kaacore::DrawUnitModification::Type::insert
+        );
         REQUIRE(node_1_mod_1->updated_vertices_indices == true);
         REQUIRE(not node_1_mod_1->state_update.vertices.empty());
         REQUIRE(not node_1_mod_1->state_update.indices.empty());
 
         REQUIRE(
             node_1_mod_1->lookup_key.render_passes ==
-            kaacore::RenderPassIndexSet{std::unordered_set<int16_t>{0}});
+            kaacore::RenderPassIndexSet{std::unordered_set<int16_t>{0}}
+        );
         REQUIRE(node_1_mod_1->lookup_key.z_index == 0);
         REQUIRE(node_1_mod_1->lookup_key.root_distance == 1);
         REQUIRE(node_1_mod_1->lookup_key.texture == nullptr);
@@ -118,7 +122,8 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
 
         node_1->clear_dirty_flags(
             kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
-            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE
+        );
         REQUIRE(not node_1->calculate_draw_unit_updates());
     }
 
@@ -133,12 +138,14 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         REQUIRE(node_1_remove_mod->id == node_1->scene_tree_id());
         REQUIRE(
             node_1_remove_mod->type ==
-            kaacore::DrawUnitModification::Type::remove);
+            kaacore::DrawUnitModification::Type::remove
+        );
         REQUIRE(node_2_remove_mod.has_value());
         REQUIRE(node_2_remove_mod->id == node_2->scene_tree_id());
         REQUIRE(
             node_2_remove_mod->type ==
-            kaacore::DrawUnitModification::Type::remove);
+            kaacore::DrawUnitModification::Type::remove
+        );
     }
 
     SECTION("Test immediate remove")
@@ -252,7 +259,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
             }
             node->clear_dirty_flags(
                 kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
-                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+                kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE
+            );
         };
 
     const auto reset_modifications = [](const kaacore::NodePtr node) {
@@ -261,7 +269,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         }
         node->clear_dirty_flags(
             kaacore::Node::DIRTY_DRAW_KEYS_RECURSIVE |
-            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE);
+            kaacore::Node::DIRTY_DRAW_VERTICES_RECURSIVE
+        );
     };
 
     const auto validate_bucket_content =
@@ -274,7 +283,9 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                         db.draw_units.begin(), db.draw_units.end(),
                         [&n](const auto& du) {
                             return du.id == n->scene_tree_id();
-                        }) != db.draw_units.end());
+                        }
+                    ) != db.draw_units.end()
+                );
             }
         };
 
@@ -302,7 +313,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -316,7 +328,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -331,7 +344,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -348,10 +362,12 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         // take out insert-to-other-bucket modification
         // as it would interfere with consuming modifications
         auto insert_mod_it = std::find_if(
-            modifications.begin(), modifications.end(), [&](auto& du_mod) {
+            modifications.begin(), modifications.end(),
+            [&](auto& du_mod) {
                 return du_mod.type ==
                        kaacore::DrawUnitModification::Type::insert;
-            });
+            }
+        );
         REQUIRE(insert_mod_it != modifications.end());
         REQUIRE(insert_mod_it->id == node_3->scene_tree_id());
         REQUIRE(insert_mod_it->lookup_key.z_index == 15);
@@ -359,7 +375,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_4});
@@ -374,7 +391,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -394,13 +412,16 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
                 [&](auto& du_mod) {
                     return du_mod.type ==
                            kaacore::DrawUnitModification::Type::insert;
-                }),
-            modifications.end());
+                }
+            ),
+            modifications.end()
+        );
         REQUIRE(modifications.size() == 3);
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
         REQUIRE(draw_bucket.draw_units.size() == 0);
     }
@@ -414,7 +435,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -436,10 +458,12 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         // take out insert-to-other-bucket modification
         // as it would interfere with consuming modifications
         auto insert_mod_it = std::find_if(
-            modifications.begin(), modifications.end(), [&](auto& du_mod) {
+            modifications.begin(), modifications.end(),
+            [&](auto& du_mod) {
                 return du_mod.type ==
                        kaacore::DrawUnitModification::Type::insert;
-            });
+            }
+        );
         REQUIRE(insert_mod_it != modifications.end());
         REQUIRE(insert_mod_it->id == node_3->scene_tree_id());
         REQUIRE(insert_mod_it->lookup_key.z_index == 15);
@@ -447,7 +471,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_4, node_5});
@@ -462,7 +487,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -481,7 +507,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_3});
@@ -496,7 +523,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_2, node_3, node_4});
@@ -516,7 +544,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
 
         std::sort(modifications.begin(), modifications.end());
         draw_bucket.consume_modifications(
-            modifications.begin(), modifications.end());
+            modifications.begin(), modifications.end()
+        );
         modifications.clear();
 
         validate_bucket_content(draw_bucket, {node_3, node_4});
@@ -571,7 +600,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
             REQUIRE(n->calculate_draw_unit_updates());
             REQUIRE(
                 n->calculate_draw_unit_updates().upsert_mod->type ==
-                kaacore::DrawUnitModification::Type::update);
+                kaacore::DrawUnitModification::Type::update
+            );
         }
     }
 
@@ -589,7 +619,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
             REQUIRE(n->calculate_draw_unit_updates());
             REQUIRE(
                 n->calculate_draw_unit_updates().upsert_mod->type ==
-                kaacore::DrawUnitModification::Type::update);
+                kaacore::DrawUnitModification::Type::update
+            );
         }
     }
 
@@ -603,7 +634,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         REQUIRE(node_new->calculate_draw_unit_updates());
         REQUIRE(
             node_new->calculate_draw_unit_updates().upsert_mod->type ==
-            kaacore::DrawUnitModification::Type::insert);
+            kaacore::DrawUnitModification::Type::insert
+        );
         reset_modifications(node_new);
 
         node_new->position({100., 100.});
@@ -611,7 +643,8 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         REQUIRE(node_new->calculate_draw_unit_updates());
         REQUIRE(
             node_new->calculate_draw_unit_updates().upsert_mod->type ==
-            kaacore::DrawUnitModification::Type::update);
+            kaacore::DrawUnitModification::Type::update
+        );
     }
 
     SECTION("Test node basic changes - add shape")
@@ -627,9 +660,11 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         REQUIRE(node_new->calculate_draw_unit_updates());
         REQUIRE(
             node_new->calculate_draw_unit_updates().upsert_mod->type ==
-            kaacore::DrawUnitModification::Type::insert);
+            kaacore::DrawUnitModification::Type::insert
+        );
         REQUIRE(
-            node_new->calculate_draw_unit_updates().remove_mod == std::nullopt);
+            node_new->calculate_draw_unit_updates().remove_mod == std::nullopt
+        );
     }
 
     SECTION("Test fonts - empty string to some text and text update")
@@ -646,9 +681,11 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         REQUIRE(node_txt->calculate_draw_unit_updates());
         REQUIRE(
             node_txt->calculate_draw_unit_updates().upsert_mod->type ==
-            kaacore::DrawUnitModification::Type::insert);
+            kaacore::DrawUnitModification::Type::insert
+        );
         REQUIRE(
-            node_txt->calculate_draw_unit_updates().remove_mod == std::nullopt);
+            node_txt->calculate_draw_unit_updates().remove_mod == std::nullopt
+        );
         reset_modifications(node_txt);
 
         node_txt->text.content("Hello KAA!");
@@ -656,9 +693,11 @@ TEST_CASE("test_draw_bucket_modifications", "[draw_unit][draw_bucket]")
         REQUIRE(node_txt->calculate_draw_unit_updates());
         REQUIRE(
             node_txt->calculate_draw_unit_updates().upsert_mod->type ==
-            kaacore::DrawUnitModification::Type::update);
+            kaacore::DrawUnitModification::Type::update
+        );
         REQUIRE(
-            node_txt->calculate_draw_unit_updates().remove_mod == std::nullopt);
+            node_txt->calculate_draw_unit_updates().remove_mod == std::nullopt
+        );
         reset_modifications(node_txt);
     }
 }

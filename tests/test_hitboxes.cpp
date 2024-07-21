@@ -124,7 +124,8 @@ TEST_CASE("Test hitboxes", "[hitboxes][nodes]")
                     int x = i / 4;
                     int y = i % 4;
                     REQUIRE(
-                        expected_result.at(x, y) == Approx(result.at(x, y)));
+                        expected_result.at(x, y) == Approx(result.at(x, y))
+                    );
                 }
             };
 

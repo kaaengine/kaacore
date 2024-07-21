@@ -28,24 +28,28 @@ class ShadingContext : public Resource {
     void set_uniform_texture(
         const std::string& name, const ResourceReference<Texture>& texture,
         const uint8_t stage,
-        const uint32_t flags = std::numeric_limits<uint32_t>::max());
+        const uint32_t flags = std::numeric_limits<uint32_t>::max()
+    );
     void set_uniform_texture(
-        const std::string& name, const SamplerValue& value);
-    std::optional<SamplerValue> get_uniform_texture(
-        const std::string& name) const;
+        const std::string& name, const SamplerValue& value
+    );
+    std::optional<SamplerValue> get_uniform_texture(const std::string& name
+    ) const;
 
     template<typename T>
     std::vector<T> get_uniform_value(const std::string& name) const
     {
         KAACORE_CHECK(
-            this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+            this->_name_in_registry(name), "Unknown uniform name: {}.", name
+        );
         return std::get<FloatUniform<T>>(this->_uniforms.at(name)).get();
     }
     template<typename T>
     void set_uniform_value(const std::string& name, UniformValue<T>&& value)
     {
         KAACORE_CHECK(
-            this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+            this->_name_in_registry(name), "Unknown uniform name: {}.", name
+        );
         std::get<FloatUniform<T>>(this->_uniforms[name]).set(std::move(value));
     }
     void bind(const std::string& name);
@@ -59,7 +63,8 @@ class ShadingContext : public Resource {
     bool _name_in_registry(const std::string& name) const;
     void _set_uniform_texture(
         const std::string& name, const Texture* texture, const uint8_t stage,
-        const uint32_t flags = std::numeric_limits<uint32_t>::max());
+        const uint32_t flags = std::numeric_limits<uint32_t>::max()
+    );
 };
 
 class Material : public ShadingContext {
@@ -68,14 +73,17 @@ class Material : public ShadingContext {
 
     static ResourceReference<Material> create(
         const ResourceReference<Program>& program,
-        const UniformSpecificationMap& uniforms = {});
+        const UniformSpecificationMap& uniforms = {}
+    );
     ResourceReference<Material> clone() const;
     void set_uniform_texture(
         const std::string& name, const ResourceReference<Texture>& texture,
         const uint8_t stage,
-        const uint32_t flags = std::numeric_limits<uint32_t>::max());
+        const uint32_t flags = std::numeric_limits<uint32_t>::max()
+    );
     void set_uniform_texture(
-        const std::string& name, const SamplerValue& value);
+        const std::string& name, const SamplerValue& value
+    );
 
   private:
     MaterialId _id;
@@ -83,7 +91,8 @@ class Material : public ShadingContext {
 
     Material(
         const MaterialId id, const ResourceReference<Program>& program,
-        const UniformSpecificationMap& uniforms);
+        const UniformSpecificationMap& uniforms
+    );
 
     friend class ResourcesRegistry<MaterialId, Material>;
 };

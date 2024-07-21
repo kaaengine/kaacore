@@ -16,7 +16,8 @@ TransitionWarping::TransitionWarping(uint32_t loops, bool back_and_forth)
     : loops(loops), back_and_forth(back_and_forth)
 {
     KAACORE_ASSERT(
-        this->loops >= 0, "Number of loop must be greater or equal to zero.");
+        this->loops >= 0, "Number of loop must be greater or equal to zero."
+    );
 }
 
 double
@@ -31,11 +32,13 @@ TransitionWarping::duration_factor() const
 
 TransitionTimePoint
 TransitionWarping::warp_time(
-    const TransitionTimePoint& tp, const Duration internal_duration) const
+    const TransitionTimePoint& tp, const Duration internal_duration
+) const
 {
     double duration_factor = (1 + int(this->back_and_forth));
     Duration warped_abs_t = Duration(glm::mod(
-        tp.abs_t.count(), (internal_duration * duration_factor).count()));
+        tp.abs_t.count(), (internal_duration * duration_factor).count()
+    ));
 
     // prevent floating errors from resetting cycle
     uint32_t cycle_index = tp.abs_t / (internal_duration * duration_factor);
@@ -46,11 +49,13 @@ TransitionWarping::warp_time(
 
     if (this->back_and_forth and warped_abs_t > internal_duration) {
         warped_abs_t = std::chrono::abs(2 * internal_duration - warped_abs_t);
-        return TransitionTimePoint{warped_abs_t, (tp.is_backing != true),
-                                   cycle_index};
+        return TransitionTimePoint{
+            warped_abs_t, (tp.is_backing != true), cycle_index
+        };
     } else {
-        return TransitionTimePoint{warped_abs_t, (tp.is_backing != false),
-                                   cycle_index};
+        return TransitionTimePoint{
+            warped_abs_t, (tp.is_backing != false), cycle_index
+        };
     }
 }
 
@@ -59,7 +64,8 @@ NodeTransitionBase::NodeTransitionBase()
 {}
 
 NodeTransitionBase::NodeTransitionBase(
-    const Duration dur, const TransitionWarping& warping)
+    const Duration dur, const TransitionWarping& warping
+)
     : duration(dur * warping.duration_factor()), internal_duration(dur),
       warping(warping)
 {}
@@ -74,17 +80,19 @@ NodeTransitionCustomizable::NodeTransitionCustomizable() {}
 
 NodeTransitionCustomizable::NodeTransitionCustomizable(
     const Duration duration, const TransitionWarping& warping,
-    const Easing easing)
+    const Easing easing
+)
     : NodeTransitionBase(duration, warping), _easing(easing)
 {}
 
 void
 NodeTransitionCustomizable::process_time_point(
-    TransitionStateBase* state, NodePtr node,
-    const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node, const TransitionTimePoint& tp
+) const
 {
     KAACORE_ASSERT(
-        this->duration >= 0.s, "Duration must be greater than zero.");
+        this->duration >= 0.s, "Duration must be greater than zero."
+    );
     const TransitionTimePoint local_tp =
         this->warping.warp_time(tp, this->internal_duration);
 
@@ -92,7 +100,8 @@ NodeTransitionCustomizable::process_time_point(
         "NodeTransitionCustomizable({})::process_time_point - node: {}, abs_t: "
         "{}, local_abs_t: {}, internal_duration: {}",
         fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t.count(),
-        local_tp.abs_t.count(), this->internal_duration.count());
+        local_tp.abs_t.count(), this->internal_duration.count()
+    );
 
     if (this->duration > 0.s) {
         const double warped_t = local_tp.abs_t / this->internal_duration;
@@ -111,14 +120,16 @@ struct _NodeTransitionsGroupSubState {
 
     _NodeTransitionsGroupSubState(
         const NodeTransitionHandle& transition_handle,
-        const Duration starting_abs_t, const Duration ending_abs_t)
+        const Duration starting_abs_t, const Duration ending_abs_t
+    )
         : handle(transition_handle), starting_abs_t(starting_abs_t),
           ending_abs_t(ending_abs_t), state(nullptr), state_prepared(false)
     {}
 };
 
 NodeTransitionsGroupBase::NodeTransitionsGroupBase(
-    const std::vector<NodeTransitionHandle>& transitions) noexcept(false)
+    const std::vector<NodeTransitionHandle>& transitions
+) noexcept(false)
 {
     KAACORE_ASSERT(transitions.size(), "At least one transition is required.");
 }
@@ -131,7 +142,8 @@ struct _NodeTransitionsSequenceState : TransitionStateBase {
 
 NodeTransitionsSequence::NodeTransitionsSequence(
     const std::vector<NodeTransitionHandle>& transitions,
-    const TransitionWarping& warping) noexcept(false)
+    const TransitionWarping& warping
+) noexcept(false)
     : NodeTransitionsGroupBase(transitions)
 {
     Duration total_duration = 0.s;
@@ -139,7 +151,8 @@ NodeTransitionsSequence::NodeTransitionsSequence(
 
     for (const auto& tr : transitions) {
         KAACORE_CHECK(
-            tr->duration >= 0.s, "Duration must be greater than zero.");
+            tr->duration >= 0.s, "Duration must be greater than zero."
+        );
 
         Duration sub_duration;
         if (has_infinite_subs) {
@@ -154,7 +167,8 @@ NodeTransitionsSequence::NodeTransitionsSequence(
             sub_duration = tr->duration;
         }
         this->_sub_transitions.emplace_back(
-            tr, total_duration, total_duration + tr->duration);
+            tr, total_duration, total_duration + tr->duration
+        );
         total_duration += sub_duration;
     }
     this->has_infinite_sub_transitions = has_infinite_subs;
@@ -170,8 +184,8 @@ NodeTransitionsSequence::NodeTransitionsSequence(
     KAACORE_LOG_DEBUG(
         "NodeTransitionsSequence({}) constructed - duration: {}, "
         "internal_duration: {}",
-        fmt::ptr(this), this->duration.count(),
-        this->internal_duration.count());
+        fmt::ptr(this), this->duration.count(), this->internal_duration.count()
+    );
 }
 
 std::unique_ptr<TransitionStateBase>
@@ -180,7 +194,8 @@ NodeTransitionsSequence::prepare_state(NodePtr node) const
     auto sequence_state = std::make_unique<_NodeTransitionsSequenceState>();
     for (const auto& sub_tr : this->_sub_transitions) {
         sequence_state->sub_states.emplace_back(
-            sub_tr.handle, sub_tr.starting_time, sub_tr.ending_time);
+            sub_tr.handle, sub_tr.starting_time, sub_tr.ending_time
+        );
     }
     sequence_state->sub_state_it = sequence_state->sub_states.begin();
 
@@ -189,8 +204,8 @@ NodeTransitionsSequence::prepare_state(NodePtr node) const
 
 void
 NodeTransitionsSequence::process_time_point(
-    TransitionStateBase* state_b, NodePtr node,
-    const TransitionTimePoint& tp) const
+    TransitionStateBase* state_b, NodePtr node, const TransitionTimePoint& tp
+) const
 {
     const TransitionTimePoint warped_tp =
         this->has_infinite_sub_transitions
@@ -205,20 +220,23 @@ NodeTransitionsSequence::process_time_point(
         "NodeTransitionsSequence({})::process_time_point - node: {}, abs_t: "
         "{}, warped_abs_t: {}",
         fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t.count(),
-        warped_tp.abs_t.count());
+        warped_tp.abs_t.count()
+    );
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         if (not it->state_prepared) {
             KAACORE_LOG_TRACE(
                 "NodeTransitionsSequence({})::process_time_point - preparing "
                 "state",
-                fmt::ptr(this));
+                fmt::ptr(this)
+            );
             it->state = it->handle->prepare_state(node);
             it->state_prepared = true;
         }
 
         const Duration sub_abs_t = std::clamp<Duration>(
-            warped_tp.abs_t - it->starting_abs_t, 0.s, it->handle->duration);
+            warped_tp.abs_t - it->starting_abs_t, 0.s, it->handle->duration
+        );
         const TransitionTimePoint sub_tp =
             TransitionTimePoint{sub_abs_t, is_backing};
 
@@ -226,7 +244,8 @@ NodeTransitionsSequence::process_time_point(
             "NodeTransitionsSequence({})::process_time_point - processing "
             "sub-transition, "
             "sub_abs_t: {}",
-            fmt::ptr(this), sub_abs_t.count());
+            fmt::ptr(this), sub_abs_t.count()
+        );
         it->handle->process_time_point(it->state.get(), node, sub_tp);
 
         if (node.is_marked_to_delete()) {
@@ -240,7 +259,8 @@ NodeTransitionsSequence::process_time_point(
             KAACORE_LOG_TRACE(
                 "NodeTransitionsSequence({})::process_time_point - met "
                 "breaking condition",
-                fmt::ptr(this));
+                fmt::ptr(this)
+            );
             break;
         }
 
@@ -274,9 +294,11 @@ struct _NodeTransitionsParallelSubState : _NodeTransitionsGroupSubState {
 
     _NodeTransitionsParallelSubState(
         const NodeTransitionHandle& transition_handle,
-        const Duration starting_abs_t, const Duration ending_abs_t)
+        const Duration starting_abs_t, const Duration ending_abs_t
+    )
         : _NodeTransitionsGroupSubState(
-              transition_handle, starting_abs_t, ending_abs_t),
+              transition_handle, starting_abs_t, ending_abs_t
+          ),
           sleeping(false)
     {}
 };
@@ -288,7 +310,8 @@ struct _NodeTransitionsParallelState : TransitionStateBase {
 
 NodeTransitionsParallel::NodeTransitionsParallel(
     const std::vector<NodeTransitionHandle>& transitions,
-    const TransitionWarping& warping) noexcept(false)
+    const TransitionWarping& warping
+) noexcept(false)
     : NodeTransitionsGroupBase(transitions)
 {
     Duration max_sub_internal_duration = 0.s;
@@ -297,7 +320,8 @@ NodeTransitionsParallel::NodeTransitionsParallel(
     for (const auto& tr : transitions) {
         Duration sub_duration;
         KAACORE_CHECK(
-            tr->duration >= 0.s, "Duration must be greater than zero.");
+            tr->duration >= 0.s, "Duration must be greater than zero."
+        );
         if (tr->duration.count() == INFINITY) {
             sub_duration = tr->internal_duration;
             has_infinite_subs = true;
@@ -322,8 +346,8 @@ NodeTransitionsParallel::NodeTransitionsParallel(
     KAACORE_LOG_DEBUG(
         "NodeTransitionsParallel({}) constructed - duration: {}, "
         "internal_duration: {}",
-        fmt::ptr(this), this->duration.count(),
-        this->internal_duration.count());
+        fmt::ptr(this), this->duration.count(), this->internal_duration.count()
+    );
 }
 
 std::unique_ptr<TransitionStateBase>
@@ -332,7 +356,8 @@ NodeTransitionsParallel::prepare_state(NodePtr node) const
     auto sequence_state = std::make_unique<_NodeTransitionsParallelState>();
     for (const auto& sub_tr : this->_sub_transitions) {
         sequence_state->sub_states.emplace_back(
-            sub_tr.handle, sub_tr.starting_time, sub_tr.ending_time);
+            sub_tr.handle, sub_tr.starting_time, sub_tr.ending_time
+        );
     }
 
     return sequence_state;
@@ -340,8 +365,8 @@ NodeTransitionsParallel::prepare_state(NodePtr node) const
 
 void
 NodeTransitionsParallel::process_time_point(
-    TransitionStateBase* state_b, NodePtr node,
-    const TransitionTimePoint& tp) const
+    TransitionStateBase* state_b, NodePtr node, const TransitionTimePoint& tp
+) const
 {
     auto state = static_cast<_NodeTransitionsParallelState*>(state_b);
     const TransitionTimePoint warped_tp =
@@ -355,7 +380,8 @@ NodeTransitionsParallel::process_time_point(
         "NodeTransitionsParallel({})::process_time_point - node: {}, abs_t: "
         "{}, warped_abs_t: {}",
         fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t.count(),
-        warped_tp.abs_t.count());
+        warped_tp.abs_t.count()
+    );
 
     while (cur_cycle_index <= warped_tp.cycle_index) {
         for (auto& sub_state : state->sub_states) {
@@ -376,7 +402,8 @@ NodeTransitionsParallel::process_time_point(
             } else {
                 sub_abs_t = std::clamp<Duration>(
                     warped_tp.abs_t - sub_state.starting_abs_t, 0.s,
-                    sub_state.handle->duration);
+                    sub_state.handle->duration
+                );
                 sub_fits =
                     (warped_tp.abs_t > sub_state.starting_abs_t and
                      warped_tp.abs_t < sub_state.ending_abs_t);
@@ -386,7 +413,8 @@ NodeTransitionsParallel::process_time_point(
 
             if (not sub_state.sleeping) {
                 sub_state.handle->process_time_point(
-                    sub_state.state.get(), node, sub_tp);
+                    sub_state.state.get(), node, sub_tp
+                );
                 if (not sub_fits) {
                     sub_state.sleeping = true;
                 }
@@ -394,7 +422,8 @@ NodeTransitionsParallel::process_time_point(
                 if (sub_fits) {
                     // TODO consider calling sub-transition edges
                     sub_state.handle->process_time_point(
-                        sub_state.state.get(), node, sub_tp);
+                        sub_state.state.get(), node, sub_tp
+                    );
                     sub_state.sleeping = false;
                 }
             }
@@ -427,30 +456,33 @@ NodeTransitionDelay::NodeTransitionDelay(const Duration duration)
 
 void
 NodeTransitionDelay::process_time_point(
-    TransitionStateBase* state, NodePtr node,
-    const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node, const TransitionTimePoint& tp
+) const
 {}
 
 NodeTransitionCallback::NodeTransitionCallback(
-    const NodeTransitionCallbackFunc& func)
+    const NodeTransitionCallbackFunc& func
+)
     : callback_func(func), NodeTransitionBase(0.s)
 {}
 
 void
 NodeTransitionCallback::process_time_point(
-    TransitionStateBase* state, NodePtr node,
-    const TransitionTimePoint& tp) const
+    TransitionStateBase* state, NodePtr node, const TransitionTimePoint& tp
+) const
 {
     KAACORE_LOG_TRACE(
         "NodeTransitionCallback({})::process_time_point - node: {}, abs_t: "
         "{}",
-        fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t.count());
+        fmt::ptr(this), fmt::ptr(node.get()), tp.abs_t.count()
+    );
     KAACORE_ASSERT(this->callback_func, "No callback set.");
     this->callback_func(node);
 }
 
 NodeTransitionRunner::NodeTransitionRunner(
-    const NodeTransitionHandle& transition)
+    const NodeTransitionHandle& transition
+)
 {
     this->setup(transition);
 }
@@ -484,7 +516,8 @@ NodeTransitionRunner::step(NodePtr node, const HighPrecisionDuration dt)
     this->current_time += dt;
     this->transition_handle->process_time_point(
         this->transition_state.get(), node,
-        TransitionTimePoint{this->current_time});
+        TransitionTimePoint{this->current_time}
+    );
     if (this->current_time >= this->transition_handle->duration) {
         return true;
     }
@@ -518,7 +551,8 @@ NodeTransitionsManager::get(const std::string& name)
 
 void
 NodeTransitionsManager::set(
-    const std::string& name, const NodeTransitionHandle& transition)
+    const std::string& name, const NodeTransitionHandle& transition
+)
 {
     if (not this->_is_processing) {
         if (transition) {
@@ -535,10 +569,12 @@ void
 NodeTransitionsManager::step(NodePtr node, const HighPrecisionDuration dt)
 {
     KAACORE_ASSERT(
-        not node.is_marked_to_delete(), "Node is marked for deletion.");
+        not node.is_marked_to_delete(), "Node is marked for deletion."
+    );
     KAACORE_ASSERT(
         this->_is_processing == false,
-        "Invalid internal state of transition manager.");
+        "Invalid internal state of transition manager."
+    );
     this->_is_processing = true;
     for (auto& [name, runner] : this->_transitions_map) {
         bool finished = runner.step(node, dt);
@@ -549,7 +585,8 @@ NodeTransitionsManager::step(NodePtr node, const HighPrecisionDuration dt)
             // if transition is finished destroy it's runner,
             // use `_enqueued_updates` to not break for iteration.
             this->_enqueued_updates.emplace(
-                this->_enqueued_updates.begin(), name, NodeTransitionHandle());
+                this->_enqueued_updates.begin(), name, NodeTransitionHandle()
+            );
         }
     }
 
@@ -569,7 +606,8 @@ NodeTransitionsManager::step(NodePtr node, const HighPrecisionDuration dt)
 NodeTransitionsManager::operator bool() const
 {
     return not(
-        this->_transitions_map.empty() and this->_enqueued_updates.empty());
+        this->_transitions_map.empty() and this->_enqueued_updates.empty()
+    );
 }
 
 } // namespace kaacore

@@ -174,19 +174,21 @@ class AudioManager {
     Mix_Music* load_raw_music(const char* path);
 
     std::pair<ChannelId, PlaybackUid> play_sound(
-        const Sound& sound, const double volume_factor = 1.,
-        const int loops = 1);
+        const Sound& sound, const double volume_factor = 1., const int loops = 1
+    );
     void play_music(const Music& music, const double volume_factor = 1.);
     AudioStatus music_state();
 
     AudioStatus _check_playback(
-        const ChannelId& channel_id, const PlaybackUid& playback_uid);
+        const ChannelId& channel_id, const PlaybackUid& playback_uid
+    );
 
     void _pause_channel(const ChannelId& channel_id);
     void _resume_channel(const ChannelId& channel_id);
     void _stop_channel(const ChannelId& channel_id);
     void _update_channel_volume(
-        const ChannelId& channel_id, const double volume);
+        const ChannelId& channel_id, const double volume
+    );
 
     void _pause_music();
     void _resume_music();
@@ -239,4 +241,4 @@ struct hash<Music> {
         return std::hash<ResourceReference<MusicData>>{}(music._music_data);
     }
 };
-}
+} // namespace std

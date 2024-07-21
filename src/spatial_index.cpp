@@ -19,7 +19,8 @@ convert_bounding_box(const BoundingBox<double>& bounding_box)
 {
     return cpBBNew(
         bounding_box.min_x, bounding_box.min_y, bounding_box.max_x,
-        bounding_box.max_y);
+        bounding_box.max_y
+    );
 }
 
 cpBB
@@ -29,7 +30,8 @@ _node_wrapper_bbfunc(void* node_wrapper_obj)
     wrapper->refresh();
     KAACORE_ASSERT(
         not wrapper->bounding_box.is_nan(),
-        "Node wrapper is missing bounding box.");
+        "Node wrapper is missing bounding box."
+    );
     return convert_bounding_box(wrapper->bounding_box);
 }
 
@@ -45,33 +47,39 @@ NodeSpatialData::refresh()
     Node* node = container_node(this);
     if (node->query_dirty_flags(Node::DIRTY_SPATIAL_INDEX)) {
         KAACORE_LOG_TRACE(
-            "Trigerred refresh of NodeSpatialData of node: {}", fmt::ptr(node));
+            "Trigerred refresh of NodeSpatialData of node: {}", fmt::ptr(node)
+        );
         const auto node_transformation = node->absolute_transformation();
         const auto shape = node->_shape;
         if (shape) {
             const auto shape_transformation =
                 Transformation::translate(calculate_realignment_vector(
-                    node->_origin_alignment, shape.vertices_bbox)) |
+                    node->_origin_alignment, shape.vertices_bbox
+                )) |
                 node_transformation;
-            this->bounding_points_transformed.resize(
-                shape.bounding_points.size());
+            this->bounding_points_transformed.resize(shape.bounding_points.size(
+            ));
             std::transform(
                 shape.bounding_points.begin(), shape.bounding_points.end(),
                 this->bounding_points_transformed.begin(),
                 [&shape_transformation](glm::dvec2 pt) -> glm::dvec2 {
                     return pt | shape_transformation;
-                });
+                }
+            );
             this->bounding_box = BoundingBox<double>::from_points(
-                this->bounding_points_transformed);
+                this->bounding_points_transformed
+            );
         } else {
             this->bounding_points_transformed.clear();
             this->bounding_box = BoundingBox<double>::single_point(
-                node->_position | node_transformation);
+                node->_position | node_transformation
+            );
         }
         KAACORE_LOG_TRACE(
             " -> Resulting bbox x:({:.2f}, {:.2f}) y:({:.2f}, {:.2f})",
             this->bounding_box.min_x, this->bounding_box.max_x,
-            this->bounding_box.min_y, this->bounding_box.max_y);
+            this->bounding_box.min_y, this->bounding_box.max_y
+        );
 
         node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX_RECURSIVE);
     }
@@ -129,7 +137,8 @@ SpatialIndex::update_single(Node* node)
 
 std::vector<NodePtr>
 SpatialIndex::query_bounding_box(
-    const BoundingBox<double>& bbox, bool include_shapeless)
+    const BoundingBox<double>& bbox, bool include_shapeless
+)
 {
     auto wrapper_results = this->_query_wrappers(bbox);
     std::vector<NodePtr> results;
@@ -162,7 +171,8 @@ SpatialIndex::query_point(const glm::dvec2 point)
 
 cpCollisionID
 _cp_spatial_index_query(
-    void* obj, void* subtree_obj, cpCollisionID cid, void* data)
+    void* obj, void* subtree_obj, cpCollisionID cid, void* data
+)
 {
     auto wrapper_results =
         reinterpret_cast<std::vector<NodeSpatialData*>*>(obj);
@@ -178,7 +188,8 @@ SpatialIndex::_query_wrappers(const BoundingBox<double>& bbox)
     auto cp_bbox = convert_bounding_box(bbox);
     cpSpatialIndexQuery(
         this->_cp_index, reinterpret_cast<void*>(&wrapper_results), cp_bbox,
-        _cp_spatial_index_query, nullptr);
+        _cp_spatial_index_query, nullptr
+    );
 
     return wrapper_results;
 }
@@ -187,12 +198,14 @@ void
 SpatialIndex::_add_to_cp_index(Node* node)
 {
     KAACORE_ASSERT(
-        not node->_spatial_data.is_indexed, "Node is already indexed.");
+        not node->_spatial_data.is_indexed, "Node is already indexed."
+    );
     KAACORE_LOG_DEBUG("Starting to track node: {}", fmt::ptr(node));
 
     node->_spatial_data.index_uid = ++this->_index_counter;
     cpSpatialIndexInsert(
-        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid
+    );
     node->_spatial_data.is_indexed = true;
 }
 
@@ -203,7 +216,8 @@ SpatialIndex::_update_cp_index(Node* node)
     KAACORE_LOG_DEBUG("Reindex node: {}", fmt::ptr(node));
 
     cpSpatialIndexReindexObject(
-        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid
+    );
 }
 
 void
@@ -213,7 +227,8 @@ SpatialIndex::_remove_from_cp_index(Node* node)
     KAACORE_LOG_DEBUG("Stopping to track node: {}", fmt::ptr(node));
 
     cpSpatialIndexRemove(
-        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid);
+        this->_cp_index, &node->_spatial_data, node->_spatial_data.index_uid
+    );
     node->_spatial_data.is_indexed = false;
     node->clear_dirty_flags(Node::DIRTY_SPATIAL_INDEX_RECURSIVE);
 }

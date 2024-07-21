@@ -67,7 +67,8 @@ TimePoint
 Clock::now()
 {
     return std::chrono::time_point_cast<HighPrecisionDuration>(
-        DefaultClock::now());
+        DefaultClock::now()
+    );
 }
 
-}
+} // namespace kaacore

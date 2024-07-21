@@ -39,8 +39,8 @@ struct TestDemoScene : kaacore::Scene {
                     pos = this->camera().unproject_position(pos);
                     auto query = this->spatial_index.query_point(pos);
                     KAACORE_APP_LOG_INFO("Number of nodes: {}", query.size());
-                } else if (
-                    mouse_button->button() == kaacore::MouseButton::right) {
+                } else if (mouse_button->button() ==
+                           kaacore::MouseButton::right) {
                     pos = this->camera().unproject_position(pos);
                     this->node->position(pos);
                 }
@@ -53,7 +53,8 @@ extern "C" int
 main(int argc, char* argv[])
 {
     kaacore::Engine eng(
-        {800, 600}, kaacore::VirtualResolutionMode::aggresive_stretch);
+        {800, 600}, kaacore::VirtualResolutionMode::aggresive_stretch
+    );
     TestDemoScene scene;
     eng.run(&scene);
 

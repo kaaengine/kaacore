@@ -76,8 +76,10 @@ uint8_t
 operator|(CollisionPhase phase, uint8_t other);
 uint8_t
 operator|(CollisionPhase phase, CollisionPhase other);
-uint8_t operator&(CollisionPhase phase, uint8_t other);
-uint8_t operator&(CollisionPhase phase, CollisionPhase other);
+uint8_t
+operator&(CollisionPhase phase, uint8_t other);
+uint8_t
+operator&(CollisionPhase phase, CollisionPhase other);
 
 struct CollisionPair {
     NodePtr body_node;
@@ -93,7 +95,8 @@ typedef std::function<void(const SpaceNode*)> SpacePostStepFunc;
 
 void
 cp_call_post_step_callbacks(
-    cpSpace* cp_space, void* space_node_phys_ptr, void* data);
+    cpSpace* cp_space, void* space_node_phys_ptr, void* data
+);
 
 struct SpatialQueryResultBase {
     NodePtr body_node;
@@ -118,7 +121,8 @@ struct RayQueryResult : SpatialQueryResultBase {
     RayQueryResult() = default;
     RayQueryResult(
         const cpShape* cp_shape, const cpVect point, const cpVect normal,
-        const double alpha);
+        const double alpha
+    );
 };
 
 struct PointQueryResult : SpatialQueryResultBase {
@@ -127,7 +131,8 @@ struct PointQueryResult : SpatialQueryResultBase {
 
     PointQueryResult() = default;
     PointQueryResult(
-        const cpShape* cp_shape, const cpVect point, const double distance);
+        const cpShape* cp_shape, const cpVect point, const double distance
+    );
 };
 
 class SpaceNode {
@@ -138,25 +143,29 @@ class SpaceNode {
         CollisionTriggerId trigger_a, CollisionTriggerId trigger_b,
         CollisionHandlerFunc handler,
         uint8_t phases_mask = uint8_t(CollisionPhase::any_phase),
-        bool only_non_deleted_nodes = true);
+        bool only_non_deleted_nodes = true
+    );
 
     const std::vector<ShapeQueryResult> query_shape_overlaps(
         const Shape& shape, const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
-        const CollisionGroup group = collision_group_none);
+        const CollisionGroup group = collision_group_none
+    );
 
     const std::vector<RayQueryResult> query_ray(
         const glm::dvec2 ray_start, const glm::dvec2 ray_end,
         const double radius = 0.,
         const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
-        const CollisionGroup group = collision_group_none);
+        const CollisionGroup group = collision_group_none
+    );
 
     const std::vector<PointQueryResult> query_point_neighbors(
         const glm::dvec2 point, const double max_distance,
         const CollisionBitmask mask = collision_bitmask_all,
         const CollisionBitmask collision_mask = collision_bitmask_all,
-        const CollisionGroup group = collision_group_none);
+        const CollisionGroup group = collision_group_none
+    );
 
     void gravity(const glm::dvec2& gravity);
     glm::dvec2 gravity();
@@ -196,7 +205,8 @@ typedef std::function<void(Node*, glm::dvec2, double, double)>
     VelocityUpdateCallback;
 static void
 _velocity_update_wrapper(
-    cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt);
+    cpBody* cp_body, cpVect gravity, cpFloat damping, cpFloat dt
+);
 
 typedef std::function<void(Node*, double)> PositionUpdateCallback;
 static void
@@ -227,10 +237,10 @@ class BodyNode {
     glm::dvec2 local_force();
     void force(const glm::dvec2& force);
     glm::dvec2 force();
-    void apply_force_at_local(
-        const glm::dvec2& force, const glm::dvec2& at) const;
-    void apply_impulse_at_local(
-        const glm::dvec2& force, const glm::dvec2& at) const;
+    void apply_force_at_local(const glm::dvec2& force, const glm::dvec2& at)
+        const;
+    void apply_impulse_at_local(const glm::dvec2& force, const glm::dvec2& at)
+        const;
     void apply_force_at(const glm::dvec2& force, const glm::dvec2& at) const;
     void apply_impulse_at(const glm::dvec2& force, const glm::dvec2& at) const;
 

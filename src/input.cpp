@@ -216,21 +216,24 @@ glm::dvec2
 MouseButtonEvent::position() const
 {
     return _naive_screen_position_to_virtual_resolution(
-        this->sdl_event.button.x, this->sdl_event.button.y);
+        this->sdl_event.button.x, this->sdl_event.button.y
+    );
 }
 
 glm::dvec2
 MouseMotionEvent::position() const
 {
     return _naive_screen_position_to_virtual_resolution(
-        this->sdl_event.motion.x, this->sdl_event.motion.y);
+        this->sdl_event.motion.x, this->sdl_event.motion.y
+    );
 }
 
 glm::dvec2
 MouseMotionEvent::motion() const
 {
     return _scale_vector_to_virtual_resolution(
-        sdl_event.motion.xrel, this->sdl_event.motion.yrel);
+        sdl_event.motion.xrel, this->sdl_event.motion.yrel
+    );
 }
 
 glm::dvec2
@@ -431,7 +434,8 @@ InputManager::InputManager()
             static_cast<uint32_t>(EventType::_sentinel) - SDL_USEREVENT;
         auto first_event = SDL_RegisterEvents(num_events);
         KAACORE_CHECK_TERMINATE(
-            first_event == SDL_USEREVENT, "Input system misconfigured.");
+            first_event == SDL_USEREVENT, "Input system misconfigured."
+        );
     }
     this->_custom_events_registered = true;
 
@@ -450,19 +454,20 @@ InputManager::SystemManager::get_clipboard_text() const
                 return "";
             }
             return text;
-        });
+        }
+    );
 }
 
 void
 InputManager::SystemManager::set_clipboard_text(const std::string& text) const
 {
     InputManager* input_manager = container_of(this, &InputManager::system);
-    return get_engine()->make_call_from_main_thread<void>(
-        [input_manager, &text]() {
-            if (SDL_SetClipboardText(text.c_str()) < 0) {
-                KAACORE_LOG_ERROR("Unable to set clipboard content.");
-            }
-        });
+    return get_engine()->make_call_from_main_thread<void>([input_manager,
+                                                           &text]() {
+        if (SDL_SetClipboardText(text.c_str()) < 0) {
+            KAACORE_LOG_ERROR("Unable to set clipboard content.");
+        }
+    });
 }
 
 bool
@@ -503,8 +508,9 @@ bool
 InputManager::MouseManager::cursor_visible() const
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
-    return get_engine()->make_call_from_main_thread<bool>(
-        [input_manager]() { return SDL_ShowCursor(SDL_QUERY); });
+    return get_engine()->make_call_from_main_thread<bool>([input_manager]() {
+        return SDL_ShowCursor(SDL_QUERY);
+    });
 }
 
 void
@@ -512,15 +518,17 @@ InputManager::MouseManager::cursor_visible(const bool visible)
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
     return get_engine()->make_call_from_main_thread<void>(
-        [input_manager, visible]() { return SDL_ShowCursor(visible); });
+        [input_manager, visible]() { return SDL_ShowCursor(visible); }
+    );
 }
 
 bool
 InputManager::MouseManager::relative_mode() const
 {
     InputManager* input_manager = container_of(this, &InputManager::mouse);
-    return get_engine()->make_call_from_main_thread<bool>(
-        [input_manager]() { return SDL_GetRelativeMouseMode(); });
+    return get_engine()->make_call_from_main_thread<bool>([input_manager]() {
+        return SDL_GetRelativeMouseMode();
+    });
 }
 
 void
@@ -554,7 +562,8 @@ InputManager::ControllerManager::is_connected(const ControllerId id) const
 
 bool
 InputManager::ControllerManager::is_pressed(
-    const ControllerButton cb, const ControllerId id) const
+    const ControllerButton cb, const ControllerId id
+) const
 {
     if (not this->is_connected(id)) {
         return false;
@@ -562,33 +571,38 @@ InputManager::ControllerManager::is_pressed(
 
     auto controller = this->_connected_map.at(id);
     return SDL_GameControllerGetButton(
-        controller, static_cast<SDL_GameControllerButton>(cb));
+        controller, static_cast<SDL_GameControllerButton>(cb)
+    );
 }
 
 bool
 InputManager::ControllerManager::is_released(
-    const ControllerButton cb, const ControllerId id) const
+    const ControllerButton cb, const ControllerId id
+) const
 {
     return not this->is_pressed(cb, id);
 }
 
 bool
 InputManager::ControllerManager::is_pressed(
-    const ControllerAxis ca, const ControllerId id) const
+    const ControllerAxis ca, const ControllerId id
+) const
 {
     return this->get_axis_motion(ca, id);
 }
 
 bool
 InputManager::ControllerManager::is_released(
-    const ControllerAxis ca, const ControllerId id) const
+    const ControllerAxis ca, const ControllerId id
+) const
 {
     return not this->is_pressed(ca, id);
 }
 
 double
 InputManager::ControllerManager::get_axis_motion(
-    const ControllerAxis axis, const ControllerId id) const
+    const ControllerAxis axis, const ControllerId id
+) const
 {
     if (not this->is_connected(id)) {
         return 0;
@@ -596,7 +610,8 @@ InputManager::ControllerManager::get_axis_motion(
 
     auto controller = this->_connected_map.at(id);
     return _normalize_controller_axis(SDL_GameControllerGetAxis(
-        controller, static_cast<SDL_GameControllerAxis>(axis)));
+        controller, static_cast<SDL_GameControllerAxis>(axis)
+    ));
 }
 
 std::string
@@ -623,14 +638,19 @@ InputManager::ControllerManager::get_triggers(const ControllerId id) const
 
 glm::dvec2
 InputManager::ControllerManager::get_sticks(
-    const CompoundControllerAxis axis, const ControllerId id) const
+    const CompoundControllerAxis axis, const ControllerId id
+) const
 {
     if (axis == CompoundControllerAxis::left_stick) {
-        return {this->get_axis_motion(ControllerAxis::left_x, id),
-                this->get_axis_motion(ControllerAxis::left_y, id)};
+        return {
+            this->get_axis_motion(ControllerAxis::left_x, id),
+            this->get_axis_motion(ControllerAxis::left_y, id)
+        };
     } else if (axis == CompoundControllerAxis::right_stick) {
-        return {this->get_axis_motion(ControllerAxis::right_x, id),
-                this->get_axis_motion(ControllerAxis::right_y, id)};
+        return {
+            this->get_axis_motion(ControllerAxis::right_x, id),
+            this->get_axis_motion(ControllerAxis::right_y, id)
+        };
     }
     return {0, 0};
 }
@@ -651,7 +671,8 @@ InputManager::ControllerManager::connect(int device_index)
     auto controller = SDL_GameControllerOpen(device_index);
     if (not controller) {
         KAACORE_LOG_ERROR(
-            "Failed to connect game controller: {}", SDL_GetError());
+            "Failed to connect game controller: {}", SDL_GetError()
+        );
         return -1;
     }
 
@@ -692,13 +713,15 @@ InputManager::push_event(SDL_Event sdl_event)
             sdl_event.cdevice.which =
                 this->controller.connect(sdl_event.cdevice.which);
             KAACORE_LOG_DEBUG(
-                "Controller connected ({}).", sdl_event.cdevice.which);
+                "Controller connected ({}).", sdl_event.cdevice.which
+            );
             break;
 
         case EventType::controller_removed:
             this->controller.disconnect(sdl_event.cdevice.which);
             KAACORE_LOG_DEBUG(
-                "Controller disconnected ({}).", sdl_event.cdevice.which);
+                "Controller disconnected ({}).", sdl_event.cdevice.which
+            );
             break;
     }
 

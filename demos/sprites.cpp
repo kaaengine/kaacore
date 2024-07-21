@@ -20,18 +20,22 @@ struct SpritesDemoScene : kaacore::Scene {
 
     SpritesDemoScene(
         const char* filepath, int frame_w, int frame_h, int padding_x,
-        int padding_y)
+        int padding_y
+    )
     {
         this->texture = kaacore::ImageTexture::load(filepath);
         kaacore::Sprite sprite{this->texture};
         auto frames = kaacore::split_spritesheet(
-            sprite, {frame_w, frame_h}, 0, 0, {padding_x, padding_y});
+            sprite, {frame_w, frame_h}, 0, 0, {padding_x, padding_y}
+        );
 
         auto animating_node = kaacore::make_node();
         animating_node->shape(kaacore::Shape::Box({3, 3}));
         animating_node->transition(
             kaacore::make_node_transition<kaacore::NodeSpriteTransition>(
-                frames, 5.s, kaacore::TransitionWarping(0, true)));
+                frames, 5.s, kaacore::TransitionWarping(0, true)
+            )
+        );
         this->animating_node = this->root_node.add_child(animating_node);
     }
 
@@ -46,18 +50,20 @@ struct SpritesDemoScene : kaacore::Scene {
                     break;
                 } else if (keyboard_key->key() == kaacore::Keycode::w) {
                     this->animating_node->position(
-                        this->animating_node->position() +
-                        glm::dvec2(0., -0.1));
+                        this->animating_node->position() + glm::dvec2(0., -0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::a) {
                     this->animating_node->position(
-                        this->animating_node->position() +
-                        glm::dvec2(-0.1, 0.));
+                        this->animating_node->position() + glm::dvec2(-0.1, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::s) {
                     this->animating_node->position(
-                        this->animating_node->position() + glm::dvec2(0., 0.1));
+                        this->animating_node->position() + glm::dvec2(0., 0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::d) {
                     this->animating_node->position(
-                        this->animating_node->position() + glm::dvec2(0.1, 0.));
+                        this->animating_node->position() + glm::dvec2(0.1, 0.)
+                    );
                 }
             }
         }
@@ -77,8 +83,9 @@ main(int argc, char* argv[])
     kaacore::Engine eng({5, 5});
     eng.window->size({800, 600});
     eng.window->center();
-    SpritesDemoScene scene{argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
-                           atoi(argv[5])};
+    SpritesDemoScene scene{
+        argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5])
+    };
     scene.camera().position({0., 0.});
     eng.run(&scene);
 

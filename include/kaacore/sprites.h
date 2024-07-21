@@ -41,7 +41,8 @@ std::vector<Sprite>
 split_spritesheet(
     const Sprite& spritesheet, const glm::dvec2 frame_dimensions,
     const size_t frames_offset = 0, const size_t frames_count = 0,
-    const glm::dvec2 frame_padding = {0., 0.});
+    const glm::dvec2 frame_padding = {0., 0.}
+);
 
 } // namespace kaacore
 
@@ -56,4 +57,4 @@ struct hash<Sprite> {
         return hash_combined(sprite.texture, sprite.origin, sprite.dimensions);
     }
 };
-}
+} // namespace std

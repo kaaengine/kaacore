@@ -42,8 +42,8 @@ enum struct AngleSign {
     positive = 3,
 };
 
-inline constexpr uint8_t operator&(
-    const Alignment alignment, const uint8_t mask)
+inline constexpr uint8_t
+operator&(const Alignment alignment, const uint8_t mask)
 {
     return uint8_t(alignment) & mask;
 }
@@ -55,7 +55,8 @@ struct DecomposedTransformation {
     glm::tvec2<T> translation;
 
     DecomposedTransformation(
-        const glm::tmat4x4<T>& matrix = glm::tmat4x4<T>(1.))
+        const glm::tmat4x4<T>& matrix = glm::tmat4x4<T>(1.)
+    )
     {
         glm::tvec3<T> _scale;
         glm::tvec3<T> _translation;
@@ -63,7 +64,8 @@ struct DecomposedTransformation {
         glm::tvec3<T> _skew;
         glm::tvec4<T> _perspective;
         glm::decompose(
-            matrix, _scale, _rotation_quat, _translation, _skew, _perspective);
+            matrix, _scale, _rotation_quat, _translation, _skew, _perspective
+        );
         this->scale = _scale;
         this->rotation = glm::eulerAngles(_rotation_quat).z;
         this->translation = _translation;
@@ -89,13 +91,17 @@ class Transformation {
     glm::dmat4 _matrix;
 
     friend Transformation operator|(
-        const Transformation& left, const Transformation& right);
+        const Transformation& left, const Transformation& right
+    );
     friend glm::dvec2 operator|(
-        const glm::dvec2& position, const Transformation& transformation);
+        const glm::dvec2& position, const Transformation& transformation
+    );
     friend Transformation& operator|=(
-        Transformation& left, const Transformation& right);
+        Transformation& left, const Transformation& right
+    );
     friend glm::dvec2& operator|=(
-        glm::dvec2& position, const Transformation& transformation);
+        glm::dvec2& position, const Transformation& transformation
+    );
 };
 
 Transformation
@@ -124,43 +130,50 @@ struct BoundingBox {
     {
         return (
             this->min_x == other.min_x and this->min_y == other.min_y and
-            this->max_x == other.max_x and this->max_y == other.max_y);
+            this->max_x == other.max_x and this->max_y == other.max_y
+        );
     }
 
     bool is_nan() const
     {
         return (
             std::isnan(this->min_x) or std::isnan(this->max_x) or
-            std::isnan(this->min_y) or std::isnan(this->max_y));
+            std::isnan(this->min_y) or std::isnan(this->max_y)
+        );
     }
 
     BoundingBox<T> merge(const BoundingBox<T>& other) const
     {
-        return BoundingBox<T>{glm::min(this->min_x, other.min_x),
-                              glm::min(this->min_y, other.min_y),
-                              glm::max(this->max_x, other.max_x),
-                              glm::max(this->max_y, other.max_y)};
+        return BoundingBox<T>{
+            glm::min(this->min_x, other.min_x),
+            glm::min(this->min_y, other.min_y),
+            glm::max(this->max_x, other.max_x),
+            glm::max(this->max_y, other.max_y)
+        };
     }
 
     bool contains(const BoundingBox<T>& bbox) const
     {
         return (
             this->min_x <= bbox.min_x and this->max_x >= bbox.max_x and
-            this->min_y <= bbox.min_y and this->max_y >= bbox.max_y);
+            this->min_y <= bbox.min_y and this->max_y >= bbox.max_y
+        );
     }
 
     bool contains(const glm::tvec2<T> point) const
     {
         return (
             this->min_x <= point.x and this->max_x >= point.x and
-            this->min_y <= point.y and this->max_y >= point.y);
+            this->min_y <= point.y and this->max_y >= point.y
+        );
     }
 
     bool intersects(const BoundingBox<T>& other) const
     {
         return (
             this->min_x <= other.max_x and other.min_x <= this->max_x and
-            this->min_y <= other.max_y and other.min_y <= this->max_y);
+            this->min_y <= other.max_y and other.min_y <= this->max_y
+        );
     }
 
     BoundingBox intersection(const BoundingBox<T>& other) const
@@ -179,14 +192,17 @@ struct BoundingBox {
 
     BoundingBox<T> grow(glm::tvec2<T> vec) const
     {
-        return BoundingBox<T>{this->min_x - vec.x, this->min_y - vec.y,
-                              this->max_x + vec.x, this->max_y + vec.y};
+        return BoundingBox<T>{
+            this->min_x - vec.x, this->min_y - vec.y, this->max_x + vec.x,
+            this->max_y + vec.y
+        };
     }
 
     glm::tvec2<T> center() const
     {
-        return {(this->max_x + this->min_x) / 2,
-                (this->max_y + this->min_y) / 2};
+        return {
+            (this->max_x + this->min_x) / 2, (this->max_y + this->min_y) / 2
+        };
     }
 
     glm::tvec2<T> dimensions() const
@@ -260,7 +276,8 @@ calculate_realignment_vector(Alignment alignment, const BoundingBox<T>& bbox)
 
 bool
 check_point_in_polygon(
-    const std::vector<glm::dvec2>& polygon_points, const glm::dvec2 point);
+    const std::vector<glm::dvec2>& polygon_points, const glm::dvec2 point
+);
 
 PolygonType
 classify_polygon(const std::vector<glm::dvec2>& points);
@@ -273,7 +290,8 @@ double
 normalize_angle(const double value, const AngleSign sign = AngleSign::mixed);
 double
 normalize_angle_degrees(
-    const double value, const AngleSign sign = AngleSign::mixed);
+    const double value, const AngleSign sign = AngleSign::mixed
+);
 
 } // namespace kaacore
 
@@ -284,7 +302,8 @@ struct hash<kaacore::BoundingBox<T>> {
     size_t operator()(const kaacore::BoundingBox<T>& bbox) const
     {
         return kaacore::hash_combined(
-            bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y);
+            bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y
+        );
     }
 };
 

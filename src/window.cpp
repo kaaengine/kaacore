@@ -13,7 +13,8 @@ Window::Window(const glm::uvec2& size)
     uint32_t flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
     this->_window = SDL_CreateWindow(
         "Kaa", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, size.x, size.y,
-        flags);
+        flags
+    );
 
     this->size(size);
 }
@@ -27,8 +28,9 @@ void
 Window::show()
 {
     if (this->_active) {
-        get_engine()->make_call_from_main_thread<void>(
-            [this]() { SDL_ShowWindow(this->_window); });
+        get_engine()->make_call_from_main_thread<void>([this]() {
+            SDL_ShowWindow(this->_window);
+        });
     }
     this->_is_shown = true;
 }
@@ -37,8 +39,9 @@ void
 Window::hide()
 {
     if (this->_active) {
-        get_engine()->make_call_from_main_thread<void>(
-            [this]() { SDL_HideWindow(this->_window); });
+        get_engine()->make_call_from_main_thread<void>([this]() {
+            SDL_HideWindow(this->_window);
+        });
     }
     this->_is_shown = false;
 }
@@ -46,15 +49,17 @@ Window::hide()
 std::string
 Window::title()
 {
-    return get_engine()->make_call_from_main_thread<std::string>(
-        [this]() { return SDL_GetWindowTitle(this->_window); });
+    return get_engine()->make_call_from_main_thread<std::string>([this]() {
+        return SDL_GetWindowTitle(this->_window);
+    });
 }
 
 void
 Window::title(const std::string& title)
 {
-    get_engine()->make_call_from_main_thread<void>(
-        [this, title]() { SDL_SetWindowTitle(this->_window, title.c_str()); });
+    get_engine()->make_call_from_main_thread<void>([this, title]() {
+        SDL_SetWindowTitle(this->_window, title.c_str());
+    });
 }
 
 bool
@@ -81,43 +86,49 @@ Window::_peek_size()
     glm::uvec2 vec;
     SDL_GetWindowSize(
         this->_window, reinterpret_cast<int32_t*>(&vec.x),
-        reinterpret_cast<int32_t*>(&vec.y));
+        reinterpret_cast<int32_t*>(&vec.y)
+    );
     return vec;
 }
 
 glm::uvec2
 Window::size()
 {
-    return get_engine()->make_call_from_main_thread<glm::uvec2>(
-        [this]() { return this->_peek_size(); });
+    return get_engine()->make_call_from_main_thread<glm::uvec2>([this]() {
+        return this->_peek_size();
+    });
 }
 
 void
 Window::size(const glm::uvec2& size)
 {
-    get_engine()->make_call_from_main_thread<void>(
-        [this, size]() { SDL_SetWindowSize(this->_window, size.x, size.y); });
+    get_engine()->make_call_from_main_thread<void>([this, size]() {
+        SDL_SetWindowSize(this->_window, size.x, size.y);
+    });
 }
 
 void
 Window::maximize()
 {
-    get_engine()->make_call_from_main_thread<void>(
-        [this]() { SDL_MaximizeWindow(this->_window); });
+    get_engine()->make_call_from_main_thread<void>([this]() {
+        SDL_MaximizeWindow(this->_window);
+    });
 }
 
 void
 Window::minimize()
 {
-    get_engine()->make_call_from_main_thread<void>(
-        [this]() { SDL_MinimizeWindow(this->_window); });
+    get_engine()->make_call_from_main_thread<void>([this]() {
+        SDL_MinimizeWindow(this->_window);
+    });
 }
 
 void
 Window::restore()
 {
-    get_engine()->make_call_from_main_thread<void>(
-        [this]() { SDL_RestoreWindow(this->_window); });
+    get_engine()->make_call_from_main_thread<void>([this]() {
+        SDL_RestoreWindow(this->_window);
+    });
 }
 
 glm::uvec2
@@ -127,7 +138,8 @@ Window::position()
         glm::uvec2 vec;
         SDL_GetWindowPosition(
             this->_window, reinterpret_cast<int32_t*>(&vec.x),
-            reinterpret_cast<int32_t*>(&vec.y));
+            reinterpret_cast<int32_t*>(&vec.y)
+        );
         return vec;
     });
 }

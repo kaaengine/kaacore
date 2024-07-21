@@ -43,7 +43,8 @@ load_image(const uint8_t* data, size_t size)
         "{}, format: {}",
         image_container->m_width, image_container->m_height,
         image_container->m_depth, image_container->m_numLayers,
-        image_container->m_hasAlpha, image_container->m_format);
+        image_container->m_hasAlpha, image_container->m_format
+    );
 
     return image_container;
 }
@@ -60,17 +61,20 @@ load_image(const std::string& path)
 bimg::ImageContainer*
 load_raw_image(
     bimg::TextureFormat::Enum format, uint16_t width, uint16_t height,
-    const std::vector<uint8_t>& data)
+    const std::vector<uint8_t>& data
+)
 {
     bimg::ImageContainer* image_container = bimg::imageAlloc(
         &texture_image_allocator, format, width, height, 1, 1, false, false,
-        data.data());
+        data.data()
+    );
 
     assert(image_container != NULL);
     return image_container;
 }
 
-glm::dvec4 query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position)
+glm::dvec4
+query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2 position)
 {
     const std::uint32_t bpp = bimg::getBitsPerPixel(image->m_format) / 8;
     std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(image->m_data);
@@ -80,9 +84,7 @@ glm::dvec4 query_image_pixel(const bimg::ImageContainer* image, const glm::uvec2
     bimg::UnpackFn unpack_fn = bimg::getUnpack(image->m_format);
     unpack_fn(rgba, ptr);
 
-    return {
-        rgba[0], rgba[1], rgba[2], rgba[3]
-    };
+    return {rgba[0], rgba[1], rgba[2], rgba[3]};
 }
 
 bgfx::TextureHandle
@@ -106,7 +108,8 @@ Texture::query_pixel(const glm::uvec2 position) const
 MemoryTexture::MemoryTexture(bimg::ImageContainer* image_container)
 {
     this->image_container = std::shared_ptr<bimg::ImageContainer>(
-        image_container, _destroy_image_container);
+        image_container, _destroy_image_container
+    );
 
     if (is_engine_initialized()) {
         this->_initialize();
@@ -149,7 +152,8 @@ void
 MemoryTexture::_initialize()
 {
     this->_handle = get_engine()->renderer->make_texture(
-        this->image_container, BGFX_SAMPLER_NONE);
+        this->image_container, BGFX_SAMPLER_NONE
+    );
     this->is_initialized = true;
 }
 

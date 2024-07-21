@@ -24,7 +24,8 @@ struct DemoScene : kaacore::Scene {
             {-1., -1., 0., 0., 1., -1., -1., 0., 1., 1., 1.},
             {1., -1., 0., 1., 1., 1., -1., 1., 0., 1., 1.},
             {1., 1., 0., 1., 0., 1., 1., 1., 1., 0., 1.},
-            {-1., 1., 0., 0., 0., -1., 1., 1., 1., 1., 0.}};
+            {-1., 1., 0., 0., 0., -1., 1., 1., 1., 1., 0.}
+        };
 
         const std::vector<uint16_t> indices = {0, 2, 1, 0, 3, 2};
 
@@ -32,7 +33,8 @@ struct DemoScene : kaacore::Scene {
 
         this->specific_shape = kaacore::Shape::Freeform(indices, vertices);
         this->polygon_shape = kaacore::Shape::Polygon(
-            {{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}});
+            {{0, 1.5}, {-1, 1}, {-1, -1}, {1, -1}, {1, 1}}
+        );
 
         auto background = kaacore::make_node();
         background->shape(kaacore::Shape::Box({1e4, 1e4}));
@@ -99,49 +101,62 @@ struct DemoScene : kaacore::Scene {
                     break;
                 } else if (keyboard_key->key() == kaacore::Keycode::w) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(0., -0.05));
+                        this->camera().position() + glm::dvec2(0., -0.05)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::a) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(-0.05, 0.));
+                        this->camera().position() + glm::dvec2(-0.05, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::s) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(0., 0.05));
+                        this->camera().position() + glm::dvec2(0., 0.05)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::d) {
                     this->camera().position(
-                        this->camera().position() + glm::dvec2(0.05, 0.));
+                        this->camera().position() + glm::dvec2(0.05, 0.)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::i) {
                     this->camera().scale(
-                        this->camera().scale() + glm::dvec2(0.1, 0.1));
+                        this->camera().scale() + glm::dvec2(0.1, 0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::o) {
                     this->camera().scale(
-                        this->camera().scale() - glm::dvec2(0.1, 0.1));
+                        this->camera().scale() - glm::dvec2(0.1, 0.1)
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::r) {
                     this->camera().rotation(this->camera().rotation() + 0.2);
                 } else if (keyboard_key->key() == kaacore::Keycode::m) {
                     this->node1->rotation(this->node1->rotation() + 0.2);
                     this->node1->position(
-                        this->node1->position() + glm::dvec2(1., 0.));
+                        this->node1->position() + glm::dvec2(1., 0.)
+                    );
                     KAACORE_APP_LOG_INFO(
                         "Node position: {} {}", this->node1->position().x,
-                        this->node1->position().y);
+                        this->node1->position().y
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::n) {
                     this->root_node.position(
-                        this->root_node.position() + glm::dvec2(-1., -2.));
+                        this->root_node.position() + glm::dvec2(-1., -2.)
+                    );
                     KAACORE_APP_LOG_INFO(
                         "World position: {} {}", this->root_node.position().x,
-                        this->root_node.position().y);
+                        this->root_node.position().y
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::c) {
                     this->camera().position(this->node1->absolute_position());
                     KAACORE_APP_LOG_INFO(
                         "Camera position: {} {}", this->camera().position().x,
-                        this->camera().position().y);
+                        this->camera().position().y
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::f) {
                     kaacore::get_engine()->window->fullscreen(
-                        !kaacore::get_engine()->window->fullscreen());
+                        !kaacore::get_engine()->window->fullscreen()
+                    );
                 } else if (keyboard_key->key() == kaacore::Keycode::g) {
                     auto size = kaacore::get_engine()->window->size();
                     KAACORE_APP_LOG_INFO(
-                        "Current size: {} x {}", size.x, size.y);
+                        "Current size: {} x {}", size.x, size.y
+                    );
                 }
             }
         }

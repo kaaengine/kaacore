@@ -34,13 +34,15 @@ struct Shape {
         const ShapeType type, const std::vector<glm::dvec2>& points,
         const double radius, const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices,
-        const std::vector<glm::dvec2>& bounding_points);
+        const std::vector<glm::dvec2>& bounding_points
+    );
     Shape(
         const ShapeType type, const std::vector<glm::dvec2>& points,
         const double radius, const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices,
         const BoundingBox<double> vertices_bbox,
-        const std::vector<glm::dvec2>& bounding_points);
+        const std::vector<glm::dvec2>& bounding_points
+    );
 
     inline operator bool() const { return this->type != ShapeType::none; }
     bool operator==(const Shape& other);
@@ -53,11 +55,13 @@ struct Shape {
     static Shape Polygon(const std::vector<glm::dvec2>& points);
     static Shape Freeform(
         const std::vector<VertexIndex>& indices,
-        const std::vector<StandardVertexData>& vertices);
+        const std::vector<StandardVertexData>& vertices
+    );
     static Shape Freeform(
         const std::vector<VertexIndex>& indices,
         const std::vector<StandardVertexData>& vertices,
-        const BoundingBox<double> bounding_box);
+        const BoundingBox<double> bounding_box
+    );
 
     Shape transform(const Transformation& transformation) const;
     bool contains_point(const glm::dvec2 point) const;
@@ -79,15 +83,19 @@ struct hash<Shape> {
         return hash_combined(
             shape.type,
             hash_iterable<glm::dvec2, std::vector<glm::dvec2>::const_iterator>(
-                shape.points.begin(), shape.points.end()),
+                shape.points.begin(), shape.points.end()
+            ),
             hash_iterable<
                 VertexIndex, std::vector<VertexIndex>::const_iterator>(
-                shape.indices.begin(), shape.indices.end()),
+                shape.indices.begin(), shape.indices.end()
+            ),
             hash_iterable<
                 StandardVertexData,
                 std::vector<StandardVertexData>::const_iterator>(
-                shape.vertices.begin(), shape.vertices.end()),
-            shape.radius);
+                shape.vertices.begin(), shape.vertices.end()
+            ),
+            shape.radius
+        );
     }
 };
-}
+} // namespace std

@@ -64,7 +64,8 @@ class TimersManager {
     struct _InvocationInstance {
         _InvocationInstance(
             TimerId invocation_id, Duration interval, TimePoint triggered_at,
-            std::weak_ptr<_TimerState>&& state);
+            std::weak_ptr<_TimerState>&& state
+        );
 
         TimerId invocation_id;
         Duration interval;
@@ -75,7 +76,8 @@ class TimersManager {
         {
             return this->triggered_at +
                    std::chrono::duration_cast<HighPrecisionDuration>(
-                       this->interval);
+                       this->interval
+                   );
         }
     };
 
@@ -94,4 +96,4 @@ class TimersManager {
     static inline std::atomic<TimerId> _last_id = 0;
 };
 
-}
+} // namespace kaacore

@@ -13,9 +13,9 @@
 #include "kaacore/exceptions.h"
 #include "kaacore/input.h"
 #include "kaacore/log.h"
+#include "kaacore/platform.h"
 #include "kaacore/scenes.h"
 #include "kaacore/statistics.h"
-#include "kaacore/platform.h"
 
 #include "kaacore/engine.h"
 
@@ -49,7 +49,8 @@ class InitGuard {
 };
 
 std::string
-get_env_or_empty_string(const char* env_name) {
+get_env_or_empty_string(const char* env_name)
+{
     if (auto value = SDL_getenv(env_name)) {
         return value;
     }
@@ -74,15 +75,16 @@ choose_renderer_backend(const std::string& renderer_name)
     } else if (renderer_name == "vulkan") {
         return bgfx::RendererType::Vulkan;
     } else if (renderer_name == "bgfx_default") {
-        return bgfx::RendererType::Count;  // bgfx default
+        return bgfx::RendererType::Count; // bgfx default
     } else if (renderer_name == "default" or renderer_name == "") {
         if (get_platform() == PlatformType::linux) {
             return bgfx::RendererType::OpenGL;
         }
-        return bgfx::RendererType::Count;  // bgfx default
+        return bgfx::RendererType::Count; // bgfx default
     } else {
         throw exception(
-            fmt::format("Unsupported renderer: {}.\n", renderer_name));
+            fmt::format("Unsupported renderer: {}.\n", renderer_name)
+        );
     }
 }
 
@@ -101,13 +103,15 @@ choose_gpu_vendor(const std::string& vendor_name)
         return BGFX_PCI_ID_NONE;
     } else {
         throw exception(
-            fmt::format("Unsupported GPU vendor: {}.\n", vendor_name));
+            fmt::format("Unsupported GPU vendor: {}.\n", vendor_name)
+        );
     }
 }
 
 std::string
 get_persistent_path(
-    const std::string& prefix, const std::string& organization_prefix)
+    const std::string& prefix, const std::string& organization_prefix
+)
 {
     KAACORE_CHECK(prefix.size(), "Invalid prefix.");
     InitGuard guard(init_mutex);
@@ -119,8 +123,8 @@ get_persistent_path(
 }
 
 Engine::Engine(
-    const glm::uvec2& virtual_resolution,
-    const VirtualResolutionMode vr_mode) noexcept(false)
+    const glm::uvec2& virtual_resolution, const VirtualResolutionMode vr_mode
+) noexcept(false)
     : _virtual_resolution(virtual_resolution), _virtual_resolution_mode(vr_mode)
 {
     std::scoped_lock<std::mutex> lock(init_mutex);
@@ -134,7 +138,8 @@ Engine::Engine(
 
     KAACORE_CHECK(
         virtual_resolution.x > 0 and virtual_resolution.y > 0,
-        "Virtual resolution must be greater than zero.");
+        "Virtual resolution must be greater than zero."
+    );
 
     this->_main_thread_id = std::this_thread::get_id();
     this->window = std::make_unique<Window>(this->_virtual_resolution);
@@ -151,7 +156,8 @@ Engine::Engine(
         std::thread{[this, bgfx_init_data, window_size]() {
             this->renderer = std::make_unique<Renderer>(
                 bgfx_init_data, window_size, this->_virtual_resolution,
-                this->_virtual_resolution_mode);
+                this->_virtual_resolution_mode
+            );
             reset_render_targets(this->renderer->view_size);
             this->resources_manager = std::make_unique<ResourcesManager>();
             this->_engine_thread_entrypoint();
@@ -166,8 +172,10 @@ Engine::Engine(
         // bgfx needs matching renderFrame() for init to complete
         auto ret = bgfx::renderFrame(
             std::chrono::duration_cast<std::chrono::milliseconds>(
-                threads_sync_timeout)
-                .count());
+                threads_sync_timeout
+            )
+                .count()
+        );
         KAACORE_LOG_DEBUG("Waiting for bgfx initialization... ({})", ret);
         if (this->_engine_loop_state.retrieve() !=
             EngineLoopState::not_initialized) {
@@ -177,7 +185,8 @@ Engine::Engine(
 #else
     this->renderer = std::make_unique<Renderer>(
         bgfx_init_data, window_size, this->_virtual_resolution,
-        this->_virtual_resolution_mode);
+        this->_virtual_resolution_mode
+    );
     reset_render_targets(this->renderer->view_size);
     this->resources_manager = std::make_unique<ResourcesManager>();
 #endif
@@ -199,8 +208,10 @@ Engine::~Engine()
     while (true) {
         auto ret = bgfx::renderFrame(
             std::chrono::duration_cast<std::chrono::milliseconds>(
-                threads_sync_timeout)
-                .count());
+                threads_sync_timeout
+            )
+                .count()
+        );
         if (ret == bgfx::RenderFrame::Enum::Exiting) {
             break;
         }
@@ -260,7 +271,8 @@ Engine::virtual_resolution(const glm::uvec2& resolution)
 {
     KAACORE_CHECK(
         resolution.x > 0 and resolution.y > 0,
-        "Virtual resolution must be greater than zero.");
+        "Virtual resolution must be greater than zero."
+    );
     this->_virtual_resolution = resolution;
     this->_reset(this->window->size());
 }
@@ -290,7 +302,8 @@ Engine::vertical_sync(const bool vsync)
     this->renderer->_vertical_sync = vsync;
     this->renderer->reset(
         this->window->size(), this->_virtual_resolution,
-        this->_virtual_resolution_mode);
+        this->_virtual_resolution_mode
+    );
 }
 
 std::vector<Display>
@@ -334,7 +347,8 @@ void
 Engine::_reset(const glm::uvec2& window_size)
 {
     this->renderer->reset(
-        window_size, this->_virtual_resolution, this->_virtual_resolution_mode);
+        window_size, this->_virtual_resolution, this->_virtual_resolution_mode
+    );
     this->_scene->_reset();
     reset_render_targets(this->renderer->view_size);
 }
@@ -347,9 +361,11 @@ Engine::_gather_platform_data()
     SDL_VERSION(&wminfo.version);
     SDL_GetWindowWMInfo(this->window->_window, &wminfo);
 
-    auto renderer_type = choose_renderer_backend(get_env_or_empty_string("KAACORE_RENDERER"));
+    auto renderer_type =
+        choose_renderer_backend(get_env_or_empty_string("KAACORE_RENDERER"));
     bgfx_init_data.type = renderer_type;
-    bgfx_init_data.vendorId = choose_gpu_vendor(get_env_or_empty_string("KAACORE_GPU_VENDOR"));
+    bgfx_init_data.vendorId =
+        choose_gpu_vendor(get_env_or_empty_string("KAACORE_GPU_VENDOR"));
 #if SDL_VIDEO_DRIVER_X11
     if (renderer_type == bgfx::RendererType::OpenGL) {
         // using sdl's provided ndt pointer might cause
@@ -403,26 +419,28 @@ Engine::_scene_processing()
                 Duration scaled_dt_sec = dt * this->_scene->_time_scale;
                 auto scaled_dt =
                     std::chrono::duration_cast<HighPrecisionDuration>(
-                        scaled_dt_sec);
+                        scaled_dt_sec
+                    );
                 this->_total_time += scaled_dt_sec;
                 {
                     StopwatchStatAutoPusher stopwatch{"scene.update:time"};
                     this->_scene->process_update(scaled_dt_sec);
                 }
 #if KAACORE_MULTITHREADING_MODE
-                this->_event_processing_state.set(
-                    EventProcessingState::consumed);
+                this->_event_processing_state.set(EventProcessingState::consumed
+                );
 #endif
                 const auto& nodes_processing_queue =
                     this->_scene->build_processing_queue();
-                this->_scene->update_nodes_drawing_queue(
-                    nodes_processing_queue);
+                this->_scene->update_nodes_drawing_queue(nodes_processing_queue
+                );
                 this->_scene->attach_frame_context(this->renderer);
                 this->renderer->begin_frame();
                 this->_scene->render(this->renderer);
                 this->renderer->end_frame();
                 this->_scene->resolve_spatial_index_changes(
-                    nodes_processing_queue);
+                    nodes_processing_queue
+                );
                 this->_scene->process_physics(scaled_dt);
                 this->timers.process(dt);
                 this->_scene->timers.process(scaled_dt);
@@ -433,7 +451,8 @@ Engine::_scene_processing()
             if (this->udp_stats_exporter) {
                 this->renderer->push_statistics();
                 this->udp_stats_exporter->send_sync(
-                    get_global_statistics_manager().get_last_all());
+                    get_global_statistics_manager().get_last_all()
+                );
             }
         }
         this->_scene->on_exit();
@@ -473,14 +492,14 @@ Engine::_process_events()
     SDL_Event event;
     int peep_status;
     while ((peep_status = SDL_PeepEvents(
-                &event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) > 0) {
+                &event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT
+            )) > 0) {
         if (event.type == EventType::music_finished) {
             this->audio_manager->_handle_music_finished();
         } else if (event.type == EventType::channel_finished) {
             this->audio_manager->_handle_channel_finished(event.user.code);
-        } else if (
-            event.type == SDL_WINDOWEVENT and
-            event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+        } else if (event.type == SDL_WINDOWEVENT and
+                   event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             this->_reset({event.window.data1, event.window.data2});
         }
         this->input_manager->push_event(event);
@@ -506,15 +525,18 @@ Engine::_main_thread_entrypoint()
             this->_synced_syscall_queue.finalize_calls();
         } while (this->is_running and
                  not this->_event_processing_state.wait_for(
-                     EventProcessingState::consumed, threads_sync_timeout));
+                     EventProcessingState::consumed, threads_sync_timeout
+                 ));
         SDL_PumpEvents();
         this->_event_processing_state.set(EventProcessingState::ready);
         do {
             this->_synced_syscall_queue.finalize_calls();
         } while (bgfx::renderFrame(
                      std::chrono::duration_cast<std::chrono::milliseconds>(
-                         threads_sync_timeout)
-                         .count()) == bgfx::RenderFrame::Enum::Timeout);
+                         threads_sync_timeout
+                     )
+                         .count()
+                 ) == bgfx::RenderFrame::Enum::Timeout);
 
         if (this->_engine_loop_state.retrieve() == EngineLoopState::stopping) {
             break;
@@ -536,7 +558,8 @@ Engine::_engine_thread_entrypoint()
 
     while (true) {
         auto retrieved_state = this->_engine_loop_state.wait(
-            {EngineLoopState::starting, EngineLoopState::terminating});
+            {EngineLoopState::starting, EngineLoopState::terminating}
+        );
 
         if (retrieved_state == EngineLoopState::terminating) {
             return; // exit from loop so renderer will get terminated
@@ -549,7 +572,8 @@ Engine::_engine_thread_entrypoint()
             this->_scene_processing();
         } catch (const std::exception exc) {
             KAACORE_LOG_ERROR(
-                "Engine loop interrupted by exception: {}", exc.what());
+                "Engine loop interrupted by exception: {}", exc.what()
+            );
             this->_engine_loop_exception = std::current_exception();
             KAACORE_LOG_INFO("Engine API loop stopped with exception.");
         }
@@ -578,7 +602,8 @@ Engine::_ScenePointerWrapper::operator bool() const
     return this->_scene_ptr != nullptr;
 }
 
-Scene* Engine::_ScenePointerWrapper::operator->() const
+Scene*
+Engine::_ScenePointerWrapper::operator->() const
 {
     return this->_scene_ptr;
 }

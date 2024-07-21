@@ -31,15 +31,18 @@ ShadingContext::ShadingContext(const UniformSpecificationMap& uniforms)
                 break;
             case UniformType::vec4:
                 this->_uniforms.emplace(
-                    name, Vec4Uniform(name, uniform.number_of_elements()));
+                    name, Vec4Uniform(name, uniform.number_of_elements())
+                );
                 break;
             case UniformType::mat3:
                 this->_uniforms.emplace(
-                    name, Mat3Uniform(name, uniform.number_of_elements()));
+                    name, Mat3Uniform(name, uniform.number_of_elements())
+                );
                 break;
             case UniformType::mat4:
                 this->_uniforms.emplace(
-                    name, Mat4Uniform(name, uniform.number_of_elements()));
+                    name, Mat4Uniform(name, uniform.number_of_elements())
+                );
                 break;
             default:
                 throw kaacore::exception("Unknown uniform type.");
@@ -68,7 +71,8 @@ ShadingContext::uniforms() const
             [&result](auto&& variant) {
                 result[variant.name()] = variant.specification();
             },
-            kv_pair.second);
+            kv_pair.second
+        );
     }
     return result;
 }
@@ -76,19 +80,23 @@ ShadingContext::uniforms() const
 void
 ShadingContext::set_uniform_texture(
     const std::string& name, const ResourceReference<Texture>& texture,
-    const uint8_t stage, const uint32_t flags)
+    const uint8_t stage, const uint32_t flags
+)
 {
     KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name
+    );
     std::get<Sampler>(this->_uniforms[name]).set(texture, stage, flags);
 }
 
 void
 ShadingContext::set_uniform_texture(
-    const std::string& name, const SamplerValue& value)
+    const std::string& name, const SamplerValue& value
+)
 {
     KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name
+    );
     std::get<Sampler>(this->_uniforms[name]).set(value);
 }
 
@@ -96,7 +104,8 @@ std::optional<SamplerValue>
 ShadingContext::get_uniform_texture(const std::string& name) const
 {
     KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name
+    );
     return std::get<Sampler>(this->_uniforms.at(name)).get();
 }
 
@@ -104,7 +113,8 @@ void
 ShadingContext::bind(const std::string& name)
 {
     std::visit(
-        [](auto&& variant) { variant._bind(); }, this->_uniforms.at(name));
+        [](auto&& variant) { variant._bind(); }, this->_uniforms.at(name)
+    );
 }
 
 void
@@ -120,7 +130,8 @@ ShadingContext::_initialize()
 {
     for (auto& kv_pair : this->_uniforms) {
         std::visit(
-            [](auto&& variant) { variant._initialize(); }, kv_pair.second);
+            [](auto&& variant) { variant._initialize(); }, kv_pair.second
+        );
     }
     this->is_initialized = true;
 }
@@ -130,7 +141,8 @@ ShadingContext::_uninitialize()
 {
     for (auto& kv_pair : this->_uniforms) {
         std::visit(
-            [](auto&& variant) { variant._uninitialize(); }, kv_pair.second);
+            [](auto&& variant) { variant._uninitialize(); }, kv_pair.second
+        );
     }
     this->is_initialized = false;
 }
@@ -144,23 +156,27 @@ ShadingContext::_name_in_registry(const std::string& name) const
 void
 ShadingContext::_set_uniform_texture(
     const std::string& name, const Texture* texture, const uint8_t stage,
-    const uint32_t flags)
+    const uint32_t flags
+)
 {
     KAACORE_CHECK(
-        this->_name_in_registry(name), "Unknown uniform name: {}.", name);
+        this->_name_in_registry(name), "Unknown uniform name: {}.", name
+    );
     std::get<Sampler>(this->_uniforms[name])._set(texture, stage, flags);
 }
 
 Material::Material(
     const MaterialId id, const ResourceReference<Program>& program,
-    const UniformSpecificationMap& uniforms)
+    const UniformSpecificationMap& uniforms
+)
     : ShadingContext(uniforms), program(program), _id(id)
 {}
 
 ResourceReference<Material>
 Material::create(
     const ResourceReference<Program>& program,
-    const UniformSpecificationMap& uniforms)
+    const UniformSpecificationMap& uniforms
+)
 {
     auto reserved_names = Renderer::reserved_uniform_names();
     std::unordered_set<std::string> errors;
@@ -171,13 +187,14 @@ Material::create(
         }
         if (reserved_names.find(name) != reserved_names.end()) {
             errors.insert(fmt::format(
-                "{} is reserved for internal use, use other uniform name.",
-                name));
+                "{} is reserved for internal use, use other uniform name.", name
+            ));
         }
     }
     KAACORE_CHECK(
         not errors.size(), "Can't create material:\n{}",
-        fmt::join(errors.begin(), errors.end(), "\n"));
+        fmt::join(errors.begin(), errors.end(), "\n")
+    );
 
     auto id = Material::_last_id.fetch_add(1, std::memory_order_relaxed);
     auto material =
@@ -201,15 +218,18 @@ Material::clone() const
                 break;
             case UniformType::vec4:
                 material->set_uniform_value<glm::fvec4>(
-                    name, this->get_uniform_value<glm::fvec4>(name));
+                    name, this->get_uniform_value<glm::fvec4>(name)
+                );
                 break;
             case UniformType::mat3:
                 material->set_uniform_value<glm::fmat3>(
-                    name, this->get_uniform_value<glm::fmat3>(name));
+                    name, this->get_uniform_value<glm::fmat3>(name)
+                );
                 break;
             case UniformType::mat4:
                 material->set_uniform_value<glm::fmat4>(
-                    name, this->get_uniform_value<glm::fmat4>(name));
+                    name, this->get_uniform_value<glm::fmat4>(name)
+                );
                 break;
             default:
                 throw kaacore::exception("Unknown uniform type.");
@@ -221,7 +241,8 @@ Material::clone() const
 void
 Material::set_uniform_texture(
     const std::string& name, const ResourceReference<Texture>& texture,
-    const uint8_t stage, const uint32_t flags)
+    const uint8_t stage, const uint32_t flags
+)
 {
     KAACORE_CHECK(stage > 0, "Stage index must be greater than zero.");
     ShadingContext::set_uniform_texture(name, texture, stage, flags);
@@ -229,10 +250,11 @@ Material::set_uniform_texture(
 
 void
 Material::set_uniform_texture(
-    const std::string& name, const SamplerValue& value)
+    const std::string& name, const SamplerValue& value
+)
 {
     KAACORE_CHECK(value.stage > 0, "Stage index must be greater than zero.");
     ShadingContext::set_uniform_texture(name, value);
 }
 
-}
+} // namespace kaacore

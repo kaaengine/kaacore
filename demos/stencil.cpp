@@ -3,11 +3,12 @@
 #include <glm/glm.hpp>
 
 #include "kaacore/engine.h"
+#include "kaacore/scenes.h"
 #include "kaacore/shapes.h"
 #include "kaacore/stencil.h"
-#include "kaacore/scenes.h"
 
-namespace kaacore { namespace demos {
+namespace kaacore {
+namespace demos {
 
 struct StencilDemoScene : Scene {
     Shape default_shape;
@@ -15,62 +16,62 @@ struct StencilDemoScene : Scene {
     glm::dvec4 color_2;
 
     StencilDemoScene()
-        : default_shape(Shape::Box({45., 45.})), color_1({0., 1., 1., 1.}), color_2({1., 1., 0., 1.})
+        : default_shape(Shape::Box({45., 45.})), color_1({0., 1., 1., 1.}),
+          color_2({1., 1., 0., 1.})
     {
         this->camera().position({0., 0.});
 
-        this->create_pair(
-            {-350, -350},
-            StencilMode(),
-            StencilMode()
-        );
+        this->create_pair({-350, -350}, StencilMode(), StencilMode());
         this->create_pair(
             {-250, -350},
-            StencilMode(1u, 255u, StencilTest::equal,
-                        StencilOp::replace,
-                        StencilOp::keep,
-                        StencilOp::keep),
-            StencilMode(1u, 255u, StencilTest::equal,
-                        StencilOp::keep,
-                        StencilOp::keep,
-                        StencilOp::keep)
+            StencilMode(
+                1u, 255u, StencilTest::equal, StencilOp::replace,
+                StencilOp::keep, StencilOp::keep
+            ),
+            StencilMode(
+                1u, 255u, StencilTest::equal, StencilOp::keep, StencilOp::keep,
+                StencilOp::keep
+            )
         );
         this->create_pair(
             {-150, -350},
-            StencilMode(1u, 255u, StencilTest::always,
-                        StencilOp::keep,
-                        StencilOp::keep,
-                        StencilOp::replace),
-            StencilMode(1u, 255u, StencilTest::equal,
-                        StencilOp::keep,
-                        StencilOp::keep,
-                        StencilOp::keep)
+            StencilMode(
+                1u, 255u, StencilTest::always, StencilOp::keep, StencilOp::keep,
+                StencilOp::replace
+            ),
+            StencilMode(
+                1u, 255u, StencilTest::equal, StencilOp::keep, StencilOp::keep,
+                StencilOp::keep
+            )
         );
         this->create_pair(
             {-350, -250},
-            StencilMode(25u, 255u, StencilTest::greater_equal,
-                        StencilOp::replace,
-                        StencilOp::replace,
-                        StencilOp::replace),
-            StencilMode(25u, 255u, StencilTest::greater_equal,
-                        StencilOp::keep,
-                        StencilOp::keep,
-                        StencilOp::keep)
+            StencilMode(
+                25u, 255u, StencilTest::greater_equal, StencilOp::replace,
+                StencilOp::replace, StencilOp::replace
+            ),
+            StencilMode(
+                25u, 255u, StencilTest::greater_equal, StencilOp::keep,
+                StencilOp::keep, StencilOp::keep
+            )
         );
         this->create_pair(
             {-250, -250},
-            StencilMode(50u, 255u, StencilTest::always,
-                        StencilOp::replace,
-                        StencilOp::replace,
-                        StencilOp::replace),
-            StencilMode(50u, 255u, StencilTest::not_equal,
-                        StencilOp::keep,
-                        StencilOp::keep,
-                        StencilOp::keep)
+            StencilMode(
+                50u, 255u, StencilTest::always, StencilOp::replace,
+                StencilOp::replace, StencilOp::replace
+            ),
+            StencilMode(
+                50u, 255u, StencilTest::not_equal, StencilOp::keep,
+                StencilOp::keep, StencilOp::keep
+            )
         );
     }
 
-    void create_pair(const glm::dvec2 slot_position, const StencilMode parent_stencil, const StencilMode child_stencil)
+    void create_pair(
+        const glm::dvec2 slot_position, const StencilMode parent_stencil,
+        const StencilMode child_stencil
+    )
     {
         auto parent_node = make_node();
         parent_node->position(slot_position + glm::dvec2{-20., -20.});
@@ -100,8 +101,8 @@ struct StencilDemoScene : Scene {
     }
 };
 
-}} // namespace kaacore::demos
-
+} // namespace demos
+} // namespace kaacore
 
 extern "C" int
 main(int argc, char* argv[])

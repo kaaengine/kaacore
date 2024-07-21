@@ -41,9 +41,11 @@ class Shader : public Resource {
     const Memory memory();
     ShaderType type() const;
     static ResourceReference<Shader> load(
-        const ShaderType type, const ShaderModelMap& model_map);
+        const ShaderType type, const ShaderModelMap& model_map
+    );
     static ResourceReference<Shader> create(
-        const ShaderType type, const ShaderModelMemoryMap& memory_map);
+        const ShaderType type, const ShaderModelMemoryMap& memory_map
+    );
 
   protected:
     ShaderType _type;
@@ -65,7 +67,8 @@ class Shader : public Resource {
 class EmbeddedShader : public Shader {
   public:
     static ResourceReference<EmbeddedShader> load(
-        const ShaderType type, const std::string& shader_name);
+        const ShaderType type, const std::string& shader_name
+    );
 
   private:
     const std::string _name;
@@ -85,14 +88,16 @@ class Program : public Resource {
     ~Program();
     static ResourceReference<Program> create(
         const ResourceReference<Shader>& vertex,
-        const ResourceReference<Shader>& fragment);
+        const ResourceReference<Shader>& fragment
+    );
 
   private:
     bgfx::ProgramHandle _handle = BGFX_INVALID_HANDLE;
 
     Program(
         const ResourceReference<Shader>& vertex,
-        const ResourceReference<Shader>& fragment);
+        const ResourceReference<Shader>& fragment
+    );
     virtual void _initialize() override;
     virtual void _uninitialize() override;
     void _validate_shaders();
@@ -117,7 +122,8 @@ struct hash<kaacore::ShaderKey> {
     {
         using shader_key_iterator = kaacore::ShaderKey::const_iterator;
         return kaacore::hash_iterable<std::string, shader_key_iterator>(
-            key.begin(), key.end());
+            key.begin(), key.end()
+        );
     }
 };
-}
+} // namespace std

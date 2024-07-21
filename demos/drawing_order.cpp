@@ -16,7 +16,8 @@ struct DemoScene : kaacore::Scene {
     {
         const std::vector<glm::dvec4> colors = {
             {1., 0., 0., 1.},  {0., 1., 0., 1.},  {0., 0., 1., 1.},
-            {1., 0., 0., 0.7}, {0., 1., 0., 0.7}, {0., 0., 1., 0.7}};
+            {1., 0., 0., 0.7}, {0., 1., 0., 0.7}, {0., 0., 1., 0.7}
+        };
 
         auto background_node = kaacore::make_node();
         background_node->position({50., 50.});

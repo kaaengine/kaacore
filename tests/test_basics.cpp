@@ -19,10 +19,12 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
     {
         const auto settings = ""sv;
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "") == std::nullopt);
+            kaacore::_unpack_logging_settings(settings, "") == std::nullopt
+        );
         REQUIRE(
             kaacore::_unpack_logging_settings(settings, "engine") ==
-            std::nullopt);
+            std::nullopt
+        );
     }
 
     SECTION("Default value set")
@@ -31,7 +33,8 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
         REQUIRE(kaacore::_unpack_logging_settings(settings, "") == "info"sv);
         REQUIRE(
             kaacore::_unpack_logging_settings(settings, "engine") ==
-            std::nullopt);
+            std::nullopt
+        );
     }
 
     SECTION("Multiple values set")
@@ -39,9 +42,11 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
         const auto settings = "info,engine:warn,renderer:off"sv;
         REQUIRE(kaacore::_unpack_logging_settings(settings, "") == "info"sv);
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "engine") == "warn"sv);
+            kaacore::_unpack_logging_settings(settings, "engine") == "warn"sv
+        );
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv);
+            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv
+        );
     }
 
     SECTION("Multiple values set - with empty sections")
@@ -49,9 +54,11 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
         const auto settings = ",,info,engine:warn,,renderer:off,,"sv;
         REQUIRE(kaacore::_unpack_logging_settings(settings, "") == "info"sv);
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "engine") == "warn"sv);
+            kaacore::_unpack_logging_settings(settings, "engine") == "warn"sv
+        );
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv);
+            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv
+        );
     }
 
     SECTION("Multiple values set - with invalid sections")
@@ -60,9 +67,11 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
             "asdf:xxxx,www=11111,info,engine:warn,renderer:off,,"sv;
         REQUIRE(kaacore::_unpack_logging_settings(settings, "") == "info"sv);
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "engine") == "warn"sv);
+            kaacore::_unpack_logging_settings(settings, "engine") == "warn"sv
+        );
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv);
+            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv
+        );
     }
 
     SECTION("Multiple values set - with override")
@@ -70,9 +79,11 @@ TEST_CASE("Unpack logging settings", "[basics][logging_utils][no_engine]")
         const auto settings = "info,engine:warn,renderer:off,engine:trace"sv;
         REQUIRE(kaacore::_unpack_logging_settings(settings, "") == "info"sv);
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "engine") == "trace"sv);
+            kaacore::_unpack_logging_settings(settings, "engine") == "trace"sv
+        );
         REQUIRE(
-            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv);
+            kaacore::_unpack_logging_settings(settings, "renderer") == "off"sv
+        );
     }
 }
 
@@ -82,16 +93,20 @@ TEST_CASE("Parse compiled file name", "[basics][logging_utils][no_engine]")
     REQUIRE(kaacore::_strip_module_name("/absolute/path/file.h") == "file");
 
     REQUIRE(
-        kaacore::_strip_module_name("C:\\absolute\\path\\file.cpp") == "file");
+        kaacore::_strip_module_name("C:\\absolute\\path\\file.cpp") == "file"
+    );
     REQUIRE(
-        kaacore::_strip_module_name("C:\\absolute\\path\\file.h") == "file");
+        kaacore::_strip_module_name("C:\\absolute\\path\\file.h") == "file"
+    );
 
     REQUIRE(kaacore::_strip_module_name("relative_path/file.cpp") == "file");
     REQUIRE(kaacore::_strip_module_name("relative_path/file.h") == "file");
     REQUIRE(
-        kaacore::_strip_module_name("relative_path/x/y/z/file.cpp") == "file");
+        kaacore::_strip_module_name("relative_path/x/y/z/file.cpp") == "file"
+    );
     REQUIRE(
-        kaacore::_strip_module_name("relative_path/x/y/z/file.h") == "file");
+        kaacore::_strip_module_name("relative_path/x/y/z/file.h") == "file"
+    );
 
     REQUIRE(kaacore::_strip_module_name("relative_path\\file.cpp") == "file");
     REQUIRE(kaacore::_strip_module_name("relative_path\\file.h") == "file");

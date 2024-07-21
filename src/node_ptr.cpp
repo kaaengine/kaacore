@@ -31,11 +31,13 @@ _NodePtrBase::get() const
     return this->_node;
 }
 
-Node* _NodePtrBase::operator->() const
+Node*
+_NodePtrBase::operator->() const
 {
     KAACORE_CHECK(this->_node != nullptr, "Node already deleted/released.");
     KAACORE_CHECK(
-        not this->_node->_marked_to_delete, "Node marked for deletion.");
+        not this->_node->_marked_to_delete, "Node marked for deletion."
+    );
     return this->_node;
 }
 
@@ -62,7 +64,8 @@ NodeOwnerPtr::NodeOwnerPtr(Node* node) : _NodePtrBase(node)
 {
     if (node) {
         KAACORE_LOG_DEBUG(
-            "Created ownership of node ({}).", fmt::ptr(this->_node));
+            "Created ownership of node ({}).", fmt::ptr(this->_node)
+        );
     }
 }
 
@@ -70,7 +73,8 @@ NodeOwnerPtr::~NodeOwnerPtr()
 {
     if (this->_node != nullptr) {
         KAACORE_LOG_DEBUG(
-            "Ownership of node ({}) destroyed.", fmt::ptr(this->_node));
+            "Ownership of node ({}) destroyed.", fmt::ptr(this->_node)
+        );
         delete this->_node;
         this->_node = nullptr;
     }

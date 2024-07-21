@@ -8,8 +8,8 @@
 
 #include <SDL.h>
 
-#include <spdlog/spdlog.h>
 #include <spdlog/pattern_formatter.h>
+#include <spdlog/spdlog.h>
 
 #include "kaacore/config.h"
 #include "kaacore/utils.h"
@@ -27,7 +27,8 @@ constexpr std::array _log_categories{
     "views"sv, "spatial_index"sv, "threading"sv, "utils"sv, "embedded_data"sv,
     "easings"sv, "shaders"sv, "statistics"sv, "draw_unit"sv, "draw_queue"sv,
     // special-purpose categories
-    "other"sv, "app"sv, "wrapper"sv, "tools"sv};
+    "other"sv, "app"sv, "wrapper"sv, "tools"sv
+};
 
 constexpr auto _log_category_fallback =
     find_array_element(_log_categories, "other"sv).value();
@@ -43,9 +44,12 @@ extern std::array<std::shared_ptr<spdlog::logger>, _log_categories.size()>
 extern bool logging_initialized;
 
 class ConditionalSourceFlag : public spdlog::custom_flag_formatter {
-public:
+  public:
     std::unique_ptr<custom_flag_formatter> clone() const override;
-    void format(const spdlog::details::log_msg&, const std::tm&, spdlog::memory_buf_t& dest) override;
+    void format(
+        const spdlog::details::log_msg&, const std::tm&,
+        spdlog::memory_buf_t& dest
+    ) override;
 };
 
 spdlog::level::level_enum
@@ -53,7 +57,8 @@ get_logging_level(const std::string_view& category);
 
 void
 set_logging_level(
-    const std::string_view& category, spdlog::level::level_enum level);
+    const std::string_view& category, spdlog::level::level_enum level
+);
 
 void
 initialize_logging();
@@ -63,7 +68,8 @@ _strip_module_name(const std::string_view filename_full)
 {
     auto slash_pos = filename_full.find_last_of("/\\");
     auto filename = filename_full.substr(
-        slash_pos != std::string_view::npos ? (slash_pos + 1) : 0);
+        slash_pos != std::string_view::npos ? (slash_pos + 1) : 0
+    );
     auto dot_pos = filename.rfind('.');
     return filename.substr(0, dot_pos);
 }
@@ -91,7 +97,8 @@ _parse_logging_level_name(const std::string_view level_name)
 
 inline constexpr std::optional<std::string_view>
 _unpack_logging_settings(
-    const std::string_view settings, const std::string_view logger_name)
+    const std::string_view settings, const std::string_view logger_name
+)
 {
     size_t parser_pos = 0;
     std::string_view section;
@@ -112,9 +119,9 @@ _unpack_logging_settings(
                 found_level = section;
             }
             // section contains logger name, grab declared level
-            else if (
-                split_pos != std::string_view::npos and logger_name != "" and
-                logger_name == section.substr(0, split_pos)) {
+            else if (split_pos != std::string_view::npos and
+                     logger_name != "" and
+                     logger_name == section.substr(0, split_pos)) {
                 found_level = section.substr(split_pos + 1);
             }
         }
@@ -151,13 +158,15 @@ emit_log(spdlog::source_loc source_loc, Args&&... args)
     }
     // TODO compile-time cutouts per level
     _loggers[logger_index]->log(
-        source_loc, log_level, std::forward<Args>(args)...);
+        source_loc, log_level, std::forward<Args>(args)...
+    );
 }
 
 template<class... Args>
 void
 emit_log_dynamic(
-    spdlog::level::level_enum log_level, size_t logger_index, Args&&... args)
+    spdlog::level::level_enum log_level, size_t logger_index, Args&&... args
+)
 {
     if (not logging_initialized) {
         spdlog::warn("Logging subsystem was not initialized.");
@@ -171,17 +180,20 @@ emit_log_dynamic(
     do {                                                                       \
         kaacore::emit_log<LEVEL, LOGGER_INDEX>(                                \
             spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},           \
-            __VA_ARGS__);                                                      \
+            __VA_ARGS__                                                        \
+        );                                                                     \
     } while (0);
 
 #define KAACORE_LOG_AUTO_CATEGORY(LEVEL, ...)                                  \
     do {                                                                       \
         constexpr auto _logger_index =                                         \
             std::get<size_t>(kaacore::_guess_log_category(                     \
-                kaacore::_strip_module_name(__FILE__)));                       \
+                kaacore::_strip_module_name(__FILE__)                          \
+            ));                                                                \
         kaacore::emit_log<LEVEL, _logger_index>(                               \
             spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},           \
-            __VA_ARGS__);                                                      \
+            __VA_ARGS__                                                        \
+        );                                                                     \
     } while (0);
 
 #define KAACORE_LOG_TRACE(...)                                                 \
@@ -207,22 +219,27 @@ emit_log_dynamic(
 
 #define KAACORE_APP_LOG_DEBUG(...)                                             \
     KAACORE_LOG_FULL(                                                          \
-        spdlog::level::debug, kaacore::_log_category_app, __VA_ARGS__)
+        spdlog::level::debug, kaacore::_log_category_app, __VA_ARGS__          \
+    )
 
 #define KAACORE_APP_LOG_INFO(...)                                              \
     KAACORE_LOG_FULL(                                                          \
-        spdlog::level::info, kaacore::_log_category_app, __VA_ARGS__)
+        spdlog::level::info, kaacore::_log_category_app, __VA_ARGS__           \
+    )
 
 #define KAACORE_APP_LOG_WARN(...)                                              \
     KAACORE_LOG_FULL(                                                          \
-        spdlog::level::warn, kaacore::_log_category_app, __VA_ARGS__)
+        spdlog::level::warn, kaacore::_log_category_app, __VA_ARGS__           \
+    )
 
 #define KAACORE_APP_LOG_ERROR(...)                                             \
     KAACORE_LOG_FULL(                                                          \
-        spdlog::level::err, kaacore::_log_category_app, __VA_ARGS__)
+        spdlog::level::err, kaacore::_log_category_app, __VA_ARGS__            \
+    )
 
 #define KAACORE_APP_LOG_CRITICAL(...)                                          \
     KAACORE_LOG_FULL(                                                          \
-        spdlog::level::critical, kaacore::_log_category_app, __VA_ARGS__)
+        spdlog::level::critical, kaacore::_log_category_app, __VA_ARGS__       \
+    )
 
 } // namespace kaacore

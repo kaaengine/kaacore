@@ -7,7 +7,8 @@
 #include "runner.h"
 
 TEST_CASE(
-    "test_normalize_angle_degrees", "[geometry][normalize_angle][no_engine]")
+    "test_normalize_angle_degrees", "[geometry][normalize_angle][no_engine]"
+)
 {
     using kaacore::AngleSign;
     using kaacore::normalize_angle_degrees;
@@ -56,7 +57,8 @@ TEST_CASE("test_normalize_angle", "[geometry][normalize_angle][no_engine]")
 
 TEST_CASE(
     "test_bounding_box_operations_with_nan",
-    "[geometry][bounding_box][no_engine]")
+    "[geometry][bounding_box][no_engine]"
+)
 {
     using kaacore::BoundingBox;
 

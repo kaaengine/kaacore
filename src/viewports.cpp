@@ -14,7 +14,8 @@ _translate_from_z_index(const std::unordered_set<int16_t>& indices)
         [](int16_t index) -> int16_t {
             KAACORE_CHECK(validate_z_index(index), "Invalid z index.");
             return index - min_viewport_z_index;
-        });
+        }
+    );
     return result;
 }
 
@@ -63,8 +64,10 @@ Viewport::dimensions(const glm::uvec2& dimensions)
 glm::ivec4
 Viewport::viewport_rect() const
 {
-    return {this->_origin.x, this->_origin.y, this->_dimensions.x,
-            this->_dimensions.y};
+    return {
+        this->_origin.x, this->_origin.y, this->_dimensions.x,
+        this->_dimensions.y
+    };
 }
 
 void
@@ -95,7 +98,8 @@ Viewport::_reset()
         viewport_dimensions - clipped_viewport_origin + viewport_origin;
     // viewport_dimensions + viewport_orgin > drawable_area
     clipped_viewport_dimensions = glm::min(
-        clipped_viewport_dimensions, drawable_area - clipped_viewport_origin);
+        clipped_viewport_dimensions, drawable_area - clipped_viewport_origin
+    );
 
     this->_view_rect = {clipped_viewport_origin, clipped_viewport_dimensions};
     this->_viewport_rect = {viewport_origin, viewport_dimensions};
@@ -139,8 +143,10 @@ Viewport::_reset_required() const
 ViewportState
 Viewport::_take_snapshot()
 {
-    return {this->_index, this->_view_rect, this->_viewport_rect,
-            this->camera._calculated_view, this->_projection_matrix};
+    return {
+        this->_index, this->_view_rect, this->_viewport_rect,
+        this->camera._calculated_view, this->_projection_matrix
+    };
 }
 
 ViewportsManager::ViewportsManager()
@@ -150,7 +156,8 @@ ViewportsManager::ViewportsManager()
     }
 }
 
-Viewport& ViewportsManager::operator[](const int16_t z_index)
+Viewport&
+ViewportsManager::operator[](const int16_t z_index)
 {
     KAACORE_CHECK(validate_z_index(z_index), "Invalid z_index.");
     auto index = z_index + (this->size() / 2);
@@ -203,23 +210,26 @@ ViewportsManager::_take_snapshot()
 }
 
 ViewportIndexSet::ViewportIndexSet(
-    const std::unordered_set<int16_t>& indices_set)
+    const std::unordered_set<int16_t>& indices_set
+)
     : IndexSet(_translate_from_z_index(indices_set))
 {}
 
 ViewportIndexSet::operator std::unordered_set<int16_t>() const
 {
     std::unordered_set<int16_t> result;
-    this->each_active_z_index(
-        [&result](int16_t z_index) { result.insert(z_index); });
+    this->each_active_z_index([&result](int16_t z_index) {
+        result.insert(z_index);
+    });
     return result;
 }
 
 ViewportIndexSet::operator std::vector<int16_t>() const
 {
     std::vector<int16_t> result;
-    this->each_active_z_index(
-        [&result](int16_t z_index) { result.push_back(z_index); });
+    this->each_active_z_index([&result](int16_t z_index) {
+        result.push_back(z_index);
+    });
     return result;
 }
 
