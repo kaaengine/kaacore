@@ -49,6 +49,10 @@ class UnicodeView {
         const std::byte* data, const std::size_t length,
         const UnicodeRepresentationSize representation_size
     );
+    UnicodeView(
+        const std::uint8_t* data, const std::size_t length,
+        const UnicodeRepresentationSize representation_size
+    );
     UnicodeView(const UnicodeStringViewVariant& view_variant);
 
     bool operator==(const UnicodeView& other) const;
@@ -56,6 +60,10 @@ class UnicodeView {
     iterator begin() const;
     iterator end() const;
     UnicodeStringViewVariant string_view_variant() const;
+
+    UnicodeRepresentationSize representation_size() const;
+    std::size_t length() const;
+    const std::byte* data() const;
 
     friend std::hash<UnicodeView>;
 };

@@ -127,7 +127,8 @@ class FontData : public Resource {
         const std::string& text, double size, double indent, double max_width
     );
     std::vector<FontRenderGlyph> generate_render_glyphs(
-        const UnicodeView text, const double scale_factor);
+        const UnicodeView text, const double scale_factor
+    );
     inline FontMetrics metrics() { return this->font_metrics; }
 
   private:

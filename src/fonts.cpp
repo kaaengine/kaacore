@@ -276,6 +276,14 @@ FontRenderGlyph::FontRenderGlyph(
         glm::dvec2(glyph_data.x0, glyph_data.y0) * inv_texture_size;
     this->texture_uv1 =
         glm::dvec2(glyph_data.x1, glyph_data.y1) * inv_texture_size;
+    KAACORE_LOG_TRACE(
+        "Glyph: {:#x}, size: ({}, {}), offset: ({}, {}), "
+        "advance: {:.2f}, texture_uv0: ({:.2f}, {:.2f}), "
+        "texture_uv1: ({:.2f}, {:.2f})",
+        codepoint, this->size.x, this->size.y, this->offset.x, this->offset.y,
+        this->advance, this->texture_uv0.x, this->texture_uv0.y,
+        this->texture_uv1.x, this->texture_uv1.y
+    );
 }
 
 FontRenderGlyph::FontRenderGlyph(

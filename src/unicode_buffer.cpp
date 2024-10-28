@@ -18,6 +18,14 @@ UnicodeView::UnicodeView(
       _representation_size(representation_size)
 {}
 
+UnicodeView::UnicodeView(
+    const std::uint8_t* data, const std::size_t length,
+    const UnicodeRepresentationSize representation_size
+)
+    : _data(reinterpret_cast<const std::byte*>(data)), _length(length),
+      _representation_size(representation_size)
+{}
+
 UnicodeView::UnicodeView(const UnicodeStringViewVariant& view_variant)
 {
     std::visit(
@@ -131,6 +139,24 @@ UnicodeView::string_view_variant() const
         );
     }
     throw kaacore::exception("Invalid Unicode representation size");
+}
+
+UnicodeRepresentationSize
+UnicodeView::representation_size() const
+{
+    return this->_representation_size;
+}
+
+std::size_t
+UnicodeView::length() const
+{
+    return this->_length;
+}
+
+const std::byte*
+UnicodeView::data() const
+{
+    return this->_data;
 }
 
 UnicodeBuffer::UnicodeBuffer()
