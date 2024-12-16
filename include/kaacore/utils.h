@@ -8,6 +8,9 @@
 
 namespace kaacore {
 
+template<typename T>
+inline constexpr bool always_false_v = false;
+
 template<class T, class M>
 static inline constexpr ptrdiff_t
 offset_of(const M T::*member)
@@ -60,7 +63,7 @@ size_t
 hash_iterable(const Iter it_start, const Iter it_end)
 {
     size_t seed = 0;
-    for (auto it = it_start; it < it_end; it++) {
+    for (auto it = it_start; it != it_end; ++it) {
         seed ^= std::hash<T>{}(*it) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
     return seed;

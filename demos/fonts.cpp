@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -11,17 +12,18 @@
 #include "kaacore/node_transitions.h"
 #include "kaacore/nodes.h"
 #include "kaacore/scenes.h"
+#include "kaacore/unicode_buffer.h"
 
 using namespace std::chrono_literals;
+using namespace std::literals::string_view_literals;
 
-static const std::string txt_lorem_ipsum =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse "
-    "ultricies lacus massa. Phasellus tempus convallis ligula, et fermentum "
-    "mauris tincidunt a. Donec consequat felis sed massa suscipit "
-    "pellentesque. Etiam ullamcorper lacinia arcu ut vehicula. Morbi mattis "
-    "lacus velit, nec tincidunt diam vulputate sit amet. Maecenas fermentum "
-    "sagittis justo, id lacinia justo auctor ut. Maecenas mollis neque sit "
-    "amet tortor porttitor lobortis.";
+static const auto txt_lorem_ipsum = kaacore::UnicodeView{
+    u"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse "
+    u"ultricies lacus massa. Phasellus tempus convallis ligula, et fermentum "
+    u"mauris tincidunt a. Donec consequat felis sed massa suscipit "
+    u"pellentesque. "
+    u"Zażółć gęślą jaźń!"sv
+};
 
 struct DemoFontsScene : kaacore::Scene {
     kaacore::NodePtr background;
@@ -34,8 +36,10 @@ struct DemoFontsScene : kaacore::Scene {
         background->color({0.5, 0.5, 0.5, 1.});
         background->z_index(-10);
         this->background = root_node.add_child(background);
-        auto font =
-            kaacore::Font::load("demos/assets/fonts/Roboto/Roboto-Regular.ttf");
+        auto font = kaacore::Font::load(
+            "demos/assets/fonts/Roboto/Roboto-Regular.ttf",
+            kaacore::UnicodeView{U"ĄĆĘŁŃÓŚŹŻąćęłńóśźż"sv}
+        );
         auto node_text = kaacore::make_node(kaacore::NodeType::text);
         node_text->position({200., 0.});
         node_text->text.content(txt_lorem_ipsum);
@@ -100,12 +104,20 @@ struct DemoFontsScene : kaacore::Scene {
                             this->camera().scale() - glm::dvec2(0.1, 0.1)
                         );
                     } else if (keyboard_key->key() == kaacore::Keycode::l) {
-                        this->node_text->text.content(
-                            this->node_text->text.content() + "x"
+                        std::u16string buf{std::get<std::u16string_view>(
+                            this->node_text->text.content().string_view_variant(
+                            )
+                        )};
+                        buf += u"x";
+                        this->node_text->text.content(kaacore::UnicodeView{buf}
                         );
                     } else if (keyboard_key->key() == kaacore::Keycode::k) {
-                        this->node_text->text.content(
-                            this->node_text->text.content() + " "
+                        std::u16string buf{std::get<std::u16string_view>(
+                            this->node_text->text.content().string_view_variant(
+                            )
+                        )};
+                        buf += u" ";
+                        this->node_text->text.content(kaacore::UnicodeView{buf}
                         );
                     }
                 }

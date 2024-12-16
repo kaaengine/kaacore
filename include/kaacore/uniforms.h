@@ -12,6 +12,7 @@
 
 #include "kaacore/render_targets.h"
 #include "kaacore/textures.h"
+#include "kaacore/utils.h"
 
 namespace kaacore {
 
@@ -141,9 +142,6 @@ class UniformValue {
   private:
     std::vector<T> _value;
 };
-
-template<typename T>
-inline constexpr bool always_false_v = false;
 
 template<typename T>
 class FloatUniform : public UniformBase {
