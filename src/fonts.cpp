@@ -333,7 +333,8 @@ FontRenderGlyph::arrange_glyphs(
 
         if (current_pos.x > line_width and
             ((it + 1) == render_glyphs.end() or
-             (it + 1)->codepoint == static_cast<UnicodeCodepoint>(' '))) {
+             (it + 1)->codepoint == static_cast<UnicodeCodepoint>(' ') or
+             (it + 1)->codepoint == static_cast<UnicodeCodepoint>('\n'))) {
             current_pos.x = 0.;
             current_pos.y += line_height;
 
