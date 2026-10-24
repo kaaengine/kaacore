@@ -63,7 +63,7 @@ UnicodeView::iterator::operator*() const
         this->_index *
             static_cast<std::size_t>(this->_view->_representation_size);
     if (this->_view->_representation_size == UnicodeRepresentationSize::ucs1) {
-        return *reinterpret_cast<const char*>(ptr);
+        return *reinterpret_cast<const std::uint8_t*>(ptr);
     } else if (this->_view->_representation_size ==
                UnicodeRepresentationSize::ucs2) {
         return *reinterpret_cast<const char16_t*>(ptr);

@@ -6,6 +6,21 @@
 
 #include "runner.h"
 
+TEST_CASE("test_ucs1_codepoints_are_unsigned", "[unicode_buffer]")
+{
+    const std::uint8_t data[] = {0x00, 0x7f, 0x80, 0xf3, 0xff};
+    kaacore::UnicodeView view{
+        data, sizeof(data), kaacore::UnicodeRepresentationSize::ucs1
+    };
+
+    auto index = 0u;
+    for (const auto codepoint : view) {
+        REQUIRE(codepoint == static_cast<kaacore::UnicodeCodepoint>(data[index]));
+        index++;
+    }
+    REQUIRE(index == sizeof(data));
+}
+
 TEMPLATE_TEST_CASE(
     "test_create_retrieve_unicode_view", "[unicode_buffer]", char, char16_t,
     char32_t
