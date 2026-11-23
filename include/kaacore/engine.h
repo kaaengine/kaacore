@@ -89,6 +89,7 @@ class Engine {
     void vertical_sync(const bool vsync);
 
     std::vector<Display> get_displays();
+    std::string get_capabilities_summary() const;
     Duration total_time() const;
     double get_fps() const;
 

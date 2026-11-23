@@ -326,6 +326,83 @@ Engine::get_displays()
     });
 }
 
+std::string
+Engine::get_capabilities_summary() const
+{
+    const auto& caps = *bgfx::getCaps();
+    auto summary =
+        fmt::format("Renderer: {}\n", bgfx::getRendererName(caps.rendererType));
+    if (caps.rendererType == bgfx::RendererType::Noop) {
+        return summary + "Active GPU: none (headless renderer)\n"
+                         "Enumerated GPUs: 0";
+    }
+
+    const auto format_id = [](uint16_t id) {
+        return id == 0 ? std::string{"unknown"} : fmt::format("0x{:04x}", id);
+    };
+    const auto format_gpu = [&](uint16_t vendor, uint16_t device) {
+        return fmt::format(
+            "vendor {}, device {}", format_id(vendor), format_id(device)
+        );
+    };
+    summary += fmt::format(
+        "Active GPU: {}\nEnumerated GPUs: {}\n",
+        format_gpu(caps.vendorId, caps.deviceId), caps.numGPUs
+    );
+    for (uint8_t i = 0; i < caps.numGPUs; ++i) {
+        const auto& gpu = caps.gpu[i];
+        summary += fmt::format(
+            "  GPU {}: {}\n", i, format_gpu(gpu.vendorId, gpu.deviceId)
+        );
+    }
+
+    const auto& limits = caps.limits;
+    summary += fmt::format(
+        "Active renderer capabilities:\n"
+        "  Max texture size: {}\n"
+        "  Max texture layers: {}\n"
+        "  Max texture samplers: {}\n"
+        "  Max framebuffer attachments: {}\n"
+        "  Max draw calls: {}\n"
+        "  Max views: {}\n"
+        "  NDC depth range: {}\n"
+        "  NDC origin: {}\n"
+        "  bgfx feature flags: 0x{:016x}\n"
+        "  Common features:",
+        limits.maxTextureSize, limits.maxTextureLayers,
+        limits.maxTextureSamplers, limits.maxFBAttachments, limits.maxDrawCalls,
+        limits.maxViews, caps.homogeneousDepth ? "[-1, 1]" : "[0, 1]",
+        caps.originBottomLeft ? "bottom-left" : "top-left", caps.supported
+    );
+
+    constexpr struct {
+        uint64_t flag;
+        const char* name;
+    } features[] = {
+        {BGFX_CAPS_COMPUTE, "compute shaders"},
+        {BGFX_CAPS_DRAW_INDIRECT, "indirect draw"},
+        {BGFX_CAPS_INDEX32, "32-bit indices"},
+        {BGFX_CAPS_INSTANCING, "instancing"},
+        {BGFX_CAPS_OCCLUSION_QUERY, "occlusion queries"},
+        {BGFX_CAPS_TEXTURE_2D_ARRAY, "2D texture arrays"},
+        {BGFX_CAPS_TEXTURE_3D, "3D textures"},
+        {BGFX_CAPS_TEXTURE_BLIT, "texture blit"},
+        {BGFX_CAPS_TEXTURE_READ_BACK, "texture readback"},
+    };
+    bool listed_feature = false;
+    for (const auto& feature : features) {
+        if (caps.supported & feature.flag) {
+            summary += listed_feature ? ", " : " ";
+            summary += feature.name;
+            listed_feature = true;
+        }
+    }
+    if (!listed_feature) {
+        summary += " none";
+    }
+    return summary;
+}
+
 Duration
 Engine::total_time() const
 {
