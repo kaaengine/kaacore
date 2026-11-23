@@ -193,6 +193,28 @@ TEST_CASE("test_calculating_node_draw_unit_updates", "[draw_unit]")
         REQUIRE(node_2->calculate_draw_unit_updates());
     }
 
+    SECTION("Test update - material")
+    {
+        simulate_frame_step(node_1);
+        REQUIRE(not node_1->calculate_draw_unit_updates());
+
+        const auto material = engine->renderer->default_material;
+        node_1->material(material);
+
+        const auto [insert_mod, remove_mod] =
+            node_1->calculate_draw_unit_updates().unpack();
+        REQUIRE(insert_mod.has_value());
+        REQUIRE(
+            insert_mod->type == kaacore::DrawUnitModification::Type::insert
+        );
+        REQUIRE(insert_mod->lookup_key.material == material.get());
+        REQUIRE(remove_mod.has_value());
+        REQUIRE(
+            remove_mod->type == kaacore::DrawUnitModification::Type::remove
+        );
+        REQUIRE(remove_mod->lookup_key.material == nullptr);
+    }
+
     SECTION("Test update - z-index")
     {
         simulate_frame_step(node_1);

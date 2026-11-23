@@ -801,6 +801,9 @@ Node::material()
 void
 Node::material(const ResourceReference<Material>& material)
 {
+    if (this->_material != material) {
+        this->set_dirty_flags(DIRTY_DRAW_KEYS);
+    }
     this->_material = material;
 }
 
